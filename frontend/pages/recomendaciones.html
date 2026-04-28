@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinanBot - Recomendaciones</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: radial-gradient(ellipse at top, #1a1a4e 0%, #0f0f2d 50%, #000010 100%);
+            min-height: 100vh;
+            color: white;
+        }
+
+        .sidebar {
+            position: fixed;
+            top: 0; left: 0;
+            width: 240px;
+            height: 100vh;
+            background: rgba(255,255,255,0.03);
+            border-right: 1px solid rgba(168, 85, 247, 0.2);
+            backdrop-filter: blur(20px);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            padding: 25px 0;
+        }
+
+        .sidebar-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 0 20px 25px;
+            border-bottom: 1px solid rgba(168, 85, 247, 0.15);
+            margin-bottom: 20px;
+        }
+
+        .sidebar-logo img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            box-shadow: 0 0 15px rgba(168, 85, 247, 0.5);
+        }
+
+        .sidebar-logo span {
+            font-size: 20px;
+            font-weight: 800;
+            background: linear-gradient(90deg, #c026d3, #22d3ee);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 20px;
+            color: #9ca3af;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+            border-left: 3px solid transparent;
+            margin: 2px 0;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            color: white;
+            background: rgba(168, 85, 247, 0.08);
+            border-left-color: #a855f7;
+        }
+
+        .nav-item i { width: 18px; text-align: center; font-size: 15px; }
+        .nav-item.active i { color: #a855f7; }
+
+        .sidebar-bottom {
+            margin-top: auto;
+            padding: 20px;
+            border-top: 1px solid rgba(168, 85, 247, 0.15);
+        }
+
+        .btn-cerrar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #ef4444;
+            background: rgba(239, 68, 68, 0.08);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            border-radius: 10px;
+            padding: 10px 15px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+            text-decoration: none;
+        }
+
+        .btn-cerrar:hover { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+
+        .main { margin-left: 240px; padding: 30px; min-height: 100vh; }
+
+        .page-title { font-size: 24px; font-weight: 700; margin-bottom: 5px; }
+        .page-subtitle { color: #9ca3af; font-size: 14px; margin-bottom: 30px; }
+
+        .rec-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        .rec-card {
+            background: rgba(255,255,255,0.04);
+            border-radius: 18px;
+            padding: 25px;
+            border: 1px solid rgba(255,255,255,0.08);
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .rec-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 4px;
+        }
+
+        .rec-card.alerta::before { background: linear-gradient(90deg, #ef4444, #f87171); }
+        .rec-card.advertencia::before { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+        .rec-card.exito::before { background: linear-gradient(90deg, #4ade80, #22d3ee); }
+        .rec-card.info::before { background: linear-gradient(90deg, #a855f7, #22d3ee); }
+
+        .rec-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(168, 85, 247, 0.3);
+        }
+
+        .rec-icono { font-size: 40px; margin-bottom: 15px; }
+
+        .rec-titulo {
+            font-size: 17px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: white;
+        }
+
+        .rec-descripcion {
+            font-size: 14px;
+            color: #9ca3af;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .rec-badge {
+            display: inline-block;
+            border-radius: 50px;
+            padding: 4px 12px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 15px;
+        }
+
+        .badge-alerta { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+        .badge-advertencia { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+        .badge-exito { background: rgba(74, 222, 128, 0.15); color: #4ade80; }
+        .badge-info { background: rgba(168, 85, 247, 0.15); color: #c4b5fd; }
+
+        .btn-accion {
+            display: inline-block;
+            background: rgba(168, 85, 247, 0.1);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            color: #c4b5fd;
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-size: 13px;
+            text-decoration: none;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .btn-accion:hover {
+            background: rgba(168, 85, 247, 0.2);
+            color: white;
+            border-color: #a855f7;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 60px;
+            color: #6b7280;
+        }
+
+        .loading i {
+            font-size: 40px;
+            margin-bottom: 15px;
+            display: block;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .resumen-top {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .resumen-card {
+            background: rgba(255,255,255,0.04);
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .resumen-icon { font-size: 30px; margin-bottom: 8px; }
+        .resumen-label { font-size: 12px; color: #9ca3af; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px; }
+        .resumen-valor { font-size: 22px; font-weight: 700; }
+    </style>
+</head>
+<body>
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+        <div class="sidebar-logo">
+            <img src="../../images/logo.png" alt="FinanBot" onerror="this.style.display='none'">
+            <span>FinanBot</span>
+        </div>
+        <a href="dashboard.html" class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
+        <a href="chat.html" class="nav-item"><i class="fas fa-robot"></i> Chat FinanBot</a>
+        <a href="finanzas.html" class="nav-item"><i class="fas fa-wallet"></i> Mis Finanzas</a>
+        <a href="recomendaciones.html" class="nav-item active"><i class="fas fa-lightbulb"></i> Recomendaciones</a>
+        <a href="simulador.html" class="nav-item"><i class="fas fa-chart-line"></i> Simulador</a>
+        <a href="perfil.html" class="nav-item"><i class="fas fa-user-circle"></i> Mi Perfil</a>
+        <div class="sidebar-bottom">
+            <a href="../index.html" class="btn-cerrar" onclick="cerrarSesion()">
+                <i class="fas fa-sign-out-alt"></i> Cerrar sesión
+            </a>
+        </div>
+    </div>
+
+    <!-- MAIN -->
+    <div class="main">
+        <h1 class="page-title">💡 Recomendaciones</h1>
+        <p class="page-subtitle">Consejos personalizados basados en tus finanzas reales</p>
+
+        <!-- RESUMEN -->
+        <div class="resumen-top">
+            <div class="resumen-card">
+                <div class="resumen-icon">💰</div>
+                <div class="resumen-label">Total ingresos</div>
+                <div class="resumen-valor" id="totalIngresos" style="color:#4ade80">$0</div>
+            </div>
+            <div class="resumen-card">
+                <div class="resumen-icon">💸</div>
+                <div class="resumen-label">Total gastos</div>
+                <div class="resumen-valor" id="totalGastos" style="color:#f472b6">$0</div>
+            </div>
+            <div class="resumen-card">
+                <div class="resumen-icon">📊</div>
+                <div class="resumen-label">Balance</div>
+                <div class="resumen-valor" id="balance" style="color:#22d3ee">$0</div>
+            </div>
+        </div>
+
+        <!-- RECOMENDACIONES -->
+        <div id="listaRecomendaciones">
+            <div class="loading">
+                <i class="fas fa-spinner"></i>
+                Analizando tus finanzas...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('token');
+
+        async function cargarRecomendaciones() {
+            if (!token) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            try {
+                // Cargar transacciones para resumen
+                const resTrans = await fetch('http://127.0.0.1:5000/api/transacciones/', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (resTrans.ok) {
+                    const transacciones = await resTrans.json();
+                    const ingresos = transacciones.filter(t => t.tipo === 'ingreso').reduce((s, t) => s + t.monto, 0);
+                    const gastos = transacciones.filter(t => t.tipo === 'gasto').reduce((s, t) => s + t.monto, 0);
+                    const balance = ingresos - gastos;
+
+                    document.getElementById('totalIngresos').textContent = '$' + ingresos.toLocaleString('es-CO');
+                    document.getElementById('totalGastos').textContent = '$' + gastos.toLocaleString('es-CO');
+                    document.getElementById('balance').textContent = '$' + Math.abs(balance).toLocaleString('es-CO');
+                    document.getElementById('balance').style.color = balance >= 0 ? '#4ade80' : '#f472b6';
+                }
+
+                // Cargar recomendaciones
+                const resRec = await fetch('http://127.0.0.1:5000/api/recomendaciones/', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (resRec.ok) {
+                    const recomendaciones = await resRec.json();
+                    renderRecomendaciones(recomendaciones);
+                }
+
+            } catch (error) {
+                document.getElementById('listaRecomendaciones').innerHTML = `
+                    <div style="text-align:center; color:#ef4444; padding:40px;">
+                        <i class="fas fa-exclamation-circle" style="font-size:40px; margin-bottom:15px; display:block;"></i>
+                        No se pudo conectar con el servidor.
+                    </div>`;
+            }
+        }
+
+        function renderRecomendaciones(recomendaciones) {
+            const lista = document.getElementById('listaRecomendaciones');
+
+            const badgeTextos = {
+                'alerta': '🚨 Urgente',
+                'advertencia': '⚠️ Atención',
+                'exito': '✅ Bien hecho',
+                'info': 'ℹ️ Consejo'
+            };
+
+            lista.innerHTML = `<div class="rec-grid">
+                ${recomendaciones.map(r => `
+                    <div class="rec-card ${r.tipo}">
+                        <div class="rec-icono">${r.icono}</div>
+                        <div class="rec-badge badge-${r.tipo}">${badgeTextos[r.tipo] || r.tipo}</div>
+                        <div class="rec-titulo">${r.titulo}</div>
+                        <div class="rec-descripcion">${r.descripcion}</div>
+                        <a href="${r.link}" class="btn-accion">
+                            <i class="fas fa-arrow-right me-1"></i> ${r.accion}
+                        </a>
+                    </div>
+                `).join('')}
+            </div>`;
+        }
+
+        function cerrarSesion() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('usuario');
+        }
+
+        cargarRecomendaciones();
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

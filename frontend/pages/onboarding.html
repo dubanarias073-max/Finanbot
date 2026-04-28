@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinanBot - Bienvenido</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: radial-gradient(ellipse at top, #1a1a4e 0%, #0f0f2d 50%, #000010 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background:
+                radial-gradient(circle at 20% 20%, rgba(168, 85, 247, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(34, 211, 238, 0.08) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        .onboarding-card {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(168, 85, 247, 0.25);
+            border-radius: 24px;
+            padding: 40px 35px;
+            width: 100%;
+            max-width: 520px;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 25px 60px rgba(0,0,0,0.5);
+            position: relative;
+            z-index: 1;
+        }
+
+        .onboarding-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 3px;
+            background: linear-gradient(90deg, #c026d3, #a855f7, #22d3ee);
+            border-radius: 24px 24px 0 0;
+        }
+
+        .logo-small {
+            width: 65px;
+            height: 65px;
+            border-radius: 50%;
+            margin: 0 auto 15px;
+            display: block;
+            box-shadow: 0 0 20px rgba(168, 85, 247, 0.5);
+        }
+
+        .titulo {
+            font-size: 24px;
+            font-weight: 800;
+            background: linear-gradient(90deg, #c026d3, #a855f7, #22d3ee);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+            margin-bottom: 5px;
+        }
+
+        .subtitulo {
+            text-align: center;
+            color: #9ca3af;
+            font-size: 14px;
+            margin-bottom: 30px;
+        }
+
+        /* PASOS */
+        .pasos {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+
+        .paso-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: rgba(168, 85, 247, 0.3);
+            transition: all 0.3s;
+        }
+
+        .paso-dot.activo {
+            background: #a855f7;
+            width: 30px;
+            border-radius: 5px;
+        }
+
+        .paso-dot.completado { background: #4ade80; }
+
+        /* PASO CONTENIDO */
+        .paso-contenido { display: none; }
+        .paso-contenido.visible { display: block; }
+
+        .paso-icono {
+            font-size: 50px;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .paso-titulo {
+            font-size: 20px;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 8px;
+            color: white;
+        }
+
+        .paso-descripcion {
+            text-align: center;
+            color: #9ca3af;
+            font-size: 14px;
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+
+        .form-label {
+            color: #c4b5fd;
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        .form-control, .form-select {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            border-radius: 12px;
+            color: white;
+            padding: 12px 15px;
+            font-size: 14px;
+            width: 100%;
+            margin-bottom: 15px;
+            transition: all 0.3s;
+        }
+
+        .form-control:focus, .form-select:focus {
+            background: rgba(168, 85, 247, 0.08);
+            border-color: #a855f7;
+            outline: none;
+            color: white;
+        }
+
+        .form-control::placeholder { color: #6b7280; }
+        .form-select option { background: #1a1a4e; }
+
+        .opciones-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .opcion-btn {
+            background: rgba(255,255,255,0.04);
+            border: 2px solid rgba(168, 85, 247, 0.2);
+            border-radius: 12px;
+            padding: 15px 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: #9ca3af;
+            font-size: 13px;
+        }
+
+        .opcion-btn:hover, .opcion-btn.seleccionado {
+            background: rgba(168, 85, 247, 0.1);
+            border-color: #a855f7;
+            color: white;
+        }
+
+        .opcion-icono { font-size: 28px; margin-bottom: 8px; display: block; }
+
+        .btn-siguiente {
+            background: linear-gradient(135deg, #c026d3, #a855f7);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 13px;
+            font-size: 16px;
+            font-weight: 600;
+            width: 100%;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 8px 25px rgba(192, 38, 211, 0.4);
+            margin-top: 10px;
+        }
+
+        .btn-siguiente:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 35px rgba(192, 38, 211, 0.6);
+        }
+
+        .btn-omitir {
+            background: transparent;
+            border: none;
+            color: #6b7280;
+            font-size: 13px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+            padding: 8px;
+            transition: color 0.3s;
+        }
+
+        .btn-omitir:hover { color: #9ca3af; }
+    </style>
+</head>
+<body>
+
+    <div class="onboarding-card">
+        <img src="../../images/logo.png" alt="FinanBot" class="logo-small"
+             onerror="this.style.display='none'">
+
+        <h1 class="titulo">¡Bienvenido a FinanBot!</h1>
+        <p class="subtitulo">Cuéntanos un poco sobre ti para personalizar tu experiencia</p>
+
+        <!-- INDICADOR DE PASOS -->
+        <div class="pasos">
+            <div class="paso-dot activo" id="dot1"></div>
+            <div class="paso-dot" id="dot2"></div>
+            <div class="paso-dot" id="dot3"></div>
+            <div class="paso-dot" id="dot4"></div>
+        </div>
+
+        <!-- PASO 1: Perfil financiero -->
+        <div class="paso-contenido visible" id="paso1">
+            <div class="paso-icono">👤</div>
+            <div class="paso-titulo">¿Cuál es tu situación financiera?</div>
+            <div class="paso-descripcion">Selecciona la opción que mejor te describe</div>
+
+            <div class="opciones-grid">
+                <div class="opcion-btn" onclick="seleccionarOpcion(this, 'perfil', 'estudiante')">
+                    <span class="opcion-icono">🎓</span>
+                    Estudiante
+                </div>
+                <div class="opcion-btn" onclick="seleccionarOpcion(this, 'perfil', 'empleado')">
+                    <span class="opcion-icono">💼</span>
+                    Empleado
+                </div>
+                <div class="opcion-btn" onclick="seleccionarOpcion(this, 'perfil', 'independiente')">
+                    <span class="opcion-icono">🚀</span>
+                    Independiente
+                </div>
+                <div class="opcion-btn" onclick="seleccionarOpcion(this, 'perfil', 'emprendedor')">
+                    <span class="opcion-icono">💡</span>
+                    Emprendedor
+                </div>
+            </div>
+
+            <button class="btn-siguiente" onclick="siguientePaso(2)">
+                Continuar <i class="fas fa-arrow-right ms-2"></i>
+            </button>
+            <button class="btn-omitir" onclick="omitir()">Omitir configuración</button>
+        </div>
+
+        <!-- PASO 2: Ingreso mensual -->
+        <div class="paso-contenido" id="paso2">
+            <div class="paso-icono">💰</div>
+            <div class="paso-titulo">¿Cuál es tu ingreso mensual?</div>
+            <div class="paso-descripcion">Esta información nos ayuda a darte recomendaciones más precisas. Solo tú puedes ver estos datos.</div>
+
+            <label class="form-label">Ingreso mensual aproximado ($)</label>
+            <input type="number" class="form-control" id="ingresoMensual"
+                   placeholder="Ej: 2500000">
+
+            <label class="form-label">¿Con qué frecuencia recibes ingresos?</label>
+            <select class="form-select" id="frecuenciaIngreso">
+                <option value="mensual">Mensual</option>
+                <option value="quincenal">Quincenal</option>
+                <option value="semanal">Semanal</option>
+                <option value="variable">Variable / Irregular</option>
+            </select>
+
+            <button class="btn-siguiente" onclick="siguientePaso(3)">
+                Continuar <i class="fas fa-arrow-right ms-2"></i>
+            </button>
+            <button class="btn-omitir" onclick="omitir()">Omitir este paso</button>
+        </div>
+
+        <!-- PASO 3: Meta de ahorro -->
+        <div class="paso-contenido" id="paso3">
+            <div class="paso-icono">🎯</div>
+            <div class="paso-titulo">¿Cuánto quieres ahorrar al mes?</div>
+            <div class="paso-descripcion">Establece una meta de ahorro mensual. Te ayudaremos a alcanzarla con recomendaciones personalizadas.</div>
+
+            <label class="form-label">Meta de ahorro mensual ($)</label>
+            <input type="number" class="form-control" id="metaAhorro"
+                   placeholder="Ej: 500000">
+
+            <label class="form-label">¿Cuál es tu objetivo financiero principal?</label>
+            <div class="opciones-grid">
+                <div class="opcion-btn" onclick="seleccionarOpcion(this, 'objetivo', 'emergencia')">
+                    <span class="opcion-icono">🚨</span>
+                    Fondo de emergencia
+                </div>
+                <div class="opcion-btn" onclick="seleccionarOpcion(this, 'objetivo', 'viaje')">
+                    <span class="opcion-icono">✈️</span>
+                    Viaje / Vacaciones
+                </div>
+                <div class="opcion-btn" onclick="seleccionarOpcion(this, 'objetivo', 'vivienda')">
+                    <span class="opcion-icono">🏠</span>
+                    Vivienda propia
+                </div>
+                <div class="opcion-btn" onclick="seleccionarOpcion(this, 'objetivo', 'inversion')">
+                    <span class="opcion-icono">📈</span>
+                    Invertir
+                </div>
+            </div>
+
+            <button class="btn-siguiente" onclick="siguientePaso(4)">
+                Continuar <i class="fas fa-arrow-right ms-2"></i>
+            </button>
+            <button class="btn-omitir" onclick="omitir()">Omitir este paso</button>
+        </div>
+
+        <!-- PASO 4: Listo -->
+        <div class="paso-contenido" id="paso4">
+            <div class="paso-icono">🎉</div>
+            <div class="paso-titulo">¡Todo listo!</div>
+            <div class="paso-descripcion">
+                Tu perfil financiero está configurado. FinanBot usará esta información para darte recomendaciones personalizadas y ayudarte a alcanzar tus metas.
+            </div>
+
+            <div style="background: rgba(74,222,128,0.08); border: 1px solid rgba(74,222,128,0.2); border-radius: 14px; padding: 20px; margin-bottom: 20px;">
+                <div style="font-size: 14px; color: #4ade80; font-weight: 600; margin-bottom: 10px;">✅ Tu perfil incluye:</div>
+                <div style="font-size: 13px; color: #9ca3af; line-height: 2;" id="resumenPerfil">
+                    Cargando...
+                </div>
+            </div>
+
+            <button class="btn-siguiente" onclick="finalizar()">
+                <i class="fas fa-rocket me-2"></i> Ir a mi Dashboard
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('token');
+        const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
+
+        if (!token) window.location.href = 'login.html';
+
+        let datosOnboarding = {
+            perfil: '',
+            ingreso_mensual: 0,
+            meta_ahorro: 0,
+            objetivo: ''
+        };
+
+        function seleccionarOpcion(elemento, tipo, valor) {
+            const grupo = elemento.parentElement.querySelectorAll('.opcion-btn');
+            grupo.forEach(btn => btn.classList.remove('seleccionado'));
+            elemento.classList.add('seleccionado');
+            datosOnboarding[tipo] = valor;
+        }
+
+        function siguientePaso(paso) {
+            // Guardar datos del paso actual
+            if (paso === 3) {
+                datosOnboarding.ingreso_mensual = parseFloat(document.getElementById('ingresoMensual').value) || 0;
+            }
+            if (paso === 4) {
+                datosOnboarding.meta_ahorro = parseFloat(document.getElementById('metaAhorro').value) || 0;
+
+                // Mostrar resumen
+                const perfiles = { estudiante: '🎓 Estudiante', empleado: '💼 Empleado', independiente: '🚀 Independiente', emprendedor: '💡 Emprendedor' };
+                const objetivos = { emergencia: '🚨 Fondo de emergencia', viaje: '✈️ Viaje/Vacaciones', vivienda: '🏠 Vivienda propia', inversion: '📈 Invertir' };
+
+                document.getElementById('resumenPerfil').innerHTML = `
+                    👤 Perfil: <strong style="color:white">${perfiles[datosOnboarding.perfil] || 'No especificado'}</strong><br>
+                    💰 Ingreso mensual: <strong style="color:white">$${(datosOnboarding.ingreso_mensual || 0).toLocaleString('es-CO')}</strong><br>
+                    🎯 Meta de ahorro: <strong style="color:white">$${(datosOnboarding.meta_ahorro || 0).toLocaleString('es-CO')}/mes</strong><br>
+                    🏆 Objetivo: <strong style="color:white">${objetivos[datosOnboarding.objetivo] || 'No especificado'}</strong>
+                `;
+            }
+
+            // Actualizar dots
+            for (let i = 1; i <= 4; i++) {
+                const dot = document.getElementById(`dot${i}`);
+                dot.classList.remove('activo', 'completado');
+                if (i < paso) dot.classList.add('completado');
+                else if (i === paso) dot.classList.add('activo');
+            }
+
+            // Mostrar paso
+            document.querySelectorAll('.paso-contenido').forEach(p => p.classList.remove('visible'));
+            document.getElementById(`paso${paso}`).classList.add('visible');
+        }
+
+        async function finalizar() {
+            try {
+                // Guardar perfil en MySQL
+                await fetch('http://127.0.0.1:5000/api/perfil/', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        ingreso_mensual: datosOnboarding.ingreso_mensual,
+                        meta_ahorro: datosOnboarding.meta_ahorro
+                    })
+                });
+
+                // Crear meta inicial si tiene objetivo
+                if (datosOnboarding.objetivo && datosOnboarding.meta_ahorro > 0) {
+                    const objetivos = {
+                        emergencia: '🚨 Fondo de emergencia',
+                        viaje: '✈️ Viaje / Vacaciones',
+                        vivienda: '🏠 Vivienda propia',
+                        inversion: '📈 Inversión inicial'
+                    };
+
+                    await fetch('http://127.0.0.1:5000/api/metas/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({
+                            nombre: objetivos[datosOnboarding.objetivo],
+                            monto_objetivo: datosOnboarding.meta_ahorro * 6,
+                            monto_actual: 0
+                        })
+                    });
+                }
+            } catch (error) {
+                console.error('Error guardando onboarding:', error);
+            }
+
+            // Marcar onboarding como completado
+            localStorage.setItem('onboarding_completado', 'true');
+            window.location.href = 'dashboard.html';
+        }
+
+        function omitir() {
+            localStorage.setItem('onboarding_completado', 'true');
+            window.location.href = 'dashboard.html';
+        }
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

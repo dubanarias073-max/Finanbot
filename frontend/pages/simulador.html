@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinanBot - Simulador</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: radial-gradient(ellipse at top, #1a1a4e 0%, #0f0f2d 50%, #000010 100%);
+            min-height: 100vh;
+            color: white;
+        }
+
+        .sidebar {
+            position: fixed;
+            top: 0; left: 0;
+            width: 240px;
+            height: 100vh;
+            background: rgba(255,255,255,0.03);
+            border-right: 1px solid rgba(168, 85, 247, 0.2);
+            backdrop-filter: blur(20px);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            padding: 25px 0;
+        }
+
+        .sidebar-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 0 20px 25px;
+            border-bottom: 1px solid rgba(168, 85, 247, 0.15);
+            margin-bottom: 20px;
+        }
+
+        .sidebar-logo img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            box-shadow: 0 0 15px rgba(168, 85, 247, 0.5);
+        }
+
+        .sidebar-logo span {
+            font-size: 20px;
+            font-weight: 800;
+            background: linear-gradient(90deg, #c026d3, #22d3ee);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 20px;
+            color: #9ca3af;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+            border-left: 3px solid transparent;
+            margin: 2px 0;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            color: white;
+            background: rgba(168, 85, 247, 0.08);
+            border-left-color: #a855f7;
+        }
+
+        .nav-item i { width: 18px; text-align: center; font-size: 15px; }
+        .nav-item.active i { color: #a855f7; }
+
+        .sidebar-bottom {
+            margin-top: auto;
+            padding: 20px;
+            border-top: 1px solid rgba(168, 85, 247, 0.15);
+        }
+
+        .btn-cerrar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #ef4444;
+            background: rgba(239, 68, 68, 0.08);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            border-radius: 10px;
+            padding: 10px 15px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+            text-decoration: none;
+        }
+
+        .btn-cerrar:hover {
+            background: rgba(239, 68, 68, 0.15);
+            color: #ef4444;
+        }
+
+        .main {
+            margin-left: 240px;
+            padding: 30px;
+            min-height: 100vh;
+        }
+
+        .page-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .page-subtitle {
+            color: #9ca3af;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+
+        .demo-badge {
+            display: inline-block;
+            background: rgba(251, 191, 36, 0.1);
+            border: 1px solid rgba(251, 191, 36, 0.3);
+            color: #fbbf24;
+            border-radius: 50px;
+            padding: 5px 15px;
+            font-size: 12px;
+            margin-bottom: 25px;
+        }
+
+        .grid-simulador {
+            display: grid;
+            grid-template-columns: 1fr 1.8fr;
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(168, 85, 247, 0.15);
+            border-radius: 18px;
+            padding: 25px;
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #c4b5fd;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .form-label {
+            color: #c4b5fd;
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        .form-control, .form-select {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            border-radius: 12px;
+            color: white;
+            padding: 11px 15px;
+            font-size: 14px;
+            width: 100%;
+            margin-bottom: 15px;
+            transition: all 0.3s;
+        }
+
+        .form-control:focus, .form-select:focus {
+            background: rgba(168, 85, 247, 0.08);
+            border-color: #a855f7;
+            outline: none;
+            color: white;
+        }
+
+        .form-control::placeholder { color: #6b7280; }
+        .form-select option { background: #1a1a4e; }
+
+        .slider-container { margin-bottom: 15px; }
+
+        .slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 10px;
+            background: rgba(168, 85, 247, 0.2);
+            outline: none;
+            margin: 10px 0;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #c026d3, #a855f7);
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(168, 85, 247, 0.5);
+        }
+
+        .slider-value {
+            text-align: center;
+            font-size: 22px;
+            font-weight: 700;
+            color: #a855f7;
+            margin-bottom: 5px;
+        }
+
+        .btn-simular {
+            background: linear-gradient(135deg, #c026d3, #a855f7);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 13px;
+            font-size: 15px;
+            font-weight: 600;
+            width: 100%;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 8px 25px rgba(192, 38, 211, 0.3);
+        }
+
+        .btn-simular:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 35px rgba(192, 38, 211, 0.5);
+        }
+
+        .resultados { display: none; }
+        .resultados.visible { display: block; }
+
+        .resultado-cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .resultado-card {
+            background: rgba(255,255,255,0.04);
+            border-radius: 14px;
+            padding: 18px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.08);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .resultado-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 3px;
+        }
+
+        .resultado-card:nth-child(1)::before { background: linear-gradient(90deg, #22d3ee, #38bdf8); }
+        .resultado-card:nth-child(2)::before { background: linear-gradient(90deg, #4ade80, #22d3ee); }
+        .resultado-card:nth-child(3)::before { background: linear-gradient(90deg, #fbbf24, #f59e0b); }
+
+        .resultado-label {
+            font-size: 12px;
+            color: #9ca3af;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .resultado-valor { font-size: 22px; font-weight: 700; }
+        .resultado-card:nth-child(1) .resultado-valor { color: #22d3ee; }
+        .resultado-card:nth-child(2) .resultado-valor { color: #4ade80; }
+        .resultado-card:nth-child(3) .resultado-valor { color: #fbbf24; }
+
+        .chart-card {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(168, 85, 247, 0.15);
+            border-radius: 18px;
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+
+        .historial-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            border-radius: 12px;
+            margin-bottom: 8px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.05);
+            font-size: 13px;
+        }
+
+        .historial-info { color: #c4b5fd; }
+        .historial-resultado { color: #4ade80; font-weight: 700; }
+
+        .placeholder-chart {
+            text-align: center;
+            color: #6b7280;
+            padding: 60px 20px;
+        }
+
+        .placeholder-chart i {
+            font-size: 50px;
+            margin-bottom: 15px;
+            display: block;
+            opacity: 0.3;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+        <div class="sidebar-logo">
+            <img src="../../images/logo.png" alt="FinanBot" onerror="this.style.display='none'">
+            <span>FinanBot</span>
+        </div>
+        <a href="dashboard.html" class="nav-item">
+            <i class="fas fa-home"></i> Dashboard
+        </a>
+        <a href="chat.html" class="nav-item">
+            <i class="fas fa-robot"></i> Chat FinanBot
+        </a>
+        <a href="finanzas.html" class="nav-item">
+            <i class="fas fa-wallet"></i> Mis Finanzas
+        </a>
+        <a href="recomendaciones.html" class="nav-item">
+    <i class="fas fa-lightbulb"></i> Recomendaciones
+</a>
+        </a>
+        <a href="simulador.html" class="nav-item active">
+            <i class="fas fa-chart-line"></i> Simulador
+        </a>
+        <a href="perfil.html" class="nav-item">
+            <i class="fas fa-user-circle"></i> Mi Perfil
+        </a>
+        <div class="sidebar-bottom">
+            <a href="../index.html" class="btn-cerrar" onclick="cerrarSesion()">
+                <i class="fas fa-sign-out-alt"></i> Cerrar sesión
+            </a>
+        </div>
+    </div>
+
+    <!-- MAIN -->
+    <div class="main">
+        <h1 class="page-title">📈 Simulador de Inversiones</h1>
+        <p class="page-subtitle">Simula escenarios de inversión sin usar dinero real</p>
+        <div class="demo-badge">
+            <i class="fas fa-flask me-1"></i>
+            Modo simulación educativa — Sin dinero real
+        </div>
+
+        <div class="grid-simulador">
+            <!-- FORMULARIO -->
+            <div class="card">
+                <div class="card-title">
+                    <i class="fas fa-sliders-h" style="color:#a855f7"></i>
+                    Configurar simulación
+                </div>
+
+                <label class="form-label">💰 Capital inicial ($)</label>
+                <input type="number" class="form-control" id="capital"
+                       placeholder="Ej: 1000000" value="1000000">
+
+                <label class="form-label">📊 Tipo de inversión</label>
+                <select class="form-select" id="tipoInversion">
+                    <option value="5">🏦 CDT — 5% anual (Bajo riesgo)</option>
+                    <option value="10">📊 Fondo de inversión — 10% anual (Medio)</option>
+                    <option value="15">📈 Acciones — 15% anual (Alto riesgo)</option>
+                    <option value="20">🚀 Startups — 20% anual (Muy alto riesgo)</option>
+                    <option value="custom">⚙️ Personalizada</option>
+                </select>
+
+                <div id="tasaCustom" style="display:none">
+                    <label class="form-label">Tasa anual personalizada (%)</label>
+                    <input type="number" class="form-control" id="tasaPersonalizada"
+                           placeholder="Ej: 8" min="1" max="100">
+                </div>
+
+                <div class="slider-container">
+                    <label class="form-label">⏱️ Plazo</label>
+                    <div class="slider-value" id="plazoValor">12 meses</div>
+                    <input type="range" class="slider" id="plazoSlider"
+                           min="1" max="120" value="12"
+                           oninput="actualizarPlazo(this.value)">
+                    <div style="display:flex; justify-content:space-between; font-size:11px; color:#6b7280">
+                        <span>1 mes</span>
+                        <span>5 años</span>
+                        <span>10 años</span>
+                    </div>
+                </div>
+
+                <button class="btn-simular" onclick="simular()">
+                    <i class="fas fa-play me-2"></i> Simular inversión
+                </button>
+            </div>
+
+            <!-- RESULTADOS -->
+            <div>
+                <div id="placeholderChart" class="chart-card">
+                    <div class="placeholder-chart">
+                        <i class="fas fa-chart-line"></i>
+                        Configura tu simulación y presiona<br>
+                        <strong style="color:#a855f7">Simular inversión</strong><br>
+                        para ver la proyección aquí
+                    </div>
+                </div>
+
+                <div class="resultados" id="resultados">
+                    <div class="resultado-cards">
+                        <div class="resultado-card">
+                            <div class="resultado-label">💰 Capital inicial</div>
+                            <div class="resultado-valor" id="resCapital">$0</div>
+                        </div>
+                        <div class="resultado-card">
+                            <div class="resultado-label">📈 Valor final</div>
+                            <div class="resultado-valor" id="resTotal">$0</div>
+                        </div>
+                        <div class="resultado-card">
+                            <div class="resultado-label">💵 Ganancia</div>
+                            <div class="resultado-valor" id="resGanancia">$0</div>
+                        </div>
+                    </div>
+
+                    <div class="chart-card">
+                        <div class="card-title">
+                            <i class="fas fa-chart-area" style="color:#22d3ee"></i>
+                            Proyección del crecimiento
+                        </div>
+                        <canvas id="chartSimulacion" height="250"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- HISTORIAL -->
+        <div class="card">
+            <div class="card-title">
+                <i class="fas fa-history" style="color:#4ade80"></i>
+                Historial de simulaciones
+            </div>
+            <div id="historialSimulaciones">
+                <div style="text-align:center; color:#6b7280; padding:20px; font-size:14px;">
+                    <i class="fas fa-clock" style="margin-right:8px; opacity:0.4"></i>
+                    Aún no has realizado simulaciones
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let chartSimulacion = null;
+        const token = localStorage.getItem('token');
+
+        document.getElementById('tipoInversion').addEventListener('change', function() {
+            document.getElementById('tasaCustom').style.display =
+                this.value === 'custom' ? 'block' : 'none';
+        });
+
+        function actualizarPlazo(valor) {
+            const meses = parseInt(valor);
+            const texto = meses < 12 ? `${meses} mes${meses > 1 ? 'es' : ''}` :
+                          meses === 12 ? '1 año' :
+                          meses % 12 === 0 ? `${meses/12} años` :
+                          `${Math.floor(meses/12)} año${Math.floor(meses/12)>1?'s':''} y ${meses%12} mes${meses%12>1?'es':''}`;
+            document.getElementById('plazoValor').textContent = texto;
+        }
+
+        async function simular() {
+            const capital = parseFloat(document.getElementById('capital').value);
+            const tipoSelect = document.getElementById('tipoInversion').value;
+            const plazo = parseInt(document.getElementById('plazoSlider').value);
+
+            if (!capital || capital <= 0) {
+                alert('Ingresa un capital válido mayor a 0.');
+                return;
+            }
+
+            let tasa;
+            if (tipoSelect === 'custom') {
+                tasa = parseFloat(document.getElementById('tasaPersonalizada').value);
+                if (!tasa || tasa <= 0) {
+                    alert('Ingresa una tasa válida.');
+                    return;
+                }
+            } else {
+                tasa = parseFloat(tipoSelect);
+            }
+
+            const tasaMensual = tasa / 100 / 12;
+            const labels = [];
+            const valores = [];
+
+            for (let i = 0; i <= plazo; i++) {
+                labels.push(i === 0 ? 'Inicio' : `Mes ${i}`);
+                valores.push(capital * Math.pow(1 + tasaMensual, i));
+            }
+
+            const valorFinal = valores[valores.length - 1];
+            const ganancia = valorFinal - capital;
+
+            document.getElementById('resCapital').textContent = '$' + Math.round(capital).toLocaleString('es-CO');
+            document.getElementById('resTotal').textContent = '$' + Math.round(valorFinal).toLocaleString('es-CO');
+            document.getElementById('resGanancia').textContent = '+$' + Math.round(ganancia).toLocaleString('es-CO');
+
+            document.getElementById('placeholderChart').style.display = 'none';
+            document.getElementById('resultados').classList.add('visible');
+
+            if (chartSimulacion) chartSimulacion.destroy();
+
+            const ctx = document.getElementById('chartSimulacion').getContext('2d');
+            chartSimulacion = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: 'Valor de la inversión',
+                        data: valores,
+                        borderColor: '#a855f7',
+                        backgroundColor: 'rgba(168, 85, 247, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: '#c026d3',
+                        pointRadius: plazo > 24 ? 0 : 4,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { labels: { color: '#c4b5fd' } },
+                        tooltip: {
+                            callbacks: {
+                                label: ctx => '$' + Math.round(ctx.parsed.y).toLocaleString('es-CO')
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: '#9ca3af', maxTicksLimit: 12 },
+                            grid: { color: 'rgba(255,255,255,0.05)' }
+                        },
+                        y: {
+                            ticks: {
+                                color: '#9ca3af',
+                                callback: val => '$' + Math.round(val).toLocaleString('es-CO')
+                            },
+                            grid: { color: 'rgba(255,255,255,0.05)' }
+                        }
+                    }
+                }
+            });
+
+            // Guardar en MySQL si está logueado
+            if (token) {
+                try {
+                    await fetch('http://127.0.0.1:5000/api/simulaciones/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({
+                            capital_inicial: capital,
+                            tasa_retorno: tasa,
+                            plazo_meses: plazo,
+                            resultado_final: Math.round(valorFinal)
+                        })
+                    });
+                } catch (error) {
+                    console.error('Error guardando simulación:', error);
+                }
+            }
+
+            cargarHistorial();
+        }
+
+        async function cargarHistorial() {
+            if (!token) return;
+            try {
+                const response = await fetch('http://127.0.0.1:5000/api/simulaciones/', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    renderHistorial(data);
+                }
+            } catch (error) {
+                console.error('Error cargando historial:', error);
+            }
+        }
+
+        function renderHistorial(historial) {
+            const div = document.getElementById('historialSimulaciones');
+
+            if (!historial || historial.length === 0) {
+                div.innerHTML = `<div style="text-align:center; color:#6b7280; padding:20px; font-size:14px;">
+                    <i class="fas fa-clock" style="margin-right:8px; opacity:0.4"></i>
+                    Aún no has realizado simulaciones
+                </div>`;
+                return;
+            }
+
+            div.innerHTML = historial.map(s => `
+                <div class="historial-item">
+                    <div class="historial-info">
+                        💰 Capital: <strong>$${s.capital_inicial.toLocaleString('es-CO')}</strong> ·
+                        📊 Tasa: <strong>${s.tasa_retorno}%</strong> ·
+                        ⏱️ Plazo: <strong>${s.plazo_meses} meses</strong> ·
+                        📅 ${s.fecha}
+                    </div>
+                    <div class="historial-resultado">
+                        +$${Math.round(s.ganancia).toLocaleString('es-CO')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function cerrarSesion() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('usuario');
+        }
+
+        cargarHistorial();
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
