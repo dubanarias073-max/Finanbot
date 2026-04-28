@@ -6,8 +6,12 @@ Despues de que pongas la carpeta del proyecto en documentos sigue estos pasos:
 4. luego abre la carpeta del proyecto  en vs code, abre la terminal  y coloca este codigo :
 python -m venv venv
 generara una carpeta llamada venv significando  que se creo el entorno virtual de flask
-5. luego coloca estos codigos:
+5. luego coloca estos codigos uno por uno dado ENTER:
 cd backend
-venv\scripts\activate
+..\venv\Scripts\Activate.ps1
+pip install flask
+pip install flask-cors python-dotenv
+pip install flask-sqlalchemy flask-bcrypt flask-jwt-extended
+pip install pymysql
 python app.py
 6. al hacer todo lo anterior abre  frontend/index.html y pon Go live  (si no tienes isntalado en vs code live server no aparecera)
