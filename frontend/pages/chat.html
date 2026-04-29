@@ -14,9 +14,10 @@
             background: radial-gradient(ellipse at top, #1a1a4e 0%, #0f0f2d 50%, #000010 100%);
             min-height: 100vh;
             color: white;
+            display: flex;
         }
 
-        /* SIDEBAR igual al dashboard */
+        /* SIDEBAR NAVEGACIÓN */
         .sidebar {
             position: fixed;
             top: 0; left: 0;
@@ -100,52 +101,163 @@
             text-decoration: none;
         }
 
-        .btn-cerrar:hover {
-            background: rgba(239, 68, 68, 0.15);
-            color: #ef4444;
+        .btn-cerrar:hover { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+
+        /* PANEL CONVERSACIONES */
+        .panel-conversaciones {
+            position: fixed;
+            top: 0;
+            left: 240px;
+            width: 260px;
+            height: 100vh;
+            background: rgba(255,255,255,0.02);
+            border-right: 1px solid rgba(168, 85, 247, 0.15);
+            display: flex;
+            flex-direction: column;
+            z-index: 99;
+        }
+
+        .panel-header {
+            padding: 20px 15px 15px;
+            border-bottom: 1px solid rgba(168, 85, 247, 0.15);
+        }
+
+        .panel-titulo {
+            font-size: 14px;
+            font-weight: 600;
+            color: #c4b5fd;
+            margin-bottom: 12px;
+        }
+
+        .btn-nueva-conv {
+            background: linear-gradient(135deg, #c026d3, #a855f7);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 9px 15px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s;
+        }
+
+        .btn-nueva-conv:hover { transform: translateY(-1px); opacity: 0.9; }
+
+        .lista-conversaciones {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px 8px;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(168, 85, 247, 0.3) transparent;
+        }
+
+        .conv-item {
+            padding: 10px 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 4px;
+            position: relative;
+            border: 1px solid transparent;
+        }
+
+        .conv-item:hover { background: rgba(168, 85, 247, 0.08); border-color: rgba(168, 85, 247, 0.2); }
+        .conv-item.activa { background: rgba(168, 85, 247, 0.12); border-color: rgba(168, 85, 247, 0.4); }
+
+        .conv-titulo {
+            font-size: 13px;
+            font-weight: 500;
+            color: white;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 3px;
+            padding-right: 20px;
+        }
+
+        .conv-fecha {
+            font-size: 11px;
+            color: #6b7280;
+        }
+
+        .conv-ultimo {
+            font-size: 11px;
+            color: #9ca3af;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .btn-eliminar-conv {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: none;
+            border: none;
+            color: #6b7280;
+            cursor: pointer;
+            font-size: 12px;
+            padding: 2px 5px;
+            border-radius: 5px;
+            opacity: 0;
+            transition: all 0.3s;
+        }
+
+        .conv-item:hover .btn-eliminar-conv { opacity: 1; }
+        .btn-eliminar-conv:hover { color: #ef4444; background: rgba(239,68,68,0.1); }
+
+        .sin-conversaciones {
+            text-align: center;
+            color: #6b7280;
+            padding: 30px 15px;
+            font-size: 13px;
         }
 
         /* MAIN CHAT */
         .main {
-            margin-left: 240px;
+            margin-left: 500px;
             height: 100vh;
             display: flex;
             flex-direction: column;
             padding: 25px;
+            flex: 1;
         }
 
         .chat-header {
             display: flex;
             align-items: center;
-            gap: 15px;
+            justify-content: space-between;
             margin-bottom: 20px;
             padding-bottom: 20px;
             border-bottom: 1px solid rgba(168, 85, 247, 0.15);
         }
 
+        .chat-header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
         .bot-avatar {
-            width: 50px;
-            height: 50px;
+            width: 45px;
+            height: 45px;
             border-radius: 50%;
             box-shadow: 0 0 20px rgba(168, 85, 247, 0.5);
         }
 
         .chat-header-info h2 {
-            font-size: 20px;
+            font-size: 18px;
             font-weight: 700;
             background: linear-gradient(90deg, #c026d3, #22d3ee);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
-        .chat-header-info p {
-            font-size: 13px;
-            color: #4ade80;
-        }
+        .chat-header-info p { font-size: 12px; color: #4ade80; }
 
         .status-dot {
-            width: 8px;
-            height: 8px;
+            width: 8px; height: 8px;
             background: #4ade80;
             border-radius: 50%;
             display: inline-block;
@@ -156,6 +268,15 @@
         @keyframes pulse {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.4; }
+        }
+
+        .conv-titulo-actual {
+            font-size: 13px;
+            color: #9ca3af;
+            background: rgba(168, 85, 247, 0.08);
+            border: 1px solid rgba(168, 85, 247, 0.2);
+            border-radius: 8px;
+            padding: 5px 12px;
         }
 
         .banner-invitado {
@@ -169,7 +290,6 @@
             display: none;
         }
 
-        /* CHAT BOX */
         .chat-box {
             flex: 1;
             overflow-y: auto;
@@ -182,7 +302,6 @@
         .chat-box::-webkit-scrollbar { width: 4px; }
         .chat-box::-webkit-scrollbar-thumb { background: rgba(168, 85, 247, 0.3); border-radius: 10px; }
 
-        /* MENSAJES */
         .mensaje {
             display: flex;
             margin-bottom: 20px;
@@ -197,8 +316,7 @@
         .mensaje.usuario { flex-direction: row-reverse; }
 
         .msg-avatar {
-            width: 36px;
-            height: 36px;
+            width: 36px; height: 36px;
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -214,8 +332,7 @@
         }
 
         .msg-avatar.bot img {
-            width: 100%;
-            height: 100%;
+            width: 100%; height: 100%;
             object-fit: cover;
             border-radius: 50%;
         }
@@ -227,10 +344,7 @@
             font-size: 14px;
         }
 
-        .msg-contenido {
-            max-width: 65%;
-            margin: 0 10px;
-        }
+        .msg-contenido { max-width: 65%; margin: 0 10px; }
 
         .msg-burbuja {
             padding: 12px 16px;
@@ -252,15 +366,9 @@
             color: white;
         }
 
-        .msg-hora {
-            font-size: 11px;
-            color: #6b7280;
-            margin-top: 4px;
-        }
-
+        .msg-hora { font-size: 11px; color: #6b7280; margin-top: 4px; }
         .usuario .msg-hora { text-align: right; }
 
-        /* SUGERENCIAS */
         .sugerencias {
             display: flex;
             gap: 8px;
@@ -285,7 +393,6 @@
             color: white;
         }
 
-        /* INPUT */
         .chat-input-area {
             display: flex;
             gap: 12px;
@@ -317,8 +424,7 @@
             background: linear-gradient(135deg, #c026d3, #a855f7);
             border: none;
             border-radius: 10px;
-            width: 40px;
-            height: 40px;
+            width: 40px; height: 40px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -328,12 +434,8 @@
             font-size: 16px;
         }
 
-        .btn-enviar:hover {
-            transform: scale(1.1);
-            box-shadow: 0 5px 15px rgba(192, 38, 211, 0.4);
-        }
+        .btn-enviar:hover { transform: scale(1.1); box-shadow: 0 5px 15px rgba(192, 38, 211, 0.4); }
 
-        /* TYPING */
         .typing {
             display: flex;
             gap: 4px;
@@ -346,8 +448,7 @@
         }
 
         .typing span {
-            width: 8px;
-            height: 8px;
+            width: 8px; height: 8px;
             background: #a855f7;
             border-radius: 50%;
             animation: typing 1.2s infinite;
@@ -360,36 +461,35 @@
             0%, 100% { transform: translateY(0); opacity: 0.4; }
             50% { transform: translateY(-6px); opacity: 1; }
         }
+
+        .sin-chat {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #6b7280;
+            text-align: center;
+        }
+
+        .sin-chat i { font-size: 60px; margin-bottom: 20px; opacity: 0.3; }
+        .sin-chat p { font-size: 16px; margin-bottom: 20px; }
     </style>
 </head>
 <body>
 
-    <!-- SIDEBAR -->
+    <!-- SIDEBAR NAVEGACIÓN -->
     <div class="sidebar">
         <div class="sidebar-logo">
-            <img src="../../images/logo.png" alt="FinanBot"
-                 onerror="this.style.display='none'">
+            <img src="../../images/logo.png" alt="FinanBot" onerror="this.style.display='none'">
             <span>FinanBot</span>
         </div>
-        <a href="dashboard.html" class="nav-item">
-            <i class="fas fa-home"></i> Dashboard
-        </a>
-        <a href="chat.html" class="nav-item active">
-            <i class="fas fa-robot"></i> Chat FinanBot
-        </a>
-        <a href="finanzas.html" class="nav-item">
-            <i class="fas fa-wallet"></i> Mis Finanzas
-        </a>
-        <a href="recomendaciones.html" class="nav-item">
-    <i class="fas fa-lightbulb"></i> Recomendaciones
-</a>
-        </a>
-        <a href="simulador.html" class="nav-item">
-            <i class="fas fa-chart-line"></i> Simulador
-        </a>
-        <a href="perfil.html" class="nav-item">
-            <i class="fas fa-user-circle"></i> Mi Perfil
-        </a>
+        <a href="dashboard.html" class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
+        <a href="chat.html" class="nav-item active"><i class="fas fa-robot"></i> Chat FinanBot</a>
+        <a href="finanzas.html" class="nav-item"><i class="fas fa-wallet"></i> Mis Finanzas</a>
+        <a href="recomendaciones.html" class="nav-item"><i class="fas fa-lightbulb"></i> Recomendaciones</a>
+        <a href="simulador.html" class="nav-item"><i class="fas fa-chart-line"></i> Simulador</a>
+        <a href="perfil.html" class="nav-item"><i class="fas fa-user-circle"></i> Mi Perfil</a>
         <div class="sidebar-bottom">
             <a href="../index.html" class="btn-cerrar" onclick="cerrarSesion()">
                 <i class="fas fa-sign-out-alt"></i> Cerrar sesión
@@ -397,255 +497,354 @@
         </div>
     </div>
 
-    <!-- MAIN -->
+    <!-- PANEL CONVERSACIONES -->
+    <div class="panel-conversaciones">
+        <div class="panel-header">
+            <div class="panel-titulo">💬 Conversaciones</div>
+            <button class="btn-nueva-conv" onclick="nuevaConversacion()">
+                <i class="fas fa-plus me-2"></i> Nueva conversación
+            </button>
+        </div>
+        <div class="lista-conversaciones" id="listaConversaciones">
+            <div class="sin-conversaciones">
+                <i class="fas fa-comments" style="font-size:30px; opacity:0.3; display:block; margin-bottom:10px"></i>
+                No hay conversaciones aún
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN CHAT -->
     <div class="main">
         <div class="chat-header">
-            <img src="../../images/logo.png" alt="FinanBot" class="bot-avatar"
-                 onerror="this.style.display='none'">
-            <div class="chat-header-info">
-                <h2>FinanBot</h2>
-                <p><span class="status-dot"></span>En línea · Asistente Financiero Inteligente</p>
+            <div class="chat-header-left">
+                <img src="../../images/logo.png" alt="FinanBot" class="bot-avatar"
+                     onerror="this.style.display='none'">
+                <div class="chat-header-info">
+                    <h2>FinanBot</h2>
+                    <p><span class="status-dot"></span>En línea · Asistente Financiero Inteligente</p>
+                </div>
+            </div>
+            <div class="conv-titulo-actual" id="convTituloActual">
+                Selecciona o crea una conversación
             </div>
         </div>
 
         <div class="banner-invitado" id="bannerInvitado">
             <i class="fas fa-info-circle me-2"></i>
-            Estás en modo invitado. <a href="registro.html" style="color:#fbbf24; font-weight:600;">Regístrate gratis</a> para guardar tu historial y acceder a todas las funciones.
+            Estás en modo invitado. <a href="registro.html" style="color:#fbbf24; font-weight:600;">Regístrate gratis</a> para guardar tu historial.
         </div>
 
-        <div class="chat-box" id="chatBox">
-            <!-- Mensaje de bienvenida -->
-            <div class="mensaje bot">
-                <div class="msg-avatar bot">
-                    <img src="../../images/logo.png" alt="Bot"
-                         onerror="this.parentElement.textContent='🤖'">
-                </div>
-                <div class="msg-contenido">
-                    <div class="msg-burbuja">
-                        👋 ¡Hola! Soy <strong>FinanBot</strong>, tu asistente financiero inteligente.<br><br>
-                        Puedo ayudarte con:<br>
-                        💰 Consejos de ahorro<br>
-                        📊 Análisis de gastos<br>
-                        📈 Información sobre inversiones<br>
-                        🎯 Cómo alcanzar tus metas financieras<br><br>
-                        ¿En qué te puedo ayudar hoy?
-                    </div>
-                    <div class="msg-hora">Ahora</div>
-                </div>
+        <!-- SIN CONVERSACIÓN SELECCIONADA -->
+        <div class="sin-chat" id="sinChat">
+            <i class="fas fa-robot"></i>
+            <p>Crea una nueva conversación<br>para empezar a hablar con FinanBot</p>
+            <button class="btn-nueva-conv" style="width:auto; padding:12px 30px;" onclick="nuevaConversacion()">
+                <i class="fas fa-plus me-2"></i> Nueva conversación
+            </button>
+        </div>
+
+        <!-- CHAT ACTIVO -->
+        <div id="chatActivo" style="display:none; flex-direction:column; flex:1; overflow:hidden;">
+            <div class="chat-box" id="chatBox"></div>
+
+            <div class="sugerencias" id="sugerencias">
+                <button class="sugerencia-btn" onclick="enviarSugerencia('¿Cómo puedo ahorrar más dinero?')">💰 ¿Cómo ahorrar más?</button>
+                <button class="sugerencia-btn" onclick="enviarSugerencia('¿Qué es una inversión?')">📈 ¿Qué es invertir?</button>
+                <button class="sugerencia-btn" onclick="enviarSugerencia('Muéstrame mis finanzas')">📊 Mis finanzas</button>
+                <button class="sugerencia-btn" onclick="enviarSugerencia('¿Cómo salir de deudas?')">💳 Salir de deudas</button>
             </div>
-        </div>
 
-        <!-- SUGERENCIAS -->
-        <div class="sugerencias">
-            <button class="sugerencia-btn" onclick="enviarSugerencia('¿Cómo puedo ahorrar más dinero?')">
-                💰 ¿Cómo ahorrar más?
-            </button>
-            <button class="sugerencia-btn" onclick="enviarSugerencia('¿Qué es una inversión?')">
-                📈 ¿Qué es invertir?
-            </button>
-            <button class="sugerencia-btn" onclick="enviarSugerencia('¿Cómo controlar mis gastos?')">
-                📊 Controlar gastos
-            </button>
-            <button class="sugerencia-btn" onclick="enviarSugerencia('¿Qué es el presupuesto 50/30/20?')">
-                🎯 Regla 50/30/20
-            </button>
-            <button class="sugerencia-btn" onclick="enviarSugerencia('¿Cómo salir de deudas?')">
-                💳 Salir de deudas
-            </button>
-        </div>
-
-        <!-- INPUT -->
-        <div class="chat-input-area">
-            <input type="text" class="chat-input" id="inputMensaje"
-                   placeholder="Escribe tu pregunta financiera..."
-                   onkeypress="if(event.key==='Enter') enviarMensaje()">
-            <button class="btn-enviar" onclick="enviarMensaje()">
-                <i class="fas fa-paper-plane"></i>
-            </button>
+            <div class="chat-input-area">
+                <input type="text" class="chat-input" id="inputMensaje"
+                       placeholder="Escribe tu pregunta financiera..."
+                       onkeypress="if(event.key==='Enter') enviarMensaje()">
+                <button class="btn-enviar" onclick="enviarMensaje()">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
         </div>
     </div>
 
     <script>
-    const urlParams = new URLSearchParams(window.location.search);
-    const esInvitado = urlParams.get('invitado') === 'true';
-    if (esInvitado) {
-        document.getElementById('bannerInvitado').style.display = 'block';
-    }
+        const urlParams = new URLSearchParams(window.location.search);
+        const esInvitado = urlParams.get('invitado') === 'true';
+        if (esInvitado) document.getElementById('bannerInvitado').style.display = 'block';
 
-    const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
-    const token = localStorage.getItem('token');
+        const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
+        const token = localStorage.getItem('token');
+        let convActualId = null;
 
-    function obtenerHora() {
-        return new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
-    }
+        function obtenerHora() {
+            return new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+        }
 
-    function formatearTexto(texto) {
-        return texto
-            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-            .replace(/\n/g, '<br>');
-    }
+        function formatearTexto(texto) {
+            return texto
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\n/g, '<br>');
+        }
 
-    function agregarMensaje(texto, tipo, acciones = [], hora = null) {
-        const chatBox = document.getElementById('chatBox');
-        const inicial = usuario.nombre ? usuario.nombre.charAt(0).toUpperCase() : 'U';
-        const horaTexto = hora || obtenerHora();
+        function agregarMensaje(texto, tipo, acciones = [], hora = null) {
+            const chatBox = document.getElementById('chatBox');
+            const inicial = usuario.nombre ? usuario.nombre.charAt(0).toUpperCase() : 'U';
+            const horaTexto = hora || obtenerHora();
 
-        const div = document.createElement('div');
-        div.className = `mensaje ${tipo}`;
+            const div = document.createElement('div');
+            div.className = `mensaje ${tipo}`;
 
-        const accionesHTML = acciones.length > 0 ? `
-            <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:12px;">
-                ${acciones.map(a => `
-                    <a href="${a.link}" style="
-                        background: rgba(168,85,247,0.15);
-                        border: 1px solid rgba(168,85,247,0.4);
-                        color: #c4b5fd;
-                        border-radius: 8px;
-                        padding: 6px 14px;
-                        font-size: 12px;
-                        text-decoration: none;
-                        display: inline-block;
-                        transition: all 0.3s;
-                    " onmouseover="this.style.background='rgba(168,85,247,0.3)'"
-                      onmouseout="this.style.background='rgba(168,85,247,0.15)'">${a.texto}</a>
-                `).join('')}
-            </div>
-        ` : '';
+            const accionesHTML = acciones.length > 0 ? `
+                <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:12px;">
+                    ${acciones.map(a => `
+                        <a href="${a.link}" style="
+                            background: rgba(168,85,247,0.15);
+                            border: 1px solid rgba(168,85,247,0.4);
+                            color: #c4b5fd;
+                            border-radius: 8px;
+                            padding: 6px 14px;
+                            font-size: 12px;
+                            text-decoration: none;
+                            display: inline-block;
+                        " onmouseover="this.style.background='rgba(168,85,247,0.3)'"
+                          onmouseout="this.style.background='rgba(168,85,247,0.15)'">${a.texto}</a>
+                    `).join('')}
+                </div>
+            ` : '';
 
-        if (tipo === 'usuario') {
-            div.innerHTML = `
-                <div class="msg-avatar user">${inicial}</div>
-                <div class="msg-contenido">
-                    <div class="msg-burbuja">${texto}</div>
-                    <div class="msg-hora">${horaTexto}</div>
-                </div>`;
-        } else {
+            if (tipo === 'usuario') {
+                div.innerHTML = `
+                    <div class="msg-avatar user">${inicial}</div>
+                    <div class="msg-contenido">
+                        <div class="msg-burbuja">${texto}</div>
+                        <div class="msg-hora">${horaTexto}</div>
+                    </div>`;
+            } else {
+                div.innerHTML = `
+                    <div class="msg-avatar bot">
+                        <img src="../../images/logo.png" alt="Bot" onerror="this.parentElement.textContent='🤖'">
+                    </div>
+                    <div class="msg-contenido">
+                        <div class="msg-burbuja">${formatearTexto(texto)}${accionesHTML}</div>
+                        <div class="msg-hora">${horaTexto}</div>
+                    </div>`;
+            }
+
+            chatBox.appendChild(div);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function mostrarTyping() {
+            const chatBox = document.getElementById('chatBox');
+            const div = document.createElement('div');
+            div.className = 'mensaje bot';
+            div.id = 'typing';
             div.innerHTML = `
                 <div class="msg-avatar bot">
-                    <img src="../../images/logo.png" alt="Bot"
-                         onerror="this.parentElement.textContent='🤖'">
+                    <img src="../../images/logo.png" alt="Bot" onerror="this.parentElement.textContent='🤖'">
                 </div>
                 <div class="msg-contenido">
-                    <div class="msg-burbuja">${formatearTexto(texto)}${accionesHTML}</div>
-                    <div class="msg-hora">${horaTexto}</div>
+                    <div class="typing"><span></span><span></span><span></span></div>
                 </div>`;
+            chatBox.appendChild(div);
+            chatBox.scrollTop = chatBox.scrollHeight;
         }
 
-        chatBox.appendChild(div);
-        chatBox.scrollTop = chatBox.scrollHeight;
-    }
+        function quitarTyping() {
+            const typing = document.getElementById('typing');
+            if (typing) typing.remove();
+        }
 
-    function mostrarTyping() {
-        const chatBox = document.getElementById('chatBox');
-        const div = document.createElement('div');
-        div.className = 'mensaje bot';
-        div.id = 'typing';
-        div.innerHTML = `
-            <div class="msg-avatar bot">
-                <img src="../../images/logo.png" alt="Bot"
-                     onerror="this.parentElement.textContent='🤖'">
-            </div>
-            <div class="msg-contenido">
-                <div class="typing">
-                    <span></span><span></span><span></span>
-                </div>
-            </div>`;
-        chatBox.appendChild(div);
-        chatBox.scrollTop = chatBox.scrollHeight;
-    }
-
-    function quitarTyping() {
-        const typing = document.getElementById('typing');
-        if (typing) typing.remove();
-    }
-
-    async function cargarHistorial() {
-        if (!token || esInvitado) return;
-        try {
-            const response = await fetch('http://127.0.0.1:5000/api/chat-historial/', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (response.ok) {
-                const historial = await response.json();
-                if (historial.length > 0) {
-                    // Limpiar mensaje de bienvenida
-                    document.getElementById('chatBox').innerHTML = '';
-                    historial.forEach(chat => {
-                        agregarMensaje(chat.mensaje, 'usuario', [], chat.fecha);
-                        agregarMensaje(chat.respuesta, 'bot', [], chat.fecha);
-                    });
+        async function cargarConversaciones() {
+            if (!token || esInvitado) return;
+            try {
+                const response = await fetch('http://127.0.0.1:5000/api/chat-historial/conversaciones', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (response.ok) {
+                    const conversaciones = await response.json();
+                    renderConversaciones(conversaciones);
                 }
-            }
-        } catch (error) {
-            console.error('Error cargando historial:', error);
+            } catch (error) { console.error('Error:', error); }
         }
-    }
 
-    async function guardarEnHistorial(mensaje, respuesta) {
-        if (!token || esInvitado) return;
-        try {
-            await fetch('http://127.0.0.1:5000/api/chat-historial/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ mensaje, respuesta })
-            });
-        } catch (error) {
-            console.error('Error guardando historial:', error);
-        }
-    }
+        function renderConversaciones(conversaciones) {
+            const lista = document.getElementById('listaConversaciones');
 
-    async function enviarMensaje() {
-        const input = document.getElementById('inputMensaje');
-        const mensaje = input.value.trim();
-        if (!mensaje) return;
-
-        input.value = '';
-        agregarMensaje(mensaje, 'usuario');
-        mostrarTyping();
-
-        try {
-            const headers = { 'Content-Type': 'application/json' };
-            if (token) headers['Authorization'] = `Bearer ${token}`;
-
-            const response = await fetch('http://127.0.0.1:5000/api/chat/mensaje', {
-                method: 'POST',
-                headers: headers,
-                body: JSON.stringify({ mensaje })
-            });
-
-            const data = await response.json();
-            quitarTyping();
-
-            if (response.ok) {
-                agregarMensaje(data.respuesta, 'bot', data.acciones || []);
-                // Guardar en MySQL
-                await guardarEnHistorial(mensaje, data.respuesta);
-            } else {
-                agregarMensaje('❌ Hubo un error. Intenta de nuevo.', 'bot', []);
+            if (conversaciones.length === 0) {
+                lista.innerHTML = `
+                    <div class="sin-conversaciones">
+                        <i class="fas fa-comments" style="font-size:30px; opacity:0.3; display:block; margin-bottom:10px"></i>
+                        No hay conversaciones aún
+                    </div>`;
+                return;
             }
 
-        } catch (error) {
-            quitarTyping();
-            agregarMensaje('⚠️ No se pudo conectar con el servidor.', 'bot', []);
+            // Agrupar por fecha
+            const hoy = new Date().toLocaleDateString('es-CO');
+            const ayer = new Date(Date.now() - 86400000).toLocaleDateString('es-CO');
+
+            lista.innerHTML = conversaciones.map(c => `
+                <div class="conv-item ${convActualId === c.id ? 'activa' : ''}"
+                     onclick="seleccionarConversacion(${c.id}, '${c.titulo.replace(/'/g, "\\'")}')">
+                    <button class="btn-eliminar-conv" onclick="event.stopPropagation(); eliminarConversacion(${c.id})">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                    <div class="conv-titulo">${c.titulo}</div>
+                    <div class="conv-fecha">${c.fecha}</div>
+                    ${c.ultimo_mensaje ? `<div class="conv-ultimo">${c.ultimo_mensaje}</div>` : ''}
+                </div>
+            `).join('');
         }
-    }
 
-    function enviarSugerencia(texto) {
-        document.getElementById('inputMensaje').value = texto;
-        enviarMensaje();
-    }
+        async function nuevaConversacion() {
+            if (!token) {
+                seleccionarModoInvitado();
+                return;
+            }
+            try {
+                const response = await fetch('http://127.0.0.1:5000/api/chat-historial/conversaciones', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ titulo: 'Nueva conversación' })
+                });
+                if (response.ok) {
+                    const conv = await response.json();
+                    convActualId = conv.id;
+                    document.getElementById('chatBox').innerHTML = '';
+                    document.getElementById('sinChat').style.display = 'none';
+                    document.getElementById('chatActivo').style.display = 'flex';
+                    document.getElementById('convTituloActual').textContent = '💬 Nueva conversación';
+                    await cargarConversaciones();
 
-    function cerrarSesion() {
-        localStorage.removeItem('token');
-        localStorage.removeItem('usuario');
-    }
+                    // Mensaje de bienvenida
+                    agregarMensaje(`👋 ¡Hola${usuario.nombre ? ', ' + usuario.nombre : ''}! Soy **FinanBot**.\n\n¿En qué te puedo ayudar hoy?\n\n💰 Ahorro · 📈 Inversiones · 📊 Gastos · 💳 Deudas`, 'bot');
+                }
+            } catch (error) { console.error('Error:', error); }
+        }
 
-    // Cargar historial al abrir el chat
-    cargarHistorial();
-</script>
+        async function seleccionarConversacion(id, titulo) {
+            convActualId = id;
+            document.getElementById('sinChat').style.display = 'none';
+            document.getElementById('chatActivo').style.display = 'flex';
+            document.getElementById('convTituloActual').textContent = `💬 ${titulo}`;
+            document.getElementById('chatBox').innerHTML = '';
+
+            // Marcar activa
+            document.querySelectorAll('.conv-item').forEach(el => el.classList.remove('activa'));
+            event.currentTarget.classList.add('activa');
+
+            // Cargar mensajes
+            try {
+                const response = await fetch(`http://127.0.0.1:5000/api/chat-historial/mensajes/${id}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (response.ok) {
+                    const mensajes = await response.json();
+                    if (mensajes.length === 0) {
+                        agregarMensaje(`👋 ¡Hola${usuario.nombre ? ', ' + usuario.nombre : ''}! Soy **FinanBot**.\n\n¿En qué te puedo ayudar hoy?`, 'bot');
+                    } else {
+                        mensajes.forEach(m => {
+                            agregarMensaje(m.mensaje, 'usuario', [], m.hora);
+                            agregarMensaje(m.respuesta, 'bot', [], m.hora);
+                        });
+                    }
+                }
+            } catch (error) { console.error('Error:', error); }
+        }
+
+        async function eliminarConversacion(id) {
+            if (!confirm('¿Eliminar esta conversación?')) return;
+            try {
+                const response = await fetch(`http://127.0.0.1:5000/api/chat-historial/conversaciones/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (response.ok) {
+                    if (convActualId === id) {
+                        convActualId = null;
+                        document.getElementById('sinChat').style.display = 'flex';
+                        document.getElementById('chatActivo').style.display = 'none';
+                        document.getElementById('convTituloActual').textContent = 'Selecciona o crea una conversación';
+                    }
+                    await cargarConversaciones();
+                }
+            } catch (error) { console.error('Error:', error); }
+        }
+
+        async function enviarMensaje() {
+            const input = document.getElementById('inputMensaje');
+            const mensaje = input.value.trim();
+            if (!mensaje || !convActualId) return;
+
+            input.value = '';
+            document.getElementById('sugerencias').style.display = 'none';
+            agregarMensaje(mensaje, 'usuario');
+            mostrarTyping();
+
+            try {
+                const headers = { 'Content-Type': 'application/json' };
+                if (token) headers['Authorization'] = `Bearer ${token}`;
+
+                const response = await fetch('http://127.0.0.1:5000/api/chat/mensaje', {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify({ mensaje })
+                });
+
+                const data = await response.json();
+                quitarTyping();
+
+                if (response.ok) {
+                    agregarMensaje(data.respuesta, 'bot', data.acciones || []);
+
+                    // Guardar en MySQL
+                    if (token) {
+                        await fetch(`http://127.0.0.1:5000/api/chat-historial/mensajes/${convActualId}`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${token}`
+                            },
+                            body: JSON.stringify({ mensaje, respuesta: data.respuesta })
+                        });
+                        await cargarConversaciones();
+                    }
+                } else {
+                    agregarMensaje('❌ Hubo un error. Intenta de nuevo.', 'bot', []);
+                }
+            } catch (error) {
+                quitarTyping();
+                agregarMensaje('⚠️ No se pudo conectar con el servidor.', 'bot', []);
+            }
+        }
+
+        function seleccionarModoInvitado() {
+            document.getElementById('sinChat').style.display = 'none';
+            document.getElementById('chatActivo').style.display = 'flex';
+            document.getElementById('convTituloActual').textContent = '💬 Modo invitado';
+            agregarMensaje('👋 ¡Hola! Soy **FinanBot**.\n\nEstás en modo invitado. El historial no se guardará.\n\n¿En qué te puedo ayudar?', 'bot');
+        }
+
+        function enviarSugerencia(texto) {
+            document.getElementById('inputMensaje').value = texto;
+            enviarMensaje();
+        }
+
+        function cerrarSesion() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('usuario');
+        }
+
+        // Inicializar
+        if (esInvitado) {
+            seleccionarModoInvitado();
+        } else {
+            cargarConversaciones();
+        }
+    </script>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
