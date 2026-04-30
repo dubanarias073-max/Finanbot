@@ -1,17 +1,11 @@
--- ============================================
--- FINANBOT - Base de Datos
--- Gestor: MySQL Workbench
--- ============================================
-
-CREATE DATABASE IF NOT EXISTS finanbot_db
+-- Crear nueva
+CREATE DATABASE finanbot_db
 CHARACTER SET utf8mb4
 COLLATE utf8mb4_unicode_ci;
 
 USE finanbot_db;
 
--- ============================================
 -- TABLA: usuarios
--- ============================================
 CREATE TABLE usuarios (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL,
@@ -22,9 +16,7 @@ CREATE TABLE usuarios (
     fecha_registro DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- ============================================
 -- TABLA: categorias
--- ============================================
 CREATE TABLE categorias (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(80) NOT NULL,
@@ -47,9 +39,7 @@ INSERT INTO categorias (nombre, tipo, icono) VALUES
 ('Freelance', 'ingreso', '💻'),
 ('Otros ingresos', 'ingreso', '💰');
 
--- ============================================
 -- TABLA: transacciones
--- ============================================
 CREATE TABLE transacciones (
     id INT AUTO_INCREMENT PRIMARY KEY,
     usuario_id INT NOT NULL,
@@ -63,9 +53,7 @@ CREATE TABLE transacciones (
     FOREIGN KEY (categoria_id) REFERENCES categorias(id)
 );
 
--- ============================================
 -- TABLA: metas_ahorro
--- ============================================
 CREATE TABLE metas_ahorro (
     id INT AUTO_INCREMENT PRIMARY KEY,
     usuario_id INT NOT NULL,
@@ -78,9 +66,7 @@ CREATE TABLE metas_ahorro (
     FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
 );
 
--- ============================================
 -- TABLA: simulaciones
--- ============================================
 CREATE TABLE simulaciones (
     id INT AUTO_INCREMENT PRIMARY KEY,
     usuario_id INT NOT NULL,
@@ -92,16 +78,29 @@ CREATE TABLE simulaciones (
     FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
 );
 
--- ============================================
+-- TABLA: conversaciones
+CREATE TABLE conversaciones (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    usuario_id INT NOT NULL,
+    titulo VARCHAR(100) NOT NULL DEFAULT 'Nueva conversación',
+    fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP,
+    fecha_actualizacion DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+);
+
 -- TABLA: chats
--- ============================================
 CREATE TABLE chats (
     id INT AUTO_INCREMENT PRIMARY KEY,
     usuario_id INT,
+    conversacion_id INT,
     mensaje TEXT NOT NULL,
     respuesta TEXT NOT NULL,
     es_invitado BOOLEAN DEFAULT FALSE,
     fecha DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE SET NULL
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE SET NULL,
+    FOREIGN KEY (conversacion_id) REFERENCES conversaciones(id) ON DELETE SET NULL
 );
+
+ALTER TABLE usuarios 
+ADD COLUMN onboarding_completado BOOLEAN DEFAULT FALSE;
 

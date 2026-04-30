@@ -271,21 +271,26 @@
 
                 const data = await response.json();
 
-                if (response.ok) {
-                    // Guardar token y datos del usuario
-                    localStorage.setItem('token', data.token);
-                    localStorage.setItem('usuario', JSON.stringify(data.usuario));
-                    
-                    mostrarExito('¡Bienvenido ' + data.usuario.nombre + '! Redirigiendo...');
+ if (response.ok) {
+    localStorage.setItem('token', data.token);
+    localStorage.setItem('usuario', JSON.stringify(data.usuario));
 
-setTimeout(() => {
-    const onboardingCompletado = localStorage.getItem('onboarding_completado');
-    if (onboardingCompletado === 'true') {
-        window.location.href = 'dashboard.html';
-    } else {
-        window.location.href = 'onboarding.html';
-    }
-}, 1500);
+    mostrarExito('¡Bienvenido ' + data.usuario.nombre + '! Redirigiendo...');
+
+    setTimeout(async () => {
+        // Verificar onboarding en MySQL
+        const resPerfil = await fetch('http://127.0.0.1:5000/api/perfil/', {
+            headers: { 'Authorization': `Bearer ${data.token}` }
+        });
+        const perfil = await resPerfil.json();
+
+        if (perfil.onboarding_completado) {
+            window.location.href = 'dashboard.html';
+        } else {
+            window.location.href = 'onboarding.html';
+        }
+    }, 1500);
+
                 } else {
                     mostrarError(data.mensaje || 'Correo o contraseña incorrectos.');
                 }

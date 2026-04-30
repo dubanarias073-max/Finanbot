@@ -5,6 +5,7 @@ from extensions import db
 class Usuario(db.Model):
     __tablename__ = 'usuarios'
     id = db.Column(db.Integer, primary_key=True)
+    onboarding_completado = db.Column(db.Boolean, default=False)
     nombre = db.Column(db.String(100), nullable=False)
     correo = db.Column(db.String(150), nullable=False, unique=True)
     contrasena_hash = db.Column(db.String(255), nullable=False)
