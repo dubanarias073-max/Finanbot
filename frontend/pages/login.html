@@ -196,6 +196,125 @@
     </style>
 </head>
 <body>
+    <!-- MODAL OLVIDÉ CONTRASEÑA -->
+<div id="modalOlvide" style="
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.7);
+    z-index: 999;
+    align-items: center;
+    justify-content: center;
+">
+    <div style="
+        background: #1a1a4e;
+        border: 1px solid rgba(168, 85, 247, 0.3);
+        border-radius: 20px;
+        padding: 30px;
+        width: 100%;
+        max-width: 400px;
+        position: relative;
+    ">
+        <button onclick="cerrarModal()" style="
+            position: absolute;
+            top: 15px; right: 20px;
+            background: none;
+            border: none;
+            color: #9ca3af;
+            font-size: 20px;
+            cursor: pointer;
+        ">✕</button>
+
+        <h3 style="color:#c4b5fd; font-size:18px; font-weight:700; margin-bottom:5px;">
+            🔑 Restablecer contraseña
+        </h3>
+        <p style="color:#9ca3af; font-size:13px; margin-bottom:20px;">
+            Ingresa tu correo y tu nueva contraseña
+        </p>
+
+        <div id="alertaResetError" style="
+            background: rgba(239,68,68,0.1);
+            border: 1px solid rgba(239,68,68,0.3);
+            color: #fca5a5;
+            border-radius: 10px;
+            padding: 10px 15px;
+            font-size: 13px;
+            margin-bottom: 15px;
+            display: none;
+        "></div>
+
+        <div id="alertaResetExito" style="
+            background: rgba(34,197,94,0.1);
+            border: 1px solid rgba(34,197,94,0.3);
+            color: #86efac;
+            border-radius: 10px;
+            padding: 10px 15px;
+            font-size: 13px;
+            margin-bottom: 15px;
+            display: none;
+        "></div>
+
+        <label style="color:#c4b5fd; font-size:13px; display:block; margin-bottom:6px;">
+            Correo electrónico
+        </label>
+        <input type="email" id="resetCorreo" placeholder="tu@correo.com" style="
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(168,85,247,0.3);
+            border-radius: 12px;
+            color: white;
+            padding: 11px 15px;
+            font-size: 14px;
+            width: 100%;
+            margin-bottom: 15px;
+            outline: none;
+        ">
+
+        <label style="color:#c4b5fd; font-size:13px; display:block; margin-bottom:6px;">
+            Nueva contraseña
+        </label>
+        <input type="password" id="resetContrasena" placeholder="Mínimo 6 caracteres" style="
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(168,85,247,0.3);
+            border-radius: 12px;
+            color: white;
+            padding: 11px 15px;
+            font-size: 14px;
+            width: 100%;
+            margin-bottom: 15px;
+            outline: none;
+        ">
+
+        <label style="color:#c4b5fd; font-size:13px; display:block; margin-bottom:6px;">
+            Confirmar nueva contraseña
+        </label>
+        <input type="password" id="resetConfirmar" placeholder="Repite tu contraseña" style="
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(168,85,247,0.3);
+            border-radius: 12px;
+            color: white;
+            padding: 11px 15px;
+            font-size: 14px;
+            width: 100%;
+            margin-bottom: 20px;
+            outline: none;
+        ">
+
+        <button onclick="resetearContrasena()" style="
+            background: linear-gradient(135deg, #c026d3, #a855f7);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 13px;
+            font-size: 15px;
+            font-weight: 600;
+            width: 100%;
+            cursor: pointer;
+        ">
+            <i class="fas fa-key me-2"></i> Cambiar contraseña
+        </button>
+    </div>
+</div>
     <div class="card-login">
         <img src="../../images/logo.png" alt="FinanBot" class="logo-small"
              onerror="this.style.display='none'">
@@ -233,7 +352,11 @@
         <button class="btn-ingresar" id="btnIngresar" onclick="login()">
             <i class="fas fa-sign-in-alt me-2"></i> Ingresar
         </button>
-
+<div style="text-align:left; margin-bottom:20px;">
+    <a href="#" onclick="abrirModal()" style="color:#22d3ee; font-size:13px; text-decoration:none;">
+        ¿Olvidaste tu contraseña?
+    </a>
+</div>
         <div class="link-registro">
             ¿No tienes cuenta? <a href="registro.html">Regístrate gratis</a>
         </div>
@@ -246,6 +369,70 @@
     </div>
 
     <script>
+
+        function abrirModal() {
+    document.getElementById('modalOlvide').style.display = 'flex';
+}
+
+function cerrarModal() {
+    document.getElementById('modalOlvide').style.display = 'none';
+    document.getElementById('resetCorreo').value = '';
+    document.getElementById('resetContrasena').value = '';
+    document.getElementById('resetConfirmar').value = '';
+    document.getElementById('alertaResetError').style.display = 'none';
+    document.getElementById('alertaResetExito').style.display = 'none';
+}
+
+async function resetearContrasena() {
+    const correo = document.getElementById('resetCorreo').value.trim();
+    const contrasena = document.getElementById('resetContrasena').value;
+    const confirmar = document.getElementById('resetConfirmar').value;
+    const errorDiv = document.getElementById('alertaResetError');
+    const exitoDiv = document.getElementById('alertaResetExito');
+
+    errorDiv.style.display = 'none';
+    exitoDiv.style.display = 'none';
+
+    if (!correo || !contrasena || !confirmar) {
+        errorDiv.textContent = 'Todos los campos son obligatorios.';
+        errorDiv.style.display = 'block';
+        return;
+    }
+
+    if (contrasena.length < 6) {
+        errorDiv.textContent = 'La contraseña debe tener mínimo 6 caracteres.';
+        errorDiv.style.display = 'block';
+        return;
+    }
+
+    if (contrasena !== confirmar) {
+        errorDiv.textContent = 'Las contraseñas no coinciden.';
+        errorDiv.style.display = 'block';
+        return;
+    }
+
+    try {
+        const response = await fetch('http://127.0.0.1:5000/api/auth/resetear-contrasena', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ correo, nueva_contrasena: contrasena })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            exitoDiv.textContent = '✅ ' + data.mensaje + ' Ya puedes iniciar sesión.';
+            exitoDiv.style.display = 'block';
+            setTimeout(() => cerrarModal(), 3000);
+        } else {
+            errorDiv.textContent = data.mensaje;
+            errorDiv.style.display = 'block';
+        }
+    } catch (error) {
+        errorDiv.textContent = 'No se pudo conectar con el servidor.';
+        errorDiv.style.display = 'block';
+    }
+}
         async function login() {
             const correo = document.getElementById('correo').value.trim();
             const contrasena = document.getElementById('contrasena').value;

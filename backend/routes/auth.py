@@ -56,3 +56,24 @@ def login():
             'correo': usuario.correo
         }
     }), 200
+@auth.route('/resetear-contrasena', methods=['POST'])
+def resetear_contrasena():
+    data = request.get_json()
+
+    if not data.get('correo') or not data.get('nueva_contrasena'):
+        return jsonify({'mensaje': 'Correo y nueva contraseña son obligatorios'}), 400
+
+    usuario = Usuario.query.filter_by(correo=data['correo']).first()
+    if not usuario:
+        return jsonify({'mensaje': 'No existe una cuenta con ese correo'}), 404
+
+    if len(data['nueva_contrasena']) < 6:
+        return jsonify({'mensaje': 'La contraseña debe tener mínimo 6 caracteres'}), 400
+
+    usuario.contrasena_hash = bcrypt.generate_password_hash(
+        data['nueva_contrasena']
+    ).decode('utf-8')
+
+    db.session.commit()
+
+    return jsonify({'mensaje': '✅ Contraseña actualizada exitosamente'}), 200
