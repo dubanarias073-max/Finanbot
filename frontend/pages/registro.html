@@ -94,12 +94,49 @@
             transition: all 0.3s;
         }
 
+        /* Estilo para el select dropdown */
+        .form-control select {
+            background: rgba(255,255,255,0.05);
+            color: white;
+        }
+
+        .form-control option {
+            background: #1a1a4e;
+            color: white;
+            padding: 12px;
+        }
+
+        .form-control option:hover,
+        .form-control option:focus,
+        .form-control option:checked {
+            background: linear-gradient(135deg, #c026d3, #a855f7) !important;
+            color: white !important;
+        }
+
         .form-control:focus {
             background: rgba(168, 85, 247, 0.08);
             border-color: #a855f7;
             box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.15);
             color: white;
             outline: none;
+        }
+
+        /* Select dropdown enfocado */
+        select.form-control:focus {
+            background: rgba(168, 85, 247, 0.12);
+            border-color: #c026d3;
+            box-shadow: 0 0 0 3px rgba(192, 38, 211, 0.25);
+        }
+
+        /* Flecha personalizada del select */
+        .form-control#pregunta {
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23a855f7' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 15px center;
+            padding-right: 40px;
         }
 
         .form-control::placeholder { color: #6b7280; }
@@ -234,6 +271,31 @@
             </div>
         </div>
 
+        <div class="mb-3">
+            <label class="form-label"><i class="fas fa-shield-alt me-1"></i> Pregunta de seguridad</label>
+            <div class="input-group">
+                <span class="input-group-text"><i class="fas fa-question"></i></span>
+                <select class="form-control" id="pregunta" style="border-left:none; border-radius:0 12px 12px 0;">
+                    <option value="">Selecciona una pregunta...</option>
+                    <option value="¿Cuál es el nombre de tu mascota?">¿Cuál es el nombre de tu mascota?</option>
+                    <option value="¿En qué ciudad naciste?">¿En qué ciudad naciste?</option>
+                    <option value="¿Cuál es el nombre de tu mejor amigo de infancia?">¿Cuál es el nombre de tu mejor amigo de infancia?</option>
+                    <option value="¿Cuál es el nombre de tu colegio?">¿Cuál es el nombre de tu colegio?</option>
+                    <option value="¿Cuál es tu comida favorita?">¿Cuál es tu comida favorita?</option>
+                    <option value="¿Cuál es el apellido de tu madre?">¿Cuál es el apellido de tu madre?</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label"><i class="fas fa-key me-1"></i> Respuesta de seguridad</label>
+            <div class="input-group">
+                <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                <input type="text" class="form-control" id="respuestaSeguridad"
+                       placeholder="Tu respuesta secreta">
+            </div>
+        </div>
+
         <button class="btn-registrar" id="btnRegistrar" onclick="registrar()">
             <i class="fas fa-user-plus me-2"></i> Crear mi cuenta
         </button>
@@ -244,71 +306,78 @@
     </div>
 
     <script>
-        async function registrar() {
-            const nombre = document.getElementById('nombre').value.trim();
-            const correo = document.getElementById('correo').value.trim();
-            const contrasena = document.getElementById('contrasena').value;
-            const confirmar = document.getElementById('confirmar').value;
-            const btn = document.getElementById('btnRegistrar');
+async function registrar() {
+    const nombre = document.getElementById('nombre').value.trim();
+    const correo = document.getElementById('correo').value.trim();
+    const contrasena = document.getElementById('contrasena').value;
+    const confirmar = document.getElementById('confirmar').value;
+    const pregunta = document.getElementById('pregunta').value;
+    const respuestaSeguridad = document.getElementById('respuestaSeguridad').value.trim();
+    const btn = document.getElementById('btnRegistrar');
 
-            // Ocultar alertas
-            document.getElementById('alertaError').style.display = 'none';
-            document.getElementById('alertaExito').style.display = 'none';
+    document.getElementById('alertaError').style.display = 'none';
+    document.getElementById('alertaExito').style.display = 'none';
 
-            // Validaciones
-            if (!nombre || !correo || !contrasena || !confirmar) {
-                mostrarError('Todos los campos son obligatorios.');
-                return;
-            }
+    // Validaciones
+    if (!nombre || !correo || !contrasena || !confirmar || !pregunta || !respuestaSeguridad) {
+        mostrarError('Todos los campos son obligatorios.');
+        return;
+    }
 
-            if (contrasena.length < 6) {
-                mostrarError('La contraseña debe tener mínimo 6 caracteres.');
-                return;
-            }
+    if (contrasena.length < 6) {
+        mostrarError('La contraseña debe tener mínimo 6 caracteres.');
+        return;
+    }
 
-            if (contrasena !== confirmar) {
-                mostrarError('Las contraseñas no coinciden.');
-                return;
-            }
+    if (contrasena !== confirmar) {
+        mostrarError('Las contraseñas no coinciden.');
+        return;
+    }
 
-            // Deshabilitar botón
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Creando cuenta...';
+    // Deshabilitar botón
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Creando cuenta...';
 
-            try {
-                const response = await fetch('http://127.0.0.1:5000/api/auth/registro', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ nombre, correo, contrasena })
-                });
+    try {
+        const response = await fetch('http://127.0.0.1:5000/api/auth/registro', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                nombre,
+                correo,
+                contrasena,
+                pregunta_seguridad: pregunta,
+                respuesta_seguridad: respuestaSeguridad
+            })
+        });
 
-                const data = await response.json();
+        const data = await response.json();
 
-                if (response.ok) {
-                    mostrarExito('¡Cuenta creada exitosamente! Redirigiendo...');
-                    setTimeout(() => {
-                        window.location.href = 'login.html';
-                    }, 2000);
-                } else {
-                    mostrarError(data.mensaje || 'Error al registrar usuario.');
-                }
-            } catch (error) {
-                mostrarError('No se pudo conectar con el servidor. Verifica que Flask esté corriendo.');
-            }
-
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-user-plus me-2"></i> Crear mi cuenta';
+        if (response.ok) {
+            mostrarExito('¡Cuenta creada exitosamente! Redirigiendo...');
+            setTimeout(() => { window.location.href = 'login.html'; }, 2000);
+        } else {
+            mostrarError(data.mensaje || 'Error al registrar usuario.');
         }
+    } catch (error) {
+        mostrarError('No se pudo conectar con el servidor. Verifica que Flask esté corriendo.');
+    }
 
-        function mostrarError(msg) {
-            document.getElementById('mensajeError').textContent = msg;
-            document.getElementById('alertaError').style.display = 'block';
-        }
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-user-plus me-2"></i> Crear mi cuenta';
+}
 
-        function mostrarExito(msg) {
-            document.getElementById('mensajeExito').textContent = msg;
-            document.getElementById('alertaExito').style.display = 'block';
-        }
+function mostrarError(msg) {
+    document.getElementById('mensajeError').textContent = msg;
+    document.getElementById('alertaError').style.display = 'block';
+    document.getElementById('alertaExito').style.display = 'none';
+}
+
+function mostrarExito(msg) {
+    document.getElementById('mensajeExito').textContent = msg;
+    document.getElementById('alertaExito').style.display = 'block';
+    document.getElementById('alertaError').style.display = 'none';
+}
     </script>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

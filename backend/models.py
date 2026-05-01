@@ -5,12 +5,15 @@ from extensions import db
 class Usuario(db.Model):
     __tablename__ = 'usuarios'
     id = db.Column(db.Integer, primary_key=True)
-    onboarding_completado = db.Column(db.Boolean, default=False)
     nombre = db.Column(db.String(100), nullable=False)
     correo = db.Column(db.String(150), nullable=False, unique=True)
     contrasena_hash = db.Column(db.String(255), nullable=False)
     ingreso_mensual = db.Column(db.Numeric(10, 2), default=0.00)
     meta_ahorro = db.Column(db.Numeric(10, 2), default=0.00)
+    foto_perfil = db.Column(db.Text, nullable=True)  # URL base64 de la foto
+    pregunta_seguridad = db.Column(db.String(255), nullable=True)
+    respuesta_seguridad = db.Column(db.String(255), nullable=True)
+    onboarding_completado = db.Column(db.Boolean, default=False)
     fecha_registro = db.Column(db.DateTime, default=datetime.utcnow)
     transacciones = db.relationship('Transaccion', backref='usuario', lazy=True)
     metas = db.relationship('MetaAhorro', backref='usuario', lazy=True)

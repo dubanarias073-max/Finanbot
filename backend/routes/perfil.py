@@ -11,6 +11,7 @@ perfil_bp = Blueprint('perfil', __name__)
 def obtener_perfil():
     usuario_id = int(get_jwt_identity())
     usuario = Usuario.query.get(usuario_id)
+
     if not usuario:
         return jsonify({'mensaje': 'Usuario no encontrado'}), 404
 
@@ -18,10 +19,10 @@ def obtener_perfil():
         'id': usuario.id,
         'nombre': usuario.nombre,
         'correo': usuario.correo,
-        'onboarding_completado': usuario.onboarding_completado,
         'ingreso_mensual': float(usuario.ingreso_mensual or 0),
         'meta_ahorro': float(usuario.meta_ahorro or 0),
-        'fecha_registro': usuario.fecha_registro.strftime('%d/%m/%Y')
+        'fecha_registro': usuario.fecha_registro.strftime('%d/%m/%Y'),
+        'onboarding_completado': usuario.onboarding_completado
     }), 200
 
 
@@ -32,14 +33,8 @@ def actualizar_perfil():
     usuario = Usuario.query.get(usuario_id)
     data = request.get_json()
 
-    
-
     if not usuario:
         return jsonify({'mensaje': 'Usuario no encontrado'}), 404
-    
-    if data.get('onboarding_completado') is not None:
-        usuario.onboarding_completado = data['onboarding_completado']
-    
 
     if data.get('nombre'):
         usuario.nombre = data['nombre']
@@ -55,7 +50,8 @@ def actualizar_perfil():
             data['nueva_contrasena']
         ).decode('utf-8')
 
-    
+    if data.get('onboarding_completado') is not None:
+        usuario.onboarding_completado = data['onboarding_completado']
 
     db.session.commit()
 

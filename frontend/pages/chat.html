@@ -573,6 +573,11 @@
         const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
         const token = localStorage.getItem('token');
         let convActualId = null;
+        
+        // Limitaciones para usuarios invitados
+        const LIMITE_MENSAJES_INVITADO = 5;
+        let mensajesEnviadosInvitado = 0;
+        let sesionInvitadoActiva = false;
 
         function obtenerHora() {
             return new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
@@ -776,12 +781,28 @@
         async function enviarMensaje() {
             const input = document.getElementById('inputMensaje');
             const mensaje = input.value.trim();
-            if (!mensaje || !convActualId) return;
+            if (!mensaje) return;
+
+            // Verificar si es invitado y alcanzó el límite
+            if (sesionInvitadoActiva && mensajesEnviadosInvitado >= LIMITE_MENSAJES_INVITADO) {
+                agregarMensaje('⚠️ **Límite alcanzado** 🎯\n\nHas usado tus **5 mensajes gratis** como invitado.\n\n💡 **Regístrate gratis** para:\n• Chats ilimitados\n• Guardar tu historial\n• Acceder a todas las funciones\n\n<a href="registro.html" style="color:#fbbf24; font-weight:600;">¡Regístrate aquí!</a>', 'bot');
+                return;
+            }
+
+            if (!convActualId && !sesionInvitadoActiva) {
+                alert('Selecciona o crea una conversación primero');
+                return;
+            }
 
             input.value = '';
             document.getElementById('sugerencias').style.display = 'none';
             agregarMensaje(mensaje, 'usuario');
             mostrarTyping();
+
+            // Incrementar contador si es invitado
+            if (sesionInvitadoActiva) {
+                mensajesEnviadosInvitado++;
+            }
 
             try {
                 const headers = { 'Content-Type': 'application/json' };
@@ -799,8 +820,8 @@
                 if (response.ok) {
                     agregarMensaje(data.respuesta, 'bot', data.acciones || []);
 
-                    // Guardar en MySQL
-                    if (token) {
+                    // Guardar en MySQL solo si está autenticado
+                    if (token && convActualId) {
                         await fetch(`http://127.0.0.1:5000/api/chat-historial/mensajes/${convActualId}`, {
                             method: 'POST',
                             headers: {
@@ -810,6 +831,13 @@
                             body: JSON.stringify({ mensaje, respuesta: data.respuesta })
                         });
                         await cargarConversaciones();
+                    }
+                    
+                    // Mostrar aviso cuando queden 2 mensajes
+                    if (sesionInvitadoActiva && (LIMITE_MENSAJES_INVITADO - mensajesEnviadosInvitado) === 2) {
+                        setTimeout(() => {
+                            agregarMensaje('💡 Te quedan **2 mensajes gratis**. ¡Regístrate para continuar sin límites!', 'bot');
+                        }, 1000);
                     }
                 } else {
                     agregarMensaje('❌ Hubo un error. Intenta de nuevo.', 'bot', []);
@@ -821,10 +849,12 @@
         }
 
         function seleccionarModoInvitado() {
+            sesionInvitadoActiva = true;
+            mensajesEnviadosInvitado = 0;
             document.getElementById('sinChat').style.display = 'none';
             document.getElementById('chatActivo').style.display = 'flex';
             document.getElementById('convTituloActual').textContent = '💬 Modo invitado';
-            agregarMensaje('👋 ¡Hola! Soy **FinanBot**.\n\nEstás en modo invitado. El historial no se guardará.\n\n¿En qué te puedo ayudar?', 'bot');
+            agregarMensaje('👋 ¡Hola! Soy **FinanBot**.\n\nEstás en modo invitado. Tienes **5 mensajes gratis** por sesión.\n\n💡 Regístrate para chats ilimitados sin límite.\n\n¿En qué te puedo ayudar?', 'bot');
         }
 
         function enviarSugerencia(texto) {
@@ -839,6 +869,9 @@
 
         // Inicializar
         if (esInvitado) {
+            seleccionarModoInvitado();
+        } else if (!token) {
+            // Sin sesión - iniciar como invitado
             seleccionarModoInvitado();
         } else {
             cargarConversaciones();

@@ -196,7 +196,7 @@
     </style>
 </head>
 <body>
-    <!-- MODAL OLVIDÉ CONTRASEÑA -->
+<!-- MODAL OLVIDÉ CONTRASEÑA -->
 <div id="modalOlvide" style="
     display: none;
     position: fixed;
@@ -219,100 +219,99 @@
         <button onclick="cerrarModal()" style="
             position: absolute;
             top: 15px; right: 20px;
-            background: none;
-            border: none;
-            color: #9ca3af;
-            font-size: 20px;
-            cursor: pointer;
+            background: none; border: none;
+            color: #9ca3af; font-size: 20px; cursor: pointer;
         ">✕</button>
 
         <h3 style="color:#c4b5fd; font-size:18px; font-weight:700; margin-bottom:5px;">
             🔑 Restablecer contraseña
         </h3>
-        <p style="color:#9ca3af; font-size:13px; margin-bottom:20px;">
-            Ingresa tu correo y tu nueva contraseña
-        </p>
 
         <div id="alertaResetError" style="
             background: rgba(239,68,68,0.1);
             border: 1px solid rgba(239,68,68,0.3);
-            color: #fca5a5;
-            border-radius: 10px;
-            padding: 10px 15px;
-            font-size: 13px;
-            margin-bottom: 15px;
-            display: none;
+            color: #fca5a5; border-radius: 10px;
+            padding: 10px 15px; font-size: 13px;
+            margin-bottom: 15px; display: none;
         "></div>
 
         <div id="alertaResetExito" style="
             background: rgba(34,197,94,0.1);
             border: 1px solid rgba(34,197,94,0.3);
-            color: #86efac;
-            border-radius: 10px;
-            padding: 10px 15px;
-            font-size: 13px;
-            margin-bottom: 15px;
-            display: none;
+            color: #86efac; border-radius: 10px;
+            padding: 10px 15px; font-size: 13px;
+            margin-bottom: 15px; display: none;
         "></div>
 
-        <label style="color:#c4b5fd; font-size:13px; display:block; margin-bottom:6px;">
-            Correo electrónico
-        </label>
-        <input type="email" id="resetCorreo" placeholder="tu@correo.com" style="
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(168,85,247,0.3);
-            border-radius: 12px;
-            color: white;
-            padding: 11px 15px;
-            font-size: 14px;
-            width: 100%;
-            margin-bottom: 15px;
-            outline: none;
-        ">
+        <!-- PASO 1: Correo -->
+        <div id="paso1Reset">
+            <p style="color:#9ca3af; font-size:13px; margin-bottom:15px;">
+                Ingresa tu correo para buscar tu cuenta
+            </p>
+            <label style="color:#c4b5fd; font-size:13px; display:block; margin-bottom:6px;">Correo electrónico</label>
+            <input type="email" id="resetCorreo" placeholder="tu@correo.com" style="
+                background: rgba(255,255,255,0.05);
+                border: 1px solid rgba(168,85,247,0.3);
+                border-radius: 12px; color: white;
+                padding: 11px 15px; font-size: 14px;
+                width: 100%; margin-bottom: 15px; outline: none;
+            ">
+            <button onclick="buscarCuenta()" style="
+                background: linear-gradient(135deg, #c026d3, #a855f7);
+                color: white; border: none; border-radius: 12px;
+                padding: 13px; font-size: 15px; font-weight: 600;
+                width: 100%; cursor: pointer;
+            ">Buscar cuenta</button>
+        </div>
 
-        <label style="color:#c4b5fd; font-size:13px; display:block; margin-bottom:6px;">
-            Nueva contraseña
-        </label>
-        <input type="password" id="resetContrasena" placeholder="Mínimo 6 caracteres" style="
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(168,85,247,0.3);
-            border-radius: 12px;
-            color: white;
-            padding: 11px 15px;
-            font-size: 14px;
-            width: 100%;
-            margin-bottom: 15px;
-            outline: none;
-        ">
+        <!-- PASO 2: Pregunta de seguridad -->
+        <div id="paso2Reset" style="display:none;">
+            <p style="color:#9ca3af; font-size:13px; margin-bottom:15px;">
+                Responde tu pregunta de seguridad
+            </p>
+            <div style="
+                background: rgba(168,85,247,0.08);
+                border: 1px solid rgba(168,85,247,0.2);
+                border-radius: 12px; padding: 12px 15px;
+                font-size: 14px; color: #c4b5fd; margin-bottom: 15px;
+            " id="preguntaMostrada"></div>
 
-        <label style="color:#c4b5fd; font-size:13px; display:block; margin-bottom:6px;">
-            Confirmar nueva contraseña
-        </label>
-        <input type="password" id="resetConfirmar" placeholder="Repite tu contraseña" style="
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(168,85,247,0.3);
-            border-radius: 12px;
-            color: white;
-            padding: 11px 15px;
-            font-size: 14px;
-            width: 100%;
-            margin-bottom: 20px;
-            outline: none;
-        ">
+            <label style="color:#c4b5fd; font-size:13px; display:block; margin-bottom:6px;">Tu respuesta</label>
+            <input type="text" id="resetRespuesta" placeholder="Escribe tu respuesta" style="
+                background: rgba(255,255,255,0.05);
+                border: 1px solid rgba(168,85,247,0.3);
+                border-radius: 12px; color: white;
+                padding: 11px 15px; font-size: 14px;
+                width: 100%; margin-bottom: 15px; outline: none;
+            ">
 
-        <button onclick="resetearContrasena()" style="
-            background: linear-gradient(135deg, #c026d3, #a855f7);
-            color: white;
-            border: none;
-            border-radius: 12px;
-            padding: 13px;
-            font-size: 15px;
-            font-weight: 600;
-            width: 100%;
-            cursor: pointer;
-        ">
-            <i class="fas fa-key me-2"></i> Cambiar contraseña
-        </button>
+            <label style="color:#c4b5fd; font-size:13px; display:block; margin-bottom:6px;">Nueva contraseña</label>
+            <input type="password" id="resetContrasena" placeholder="Mínimo 6 caracteres" style="
+                background: rgba(255,255,255,0.05);
+                border: 1px solid rgba(168,85,247,0.3);
+                border-radius: 12px; color: white;
+                padding: 11px 15px; font-size: 14px;
+                width: 100%; margin-bottom: 15px; outline: none;
+            ">
+
+            <label style="color:#c4b5fd; font-size:13px; display:block; margin-bottom:6px;">Confirmar contraseña</label>
+            <input type="password" id="resetConfirmar" placeholder="Repite tu contraseña" style="
+                background: rgba(255,255,255,0.05);
+                border: 1px solid rgba(168,85,247,0.3);
+                border-radius: 12px; color: white;
+                padding: 11px 15px; font-size: 14px;
+                width: 100%; margin-bottom: 20px; outline: none;
+            ">
+
+            <button onclick="resetearContrasena()" style="
+                background: linear-gradient(135deg, #c026d3, #a855f7);
+                color: white; border: none; border-radius: 12px;
+                padding: 13px; font-size: 15px; font-weight: 600;
+                width: 100%; cursor: pointer;
+            ">
+                <i class="fas fa-key me-2"></i> Cambiar contraseña
+            </button>
+        </div>
     </div>
 </div>
     <div class="card-login">
@@ -370,21 +369,59 @@
 
     <script>
 
-        function abrirModal() {
+function abrirModal() {
     document.getElementById('modalOlvide').style.display = 'flex';
 }
 
 function cerrarModal() {
     document.getElementById('modalOlvide').style.display = 'none';
+    document.getElementById('paso1Reset').style.display = 'block';
+    document.getElementById('paso2Reset').style.display = 'none';
     document.getElementById('resetCorreo').value = '';
+    document.getElementById('resetRespuesta').value = '';
     document.getElementById('resetContrasena').value = '';
     document.getElementById('resetConfirmar').value = '';
     document.getElementById('alertaResetError').style.display = 'none';
     document.getElementById('alertaResetExito').style.display = 'none';
 }
 
+async function buscarCuenta() {
+    const correo = document.getElementById('resetCorreo').value.trim();
+    const errorDiv = document.getElementById('alertaResetError');
+    errorDiv.style.display = 'none';
+
+    if (!correo) {
+        errorDiv.textContent = 'Ingresa tu correo.';
+        errorDiv.style.display = 'block';
+        return;
+    }
+
+    try {
+        const response = await fetch('http://127.0.0.1:5000/api/auth/obtener-pregunta', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ correo })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            document.getElementById('preguntaMostrada').textContent = '🔐 ' + data.pregunta;
+            document.getElementById('paso1Reset').style.display = 'none';
+            document.getElementById('paso2Reset').style.display = 'block';
+        } else {
+            errorDiv.textContent = data.mensaje;
+            errorDiv.style.display = 'block';
+        }
+    } catch (error) {
+        errorDiv.textContent = 'No se pudo conectar con el servidor.';
+        errorDiv.style.display = 'block';
+    }
+}
+
 async function resetearContrasena() {
     const correo = document.getElementById('resetCorreo').value.trim();
+    const respuesta = document.getElementById('resetRespuesta').value.trim();
     const contrasena = document.getElementById('resetContrasena').value;
     const confirmar = document.getElementById('resetConfirmar').value;
     const errorDiv = document.getElementById('alertaResetError');
@@ -393,7 +430,7 @@ async function resetearContrasena() {
     errorDiv.style.display = 'none';
     exitoDiv.style.display = 'none';
 
-    if (!correo || !contrasena || !confirmar) {
+    if (!respuesta || !contrasena || !confirmar) {
         errorDiv.textContent = 'Todos los campos son obligatorios.';
         errorDiv.style.display = 'block';
         return;
@@ -415,7 +452,11 @@ async function resetearContrasena() {
         const response = await fetch('http://127.0.0.1:5000/api/auth/resetear-contrasena', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ correo, nueva_contrasena: contrasena })
+            body: JSON.stringify({
+                correo,
+                respuesta,
+                nueva_contrasena: contrasena
+            })
         });
 
         const data = await response.json();
@@ -433,7 +474,8 @@ async function resetearContrasena() {
         errorDiv.style.display = 'block';
     }
 }
-        async function login() {
+
+async function login() {
             const correo = document.getElementById('correo').value.trim();
             const contrasena = document.getElementById('contrasena').value;
             const btn = document.getElementById('btnIngresar');

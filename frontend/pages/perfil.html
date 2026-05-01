@@ -135,7 +135,6 @@
             width: 100px;
             height: 100px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #c026d3, #a855f7, #22d3ee);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -144,6 +143,7 @@
             margin: 0 auto 15px;
             box-shadow: 0 0 30px rgba(168, 85, 247, 0.5);
             color: white;
+            background: linear-gradient(135deg, #c026d3, #a855f7, #22d3ee);
         }
 
         .avatar-nombre { color: #1c9466; font-size: 20px; font-weight: 700; margin-bottom: 5px; }
@@ -482,7 +482,9 @@
             <div>
                 <div class="card" style="margin-bottom:20px">
                     <div class="avatar-section">
-                        <div class="avatar-grande" id="avatarLetra">U</div>
+                        <div class="avatar-grande" id="avatarLetra">
+                            U
+                        </div>
                         <div class="avatar-nombre" id="avatarNombre">Usuario</div>
                         <div class="avatar-correo" id="avatarCorreo">usuario@correo.com</div>
                         <div class="avatar-badge">
@@ -610,6 +612,7 @@
                     document.getElementById('correo').value = usuario.correo;
                     document.getElementById('ingresoMensual').value = usuario.ingreso_mensual || '';
                     document.getElementById('metaAhorro').value = usuario.meta_ahorro || '';
+                    
                     localStorage.setItem('usuario', JSON.stringify(usuario));
                 }
             } catch (error) { console.error('Error:', error); }
@@ -788,7 +791,11 @@ async function eliminarMeta(id) {
             if (!nombre) { alert('El nombre no puede estar vacío.'); return; }
 
             try {
-                const body = { nombre, ingreso_mensual: ingresoMensual, meta_ahorro: metaAhorro };
+                const body = { 
+                    nombre, 
+                    ingreso_mensual: ingresoMensual, 
+                    meta_ahorro: metaAhorro 
+                };
                 if (nuevaContrasena) body.nueva_contrasena = nuevaContrasena;
 
                 const response = await fetch('http://127.0.0.1:5000/api/perfil/', {
@@ -815,6 +822,9 @@ async function eliminarMeta(id) {
                 }
             } catch (error) { alert('No se pudo conectar con el servidor.'); }
         }
+
+        // Preview de foto de perfil (deshabilitado)
+        // function previewFoto() { ... }
 
         function abrirModal() { document.getElementById('modalMeta').classList.add('visible'); }
         function cerrarModal() { document.getElementById('modalMeta').classList.remove('visible'); }
