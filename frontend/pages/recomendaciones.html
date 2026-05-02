@@ -106,9 +106,43 @@
         .page-title { font-size: 24px; font-weight: 700; margin-bottom: 5px; }
         .page-subtitle { color: #9ca3af; font-size: 14px; margin-bottom: 30px; }
 
+        .filters-section {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(168, 85, 247, 0.2);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 30px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            color: #c4b5fd;
+            border-radius: 25px;
+            padding: 8px 16px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .filter-btn:hover, .filter-btn.active {
+            background: rgba(168, 85, 247, 0.2);
+            border-color: #a855f7;
+            color: white;
+        }
+
+        .filter-btn.all { background: rgba(168, 85, 247, 0.1); color: #a855f7; }
+
         .rec-grid {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
             gap: 20px;
         }
 
@@ -120,6 +154,27 @@
             transition: all 0.3s;
             position: relative;
             overflow: hidden;
+            animation: fadeInUp 0.6s ease-out forwards;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .rec-card:nth-child(1) { animation-delay: 0.1s; }
+        .rec-card:nth-child(2) { animation-delay: 0.2s; }
+        .rec-card:nth-child(3) { animation-delay: 0.3s; }
+        .rec-card:nth-child(4) { animation-delay: 0.4s; }
+        .rec-card:nth-child(5) { animation-delay: 0.5s; }
+        .rec-card:nth-child(6) { animation-delay: 0.6s; }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .rec-card::before {
@@ -127,6 +182,7 @@
             position: absolute;
             top: 0; left: 0;
             width: 100%; height: 4px;
+            transition: all 0.3s;
         }
 
         .rec-card.alerta::before { background: linear-gradient(90deg, #ef4444, #f87171); }
@@ -135,69 +191,177 @@
         .rec-card.info::before { background: linear-gradient(90deg, #a855f7, #22d3ee); }
 
         .rec-card:hover {
-            transform: translateY(-4px);
-            border-color: rgba(168, 85, 247, 0.3);
+            transform: translateY(-6px);
+            border-color: rgba(168, 85, 247, 0.4);
+            box-shadow: 0 15px 35px rgba(168, 85, 247, 0.2);
         }
 
-        .rec-icono { font-size: 40px; margin-bottom: 15px; }
+        .rec-card:hover::before {
+            height: 6px;
+        }
+
+        .rec-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+
+        .rec-icono {
+            font-size: 40px;
+            margin-bottom: 0;
+            transition: transform 0.3s;
+        }
+
+        .rec-card:hover .rec-icono {
+            transform: scale(1.1);
+        }
+
+        .rec-priority {
+            background: rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 4px 12px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .priority-alta { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+        .priority-media { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+        .priority-baja { background: rgba(74, 222, 128, 0.2); color: #4ade80; }
 
         .rec-titulo {
-            font-size: 17px;
+            font-size: 18px;
             font-weight: 700;
             margin-bottom: 10px;
             color: white;
+            line-height: 1.3;
         }
 
         .rec-descripcion {
             font-size: 14px;
             color: #9ca3af;
             line-height: 1.6;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
         }
 
-        .rec-badge {
-            display: inline-block;
-            border-radius: 50px;
-            padding: 4px 12px;
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 15px;
+        .rec-benefits {
+            margin-bottom: 20px;
         }
 
-        .badge-alerta { background: rgba(239, 68, 68, 0.15); color: #f87171; }
-        .badge-advertencia { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
-        .badge-exito { background: rgba(74, 222, 128, 0.15); color: #4ade80; }
-        .badge-info { background: rgba(168, 85, 247, 0.15); color: #c4b5fd; }
+        .benefit-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: #c4b5fd;
+            margin-bottom: 6px;
+        }
+
+        .benefit-item i {
+            color: #4ade80;
+            font-size: 12px;
+        }
+
+        .rec-progress {
+            margin-bottom: 20px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #a855f7, #22d3ee);
+            border-radius: 3px;
+            width: 0%;
+            transition: width 1s ease-out;
+        }
+
+        .progress-text {
+            font-size: 12px;
+            color: #9ca3af;
+            text-align: center;
+        }
 
         .btn-accion {
-            display: inline-block;
-            background: rgba(168, 85, 247, 0.1);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.1), rgba(34, 211, 238, 0.1));
             border: 1px solid rgba(168, 85, 247, 0.3);
             color: #c4b5fd;
-            border-radius: 8px;
-            padding: 8px 16px;
+            border-radius: 12px;
+            padding: 10px 18px;
             font-size: 13px;
+            font-weight: 600;
             text-decoration: none;
             transition: all 0.3s;
             cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-accion::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(168, 85, 247, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn-accion:hover::before {
+            left: 100%;
         }
 
         .btn-accion:hover {
-            background: rgba(168, 85, 247, 0.2);
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(34, 211, 238, 0.2));
             color: white;
             border-color: #a855f7;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(168, 85, 247, 0.3);
         }
 
         .loading {
             text-align: center;
-            padding: 60px;
+            padding: 80px 40px;
             color: #6b7280;
+            background: rgba(255,255,255,0.02);
+            border-radius: 18px;
+            border: 1px solid rgba(255,255,255,0.05);
         }
 
         .loading i {
-            font-size: 40px;
+            font-size: 48px;
+            margin-bottom: 20px;
+            display: block;
+            animation: pulse 2s infinite;
+        }
+
+        .loading-text {
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        .loading-subtext {
+            font-size: 13px;
+            color: #9ca3af;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .loading {  /* Added missing selector for the orphaned properties */
             margin-bottom: 15px;
             display: block;
             animation: spin 1s linear infinite;
@@ -210,7 +374,7 @@
 
         .resumen-top {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 20px;
             margin-bottom: 30px;
         }
@@ -221,11 +385,119 @@
             padding: 20px;
             text-align: center;
             border: 1px solid rgba(255,255,255,0.08);
+            transition: all 0.3s;
+            animation: fadeInScale 0.6s ease-out forwards;
+            opacity: 0;
+            transform: scale(0.9);
         }
 
-        .resumen-icon { font-size: 30px; margin-bottom: 8px; }
-        .resumen-label { font-size: 12px; color: #9ca3af; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px; }
-        .resumen-valor { font-size: 22px; font-weight: 700; }
+        .resumen-card:nth-child(1) { animation-delay: 0.1s; }
+        .resumen-card:nth-child(2) { animation-delay: 0.2s; }
+        .resumen-card:nth-child(3) { animation-delay: 0.3s; }
+
+        @keyframes fadeInScale {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .resumen-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(168, 85, 247, 0.3);
+            box-shadow: 0 8px 25px rgba(168, 85, 247, 0.1);
+        }
+
+        .resumen-icon {
+            font-size: 32px;
+            margin-bottom: 10px;
+            transition: transform 0.3s;
+        }
+
+        .resumen-card:hover .resumen-icon {
+            transform: scale(1.1);
+        }
+
+        .resumen-label {
+            font-size: 12px;
+            color: #9ca3af;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .resumen-valor {
+            font-size: 24px;
+            font-weight: 700;
+            transition: all 0.3s;
+        }
+
+        .stats-section {
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.05), rgba(34, 211, 238, 0.05));
+            border: 1px solid rgba(168, 85, 247, 0.2);
+            border-radius: 18px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 28px;
+            font-weight: 700;
+            color: #c4b5fd;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #9ca3af;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        @media (max-width: 768px) {
+            .main { margin-left: 0; padding: 20px; }
+            .sidebar { display: none; }
+            .rec-grid { grid-template-columns: 1fr; }
+            .resumen-top { grid-template-columns: 1fr; }
+            .filters-section { flex-direction: column; align-items: stretch; }
+            .filter-btn { justify-content: center; }
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOutRight {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
     </style>
 </head>
 <body>
@@ -252,8 +524,8 @@
 
     <!-- MAIN -->
     <div class="main">
-        <h1 class="page-title">💡 Recomendaciones</h1>
-        <p class="page-subtitle">Consejos personalizados basados en tus finanzas reales</p>
+        <h1 class="page-title">💡 Recomendaciones Inteligentes</h1>
+        <p class="page-subtitle">Consejos personalizados basados en tu comportamiento financiero</p>
 
         <!-- RESUMEN -->
         <div class="resumen-top">
@@ -269,22 +541,69 @@
             </div>
             <div class="resumen-card">
                 <div class="resumen-icon">📊</div>
-                <div class="resumen-label">Balance</div>
+                <div class="resumen-label">Balance actual</div>
                 <div class="resumen-valor" id="balance" style="color:#22d3ee">$0</div>
             </div>
+        </div>
+
+        <!-- ESTADÍSTICAS AVANZADAS -->
+        <div class="stats-section">
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-number" id="totalRecomendaciones">0</div>
+                    <div class="stat-label">Recomendaciones</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="recomendacionesCompletadas">0</div>
+                    <div class="stat-label">Implementadas</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="ahorroPotencial">$0</div>
+                    <div class="stat-label">Ahorro potencial</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="puntuacionFinanciera">0</div>
+                    <div class="stat-label">Puntuación</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FILTROS -->
+        <div class="filters-section">
+            <div style="font-size: 14px; color: #c4b5fd; font-weight: 600;">
+                <i class="fas fa-filter"></i> Filtrar por tipo:
+            </div>
+            <button class="filter-btn all active" onclick="filtrarRecomendaciones('all')">
+                <i class="fas fa-th-large"></i> Todas
+            </button>
+            <button class="filter-btn" onclick="filtrarRecomendaciones('alerta')">
+                <i class="fas fa-exclamation-triangle"></i> Urgentes
+            </button>
+            <button class="filter-btn" onclick="filtrarRecomendaciones('advertencia')">
+                <i class="fas fa-exclamation-circle"></i> Atención
+            </button>
+            <button class="filter-btn" onclick="filtrarRecomendaciones('exito')">
+                <i class="fas fa-check-circle"></i> Éxitos
+            </button>
+            <button class="filter-btn" onclick="filtrarRecomendaciones('info')">
+                <i class="fas fa-info-circle"></i> Consejos
+            </button>
         </div>
 
         <!-- RECOMENDACIONES -->
         <div id="listaRecomendaciones">
             <div class="loading">
-                <i class="fas fa-spinner"></i>
-                Analizando tus finanzas...
+                <i class="fas fa-brain"></i>
+                <div class="loading-text">Analizando tus finanzas...</div>
+                <div class="loading-subtext">Generando recomendaciones personalizadas</div>
             </div>
         </div>
     </div>
 
     <script>
         const token = localStorage.getItem('token');
+        let todasLasRecomendaciones = [];
+        let filtroActual = 'all';
 
         async function cargarRecomendaciones() {
             if (!token) {
@@ -300,14 +619,7 @@
 
                 if (resTrans.ok) {
                     const transacciones = await resTrans.json();
-                    const ingresos = transacciones.filter(t => t.tipo === 'ingreso').reduce((s, t) => s + t.monto, 0);
-                    const gastos = transacciones.filter(t => t.tipo === 'gasto').reduce((s, t) => s + t.monto, 0);
-                    const balance = ingresos - gastos;
-
-                    document.getElementById('totalIngresos').textContent = '$' + ingresos.toLocaleString('es-CO');
-                    document.getElementById('totalGastos').textContent = '$' + gastos.toLocaleString('es-CO');
-                    document.getElementById('balance').textContent = '$' + Math.abs(balance).toLocaleString('es-CO');
-                    document.getElementById('balance').style.color = balance >= 0 ? '#4ade80' : '#f472b6';
+                    actualizarResumen(transacciones);
                 }
 
                 // Cargar recomendaciones
@@ -317,6 +629,8 @@
 
                 if (resRec.ok) {
                     const recomendaciones = await resRec.json();
+                    todasLasRecomendaciones = recomendaciones;
+                    actualizarEstadisticas(recomendaciones);
                     renderRecomendaciones(recomendaciones);
                 }
 
@@ -324,34 +638,186 @@
                 document.getElementById('listaRecomendaciones').innerHTML = `
                     <div style="text-align:center; color:#ef4444; padding:40px;">
                         <i class="fas fa-exclamation-circle" style="font-size:40px; margin-bottom:15px; display:block;"></i>
-                        No se pudo conectar con el servidor.
+                        <div style="font-size:16px; margin-bottom:10px;">Error de conexión</div>
+                        <div style="color:#9ca3af; font-size:14px;">No se pudo conectar con el servidor</div>
                     </div>`;
             }
+        }
+
+        function actualizarResumen(transacciones) {
+            const ingresos = transacciones.filter(t => t.tipo === 'ingreso').reduce((s, t) => s + t.monto, 0);
+            const gastos = transacciones.filter(t => t.tipo === 'gasto').reduce((s, t) => s + t.monto, 0);
+            const balance = ingresos - gastos;
+
+            // Animar valores
+            animarValor('totalIngresos', ingresos);
+            animarValor('totalGastos', gastos);
+            animarValor('balance', Math.abs(balance));
+
+            document.getElementById('balance').style.color = balance >= 0 ? '#4ade80' : '#f472b6';
+        }
+
+        function animarValor(elementId, valorFinal) {
+            const elemento = document.getElementById(elementId);
+            const valorInicial = 0;
+            const duracion = 1500;
+            const pasos = 60;
+            const incremento = valorFinal / pasos;
+            let pasoActual = 0;
+
+            const animacion = setInterval(() => {
+                pasoActual++;
+                const valorActual = Math.round(incremento * pasoActual);
+                elemento.textContent = '$' + valorActual.toLocaleString('es-CO');
+
+                if (pasoActual >= pasos) {
+                    clearInterval(animacion);
+                    elemento.textContent = '$' + valorFinal.toLocaleString('es-CO');
+                }
+            }, duracion / pasos);
+        }
+
+        function actualizarEstadisticas(recomendaciones) {
+            const total = recomendaciones.length;
+            const completadas = recomendaciones.filter(r => r.completada).length;
+            const ahorroPotencial = recomendaciones.reduce((s, r) => s + (r.ahorro_potencial || 0), 0);
+            const puntuacion = Math.min(Math.round((completadas / total) * 100), 100);
+
+            animarNumero('totalRecomendaciones', total);
+            animarNumero('recomendacionesCompletadas', completadas);
+            animarValor('ahorroPotencial', ahorroPotencial);
+            animarNumero('puntuacionFinanciera', puntuacion);
+        }
+
+        function animarNumero(elementId, valorFinal) {
+            const elemento = document.getElementById(elementId);
+            const valorInicial = 0;
+            const duracion = 1500;
+            const pasos = 60;
+            const incremento = valorFinal / pasos;
+            let pasoActual = 0;
+
+            const animacion = setInterval(() => {
+                pasoActual++;
+                const valorActual = Math.round(incremento * pasoActual);
+                elemento.textContent = valorActual;
+
+                if (pasoActual >= pasos) {
+                    clearInterval(animacion);
+                    elemento.textContent = valorFinal;
+                }
+            }, duracion / pasos);
+        }
+
+        function filtrarRecomendaciones(tipo) {
+            filtroActual = tipo;
+
+            // Actualizar botones de filtro
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // Filtrar recomendaciones
+            let filtradas = todasLasRecomendaciones;
+            if (tipo !== 'all') {
+                filtradas = todasLasRecomendaciones.filter(r => r.tipo === tipo);
+            }
+
+            renderRecomendaciones(filtradas);
         }
 
         function renderRecomendaciones(recomendaciones) {
             const lista = document.getElementById('listaRecomendaciones');
 
-            const badgeTextos = {
-                'alerta': '🚨 Urgente',
-                'advertencia': '⚠️ Atención',
-                'exito': '✅ Bien hecho',
-                'info': 'ℹ️ Consejo'
+            if (recomendaciones.length === 0) {
+                lista.innerHTML = `
+                    <div style="text-align:center; color:#6b7280; padding:60px;">
+                        <i class="fas fa-search" style="font-size:48px; margin-bottom:20px; display:block;"></i>
+                        <div style="font-size:18px; margin-bottom:10px;">No hay recomendaciones</div>
+                        <div style="color:#9ca3af; font-size:14px;">${filtroActual === 'all' ? '¡Excelente! No tienes recomendaciones pendientes' : 'No hay recomendaciones de este tipo'}</div>
+                    </div>`;
+                return;
+            }
+
+            const prioridades = {
+                'alerta': 'priority-alta',
+                'advertencia': 'priority-media',
+                'exito': 'priority-baja',
+                'info': 'priority-baja'
             };
 
             lista.innerHTML = `<div class="rec-grid">
-                ${recomendaciones.map(r => `
-                    <div class="rec-card ${r.tipo}">
-                        <div class="rec-icono">${r.icono}</div>
-                        <div class="rec-badge badge-${r.tipo}">${badgeTextos[r.tipo] || r.tipo}</div>
+                ${recomendaciones.map((r, index) => `
+                    <div class="rec-card ${r.tipo}" style="animation-delay: ${index * 0.1}s">
+                        <div class="rec-header">
+                            <div class="rec-icono">${r.icono}</div>
+                            <div class="rec-priority ${prioridades[r.tipo] || 'priority-baja'}">
+                                ${r.prioridad || 'Media'}
+                            </div>
+                        </div>
+
                         <div class="rec-titulo">${r.titulo}</div>
                         <div class="rec-descripcion">${r.descripcion}</div>
-                        <a href="${r.link}" class="btn-accion">
-                            <i class="fas fa-arrow-right me-1"></i> ${r.accion}
+
+                        ${r.beneficios ? `
+                            <div class="rec-benefits">
+                                ${r.beneficios.map(b => `
+                                    <div class="benefit-item">
+                                        <i class="fas fa-check"></i>
+                                        <span>${b}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        ` : ''}
+
+                        ${r.progreso !== undefined ? `
+                            <div class="rec-progress">
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: ${r.progreso}%"></div>
+                                </div>
+                                <div class="progress-text">${r.progreso}% completado</div>
+                            </div>
+                        ` : ''}
+
+                        <a href="${r.link}" class="btn-accion" onclick="marcarComoCompletada(${r.id})">
+                            <i class="fas fa-arrow-right"></i>
+                            <span>${r.accion}</span>
                         </a>
                     </div>
                 `).join('')}
             </div>`;
+        }
+
+        function marcarComoCompletada(id) {
+            // Aquí podrías implementar lógica para marcar como completada
+            // Por ahora solo mostramos una notificación
+            mostrarNotificacion('¡Recomendación completada!', 'success');
+        }
+
+        function mostrarNotificacion(mensaje, tipo) {
+            // Crear notificación temporal
+            const notif = document.createElement('div');
+            notif.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: ${tipo === 'success' ? '#4ade80' : '#ef4444'};
+                color: white;
+                padding: 15px 20px;
+                border-radius: 10px;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+                z-index: 1000;
+                animation: slideInRight 0.3s ease-out;
+            `;
+            notif.innerHTML = `<i class="fas fa-${tipo === 'success' ? 'check' : 'exclamation'}-circle"></i> ${mensaje}`;
+
+            document.body.appendChild(notif);
+
+            setTimeout(() => {
+                notif.style.animation = 'slideOutRight 0.3s ease-in';
+                setTimeout(() => notif.remove(), 300);
+            }, 3000);
         }
 
         function cerrarSesion() {

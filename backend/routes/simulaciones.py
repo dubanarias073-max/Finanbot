@@ -50,3 +50,16 @@ def guardar_simulacion():
     db.session.commit()
 
     return jsonify({'mensaje': '✅ Simulación guardada!', 'id': nueva.id}), 201
+
+
+@simulaciones_bp.route('/', methods=['DELETE'])
+@jwt_required()
+def eliminar_todas_simulaciones():
+    usuario_id = int(get_jwt_identity())
+    try:
+        Simulacion.query.filter_by(usuario_id=usuario_id).delete()
+        db.session.commit()
+        return jsonify({'mensaje': 'Todas las simulaciones han sido eliminadas'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'mensaje': 'Error al eliminar simulaciones'}), 500
