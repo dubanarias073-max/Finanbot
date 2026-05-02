@@ -217,11 +217,318 @@
         /* MAIN CHAT */
         .main {
             margin-left: 500px;
-            height: 100vh;
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
             padding: 25px;
             flex: 1;
+            overflow-y: auto;
+        }
+
+        .page-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .page-subtitle {
+            color: #9ca3af;
+            font-size: 14px;
+            margin-bottom: 30px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(168, 85, 247, 0.2);
+            border-radius: 50px;
+            padding: 10px 20px;
+            font-size: 13px;
+            color: #9ca3af;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .tab-btn:hover, .tab-btn.activo {
+            background: rgba(168, 85, 247, 0.15);
+            border-color: #a855f7;
+            color: white;
+        }
+
+        .articulos-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .articulo-card {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(168, 85, 247, 0.15);
+            border-radius: 18px;
+            padding: 25px;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .articulo-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 3px;
+            background: linear-gradient(90deg, #c026d3, #22d3ee);
+        }
+
+        .articulo-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(168, 85, 247, 0.4);
+            box-shadow: 0 15px 40px rgba(168, 85, 247, 0.15);
+        }
+
+        .articulo-icono { font-size: 40px; margin-bottom: 15px; }
+        .articulo-categoria {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #a855f7;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .articulo-titulo {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: white;
+        }
+
+        .articulo-desc {
+            font-size: 13px;
+            color: #9ca3af;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .articulo-tiempo {
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        .nivel-badge {
+            display: inline-block;
+            border-radius: 50px;
+            padding: 3px 10px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .nivel-basico { background: rgba(74,222,128,0.15); color: #4ade80; }
+        .nivel-intermedio { background: rgba(251,191,36,0.15); color: #fbbf24; }
+        .nivel-avanzado { background: rgba(239,68,68,0.15); color: #f87171; }
+
+        .modal-articulo {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-articulo.visible { display: flex; }
+
+        .modal-content {
+            background: #0f0f2d;
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            border-radius: 24px;
+            padding: 40px;
+            width: 100%;
+            max-width: 700px;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(168, 85, 247, 0.3) transparent;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 20px; right: 25px;
+            background: rgba(255,255,255,0.08);
+            border: none;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            width: 35px; height: 35px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-icono { font-size: 50px; margin-bottom: 15px; }
+        .modal-titulo { font-size: 24px; font-weight: 800; margin-bottom: 20px; color: white; }
+
+        .modal-body { font-size: 15px; color: #c4b5fd; line-height: 1.8; }
+        .modal-body h3 { color: #a855f7; font-size: 17px; margin: 20px 0 10px; font-weight: 700; }
+        .modal-body p { margin-bottom: 15px; }
+        .modal-body ul { padding-left: 20px; margin-bottom: 15px; }
+        .modal-body li { margin-bottom: 8px; }
+        .modal-body .highlight {
+            background: rgba(168, 85, 247, 0.1);
+            border-left: 4px solid #a855f7;
+            padding: 15px 20px;
+            border-radius: 0 12px 12px 0;
+            margin: 15px 0;
+            color: white;
+        }
+        .modal-body .ejemplo {
+            background: rgba(34, 211, 238, 0.08);
+            border: 1px solid rgba(34, 211, 238, 0.2);
+            border-radius: 12px;
+            padding: 15px 20px;
+            margin: 15px 0;
+            color: #67e8f9;
+        }
+
+        .glosario-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .termino-card {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(168, 85, 247, 0.15);
+            border-radius: 14px;
+            padding: 18px;
+            transition: all 0.3s;
+        }
+
+        .termino-card:hover {
+            background: rgba(168, 85, 247, 0.08);
+            border-color: rgba(168, 85, 247, 0.4);
+        }
+
+        .termino { font-size: 15px; font-weight: 700; color: #a855f7; margin-bottom: 8px; }
+        .definicion { font-size: 13px; color: #9ca3af; line-height: 1.6; }
+
+        .calc-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        .calc-card {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(168, 85, 247, 0.15);
+            border-radius: 18px;
+            padding: 25px;
+        }
+
+        .calc-titulo {
+            font-size: 16px;
+            font-weight: 700;
+            color: #c4b5fd;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .calc-input-label {
+            font-size: 13px;
+            color: #9ca3af;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        .calc-input {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            border-radius: 10px;
+            color: white;
+            padding: 10px 14px;
+            font-size: 14px;
+            width: 100%;
+            margin-bottom: 12px;
+            outline: none;
+        }
+
+        .calc-input:focus { border-color: #a855f7; }
+
+        .btn-calcular {
+            background: linear-gradient(135deg, #c026d3, #a855f7);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 11px;
+            font-size: 14px;
+            font-weight: 600;
+            width: 100%;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 5px;
+        }
+
+        .btn-calcular:hover { transform: translateY(-2px); opacity: 0.9; }
+
+        .calc-resultado {
+            background: rgba(168, 85, 247, 0.08);
+            border: 1px solid rgba(168, 85, 247, 0.2);
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 15px;
+            display: none;
+            text-align: center;
+        }
+
+        .calc-resultado-valor {
+            font-size: 26px;
+            font-weight: 800;
+            color: #4ade80;
+            margin-bottom: 5px;
+        }
+
+        .calc-resultado-label { font-size: 13px; color: #9ca3af; }
+
+        .seccion { display: none; }
+        .seccion.visible { display: block; }
+
+        .aprende-seccion {
+            margin-top: 40px;
+            padding: 30px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(168, 85, 247, 0.15);
+            border-radius: 24px;
+        }
+
+        .aprende-seccion .articulos-grid,
+        .aprende-seccion .glosario-grid,
+        .aprende-seccion .calc-grid {
+            margin-bottom: 0;
+        }
+
+        @media (max-width: 1200px) {
+            .articulos-grid, .glosario-grid, .calc-grid { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 800px) {
+            .panel-conversaciones { width: 100%; position: relative; height: auto; }
+            .main { margin-left: 0; }
+            body { display: block; }
         }
 
         .chat-header {
@@ -551,7 +858,8 @@
             <div class="sugerencias" id="sugerencias">
                 <button class="sugerencia-btn" onclick="enviarSugerencia('¿Cómo puedo ahorrar más dinero?')">💰 ¿Cómo ahorrar más?</button>
                 <button class="sugerencia-btn" onclick="enviarSugerencia('¿Qué es una inversión?')">📈 ¿Qué es invertir?</button>
-                <button class="sugerencia-btn" onclick="enviarSugerencia('Muéstrame mis finanzas')">📊 Mis finanzas</button>
+                <button class="sugerencia-btn" onclick="enviarSugerencia('¿Qué es interés compuesto?')">🔢 Interés compuesto</button>
+                <button class="sugerencia-btn" onclick="enviarSugerencia('Explícame la regla 50/30/20')">📋 50/30/20</button>
                 <button class="sugerencia-btn" onclick="enviarSugerencia('¿Cómo salir de deudas?')">💳 Salir de deudas</button>
             </div>
 
@@ -563,6 +871,16 @@
                     <i class="fas fa-paper-plane"></i>
                 </button>
             </div>
+        </div>
+
+        </div>
+
+    <div class="modal-articulo" id="modalArticulo">
+        <div class="modal-content">
+            <button class="modal-close" onclick="cerrarArticulo()">✕</button>
+            <div class="modal-icono" id="modalIcono"></div>
+            <div class="modal-titulo" id="modalTitulo"></div>
+            <div class="modal-body" id="modalBody"></div>
         </div>
     </div>
 
@@ -791,8 +1109,12 @@
             }
 
             if (!convActualId && !sesionInvitadoActiva) {
-                alert('Selecciona o crea una conversación primero');
-                return;
+                if (token) {
+                    await nuevaConversacion();
+                    if (!convActualId) return;
+                } else {
+                    seleccionarModoInvitado();
+                }
             }
 
             input.value = '';
@@ -861,6 +1183,485 @@
         function enviarSugerencia(texto) {
             document.getElementById('inputMensaje').value = texto;
             enviarMensaje();
+        }
+
+        const articulos = {
+            ahorro: {
+                icono: '💰',
+                titulo: '¿Cómo empezar a ahorrar desde cero?',
+                contenido: `
+                    <p>Ahorrar parece difícil cuando sientes que el dinero nunca alcanza. Pero con la estrategia correcta, cualquier persona puede empezar a ahorrar sin importar cuánto gana.</p>
+
+                    <h3>🎯 Regla #1: Págate a ti primero</h3>
+                    <p>Apenas recibas tu salario, transfiere inmediatamente un porcentaje a una cuenta de ahorros separada. No esperes a "ver qué sobra" porque generalmente no sobra nada.</p>
+
+                    <div class="highlight">
+                        💡 <strong>Tip:</strong> Empieza con el 10% de tu ingreso. Si ganas $1.500.000, ahorra $150.000 antes de cualquier gasto.
+                    </div>
+
+                    <h3>📋 Regla #2: Aplica el método 50/30/20</h3>
+                    <ul>
+                        <li><strong>50%</strong> para necesidades: arriendo, comida, transporte, servicios</li>
+                        <li><strong>30%</strong> para deseos: entretenimiento, ropa, salidas</li>
+                        <li><strong>20%</strong> para ahorro e inversión</li>
+                    </ul>
+
+                    <h3>🔍 Regla #3: Identifica y elimina gastos hormiga</h3>
+                    <p>Los gastos hormiga son pequeños gastos cotidianos que parecen insignificantes pero se acumulan:</p>
+                    <div class="ejemplo">
+                        ☕ Café diario: $3.000 × 30 días = <strong>$90.000/mes</strong><br>
+                        🚌 Taxis innecesarios: $15.000 × 8 veces = <strong>$120.000/mes</strong><br>
+                        📱 Apps que no usas: $25.000/mes<br>
+                        <strong>Total: $235.000/mes que podrían ser ahorro</strong>
+                    </div>
+
+                    <h3>🏦 Regla #4: Automatiza tu ahorro</h3>
+                    <p>Configura una transferencia automática el día que recibes tu salario. Lo que no ves, no lo gastas. La mayoría de bancos colombianos permiten programar transferencias automáticas.</p>
+
+                    <h3>🎯 Metas claras = más motivación</h3>
+                    <p>No ahorro "por ahorrar". Define para qué estás ahorrando: fondo de emergencia, viaje, computador, entrada de apartamento. Esto aumenta tu motivación y constancia.</p>
+
+                    <div class="highlight">
+                        ✅ <strong>Reto de 30 días:</strong> Anota cada gasto durante un mes. Al final identificarás exactamente dónde puedes recortar y cuánto puedes ahorrar.
+                    </div>
+                `
+            },
+            presupuesto: {
+                icono: '📋',
+                titulo: 'La regla 50/30/20 explicada',
+                contenido: `
+                    <p>La regla 50/30/20 es una de las estrategias de presupuesto más populares y efectivas del mundo. Fue popularizada por la senadora estadounidense Elizabeth Warren y es perfectamente aplicable en Colombia.</p>
+
+                    <h3>🟢 50% — Necesidades básicas</h3>
+                    <p>Son los gastos que no puedes evitar: los que son esenciales para vivir.</p>
+                    <ul>
+                        <li>Arriendo o cuota de vivienda</li>
+                        <li>Alimentación básica</li>
+                        <li>Transporte al trabajo</li>
+                        <li>Servicios públicos (agua, luz, gas, internet)</li>
+                        <li>Salud y medicamentos</li>
+                        <li>Educación</li>
+                    </ul>
+
+                    <h3>🟡 30% — Deseos y estilo de vida</h3>
+                    <p>Son gastos importantes para tu bienestar pero no esenciales para sobrevivir.</p>
+                    <ul>
+                        <li>Entretenimiento (Netflix, cine, conciertos)</li>
+                        <li>Restaurantes y salidas</li>
+                        <li>Ropa y accesorios</li>
+                        <li>Hobbies y deportes</li>
+                        <li>Viajes y vacaciones</li>
+                    </ul>
+
+                    <h3>🔵 20% — Ahorro e inversión</h3>
+                    <p>Esta es la parte más importante para tu futuro financiero.</p>
+                    <ul>
+                        <li>Fondo de emergencia</li>
+                        <li>Inversiones (CDT, fondos, acciones)</li>
+                        <li>Pago extra de deudas</li>
+                        <li>Pensión voluntaria</li>
+                    </ul>
+
+                    <div class="ejemplo">
+                        <strong>Ejemplo con salario de $2.000.000:</strong><br><br>
+                        🟢 Necesidades (50%): $1.000.000<br>
+                        🟡 Deseos (30%): $600.000<br>
+                        🔵 Ahorro (20%): $400.000
+                    </div>
+
+                    <div class="highlight">
+                        💡 <strong>¿Qué pasa si mis necesidades superan el 50%?</strong> Es normal al principio. Ajusta los porcentajes a tu realidad: 60/20/20 o 70/15/15. Lo importante es siempre destinar algo al ahorro.
+                    </div>
+                `
+            },
+            deudas: {
+                icono: '💳',
+                titulo: 'Cómo salir de deudas paso a paso',
+                contenido: `
+                    <p>Las deudas son uno de los principales obstáculos para la salud financiera. Pero con un plan claro, cualquier deuda puede eliminarse.</p>
+
+                    <h3>📋 Paso 1: Haz un inventario de tus deudas</h3>
+                    <p>Anota todas tus deudas con esta información:</p>
+                    <div class="ejemplo">
+                        | Deuda | Monto | Cuota mensual | Tasa de interés |<br>
+                        | Tarjeta de crédito | $2.000.000 | $200.000 | 28% EA |<br>
+                        | Crédito de libre inversión | $5.000.000 | $350.000 | 18% EA |<br>
+                        | Préstamo a familiar | $500.000 | $100.000 | 0% |
+                    </div>
+
+                    <h3>⛄ Método Bola de Nieve (recomendado para motivación)</h3>
+                    <p>Paga primero la deuda más pequeña, independiente de la tasa de interés.</p>
+                    <ul>
+                        <li>Paga el mínimo en todas las deudas</li>
+                        <li>Destina todo el dinero extra a la deuda más pequeña</li>
+                        <li>Cuando la elimines, ese dinero va a la siguiente</li>
+                        <li>Cada deuda eliminada genera motivación para continuar</li>
+                    </ul>
+
+                    <h3>🌊 Método Avalancha (recomendado para ahorrar dinero)</h3>
+                    <p>Paga primero la deuda con mayor tasa de interés.</p>
+                    <ul>
+                        <li>Paga el mínimo en todas las deudas</li>
+                        <li>Destina todo el dinero extra a la deuda con mayor interés</li>
+                        <li>Ahorras más dinero en intereses a largo plazo</li>
+                    </ul>
+
+                    <div class="highlight">
+                        🚨 <strong>Reglas de oro mientras pagas deudas:</strong>
+                        <ul style="margin-top:10px;">
+                            <li>No adquieras nuevas deudas</li>
+                            <li>Evita los créditos de "gota a gota" — son ilegales y peligrosos</li>
+                            <li>Si tienes mora, negocia con el banco antes de ignorarlos</li>
+                            <li>Llama a la Superfinanciera si tienes problemas: 01 8000 120 100</li>
+                        </ul>
+                    </div>
+                `
+            },
+            inversion: {
+                icono: '📈',
+                titulo: 'Inversiones para principiantes en Colombia',
+                contenido: `
+                    <p>Invertir no es solo para ricos. En Colombia puedes empezar a invertir con muy poco dinero y hacer crecer tu patrimonio de forma segura.</p>
+
+                    <h3>⚠️ Antes de invertir, debes tener:</h3>
+                    <ul>
+                        <li>✅ Fondo de emergencia de 3-6 meses de gastos</li>
+                        <li>✅ Deudas de alto interés pagadas</li>
+                        <li>✅ Conocimiento básico del producto donde vas a invertir</li>
+                    </ul>
+
+                    <h3>🏦 Opciones de inversión en Colombia:</h3>
+
+                    <div class="ejemplo">
+                        <strong>1. CDT (Certificado de Depósito a Término)</strong><br>
+                        • Riesgo: Muy bajo ✅<br>
+                        • Rentabilidad: 8% - 14% anual<br>
+                        • Plazo mínimo: 30 días<br>
+                        • Ideal para: Dinero que no necesitas pronto<br>
+                        • Dónde: Cualquier banco colombiano
+                    </div>
+
+                    <div class="ejemplo">
+                        <strong>2. Fondos de inversión colectiva</strong><br>
+                        • Riesgo: Bajo a medio ✅<br>
+                        • Rentabilidad: Variable según el fondo<br>
+                        • Desde: $50.000<br>
+                        • Ideal para: Diversificar sin complicaciones<br>
+                        • Dónde: Fiduciarias, Daviplata, Nequi
+                    </div>
+
+                    <div class="ejemplo">
+                        <strong>3. Acciones en la BVC</strong><br>
+                        • Riesgo: Alto ⚠️<br>
+                        • Rentabilidad: Variable (puede ser negativa)<br>
+                        • Ideal para: Largo plazo (5+ años)<br>
+                        • Dónde: Comisionistas de bolsa
+                    </div>
+
+                    <h3>📌 Reglas de oro para invertir:</h3>
+                    <ul>
+                        <li>Nunca inviertas dinero que necesites en el corto plazo</li>
+                        <li>Diversifica: no pongas todo en un solo producto</li>
+                        <li>Invierte a largo plazo para maximizar rendimientos</li>
+                        <li>Desconfía de rendimientos "garantizados" muy altos</li>
+                        <li>Infórmate antes de firmar cualquier contrato</li>
+                    </ul>
+
+                    <div class="highlight">
+                        💡 <strong>Usa el Simulador de FinanBot</strong> para ver cómo crecería tu dinero con diferentes opciones de inversión sin arriesgar un peso real.
+                    </div>
+                `
+            },
+            emergencia: {
+                icono: '🚨',
+                titulo: 'Por qué necesitas un fondo de emergencia',
+                contenido: `
+                    <p>Un fondo de emergencia es tu red de seguridad financiera. Es dinero guardado específicamente para imprevistos, no para gastos planeados.</p>
+
+                    <h3>❓ ¿Para qué sirve?</h3>
+                    <ul>
+                        <li>Pérdida de empleo inesperada</li>
+                        <li>Emergencia médica no cubierta por EPS</li>
+                        <li>Reparación urgente del carro o la casa</li>
+                        <li>Cualquier gasto urgente e imprevisto</li>
+                    </ul>
+
+                    <h3>💰 ¿Cuánto debo tener?</h3>
+                    <div class="ejemplo">
+                        <strong>Mínimo:</strong> 3 meses de gastos básicos<br>
+                        <strong>Ideal:</strong> 6 meses de gastos básicos<br>
+                        <strong>Si eres independiente:</strong> 9-12 meses<br><br>
+                        <em>Ejemplo: Si gastas $1.500.000/mes, tu fondo ideal es $9.000.000</em>
+                    </div>
+
+                    <h3>🏦 ¿Dónde guardarlo?</h3>
+                    <ul>
+                        <li>✅ Cuenta de ahorros con fácil acceso</li>
+                        <li>✅ Fondo de liquidez (Daviplata Inversión, Nequi)</li>
+                        <li>✅ CDT a 30 días (renovable)</li>
+                        <li>❌ NO en inversiones de largo plazo</li>
+                        <li>❌ NO en efectivo en casa</li>
+                        <li>❌ NO en criptomonedas</li>
+                    </ul>
+
+                    <h3>📅 ¿Cómo construirlo?</h3>
+                    <ul>
+                        <li>Empieza con $50.000 o $100.000 este mes</li>
+                        <li>Automatiza una transferencia mensual fija</li>
+                        <li>No lo toques salvo emergencia real</li>
+                        <li>Si lo usas, reconstitúyelo lo antes posible</li>
+                    </ul>
+
+                    <div class="highlight">
+                        ⚠️ <strong>Regla de oro:</strong> El fondo de emergencia va ANTES que cualquier inversión. Sin él, cualquier imprevisto te enviará de vuelta a las deudas.
+                    </div>
+                `
+            },
+            interes: {
+                icono: '🔢',
+                titulo: 'Interés simple vs interés compuesto',
+                contenido: `
+                    <p>Entender la diferencia entre interés simple y compuesto es fundamental para tomar mejores decisiones de ahorro e inversión.</p>
+
+                    <h3>📊 Interés Simple</h3>
+                    <p>Se calcula siempre sobre el capital inicial. Los intereses no generan nuevos intereses.</p>
+                    <div class="ejemplo">
+                        <strong>Fórmula:</strong> Interés = Capital × Tasa × Tiempo<br><br>
+                        <strong>Ejemplo:</strong> Inviertes $1.000.000 al 10% anual por 3 años<br>
+                        Interés anual: $100.000<br>
+                        Interés en 3 años: $300.000<br>
+                        <strong>Total: $1.300.000</strong>
+                    </div>
+
+                    <h3>📈 Interés Compuesto</h3>
+                    <p>Se calcula sobre el capital inicial MÁS los intereses acumulados. Los intereses generan nuevos intereses. Albert Einstein lo llamó "la octava maravilla del mundo".</p>
+                    <div class="ejemplo">
+                        <strong>Fórmula:</strong> Total = Capital × (1 + Tasa)^Tiempo<br><br>
+                        <strong>Ejemplo:</strong> Inviertes $1.000.000 al 10% anual por 3 años<br>
+                        Año 1: $1.000.000 × 1.10 = $1.100.000<br>
+                        Año 2: $1.100.000 × 1.10 = $1.210.000<br>
+                        Año 3: $1.210.000 × 1.10 = $1.331.000<br>
+                        <strong>Total: $1.331.000 (vs $1.300.000 del simple)</strong>
+                    </div>
+
+                    <h3>⏰ El poder del tiempo</h3>
+                    <p>Con el interés compuesto, el tiempo es tu mejor aliado. Cuanto antes empieces, más crece tu dinero:</p>
+                    <div class="ejemplo">
+                        $1.000.000 al 10% anual:<br>
+                        • En 10 años: $2.593.742<br>
+                        • En 20 años: $6.727.500<br>
+                        • En 30 años: $17.449.402<br>
+                        <strong>¡El dinero se multiplicó 17 veces!</strong>
+                    </div>
+
+                    <div class="highlight">
+                        💡 <strong>Conclusión:</strong> Busca siempre productos que usen interés compuesto para tus ahorros e inversiones. Usa nuestra calculadora de interés compuesto para ver el potencial de tu dinero.
+                    </div>
+                `
+            },
+            pension: {
+                icono: '👴',
+                titulo: 'Colpensiones vs fondos privados',
+                contenido: `
+                    <p>En Colombia existen dos regímenes pensionales y elegir el correcto puede hacer una gran diferencia en tu jubilación.</p>
+
+                    <h3>🏛️ Colpensiones (Régimen de Prima Media)</h3>
+                    <ul>
+                        <li>El Estado administra tu dinero</li>
+                        <li>Tu pensión depende de tu salario y semanas cotizadas</li>
+                        <li>Requiere 1.300 semanas cotizadas</li>
+                        <li>Edad: 57 años mujer / 62 años hombre</li>
+                        <li>Pensión mínima garantizada: 1 salario mínimo</li>
+                        <li>Ideal para: Empleados con salarios bajos-medios que cotizarán toda su vida</li>
+                    </ul>
+
+                    <h3>🏢 Fondos Privados — RAIS (Porvenir, Protección, Colfondos)</h3>
+                    <ul>
+                        <li>Tu dinero va a una cuenta individual a tu nombre</li>
+                        <li>La pensión depende de cuánto ahorraste y la rentabilidad</li>
+                        <li>Puedes hacer aportes voluntarios para aumentar tu pensión</li>
+                        <li>Los aportes voluntarios tienen beneficios tributarios</li>
+                        <li>Ideal para: Personas con ingresos altos o independientes</li>
+                    </ul>
+
+                    <div class="highlight">
+                        ⚠️ <strong>Realidad actual:</strong> El 75% de los colombianos NO se pensiona. La mejor estrategia es complementar con ahorro e inversión personal, independiente del régimen que elijas.
+                    </div>
+
+                    <h3>💡 Consejos importantes:</h3>
+                    <ul>
+                        <li>Cotiza desde el primer trabajo, así sea poco tiempo</li>
+                        <li>Revisa tu extracto pensional cada año</li>
+                        <li>Si eres independiente, cotiza al menos el mínimo</li>
+                        <li>Considera aportes voluntarios para reducir impuestos</li>
+                        <li>No dejes de cotizar por períodos largos</li>
+                    </ul>
+                `
+            },
+            inflacion: {
+                icono: '📉',
+                titulo: 'Cómo protegerte de la inflación',
+                contenido: `
+                    <p>La inflación es el aumento generalizado de precios. Si la inflación es del 10% anual, lo que hoy cuesta $100.000 el año próximo costará $110.000.</p>
+
+                    <h3>📊 ¿Cómo afecta tu dinero?</h3>
+                    <div class="ejemplo">
+                        Si tienes $1.000.000 guardados en efectivo y la inflación es del 10%:<br><br>
+                        • Hoy puedes comprar: 100 artículos de $10.000<br>
+                        • En un año: solo puedes comprar 90 artículos de $11.000<br>
+                        <strong>Perdiste el 10% de tu poder adquisitivo</strong>
+                    </div>
+
+                    <h3>🇨🇴 Inflación en Colombia:</h3>
+                    <p>Colombia ha tenido inflaciones históricas entre 3% y 13% anual. Esto significa que el dinero quieto SIEMPRE pierde valor.</p>
+
+                    <h3>🛡️ Cómo proteger tu dinero:</h3>
+
+                    <div class="ejemplo">
+                        <strong>✅ Opciones que vencen la inflación:</strong><br>
+                        • CDT con tasas superiores a la inflación (actualmente 10-14%)<br>
+                        • Fondos de inversión en renta variable<br>
+                        • Finca raíz (valorización histórica superior a la inflación)<br>
+                        • Acciones de empresas sólidas<br>
+                        • Inversión en dólares u otras monedas estables
+                    </div>
+
+                    <div class="ejemplo">
+                        <strong>❌ Lo que NO debes hacer:</strong><br>
+                        • Guardar dinero en efectivo por meses<br>
+                        • Tener todo en cuenta de ahorros con tasa baja<br>
+                        • Guardar dinero "bajo el colchón"
+                    </div>
+
+                    <div class="highlight">
+                        💡 <strong>Regla simple:</strong> Tu dinero debe crecer a una tasa MAYOR que la inflación para que realmente crezca en términos reales. Si la inflación es del 10% y tu CDT paga 12%, ganaste un 2% real.
+                    </div>
+                `
+            },
+            cripto: {
+                icono: '₿',
+                titulo: 'Criptomonedas: riesgos y realidades',
+                contenido: `
+                    <p>Las criptomonedas generan mucho entusiasmo, pero también muchos riesgos. Antes de invertir, debes entender exactamente en qué te estás metiendo.</p>
+
+                    <h3>❓ ¿Qué son las criptomonedas?</h3>
+                    <p>Son monedas digitales descentralizadas que funcionan en redes blockchain. Las más conocidas son Bitcoin (BTC), Ethereum (ETH) y stablecoins como USDT.</p>
+
+                    <h3>⚠️ Riesgos reales:</h3>
+                    <ul>
+                        <li><strong>Volatilidad extrema:</strong> Pueden subir 50% o bajar 80% en semanas</li>
+                        <li><strong>Sin regulación:</strong> No hay entidad que te proteja si pierdes dinero</li>
+                        <li><strong>Estafas frecuentes:</strong> Proyectos falsos, rug pulls, esquemas Ponzi</li>
+                        <li><strong>Complejidad técnica:</strong> Si pierdes tu clave privada, pierdes todo</li>
+                        <li><strong>Manipulación:</strong> El mercado puede ser manipulado por "ballenas"</li>
+                    </ul>
+
+                    <div class="ejemplo">
+                        <strong>Ejemplo de volatilidad:</strong><br>
+                        Bitcoin en noviembre 2021: $68.000 USD<br>
+                        Bitcoin en junio 2022: $17.000 USD<br>
+                        <strong>Caída del 75% en 7 meses</strong>
+                    </div>
+
+                    <h3>✅ Si decides invertir en criptos:</h3>
+                    <ul>
+                        <li>Solo invierte lo que puedes permitirte perder COMPLETAMENTE</li>
+                        <li>Máximo el 5% de tu portafolio de inversión</li>
+                        <li>Usa plataformas reconocidas: Binance, Coinbase</li>
+                        <li>NO sigas consejos de grupos de WhatsApp o Telegram</li>
+                        <li>Guarda tus claves privadas de forma segura</li>
+                        <li>Infórmate sobre las implicaciones tributarias en Colombia</li>
+                    </ul>
+
+                    <div class="highlight">
+                        🚨 <strong>Señales de estafa:</strong> Promesas de rendimientos garantizados muy altos, presión para invertir rápido, proyectos sin whitepaper claro, influencers pagados para promocionar monedas desconocidas.
+                    </div>
+                `
+            }
+        };
+
+        function mostrarSeccion(seccion, btn) {
+            document.querySelectorAll('.seccion').forEach(s => s.classList.remove('visible'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('activo'));
+            document.getElementById('seccion-' + seccion).classList.add('visible');
+            btn.classList.add('activo');
+        }
+
+        function abrirArticulo(id) {
+            const art = articulos[id];
+            document.getElementById('modalIcono').textContent = art.icono;
+            document.getElementById('modalTitulo').textContent = art.titulo;
+            document.getElementById('modalBody').innerHTML = art.contenido;
+            document.getElementById('modalArticulo').classList.add('visible');
+        }
+
+        function cerrarArticulo() {
+            document.getElementById('modalArticulo').classList.remove('visible');
+        }
+
+        function calcularInteresSimple() {
+            const capital = parseFloat(document.getElementById('is-capital').value);
+            const tasa = parseFloat(document.getElementById('is-tasa').value) / 100;
+            const tiempo = parseFloat(document.getElementById('is-tiempo').value) / 12;
+
+            if (!capital || !tasa || !tiempo) { alert('Completa todos los campos.'); return; }
+
+            const interes = capital * tasa * tiempo;
+            const total = capital + interes;
+
+            document.getElementById('val-is').textContent = '$' + Math.round(interes).toLocaleString('es-CO');
+            document.getElementById('total-is').textContent = '$' + Math.round(total).toLocaleString('es-CO');
+            document.getElementById('res-is').style.display = 'block';
+        }
+
+        function calcularInteresCompuesto() {
+            const capital = parseFloat(document.getElementById('ic-capital').value);
+            const tasa = parseFloat(document.getElementById('ic-tasa').value) / 100;
+            const tiempo = parseFloat(document.getElementById('ic-tiempo').value);
+
+            if (!capital || !tasa || !tiempo) { alert('Completa todos los campos.'); return; }
+
+            const total = capital * Math.pow(1 + tasa, tiempo);
+            const interes = total - capital;
+
+            document.getElementById('val-ic').textContent = '$' + Math.round(interes).toLocaleString('es-CO');
+            document.getElementById('total-ic').textContent = '$' + Math.round(total).toLocaleString('es-CO');
+            document.getElementById('res-ic').style.display = 'block';
+        }
+
+        function calcular502030() {
+            const ingreso = parseFloat(document.getElementById('ing-mensual').value);
+            if (!ingreso) { alert('Ingresa tu ingreso mensual.'); return; }
+
+            document.getElementById('val-necesidades').textContent = '$' + Math.round(ingreso * 0.5).toLocaleString('es-CO');
+            document.getElementById('val-deseos').textContent = '$' + Math.round(ingreso * 0.3).toLocaleString('es-CO');
+            document.getElementById('val-ahorro').textContent = '$' + Math.round(ingreso * 0.2).toLocaleString('es-CO');
+            document.getElementById('res-502030').style.display = 'block';
+        }
+
+        function calcularMeta() {
+            const meta = parseFloat(document.getElementById('meta-monto').value);
+            const actual = parseFloat(document.getElementById('meta-actual').value) || 0;
+            const mensual = parseFloat(document.getElementById('meta-mensual').value);
+
+            if (!meta || !mensual) { alert('Completa los campos obligatorios.'); return; }
+
+            const faltante = meta - actual;
+            if (faltante <= 0) {
+                document.getElementById('val-meta').textContent = '¡Ya alcanzaste tu meta!';
+                document.getElementById('label-meta').textContent = '🎉 Felicitaciones';
+            } else {
+                const meses = Math.ceil(faltante / mensual);
+                const anos = Math.floor(meses / 12);
+                const mesesRestantes = meses % 12;
+
+                let texto = meses + ' meses';
+                if (anos > 0) texto = anos + ' año' + (anos > 1 ? 's' : '') + (mesesRestantes > 0 ? ' y ' + mesesRestantes + ' mes' + (mesesRestantes > 1 ? 'es' : '') : '');
+
+                document.getElementById('val-meta').textContent = texto;
+                document.getElementById('label-meta').textContent = 'Para alcanzar tu meta de $' + meta.toLocaleString('es-CO');
+            }
+            document.getElementById('res-meta').style.display = 'block';
         }
 
         function cerrarSesion() {

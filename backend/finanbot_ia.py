@@ -6,6 +6,17 @@ class FinanBotIA:
     def __init__(self):
         self.contexto = []
         self.nombre_usuario = None
+        self.conocimientos = {
+            'ahorro': "💰 **Cómo empezar a ahorrar desde cero:**\n\nAhorra antes de gastar. Transfiere el 10-20% de tu salario inmediatamente a una cuenta separada.\nIdentifica y elimina gastos hormiga como café diario, taxis innecesarios y apps sin uso.\nAutomatiza tu ahorro y define metas claras para mantener la motivación.",
+            'presupuesto': "📋 **Regla 50/30/20:**\n\n50% para necesidades básicas, 30% para deseos y 20% para ahorro e inversión.\nSi tus necesidades superan el 50%, ajusta a 60/20/20 o 70/15/15, pero siempre aparta algo para ahorrar.",
+            'deudas': "💳 **Como salir de deudas paso a paso:**\n\nHaz un inventario de todas tus deudas con monto, cuota y tasa.\nMétodo Bola de Nieve: paga primero la deuda más pequeña para ganar motivación.\nMétodo Avalancha: paga primero la deuda con mayor tasa para ahorrar intereses.\nNo adquieras nuevas deudas mientras pagas y evita créditos peligrosos como el 'gota a gota'.",
+            'inversion': "📈 **Inversiones para principiantes en Colombia:**\n\nEmpieza con un fondo de emergencia y paga deudas de alto interés.\nCDT: bajo riesgo, 8-14% anual.\nFondos de inversión colectiva: diversificación fácil.\nAcciones en la BVC: riesgo mayor, ideal a largo plazo.\nNunca inviertas dinero que necesitas pronto.",
+            'emergencia': "🚨 **Por qué necesitas un fondo de emergencia:**\n\nEs un ahorro para imprevistos como pérdida de empleo o gastos médicos.\nIdeal: 6 meses de gastos básicos; mínimo: 3 meses.\nGuárdalo en una cuenta de fácil acceso o fondo de liquidez, no en inversiones de largo plazo ni efectivo en casa.",
+            'interes': "🔢 **Interés simple vs interés compuesto:**\n\nInterés simple se calcula sobre el capital inicial.\nInterés compuesto se calcula sobre el capital más los intereses acumulados.\nEjemplo: $1.000.000 al 10% anual queda $1.300.000 con interés simple en 3 años, y $1.331.000 con interés compuesto.",
+            'pension': "👴 **Colpensiones vs fondos privados:**\n\nColpensiones es el régimen de prima media administrado por el Estado.\nLos fondos privados son cuentas individuales y permiten aportes voluntarios.\nCotiza siempre que puedas y complementa con ahorro personal.",
+            'inflacion': "📉 **Cómo protegerte de la inflación:**\n\nLa inflación reduce tu poder adquisitivo.\nBusca productos que rindan más que la inflación: CDT, fondos de inversión, acciones y activos reales.\nNo dejes el dinero quieto en efectivo o bajo el colchón.",
+            'cripto': "₿ **Criptomonedas: riesgos y realidades:**\n\nLas criptos son muy volátiles y no reguladas.\nSolo invierte lo que puedas perder completamente, idealmente menos del 5% de tu portafolio.\nUsa plataformas reconocidas y evita promesas de rendimientos garantizados."        
+        }
 
     def detectar_intencion(self, mensaje):
         msg = mensaje.lower().strip()
@@ -41,8 +52,28 @@ class FinanBotIA:
 
         return 'desconocido'
 
+    def _buscar_respuesta_conocimiento(self, mensaje):
+        msg = mensaje.lower()
+        claves = {
+            'ahorro': ['ahorrar', 'ahorro', 'ahorrar desde cero', 'gastos hormiga', 'guardar dinero', 'págate a ti primero'],
+            'presupuesto': ['50/30/20', 'presupuesto', 'regla 50/30/20', 'distribuir salario'],
+            'deudas': ['deudas', 'deuda', 'salir de deudas', 'bola de nieve', 'avalancha'],
+            'inversion': ['inversión', 'invertir', 'cdt', 'acciones', 'fondos de inversión', 'bvc'],
+            'emergencia': ['fondo de emergencia', 'emergencia', 'imprevisto', 'colchón', 'reserva'],
+            'interes': ['interés simple', 'interés compuesto', 'interes compuesto', 'interes simple', 'interes'],
+            'pension': ['colpensiones', 'fondos privados', 'pensión', 'pension', 'jubilación'],
+            'inflacion': ['inflación', 'inflacion', 'protegerte de la inflación', 'poder adquisitivo'],
+            'cripto': ['criptomoneda', 'cripto', 'bitcoin', 'ethereum', 'crypto'],
+        }
+        for tema, palabras in claves.items():
+            for palabra in palabras:
+                if palabra in msg:
+                    return self.conocimientos.get(tema)
+        return None
+
     def responder_con_acciones(self, mensaje, contexto_financiero=None):
         self.contexto.append(mensaje)
+        conocimiento = self._buscar_respuesta_conocimiento(mensaje)
         intencion = self.detectar_intencion(mensaje)
 
         # Detectar nombre
@@ -62,6 +93,13 @@ class FinanBotIA:
             nombre = None
 
         saludo = f"¡Hola, {nombre}! " if nombre and intencion == 'saludo' else ""
+
+        if conocimiento:
+            acciones = [
+                {'texto': '📚 Ver Aprende', 'link': 'aprende.html'},
+                {'texto': '📈 Ir al Simulador', 'link': 'simulador.html'}
+            ]
+            return saludo + conocimiento, acciones
 
         # Generar respuesta y acciones
         respuesta, acciones = self._generar_respuesta(intencion, mensaje, contexto_financiero)
