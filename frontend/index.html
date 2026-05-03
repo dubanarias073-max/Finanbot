@@ -12,44 +12,150 @@
         body {
             font-family: 'Segoe UI', sans-serif;
             background: radial-gradient(ellipse at top, #1a1a4e 0%, #0f0f2d 50%, #000010 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            color: white;
             overflow-x: hidden;
         }
 
-        /* Partículas de fondo */
-        body::before {
-            content: '';
+        /* NAVBAR */
+        .navbar {
             position: fixed;
             top: 0; left: 0;
+            width: 100%;
+            z-index: 1000;
+            padding: 15px 50px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(10,10,30,0.85);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(168, 85, 247, 0.15);
+            transition: background 0.3s;
+        }
+
+        .navbar-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+        }
+
+        .navbar-logo img {
+            width: 38px; height: 38px;
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(168, 85, 247, 0.4);
+        }
+
+        .navbar-logo span {
+            font-size: 22px;
+            font-weight: 800;
+            background: linear-gradient(90deg, #c026d3, #22d3ee);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .navbar-links {
+            display: flex;
+            gap: 35px;
+            align-items: center;
+        }
+
+        .navbar-links a {
+            color: #9ca3af;
+            text-decoration: none;
+            font-size: 14px;
+            transition: color 0.3s;
+        }
+
+        .navbar-links a:hover { color: white; }
+
+        .btn-nav-login {
+            background: transparent;
+            border: 1px solid rgba(168, 85, 247, 0.5);
+            color: #a855f7 !important;
+            border-radius: 50px;
+            padding: 8px 22px;
+            font-size: 13px;
+            transition: all 0.3s;
+        }
+
+        .btn-nav-login:hover {
+            background: rgba(168, 85, 247, 0.1);
+            color: white !important;
+        }
+
+        .btn-nav-registro {
+            background: linear-gradient(135deg, #c026d3, #a855f7);
+            color: white !important;
+            border-radius: 50px;
+            padding: 8px 22px;
+            font-size: 13px;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(192, 38, 211, 0.3);
+        }
+
+        .btn-nav-registro:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(192, 38, 211, 0.5);
+            color: white !important;
+        }
+
+        /* GLOW LINES */
+        .glow-line {
+            position: fixed;
+            width: 1px;
+            height: 100vh;
+            background: linear-gradient(to bottom, transparent, rgba(168, 85, 247, 0.12), transparent);
+            top: 0;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .glow-line.left { left: 10%; }
+        .glow-line.right { right: 10%; }
+
+        /* HERO */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 120px 30px 80px;
+            position: relative;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
             width: 100%; height: 100%;
-            background: 
-                radial-gradient(circle at 20% 20%, rgba(168, 85, 247, 0.08) 0%, transparent 50%),
-                radial-gradient(circle at 80% 80%, rgba(34, 211, 238, 0.08) 0%, transparent 50%),
-                radial-gradient(circle at 50% 50%, rgba(192, 38, 211, 0.05) 0%, transparent 60%);
+            background:
+                radial-gradient(circle at 20% 30%, rgba(168, 85, 247, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(34, 211, 238, 0.1) 0%, transparent 50%);
             pointer-events: none;
         }
 
-        .hero {
-            text-align: center;
-            color: white;
-            padding: 40px 20px;
-            position: relative;
-            z-index: 1;
+        .hero-badge {
+            display: inline-block;
+            background: rgba(168, 85, 247, 0.1);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            border-radius: 50px;
+            padding: 8px 22px;
+            font-size: 13px;
+            color: #c4b5fd;
+            margin-bottom: 30px;
+            animation: fadeInDown 0.8s ease;
         }
 
         .logo-img {
-            width: 130px;
-            height: 130px;
+            width: 130px; height: 130px;
             border-radius: 50%;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
             animation: float 3s ease-in-out infinite;
-            box-shadow: 
+            box-shadow:
                 0 0 30px rgba(168, 85, 247, 0.5),
-                0 0 60px rgba(34, 211, 238, 0.3),
-                0 0 90px rgba(192, 38, 211, 0.2);
+                0 0 60px rgba(34, 211, 238, 0.2);
         }
 
         @keyframes float {
@@ -57,127 +163,193 @@
             50% { transform: translateY(-15px); }
         }
 
-        .titulo {
-            font-size: 58px;
+        .hero-titulo {
+            font-size: 68px;
             font-weight: 900;
             background: linear-gradient(90deg, #c026d3, #a855f7, #22d3ee, #4ade80);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            background-size: 200% auto;
-            animation: shine 4s linear infinite;
-            margin-bottom: 8px;
-            letter-spacing: 3px;
+            background-size: 300% auto;
+            animation: shine 5s linear infinite;
+            letter-spacing: 5px;
+            margin-bottom: 10px;
         }
 
         @keyframes shine {
             0% { background-position: 0% center; }
-            100% { background-position: 200% center; }
+            100% { background-position: 300% center; }
         }
 
-        .subtitulo {
-            font-size: 18px;
+        .hero-subtitulo {
+            font-size: 20px;
             color: #22d3ee;
-            margin-bottom: 30px;
+            margin-bottom: 25px;
             font-weight: 300;
             letter-spacing: 1px;
         }
 
-        .descripcion {
-            font-size: 16px;
+        .divider {
+            width: 80px; height: 3px;
+            background: linear-gradient(90deg, #c026d3, #22d3ee);
+            margin: 0 auto 30px;
+            border-radius: 10px;
+        }
+
+        .hero-desc {
+            font-size: 17px;
             color: #c4b5fd;
-            max-width: 580px;
+            max-width: 620px;
             margin: 0 auto 45px;
             line-height: 1.8;
         }
 
-        .btns {
-            display: flex;
-            gap: 20px;
-            justify-content: center;
-            flex-wrap: wrap;
-            margin-bottom: 20px;
-        }
-
-        .btn-registro {
-            background: linear-gradient(135deg, #c026d3, #a855f7);
-            color: white;
-            padding: 15px 40px;
-            border-radius: 50px;
-            font-size: 17px;
-            font-weight: 600;
-            text-decoration: none;
-            border: none;
-            cursor: pointer;
-            transition: all 0.3s;
-            box-shadow: 0 8px 25px rgba(192, 38, 211, 0.5);
-        }
-
-        .btn-registro:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 12px 35px rgba(192, 38, 211, 0.7);
-            color: white;
-        }
-
-        .btn-login {
-            background: transparent;
-            color: white;
-            padding: 15px 40px;
-            border-radius: 50px;
-            font-size: 17px;
-            font-weight: 600;
-            text-decoration: none;
-            border: 2px solid #22d3ee;
-            cursor: pointer;
-            transition: all 0.3s;
-            box-shadow: 0 8px 25px rgba(34, 211, 238, 0.2);
-        }
-
-        .btn-login:hover {
-            background: rgba(34, 211, 238, 0.1);
-            transform: translateY(-3px);
-            color: white;
-            box-shadow: 0 12px 35px rgba(34, 211, 238, 0.4);
-        }
-
-        .btn-invitado {
-            background: transparent;
-            color: #a855f7;
-            padding: 10px 30px;
-            border-radius: 50px;
-            font-size: 14px;
-            text-decoration: none;
-            border: 1px solid rgba(168, 85, 247, 0.3);
-            cursor: pointer;
-            transition: all 0.3s;
-            display: block;
-            margin: 15px auto 50px;
-            width: fit-content;
-        }
-
-        .btn-invitado:hover {
-            background: rgba(168, 85, 247, 0.1);
-            color: #c084fc;
-            border-color: #a855f7;
-        }
-
-        .features {
+        .hero-btns {
             display: flex;
             gap: 15px;
             justify-content: center;
             flex-wrap: wrap;
-            max-width: 950px;
+            margin-bottom: 15px;
+        }
+
+        .btn-primary-hero {
+            background: linear-gradient(135deg, #c026d3, #a855f7);
+            color: white;
+            padding: 16px 45px;
+            border-radius: 50px;
+            font-size: 16px;
+            font-weight: 700;
+            text-decoration: none;
+            transition: all 0.3s;
+            box-shadow: 0 8px 30px rgba(192, 38, 211, 0.4);
+        }
+
+        .btn-primary-hero:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(192, 38, 211, 0.6);
+            color: white;
+        }
+
+        .btn-secondary-hero {
+            background: transparent;
+            color: white;
+            padding: 16px 45px;
+            border-radius: 50px;
+            font-size: 16px;
+            font-weight: 700;
+            text-decoration: none;
+            border: 2px solid #22d3ee;
+            transition: all 0.3s;
+        }
+
+        .btn-secondary-hero:hover {
+            background: rgba(34, 211, 238, 0.1);
+            transform: translateY(-3px);
+            color: white;
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: #9ca3af;
+            padding: 10px 28px;
+            border-radius: 50px;
+            font-size: 14px;
+            text-decoration: none;
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.3s;
+            display: inline-block;
+            margin-top: 8px;
+        }
+
+        .btn-ghost:hover {
+            color: white;
+            border-color: rgba(255,255,255,0.3);
+        }
+
+        .hero-stats {
+            display: flex;
+            gap: 60px;
+            justify-content: center;
+            margin-top: 60px;
+            flex-wrap: wrap;
+        }
+
+        .hero-stat { text-align: center; }
+
+        .hero-stat-valor {
+            font-size: 36px;
+            font-weight: 900;
+            background: linear-gradient(90deg, #c026d3, #22d3ee);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-stat-label {
+            font-size: 13px;
+            color: #9ca3af;
+            margin-top: 4px;
+        }
+
+        /* SECCIONES GENERALES */
+        section { padding: 90px 50px; }
+
+        .section-center { text-align: center; }
+
+        .section-badge {
+            display: inline-block;
+            background: rgba(168, 85, 247, 0.1);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            border-radius: 50px;
+            padding: 6px 18px;
+            font-size: 12px;
+            color: #a855f7;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 15px;
+        }
+
+        .section-titulo {
+            font-size: 40px;
+            font-weight: 800;
+            margin-bottom: 15px;
+            color: white;
+            line-height: 1.2;
+        }
+
+        .section-titulo span {
+            background: linear-gradient(90deg, #c026d3, #22d3ee);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .section-desc {
+            font-size: 16px;
+            color: #9ca3af;
+            max-width: 550px;
+            margin: 0 auto 55px;
+            line-height: 1.7;
+        }
+
+        /* CARACTERÍSTICAS */
+        .features-section {
+            background: rgba(255,255,255,0.01);
+            border-top: 1px solid rgba(168, 85, 247, 0.1);
+            border-bottom: 1px solid rgba(168, 85, 247, 0.1);
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 25px;
+            max-width: 1100px;
             margin: 0 auto;
         }
 
         .feature-card {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(168, 85, 247, 0.25);
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(168, 85, 247, 0.15);
             border-radius: 20px;
-            padding: 25px 18px;
-            width: 155px;
-            text-align: center;
+            padding: 30px;
             transition: all 0.3s;
-            backdrop-filter: blur(10px);
             position: relative;
             overflow: hidden;
         }
@@ -186,122 +358,717 @@
             content: '';
             position: absolute;
             top: 0; left: 0;
-            width: 100%; height: 2px;
-            background: linear-gradient(90deg, #c026d3, #22d3ee);
+            width: 100%; height: 3px;
             opacity: 0;
             transition: opacity 0.3s;
         }
 
         .feature-card:hover::before { opacity: 1; }
+        .feature-card:nth-child(1)::before { background: linear-gradient(90deg, #c026d3, #a855f7); }
+        .feature-card:nth-child(2)::before { background: linear-gradient(90deg, #22d3ee, #4ade80); }
+        .feature-card:nth-child(3)::before { background: linear-gradient(90deg, #fbbf24, #f59e0b); }
+        .feature-card:nth-child(4)::before { background: linear-gradient(90deg, #4ade80, #22d3ee); }
+        .feature-card:nth-child(5)::before { background: linear-gradient(90deg, #a855f7, #22d3ee); }
+        .feature-card:nth-child(6)::before { background: linear-gradient(90deg, #f472b6, #c026d3); }
 
         .feature-card:hover {
-            background: rgba(168, 85, 247, 0.08);
             transform: translateY(-8px);
-            border-color: #a855f7;
-            box-shadow: 0 15px 40px rgba(168, 85, 247, 0.2);
+            border-color: rgba(168, 85, 247, 0.4);
+            box-shadow: 0 20px 50px rgba(168, 85, 247, 0.15);
         }
 
-        .feature-icon {
-            font-size: 38px;
-            margin-bottom: 12px;
-            display: block;
+        .feature-icon-wrap {
+            width: 58px; height: 58px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            margin-bottom: 18px;
         }
 
-        .feature-text {
-            font-size: 13px;
+        .f1 { background: rgba(192, 38, 211, 0.15); }
+        .f2 { background: rgba(34, 211, 238, 0.15); }
+        .f3 { background: rgba(251, 191, 36, 0.15); }
+        .f4 { background: rgba(74, 222, 128, 0.15); }
+        .f5 { background: rgba(168, 85, 247, 0.15); }
+        .f6 { background: rgba(244, 114, 182, 0.15); }
+
+        .feature-titulo { font-size: 17px; font-weight: 700; margin-bottom: 10px; color: white; }
+        .feature-desc { font-size: 14px; color: #9ca3af; line-height: 1.6; }
+
+        /* CÓMO FUNCIONA */
+        .pasos-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 25px;
+            max-width: 1000px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .pasos-grid::before {
+            content: '';
+            position: absolute;
+            top: 35px;
+            left: 12%;
+            width: 76%;
+            height: 2px;
+            background: linear-gradient(90deg, #c026d3, #22d3ee);
+            opacity: 0.25;
+        }
+
+        .paso-card { text-align: center; position: relative; }
+
+        .paso-numero {
+            width: 72px; height: 72px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            font-weight: 800;
+            margin: 0 auto 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .paso-card:nth-child(1) .paso-numero { background: linear-gradient(135deg, #c026d3, #a855f7); }
+        .paso-card:nth-child(2) .paso-numero { background: linear-gradient(135deg, #a855f7, #22d3ee); }
+        .paso-card:nth-child(3) .paso-numero { background: linear-gradient(135deg, #22d3ee, #4ade80); }
+        .paso-card:nth-child(4) .paso-numero { background: linear-gradient(135deg, #4ade80, #fbbf24); }
+
+        .paso-titulo { font-size: 16px; font-weight: 700; margin-bottom: 10px; color: white; }
+        .paso-desc { font-size: 13px; color: #9ca3af; line-height: 1.6; }
+
+        /* STATS */
+        .stats-section {
+            background: rgba(168, 85, 247, 0.03);
+            border-top: 1px solid rgba(168, 85, 247, 0.1);
+            border-bottom: 1px solid rgba(168, 85, 247, 0.1);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 30px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .stat-item { text-align: center; }
+
+        .stat-numero {
+            font-size: 48px;
+            font-weight: 900;
+            background: linear-gradient(90deg, #c026d3, #22d3ee);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+        }
+
+        .stat-label { font-size: 14px; color: #9ca3af; }
+
+        /* STACK TECNOLÓGICO */
+        .tech-grid {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .tech-badge {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(168, 85, 247, 0.2);
+            border-radius: 50px;
+            padding: 10px 22px;
+            font-size: 14px;
             color: #c4b5fd;
             font-weight: 500;
-            line-height: 1.4;
+            transition: all 0.3s;
         }
 
-        .divider {
-            width: 80px;
-            height: 3px;
-            background: linear-gradient(90deg, #c026d3, #22d3ee);
-            margin: 0 auto 40px;
-            border-radius: 10px;
+        .tech-badge:hover {
+            background: rgba(168, 85, 247, 0.1);
+            border-color: #a855f7;
+            transform: translateY(-3px);
         }
 
-        .badge-sena {
-            margin-top: 50px;
-            color: #7c3aed;
+        /* DESARROLLADORES */
+        .devs-section {
+            background: rgba(255,255,255,0.01);
+            border-top: 1px solid rgba(168, 85, 247, 0.1);
+        }
+
+        .devs-grid {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .dev-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(168, 85, 247, 0.15);
+            border-radius: 22px;
+            padding: 30px 25px;
+            width: 195px;
+            text-align: center;
+            transition: all 0.4s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .dev-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 3px;
+        }
+
+        .dev-card:nth-child(1)::before { background: linear-gradient(90deg, #c026d3, #a855f7); }
+        .dev-card:nth-child(2)::before { background: linear-gradient(90deg, #22d3ee, #4ade80); }
+        .dev-card:nth-child(3)::before { background: linear-gradient(90deg, #fbbf24, #f59e0b); }
+        .dev-card:nth-child(4)::before { background: linear-gradient(90deg, #4ade80, #22d3ee); }
+        .dev-card:nth-child(5)::before { background: linear-gradient(90deg, #f472b6, #c026d3); }
+
+        .dev-card:hover {
+            transform: translateY(-10px);
+            border-color: rgba(168, 85, 247, 0.4);
+            box-shadow: 0 25px 50px rgba(168, 85, 247, 0.15);
+        }
+
+        .dev-avatar {
+            width: 80px; height: 80px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            font-weight: 800;
+            margin: 0 auto 18px;
+            color: white;
+        }
+
+        .dev-nombre {
+            font-size: 13px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: white;
+            line-height: 1.3;
+        }
+
+        .dev-rol {
             font-size: 12px;
-            opacity: 0.6;
-            letter-spacing: 0.5px;
+            color: #a855f7;
+            font-weight: 600;
+            margin-bottom: 8px;
+            background: rgba(168, 85, 247, 0.1);
+            border-radius: 50px;
+            padding: 4px 10px;
+            display: inline-block;
         }
 
-        /* Líneas decorativas */
-        .glow-line {
-            position: fixed;
-            width: 1px;
-            height: 100vh;
-            background: linear-gradient(to bottom, transparent, rgba(168, 85, 247, 0.15), transparent);
-            top: 0;
+        .dev-desc {
+            font-size: 11px;
+            color: #6b7280;
+            line-height: 1.5;
+            margin-top: 8px;
         }
-        .glow-line.left { left: 15%; }
-        .glow-line.right { right: 15%; }
+
+        /* CTA */
+        .cta-section {
+            text-align: center;
+            padding: 110px 40px;
+            position: relative;
+        }
+
+        .cta-section::before {
+            content: '';
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 700px; height: 350px;
+            background: radial-gradient(ellipse, rgba(168, 85, 247, 0.08) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .cta-titulo {
+            font-size: 48px;
+            font-weight: 800;
+            margin-bottom: 20px;
+            line-height: 1.2;
+        }
+
+        .cta-desc {
+            font-size: 17px;
+            color: #9ca3af;
+            margin-bottom: 45px;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .cta-btns {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        /* FOOTER */
+        .footer {
+            background: rgba(0,0,0,0.4);
+            border-top: 1px solid rgba(168, 85, 247, 0.15);
+            padding: 60px 50px 30px;
+        }
+
+        .footer-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 50px;
+            max-width: 1100px;
+            margin: 0 auto 50px;
+        }
+
+        .footer-brand-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 18px;
+        }
+
+        .footer-brand-logo img {
+            width: 38px; height: 38px;
+            border-radius: 50%;
+        }
+
+        .footer-brand-logo span {
+            font-size: 22px;
+            font-weight: 800;
+            background: linear-gradient(90deg, #c026d3, #22d3ee);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .footer-desc {
+            font-size: 13px;
+            color: #6b7280;
+            line-height: 1.8;
+            margin-bottom: 20px;
+        }
+
+        .sena-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(168, 85, 247, 0.08);
+            border: 1px solid rgba(168, 85, 247, 0.2);
+            border-radius: 50px;
+            padding: 7px 16px;
+            font-size: 12px;
+            color: #c4b5fd;
+        }
+
+        .footer-titulo {
+            font-size: 14px;
+            font-weight: 700;
+            color: #c4b5fd;
+            margin-bottom: 18px;
+        }
+
+        .footer-links { list-style: none; }
+
+        .footer-links li { margin-bottom: 12px; }
+
+        .footer-links a {
+            color: #6b7280;
+            text-decoration: none;
+            font-size: 13px;
+            transition: color 0.3s;
+        }
+
+        .footer-links a:hover { color: #a855f7; }
+
+        .footer-bottom {
+            border-top: 1px solid rgba(255,255,255,0.05);
+            padding-top: 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1100px;
+            margin: 0 auto;
+            font-size: 12px;
+            color: #4b5563;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        /* ANIMACIONES */
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.7s ease;
+        }
+
+        .fade-in.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
     </style>
 </head>
 <body>
+
     <div class="glow-line left"></div>
     <div class="glow-line right"></div>
 
-    <div class="hero">
-        <img src="../images/logo.png" alt="FinanBot Logo" class="logo-img"
-             onerror="this.style.display='none'; document.querySelector('.logo-fallback').style.display='block'">
-        <div class="logo-fallback" style="display:none; font-size:90px; margin-bottom:15px;">🤖</div>
+    <!-- NAVBAR -->
+    <nav class="navbar" id="navbar">
+        <a href="#" class="navbar-logo">
+            <img src="../images/logo.png" alt="FinanBot" onerror="this.style.display='none'">
+            <span>FinanBot</span>
+        </a>
+        <div class="navbar-links">
+            <a href="#caracteristicas">Características</a>
+            <a href="#como-funciona">¿Cómo funciona?</a>
+            <a href="#tecnologias">Tecnologías</a>
+            <a href="#desarrolladores">Desarrolladores</a>
+            <a href="pages/login.html" class="btn-nav-login">Iniciar sesión</a>
+            <a href="pages/registro.html" class="btn-nav-registro">Registrarse gratis</a>
+        </div>
+    </nav>
 
-        <h1 class="titulo">FINANBOT</h1>
-        <p class="subtitulo">Tu Asistente Financiero Inteligente</p>
+    <!-- HERO -->
+    <section class="hero">
+        <div class="hero-badge">
+            🎓 Proyecto SENA · Tecnólogo en Análisis y Desarrollo de Software · Ficha 3407184
+        </div>
+
+        <img src="../images/logo.png" alt="FinanBot" class="logo-img"
+             onerror="this.style.display='none'">
+
+        <h1 class="hero-titulo">FINANBOT</h1>
+        <p class="hero-subtitulo">Tu Asistente Financiero Inteligente</p>
 
         <div class="divider"></div>
 
-        <p class="descripcion">
-            Toma el control de tus finanzas personales con ChatFinanbot.
-            Analiza tus gastos, recibe recomendaciones de ahorro y simula inversiones
-            sin riesgo real. Todo en un solo lugar, completamente gratis.
+        <p class="hero-desc">
+            Toma el control de tus finanzas personales con FinanBot.
+            Registra tus gastos, recibe recomendaciones personalizadas,
+            simula inversiones y aprende sobre finanzas. Todo gratis.
         </p>
 
-        <div class="btns">
-            <a href="pages/registro.html" class="btn-registro">
+        <div class="hero-btns">
+            <a href="pages/registro.html" class="btn-primary-hero">
                 <i class="fas fa-user-plus me-2"></i> Crear cuenta gratis
             </a>
-            <a href="pages/login.html" class="btn-login">
+            <a href="pages/login.html" class="btn-secondary-hero">
                 <i class="fas fa-sign-in-alt me-2"></i> Iniciar sesión
             </a>
         </div>
-
-        <a href="pages/chat.html?invitado=true" class="btn-invitado">
-            <i class="fas fa-robot me-1"></i> Probar sin registrarse
+        <a href="pages/chat.html?invitado=true" class="btn-ghost">
+            <i class="fas fa-robot me-2"></i> Probar sin registrarse
         </a>
 
-        <div class="features">
-            <div class="feature-card">
-                <span class="feature-icon">💬</span>
-                <div class="feature-text">Chat Financiero Inteligente</div>
+        <div class="hero-stats">
+            <div class="hero-stat">
+                <div class="hero-stat-valor">6+</div>
+                <div class="hero-stat-label">Módulos funcionales</div>
             </div>
-            <div class="feature-card">
-                <span class="feature-icon">📊</span>
-                <div class="feature-text">Análisis de Gastos</div>
+            <div class="hero-stat">
+                <div class="hero-stat-valor">100%</div>
+                <div class="hero-stat-label">Gratis y seguro</div>
             </div>
-            <div class="feature-card">
-                <span class="feature-icon">💡</span>
-                <div class="feature-text">Recomendaciones de Ahorro</div>
+            <div class="hero-stat">
+                <div class="hero-stat-valor">🤖</div>
+                <div class="hero-stat-label">ChatBot financiero</div>
             </div>
-            <div class="feature-card">
-                <span class="feature-icon">📈</span>
-                <div class="feature-text">Simulador de Inversiones</div>
-            </div>
-            <div class="feature-card">
-                <span class="feature-icon">🎯</span>
-                <div class="feature-text">Metas de Ahorro</div>
+            <div class="hero-stat">
+                <div class="hero-stat-valor">5</div>
+                <div class="hero-stat-label">Desarrolladores</div>
             </div>
         </div>
+    </section>
 
-        <p class="badge-sena">
-            🎓 Proyecto SENA · Tecnólogo en Análisis y Desarrollo de Software · Ficha 3407184
-        </p>
-    </div>
+    <!-- CARACTERÍSTICAS -->
+    <section class="features-section section-center" id="caracteristicas">
+        <div class="section-badge">✨ Características</div>
+        <h2 class="section-titulo">Todo lo que necesitas para tus <span>finanzas</span></h2>
+        <p class="section-desc">FinanBot integra todas las herramientas para mejorar tu salud financiera en un solo lugar.</p>
+
+        <div class="features-grid">
+            <div class="feature-card fade-in">
+                <div class="feature-icon-wrap f1">🤖</div>
+                <div class="feature-titulo">ChatBot Financiero</div>
+                <div class="feature-desc">Conversa con FinanBot sobre ahorro, inversiones y deudas. Analiza tus datos reales para darte respuestas personalizadas y útiles.</div>
+            </div>
+            <div class="feature-card fade-in">
+                <div class="feature-icon-wrap f2">📊</div>
+                <div class="feature-titulo">Dashboard Inteligente</div>
+                <div class="feature-desc">Visualiza tus ingresos, gastos y balance con gráficas interactivas actualizadas en tiempo real desde tu base de datos.</div>
+            </div>
+            <div class="feature-card fade-in">
+                <div class="feature-icon-wrap f3">💡</div>
+                <div class="feature-titulo">Recomendaciones Personalizadas</div>
+                <div class="feature-desc">Recibe consejos financieros basados en tus transacciones reales. Detecta gastos excesivos y oportunidades de ahorro.</div>
+            </div>
+            <div class="feature-card fade-in">
+                <div class="feature-icon-wrap f4">📈</div>
+                <div class="feature-titulo">Simulador de Inversiones</div>
+                <div class="feature-desc">Simula CDT, fondos de inversión y acciones con interés compuesto real. Ve cómo crece tu dinero sin arriesgar un peso.</div>
+            </div>
+            <div class="feature-card fade-in">
+                <div class="feature-icon-wrap f5">🎯</div>
+                <div class="feature-titulo">Metas de Ahorro</div>
+                <div class="feature-desc">Crea objetivos financieros específicos, realiza abonos y sigue tu progreso visual hasta alcanzar cada meta.</div>
+            </div>
+            <div class="feature-card fade-in">
+                <div class="feature-icon-wrap f6">📚</div>
+                <div class="feature-titulo">Educación Financiera</div>
+                <div class="feature-desc">Artículos sobre ahorro, inversión e inflación. Glosario financiero completo y calculadoras de interés simple y compuesto.</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CÓMO FUNCIONA -->
+    <section class="section-center" id="como-funciona">
+        <div class="section-badge">🚀 ¿Cómo funciona?</div>
+        <h2 class="section-titulo">Empieza en <span>4 simples pasos</span></h2>
+        <p class="section-desc">Comenzar a mejorar tus finanzas con FinanBot es muy fácil y rápido</p>
+
+        <div class="pasos-grid">
+            <div class="paso-card fade-in">
+                <div class="paso-numero">1</div>
+                <div class="paso-titulo">Crea tu cuenta</div>
+                <div class="paso-desc">Regístrate gratis con tu correo en segundos. Configura tu pregunta de seguridad.</div>
+            </div>
+            <div class="paso-card fade-in">
+                <div class="paso-numero">2</div>
+                <div class="paso-titulo">Configura tu perfil</div>
+                <div class="paso-desc">Indica tu ingreso mensual y tus metas de ahorro en el onboarding personalizado.</div>
+            </div>
+            <div class="paso-card fade-in">
+                <div class="paso-numero">3</div>
+                <div class="paso-titulo">Registra tus finanzas</div>
+                <div class="paso-desc">Agrega tus ingresos y gastos por categoría. FinanBot los analiza automáticamente.</div>
+            </div>
+            <div class="paso-card fade-in">
+                <div class="paso-numero">4</div>
+                <div class="paso-titulo">Recibe consejos</div>
+                <div class="paso-desc">Chatea con FinanBot y obtén recomendaciones personalizadas basadas en tus datos reales.</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- STATS -->
+    <section class="stats-section section-center">
+        <div class="section-badge">📊 El proyecto en números</div>
+        <h2 class="section-titulo" style="margin-bottom:50px;">FinanBot en <span>números</span></h2>
+        <div class="stats-grid">
+            <div class="stat-item fade-in">
+                <div class="stat-numero">8+</div>
+                <div class="stat-label">Páginas desarrolladas</div>
+            </div>
+            <div class="stat-item fade-in">
+                <div class="stat-numero">15+</div>
+                <div class="stat-label">Endpoints API REST</div>
+            </div>
+            <div class="stat-item fade-in">
+                <div class="stat-numero">7</div>
+                <div class="stat-label">Tablas en MySQL</div>
+            </div>
+            <div class="stat-item fade-in">
+                <div class="stat-numero">5</div>
+                <div class="stat-label">Desarrolladores SENA</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- STACK TECNOLÓGICO -->
+    <section class="section-center" id="tecnologias">
+        <div class="section-badge">⚙️ Tecnología</div>
+        <h2 class="section-titulo">Stack <span>tecnológico</span></h2>
+        <p class="section-desc">Construido con tecnologías modernas usadas en la industria real</p>
+
+        <div class="tech-grid">
+            <div class="tech-badge fade-in">🐍 Python</div>
+            <div class="tech-badge fade-in">⚗️ Flask</div>
+            <div class="tech-badge fade-in">🗄️ MySQL</div>
+            <div class="tech-badge fade-in">🔑 JWT</div>
+            <div class="tech-badge fade-in">🌐 HTML5</div>
+            <div class="tech-badge fade-in">🎨 CSS3</div>
+            <div class="tech-badge fade-in">⚡ JavaScript</div>
+            <div class="tech-badge fade-in">📊 Chart.js</div>
+            <div class="tech-badge fade-in">🔒 BCrypt</div>
+            <div class="tech-badge fade-in">🔗 SQLAlchemy</div>
+            <div class="tech-badge fade-in">🌍 Flask-CORS</div>
+            <div class="tech-badge fade-in">🎨 Bootstrap 5</div>
+        </div>
+    </section>
+
+    <!-- DESARROLLADORES -->
+    <section class="devs-section section-center" id="desarrolladores">
+        <div class="section-badge">👥 Equipo de desarrollo</div>
+        <h2 class="section-titulo">Desarrollado por <span>estudiantes SENA</span></h2>
+        <p class="section-desc">Tecnólogo en Análisis y Desarrollo de Software · Ficha 3407184 · 2026</p>
+
+        <div class="devs-grid">
+            <div class="dev-card fade-in">
+                <div class="dev-avatar" style="background: linear-gradient(135deg, #c026d3, #a855f7);">J</div>
+                <div class="dev-nombre">Johan Stiven Prato</div>
+                <div class="dev-rol">🏆 Scrum Master</div>
+                <div class="dev-desc">Gestión del proyecto, organización del equipo y metodología Scrum</div>
+            </div>
+            <div class="dev-card fade-in">
+                <div class="dev-avatar" style="background: linear-gradient(135deg, #22d3ee, #4ade80);">D</div>
+                <div class="dev-nombre">Dilan Santiago Adarme</div>
+                <div class="dev-rol">⚙️ Backend Dev</div>
+                <div class="dev-desc">API REST con Flask, base de datos MySQL y lógica del servidor</div>
+            </div>
+            <div class="dev-card fade-in">
+                <div class="dev-avatar" style="background: linear-gradient(135deg, #fbbf24, #f59e0b);">D</div>
+                <div class="dev-nombre">Daniel Esteban Mogollon</div>
+                <div class="dev-rol">🎨 Frontend Dev</div>
+                <div class="dev-desc">Interfaces de usuario, diseño web y experiencia visual</div>
+            </div>
+            <div class="dev-card fade-in">
+                <div class="dev-avatar" style="background: linear-gradient(135deg, #4ade80, #22d3ee);">D</div>
+                <div class="dev-nombre">Duban Alejandro Arias</div>
+                <div class="dev-rol">📋 Analista</div>
+                <div class="dev-desc">Análisis de requerimientos, documentación y pruebas del sistema</div>
+            </div>
+            <div class="dev-card fade-in">
+                <div class="dev-avatar" style="background: linear-gradient(135deg, #f472b6, #c026d3);">A</div>
+                <div class="dev-nombre">Anggy Sofía Nieto</div>
+                <div class="dev-rol">🖌️ Diseñadora UX</div>
+                <div class="dev-desc">Diseño visual, identidad de marca y experiencia de usuario</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA FINAL -->
+    <section class="cta-section">
+        <div class="section-badge">🚀 ¡Empieza hoy!</div>
+        <h2 class="cta-titulo">
+            ¿Listo para tomar el control<br>
+            <span style="background: linear-gradient(90deg, #c026d3, #22d3ee); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                de tus finanzas?
+            </span>
+        </h2>
+        <p class="cta-desc">Únete a FinanBot y empieza a tomar mejores decisiones financieras hoy mismo. Es completamente gratis.</p>
+        <div class="cta-btns">
+            <a href="pages/registro.html" class="btn-primary-hero">
+                <i class="fas fa-rocket me-2"></i> Comenzar ahora — Es gratis
+            </a>
+            <a href="pages/chat.html?invitado=true" class="btn-ghost" style="padding:16px 35px; font-size:15px;">
+                <i class="fas fa-robot me-2"></i> Probar primero
+            </a>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        <div class="footer-grid">
+            <div>
+                <div class="footer-brand-logo">
+                    <img src="../images/logo.png" alt="FinanBot" onerror="this.style.display='none'">
+                    <span>FinanBot</span>
+                </div>
+                <p class="footer-desc">
+                    Asistente financiero desarrollado por estudiantes del SENA como proyecto de grado del Tecnólogo en Análisis y Desarrollo de Software. Herramienta educativa para mejorar la salud financiera personal.
+                </p>
+                <div class="sena-badge">
+                    🎓 SENA · Ficha 3407184 · 2026
+                </div>
+            </div>
+            <div>
+                <div class="footer-titulo">Aplicación</div>
+                <ul class="footer-links">
+                    <li><a href="pages/dashboard.html">Dashboard</a></li>
+                    <li><a href="pages/chat.html">Chat FinanBot</a></li>
+                    <li><a href="pages/finanzas.html">Mis Finanzas</a></li>
+                    <li><a href="pages/simulador.html">Simulador</a></li>
+                    <li><a href="pages/aprende.html">Aprende</a></li>
+                    <li><a href="pages/perfil.html">Mi Perfil</a></li>
+                </ul>
+            </div>
+            <div>
+                <div class="footer-titulo">Funciones</div>
+                <ul class="footer-links">
+                    <li><a href="#">ChatBot financiero</a></li>
+                    <li><a href="#">Análisis de gastos</a></li>
+                    <li><a href="#">Metas de ahorro</a></li>
+                    <li><a href="#">Recomendaciones</a></li>
+                    <li><a href="#">Simulador inversiones</a></li>
+                    <li><a href="#">Educación financiera</a></li>
+                </ul>
+            </div>
+            <div>
+                <div class="footer-titulo">Tecnologías</div>
+                <ul class="footer-links">
+                    <li><a href="#">Python + Flask</a></li>
+                    <li><a href="#">MySQL + SQLAlchemy</a></li>
+                    <li><a href="#">JWT + BCrypt</a></li>
+                    <li><a href="#">HTML5 + CSS3</a></li>
+                    <li><a href="#">JavaScript</a></li>
+                    <li><a href="#">Bootstrap + Chart.js</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <span>© 2026 FinanBot · Proyecto educativo SENA · Todos los derechos reservados</span>
+            <span>Desarrollado con ❤️ por el equipo de la Ficha 3407184</span>
+        </div>
+    </footer>
+
+    <script>
+        // Animaciones scroll
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach((entry, i) => {
+                if (entry.isIntersecting) {
+                    setTimeout(() => {
+                        entry.target.classList.add('visible');
+                    }, i * 80);
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+
+        // Navbar scroll
+        window.addEventListener('scroll', () => {
+            const navbar = document.getElementById('navbar');
+            if (window.scrollY > 60) {
+                navbar.style.background = 'rgba(5,5,20,0.98)';
+                navbar.style.boxShadow = '0 4px 30px rgba(0,0,0,0.3)';
+            } else {
+                navbar.style.background = 'rgba(10,10,30,0.85)';
+                navbar.style.boxShadow = 'none';
+            }
+        });
+
+        // Smooth scroll
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                const href = this.getAttribute('href');
+                if (href === '#') return;
+                e.preventDefault();
+                const target = document.querySelector(href);
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+    </script>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
