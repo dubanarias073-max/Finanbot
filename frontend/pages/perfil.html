@@ -573,6 +573,25 @@
                     <button class="btn-guardar" onclick="guardarPerfil()">
                         <i class="fas fa-save me-2"></i> Guardar cambios
                     </button>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px; padding-top: 20px;">
+    <div>
+
+    </div>
+    <button onclick="exportarPDF(this)" style="
+        background: linear-gradient(135deg, #4ade80, #22d3ee);
+        color: #0f0f2d;
+        border: none;
+        border-radius: 50px;
+        padding: 10px 20px;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.3s;
+        box-shadow: 0 4px 15px rgba(74, 222, 128, 0.3);
+    ">
+        <i class="fas fa-file-pdf me-2"></i> Exportar PDF
+    </button>
+</div>
                 </div>
 
                 <!-- METAS -->
@@ -595,6 +614,36 @@
     </div>
 
     <script>
+        async function exportarPDF(btn) {
+    const textoOriginal = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Generando...';
+    btn.disabled = true;
+
+    try {
+        const response = await fetch('http://127.0.0.1:5000/api/exportar/pdf', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `FinanBot_Reporte_${new Date().toLocaleDateString('es-CO').replace(/\//g,'-')}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        } else {
+            alert('Error al generar el PDF.');
+        }
+    } catch (error) {
+        alert('No se pudo conectar con el servidor.');
+    }
+
+    btn.innerHTML = textoOriginal;
+    btn.disabled = false;
+}
         const token = localStorage.getItem('token');
         let metaSeleccionada = null;
 

@@ -33,6 +33,8 @@ from routes.perfil import perfil_bp
 from routes.metas import metas_bp
 from routes.recomendaciones import recomendaciones_bp
 from routes.chat_historial import chat_historial_bp
+from routes.exportar import exportar_bp
+app.register_blueprint(exportar_bp, url_prefix='/api/exportar')
 
 app.register_blueprint(auth, url_prefix='/api/auth')
 app.register_blueprint(chat_bp, url_prefix='/api/chat')

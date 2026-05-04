@@ -41,8 +41,7 @@
         }
 
         .sidebar-logo img {
-            width: 40px;
-            height: 40px;
+            width: 40px; height: 40px;
             border-radius: 50%;
             box-shadow: 0 0 15px rgba(168, 85, 247, 0.5);
         }
@@ -100,16 +99,9 @@
             text-decoration: none;
         }
 
-        .btn-cerrar:hover {
-            background: rgba(239, 68, 68, 0.15);
-            color: #ef4444;
-        }
+        .btn-cerrar:hover { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
 
-        .main {
-            margin-left: 240px;
-            padding: 30px;
-            min-height: 100vh;
-        }
+        .main { margin-left: 240px; padding: 30px; min-height: 100vh; }
 
         .topbar {
             display: flex;
@@ -120,6 +112,32 @@
 
         .topbar h1 { font-size: 24px; font-weight: 700; }
         .topbar p { color: #9ca3af; font-size: 14px; }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .btn-exportar {
+            background: linear-gradient(135deg, #4ade80, #22d3ee);
+            color: #0f0f2d;
+            border: none;
+            border-radius: 50px;
+            padding: 10px 20px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(74, 222, 128, 0.3);
+        }
+
+        .btn-exportar:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(74, 222, 128, 0.5);
+        }
+
+        .btn-exportar:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
 
         .user-badge {
             display: flex;
@@ -132,8 +150,7 @@
         }
 
         .user-avatar {
-            width: 32px;
-            height: 32px;
+            width: 32px; height: 32px;
             border-radius: 50%;
             background: linear-gradient(135deg, #c026d3, #22d3ee);
             display: flex;
@@ -182,6 +199,34 @@
         .stat-value.positivo { color: #4ade80; }
         .stat-value.negativo { color: #f472b6; }
 
+        .accesos-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .acceso-card {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(168, 85, 247, 0.15);
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            text-decoration: none;
+            transition: all 0.3s;
+            color: white;
+        }
+
+        .acceso-card:hover {
+            background: rgba(168, 85, 247, 0.1);
+            transform: translateY(-4px);
+            border-color: #a855f7;
+            color: white;
+        }
+
+        .acceso-icon { font-size: 32px; margin-bottom: 10px; }
+        .acceso-texto { font-size: 13px; color: #c4b5fd; font-weight: 500; }
+
         .charts-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -225,8 +270,7 @@
         .trans-item:last-child { border-bottom: none; }
 
         .trans-icon {
-            width: 38px;
-            height: 38px;
+            width: 38px; height: 38px;
             border-radius: 10px;
             display: flex;
             align-items: center;
@@ -244,34 +288,6 @@
         .trans-monto { font-size: 15px; font-weight: 700; }
         .trans-monto.gasto { color: #f472b6; }
         .trans-monto.ingreso { color: #4ade80; }
-
-        .accesos-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 15px;
-            margin-bottom: 30px;
-        }
-
-        .acceso-card {
-            background: rgba(255,255,255,0.04);
-            border: 1px solid rgba(168, 85, 247, 0.15);
-            border-radius: 16px;
-            padding: 20px;
-            text-align: center;
-            text-decoration: none;
-            transition: all 0.3s;
-            color: white;
-        }
-
-        .acceso-card:hover {
-            background: rgba(168, 85, 247, 0.1);
-            transform: translateY(-4px);
-            border-color: #a855f7;
-            color: white;
-        }
-
-        .acceso-icon { font-size: 32px; margin-bottom: 10px; }
-        .acceso-texto { font-size: 13px; color: #c4b5fd; font-weight: 500; }
     </style>
 </head>
 <body>
@@ -282,26 +298,13 @@
             <img src="../../images/logo.png" alt="FinanBot" onerror="this.style.display='none'">
             <span>FinanBot</span>
         </div>
-        <a href="dashboard.html" class="nav-item active">
-            <i class="fas fa-home"></i> Dashboard
-        </a>
-        <a href="chat.html" class="nav-item">
-            <i class="fas fa-robot"></i> Chat FinanBot
-        </a>
-        <a href="finanzas.html" class="nav-item">
-            <i class="fas fa-wallet"></i> Mis Finanzas
-        </a>
-       <a href="recomendaciones.html" class="nav-item">
-            <i class="fas fa-lightbulb"></i> Recomendaciones
-        </a>
-        </a>
-        <a href="simulador.html" class="nav-item">
-            <i class="fas fa-chart-line"></i> Simulador
-        </a>
+        <a href="dashboard.html" class="nav-item active"><i class="fas fa-home"></i> Dashboard</a>
+        <a href="chat.html" class="nav-item"><i class="fas fa-robot"></i> Chat FinanBot</a>
+        <a href="finanzas.html" class="nav-item"><i class="fas fa-wallet"></i> Mis Finanzas</a>
+        <a href="recomendaciones.html" class="nav-item"><i class="fas fa-lightbulb"></i> Recomendaciones</a>
+        <a href="simulador.html" class="nav-item"><i class="fas fa-chart-line"></i> Simulador</a>
         <a href="aprende.html" class="nav-item"><i class="fas fa-graduation-cap"></i> Aprende</a>
-        <a href="perfil.html" class="nav-item">
-            <i class="fas fa-user-circle"></i> Mi Perfil
-        </a>
+        <a href="perfil.html" class="nav-item"><i class="fas fa-user-circle"></i> Mi Perfil</a>
         <div class="sidebar-bottom">
             <a href="../index.html" class="btn-cerrar" onclick="cerrarSesion()">
                 <i class="fas fa-sign-out-alt"></i> Cerrar sesión
@@ -311,14 +314,21 @@
 
     <!-- MAIN -->
     <div class="main">
+
+        <!-- TOPBAR -->
         <div class="topbar">
             <div>
                 <h1>¡Hola, <span id="nombreUsuario">Usuario</span>! 👋</h1>
                 <p>Aquí está el resumen de tus finanzas</p>
             </div>
-            <div class="user-badge">
-                <div class="user-avatar" id="avatarLetra">U</div>
-                <span class="user-name" id="correoUsuario">usuario@correo.com</span>
+            <div class="topbar-right">
+                <button class="btn-exportar" onclick="exportarPDF(this)">
+                    <i class="fas fa-file-pdf me-2"></i> Exportar PDF
+                </button>
+                <div class="user-badge">
+                    <div class="user-avatar" id="avatarLetra">U</div>
+                    <span class="user-name" id="correoUsuario">usuario@correo.com</span>
+                </div>
             </div>
         </div>
 
@@ -342,7 +352,7 @@
             <div class="stat-card meta">
                 <div class="stat-icon">🎯</div>
                 <div class="stat-label">Meta de ahorro</div>
-                <div class="stat-value" style="color:#fbbf24" id="metaAhorro">0%</div>
+                <div class="stat-value" style="color:#fbbf24" id="metaAhorro">Sin metas</div>
             </div>
         </div>
 
@@ -371,14 +381,14 @@
             <div class="chart-card">
                 <div class="chart-title">
                     <i class="fas fa-chart-bar" style="color:#a855f7"></i>
-                    Gastos // Ingresos por mes
+                    Gastos vs Ingresos por mes
                 </div>
                 <canvas id="chartBarras" height="200"></canvas>
             </div>
             <div class="chart-card">
                 <div class="chart-title">
-                <i class="fas fa-chart-pie" style="color:#22d3ee"></i>
-Gastos e Ingresos por categoría
+                    <i class="fas fa-chart-pie" style="color:#22d3ee"></i>
+                    Gastos e Ingresos por categoría
                 </div>
                 <canvas id="chartTorta" height="200"></canvas>
             </div>
@@ -423,7 +433,6 @@ Gastos e Ingresos por categoría
 
                 if (resTrans.ok) {
                     const transacciones = await resTrans.json();
-
                     const ingresos = transacciones.filter(t => t.tipo === 'ingreso').reduce((s, t) => s + t.monto, 0);
                     const gastos = transacciones.filter(t => t.tipo === 'gasto').reduce((s, t) => s + t.monto, 0);
                     const balance = ingresos - gastos;
@@ -438,30 +447,22 @@ Gastos e Ingresos por categoría
                     renderGraficaTorta(transacciones);
                 }
 
-                const resPerfil = await fetch('http://127.0.0.1:5000/api/perfil/', {
+                const resMetas = await fetch('http://127.0.0.1:5000/api/metas/', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
-if (resPerfil.ok) {
-    const perfil = await resPerfil.json();
-}
+                if (resMetas.ok) {
+                    const metas = await resMetas.json();
+                    if (metas.length > 0) {
+                        const totalObjetivo = metas.reduce((s, m) => s + m.monto_objetivo, 0);
+                        const totalActual = metas.reduce((s, m) => s + m.monto_actual, 0);
+                        const porcentaje = totalObjetivo > 0 ? Math.min(Math.round((totalActual / totalObjetivo) * 100), 100) : 0;
+                        document.getElementById('metaAhorro').textContent = porcentaje + '%';
+                    } else {
+                        document.getElementById('metaAhorro').textContent = 'Sin metas';
+                    }
+                }
 
-// Cargar metas para mostrar progreso real
-const resMetas = await fetch('http://127.0.0.1:5000/api/metas/', {
-    headers: { 'Authorization': `Bearer ${token}` }
-});
-
-if (resMetas.ok) {
-    const metas = await resMetas.json();
-    if (metas.length > 0) {
-        const totalObjetivo = metas.reduce((s, m) => s + m.monto_objetivo, 0);
-        const totalActual = metas.reduce((s, m) => s + m.monto_actual, 0);
-        const porcentaje = totalObjetivo > 0 ? Math.min(Math.round((totalActual / totalObjetivo) * 100), 100) : 0;
-        document.getElementById('metaAhorro').textContent = porcentaje + '%';
-    } else {
-        document.getElementById('metaAhorro').textContent = 'Sin metas';
-    }
-}
             } catch (error) {
                 console.error('Error cargando dashboard:', error);
             }
@@ -469,7 +470,6 @@ if (resMetas.ok) {
 
         function renderTransacciones(transacciones) {
             const lista = document.getElementById('listaRecientes');
-
             if (transacciones.length === 0) {
                 lista.innerHTML = `<div style="text-align:center; color:#6b7280; padding:20px; font-size:14px;">
                     No hay transacciones aún. <a href="finanzas.html" style="color:#a855f7">¡Agrega una!</a>
@@ -533,81 +533,98 @@ if (resMetas.ok) {
             });
         }
 
-function renderGraficaTorta(transacciones) {
-    const gastos = transacciones.filter(t => t.tipo === 'gasto');
-    const ingresos = transacciones.filter(t => t.tipo === 'ingreso');
-    
-    const categorias = {};
-    gastos.forEach(t => {
-        if (!categorias[t.categoria]) categorias[t.categoria] = 0;
-        categorias[t.categoria] += t.monto;
-    });
+        function renderGraficaTorta(transacciones) {
+            const gastos = transacciones.filter(t => t.tipo === 'gasto');
+            const ingresos = transacciones.filter(t => t.tipo === 'ingreso');
 
-    const categoriasIngresos = {};
-    ingresos.forEach(t => {
-        if (!categoriasIngresos[t.categoria]) categoriasIngresos[t.categoria] = 0;
-        categoriasIngresos[t.categoria] += t.monto;
-    });
+            const categorias = {};
+            gastos.forEach(t => {
+                if (!categorias[t.categoria]) categorias[t.categoria] = 0;
+                categorias[t.categoria] += t.monto;
+            });
 
-    const labels = [
-        ...Object.keys(categorias).map(k => '💸 ' + k),
-        ...Object.keys(categoriasIngresos).map(k => '💰 ' + k)
-    ];
-    const data = [
-        ...Object.values(categorias),
-        ...Object.values(categoriasIngresos)
-    ];
+            const categoriasIngresos = {};
+            ingresos.forEach(t => {
+                if (!categoriasIngresos[t.categoria]) categoriasIngresos[t.categoria] = 0;
+                categoriasIngresos[t.categoria] += t.monto;
+            });
 
-    const coloresGastos = [
-        'rgba(192, 38, 211, 0.8)',
-        'rgba(168, 85, 247, 0.8)',
-        'rgba(236, 72, 153, 0.8)',
-        'rgba(244, 114, 182, 0.8)',
-        'rgba(139, 92, 246, 0.8)',
-    ];
+            const labels = [
+                ...Object.keys(categorias).map(k => '💸 ' + k),
+                ...Object.keys(categoriasIngresos).map(k => '💰 ' + k)
+            ];
+            const data = [
+                ...Object.values(categorias),
+                ...Object.values(categoriasIngresos)
+            ];
 
-    const coloresIngresos = [
-        'rgba(34, 211, 238, 0.8)',
-        'rgba(74, 222, 128, 0.8)',
-        'rgba(56, 189, 248, 0.8)',
-        'rgba(16, 185, 129, 0.8)',
-    ];
+            const coloresGastos = ['rgba(192,38,211,0.8)', 'rgba(168,85,247,0.8)', 'rgba(236,72,153,0.8)', 'rgba(244,114,182,0.8)', 'rgba(139,92,246,0.8)'];
+            const coloresIngresos = ['rgba(34,211,238,0.8)', 'rgba(74,222,128,0.8)', 'rgba(56,189,248,0.8)', 'rgba(16,185,129,0.8)'];
 
-    const colores = [
-        ...Object.keys(categorias).map((_, i) => coloresGastos[i % coloresGastos.length]),
-        ...Object.keys(categoriasIngresos).map((_, i) => coloresIngresos[i % coloresIngresos.length])
-    ];
+            const colores = [
+                ...Object.keys(categorias).map((_, i) => coloresGastos[i % coloresGastos.length]),
+                ...Object.keys(categoriasIngresos).map((_, i) => coloresIngresos[i % coloresIngresos.length])
+            ];
 
-    const ctxTorta = document.getElementById('chartTorta').getContext('2d');
-    new Chart(ctxTorta, {
-        type: 'doughnut',
-        data: {
-            labels: labels.length > 0 ? labels : ['Sin datos'],
-            datasets: [{
-                data: data.length > 0 ? data : [1],
-                backgroundColor: data.length > 0 ? colores : ['rgba(168, 85, 247, 0.3)'],
-                borderWidth: 0,
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    position: 'bottom',
-                    labels: { color: '#c4b5fd', font: { size: 11 }, padding: 15 }
+            const ctxTorta = document.getElementById('chartTorta').getContext('2d');
+            new Chart(ctxTorta, {
+                type: 'doughnut',
+                data: {
+                    labels: labels.length > 0 ? labels : ['Sin datos'],
+                    datasets: [{
+                        data: data.length > 0 ? data : [1],
+                        backgroundColor: data.length > 0 ? colores : ['rgba(168,85,247,0.3)'],
+                        borderWidth: 0,
+                    }]
                 },
-                tooltip: {
-                    callbacks: {
-                        label: ctx => {
-                            const valor = ctx.parsed;
-                            return ` $${valor.toLocaleString('es-CO')}`;
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { color: '#c4b5fd', font: { size: 11 }, padding: 15 }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: ctx => ` $${ctx.parsed.toLocaleString('es-CO')}`
+                            }
                         }
                     }
                 }
-            }
+            });
         }
-    });
-}
+
+        async function exportarPDF(btn) {
+            const textoOriginal = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Generando...';
+            btn.disabled = true;
+
+            try {
+                const response = await fetch('http://127.0.0.1:5000/api/exportar/pdf', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `FinanBot_Reporte_${new Date().toLocaleDateString('es-CO').replace(/\//g,'-')}.pdf`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                } else {
+                    alert('Error al generar el PDF.');
+                }
+            } catch (error) {
+                alert('No se pudo conectar con el servidor.');
+            }
+
+            btn.innerHTML = textoOriginal;
+            btn.disabled = false;
+        }
+
         cargarDashboard();
     </script>
 
