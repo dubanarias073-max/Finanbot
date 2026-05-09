@@ -192,128 +192,360 @@
             color: #86efac;
         }
 
+        
+        .divider {
+            border: none;
+            border-top: 1px solid rgba(255,255,255,0.08);
+            margin: 20px 0;
+        }
+
+        /* MODAL */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.75);
+            z-index: 999;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.visible { display: flex; }
+
+        .modal-box {
+            background: #0f0f2d;
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            border-radius: 22px;
+            padding: 35px 30px;
+            width: 100%;
+            max-width: 420px;
+            position: relative;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.6);
+        }
+
+        .modal-box::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 3px;
+            background: linear-gradient(90deg, #c026d3, #a855f7, #22d3ee);
+            border-radius: 22px 22px 0 0;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 15px; right: 18px;
+            background: rgba(255,255,255,0.06);
+            border: none;
+            color: #9ca3af;
+            font-size: 16px;
+            cursor: pointer;
+            width: 30px; height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .modal-close:hover { background: rgba(239,68,68,0.2); color: #ef4444; }
+
+        .modal-titulo {
+            font-size: 18px;
+            font-weight: 700;
+            color: #c4b5fd;
+            margin-bottom: 5px;
+        }
+
+        .modal-subtitulo {
+            font-size: 13px;
+            color: #6b7280;
+            margin-bottom: 20px;
+        }
+
+        .modal-label {
+            color: #c4b5fd;
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        .modal-input {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(168,85,247,0.3);
+            border-radius: 12px;
+            color: white;
+            padding: 11px 15px;
+            font-size: 14px;
+            width: 100%;
+            margin-bottom: 14px;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .modal-input:focus {
+            border-color: #a855f7;
+            background: rgba(168,85,247,0.05);
+        }
+
+        .modal-input::placeholder { color: #6b7280; }
+
+        .btn-modal {
+            background: linear-gradient(135deg, #c026d3, #a855f7);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 13px;
+            font-size: 15px;
+            font-weight: 600;
+            width: 100%;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 6px 20px rgba(192,38,211,0.3);
+        }
+
+        .btn-modal:hover { transform: translateY(-2px); opacity: 0.9; }
+
+        .pregunta-box {
+            background: rgba(168,85,247,0.08);
+            border: 1px solid rgba(168,85,247,0.25);
+            border-radius: 12px;
+            padding: 14px 16px;
+            font-size: 14px;
+            color: #c4b5fd;
+            margin-bottom: 18px;
+            line-height: 1.5;
+        }
+
+        .alerta-modal {
+            border-radius: 10px;
+            padding: 10px 14px;
+            font-size: 13px;
+            margin-bottom: 14px;
+            display: none;
+        }
+
+        .alerta-modal-error {
+            background: rgba(239,68,68,0.1);
+            border: 1px solid rgba(239,68,68,0.3);
+            color: #fca5a5;
+        }
+
+        .alerta-modal-exito {
+            background: rgba(34,197,94,0.1);
+            border: 1px solid rgba(34,197,94,0.3);
+            color: #86efac;
+        }
+
+        .paso-indicador {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .paso-dot {
+            height: 4px;
+            border-radius: 4px;
+            flex: 1;
+            background: rgba(168,85,247,0.2);
+            transition: background 0.3s;
+        }
+
+        .paso-dot.activo { background: #a855f7; }
+        .paso-dot.completado { background: #4ade80; }
+
+        /* CAPTCHA */
+        .captcha-box {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(168,85,247,0.2);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 14px;
+        }
+
+        .captcha-label {
+            font-size: 12px;
+            color: #9ca3af;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .captcha-operacion {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .captcha-texto {
+            font-size: 22px;
+            font-weight: 800;
+            background: linear-gradient(90deg, #a855f7, #22d3ee);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 2px;
+            user-select: none;
+        }
+
+        .captcha-input {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(168,85,247,0.3);
+            border-radius: 10px;
+            color: white;
+            padding: 10px 14px;
+            font-size: 16px;
+            font-weight: 700;
+            width: 80px;
+            text-align: center;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .captcha-input:focus {
+            border-color: #a855f7;
+            background: rgba(168,85,247,0.08);
+        }
+
+        .btn-refresh-captcha {
+            background: none;
+            border: none;
+            color: #6b7280;
+            cursor: pointer;
+            font-size: 16px;
+            padding: 5px;
+            transition: color 0.3s;
+            margin-left: auto;
+        }
+
+        .btn-refresh-captcha:hover { color: #a855f7; }
+
+        .captcha-error {
+            color: #fca5a5;
+            font-size: 12px;
+            margin-top: 6px;
+            display: none;
+        }
+
         .mb-3 { margin-bottom: 16px; }
     </style>
 </head>
 <body>
-<!-- MODAL OLVIDÉ CONTRASEÑA -->
-<div id="modalOlvide" style="
-    display: none;
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    background: rgba(0,0,0,0.7);
-    z-index: 999;
-    align-items: center;
-    justify-content: center;
-">
-    <div style="
-        background: #1a1a4e;
-        border: 1px solid rgba(168, 85, 247, 0.3);
-        border-radius: 20px;
-        padding: 30px;
-        width: 100%;
-        max-width: 400px;
-        position: relative;
-    ">
-        <button onclick="cerrarModal()" style="
-            position: absolute;
-            top: 15px; right: 20px;
-            background: none; border: none;
-            color: #9ca3af; font-size: 20px; cursor: pointer;
-        ">✕</button>
+    <!-- MODAL OLVIDÉ CONTRASEÑA -->
+    <div class="modal-overlay" id="modalOlvide">
+        <div class="modal-box">
+            <button class="modal-close" onclick="cerrarModal()">✕</button>
 
-        <h3 style="color:#c4b5fd; font-size:18px; font-weight:700; margin-bottom:5px;">
-            🔑 Restablecer contraseña
-        </h3>
+            <div class="modal-titulo">🔑 Restablecer contraseña</div>
+            <div class="modal-subtitulo">Verifica tu identidad para cambiar tu contraseña</div>
 
-        <div id="alertaResetError" style="
-            background: rgba(239,68,68,0.1);
-            border: 1px solid rgba(239,68,68,0.3);
-            color: #fca5a5; border-radius: 10px;
-            padding: 10px 15px; font-size: 13px;
-            margin-bottom: 15px; display: none;
-        "></div>
+            <div class="paso-indicador">
+                <div class="paso-dot activo" id="dot1"></div>
+                <div class="paso-dot" id="dot2"></div>
+                <div class="paso-dot" id="dot3"></div>
+            </div>
 
-        <div id="alertaResetExito" style="
-            background: rgba(34,197,94,0.1);
-            border: 1px solid rgba(34,197,94,0.3);
-            color: #86efac; border-radius: 10px;
-            padding: 10px 15px; font-size: 13px;
-            margin-bottom: 15px; display: none;
-        "></div>
+            <div class="alerta-modal alerta-modal-error" id="alertaResetError"></div>
+            <div class="alerta-modal alerta-modal-exito" id="alertaResetExito"></div>
 
-        <!-- PASO 1: Correo -->
-        <div id="paso1Reset">
-            <p style="color:#9ca3af; font-size:13px; margin-bottom:15px;">
-                Ingresa tu correo para buscar tu cuenta
-            </p>
-            <label style="color:#c4b5fd; font-size:13px; display:block; margin-bottom:6px;">Correo electrónico</label>
-            <input type="email" id="resetCorreo" placeholder="tu@correo.com" style="
-                background: rgba(255,255,255,0.05);
-                border: 1px solid rgba(168,85,247,0.3);
-                border-radius: 12px; color: white;
-                padding: 11px 15px; font-size: 14px;
-                width: 100%; margin-bottom: 15px; outline: none;
-            ">
-            <button onclick="buscarCuenta()" style="
-                background: linear-gradient(135deg, #c026d3, #a855f7);
-                color: white; border: none; border-radius: 12px;
-                padding: 13px; font-size: 15px; font-weight: 600;
-                width: 100%; cursor: pointer;
-            ">Buscar cuenta</button>
-        </div>
+            <!-- PASO 1: Correo -->
+            <div id="paso1Reset">
+                <label class="modal-label">📧 Correo electrónico</label>
+                <input type="email" class="modal-input" id="resetCorreo"
+                       placeholder="tu@correo.com">
 
-        <!-- PASO 2: Pregunta de seguridad -->
-        <div id="paso2Reset" style="display:none;">
-            <p style="color:#9ca3af; font-size:13px; margin-bottom:15px;">
-                Responde tu pregunta de seguridad
-            </p>
-            <div style="
-                background: rgba(168,85,247,0.08);
-                border: 1px solid rgba(168,85,247,0.2);
-                border-radius: 12px; padding: 12px 15px;
-                font-size: 14px; color: #c4b5fd; margin-bottom: 15px;
-            " id="preguntaMostrada"></div>
+                <!-- CAPTCHA -->
+                <div class="captcha-box">
+                    <div class="captcha-label">
+                        🔐 Verificación de seguridad — Resuelve la operación:
+                    </div>
+                    <div class="captcha-operacion">
+                        <span class="captcha-texto" id="captchaTexto">5 + 3</span>
+                        <span style="color:#9ca3af; font-size:18px;">=</span>
+                        <input type="number" class="captcha-input" id="captchaRespuesta"
+                               placeholder="?">
+                        <button class="btn-refresh-captcha" onclick="generarCaptcha()" title="Nuevo captcha">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+                    <div class="captcha-error" id="captchaError">
+                        <i class="fas fa-times-circle me-1"></i>Respuesta incorrecta
+                    </div>
+                </div>
 
-            <label style="color:#c4b5fd; font-size:13px; display:block; margin-bottom:6px;">Tu respuesta</label>
-            <input type="text" id="resetRespuesta" placeholder="Escribe tu respuesta" style="
-                background: rgba(255,255,255,0.05);
-                border: 1px solid rgba(168,85,247,0.3);
-                border-radius: 12px; color: white;
-                padding: 11px 15px; font-size: 14px;
-                width: 100%; margin-bottom: 15px; outline: none;
-            ">
+                <button class="btn-modal" onclick="buscarCuenta()">
+                    <i class="fas fa-search me-2"></i> Buscar mi cuenta
+                </button>
+            </div>
 
-            <label style="color:#c4b5fd; font-size:13px; display:block; margin-bottom:6px;">Nueva contraseña</label>
-            <input type="password" id="resetContrasena" placeholder="Mínimo 6 caracteres" style="
-                background: rgba(255,255,255,0.05);
-                border: 1px solid rgba(168,85,247,0.3);
-                border-radius: 12px; color: white;
-                padding: 11px 15px; font-size: 14px;
-                width: 100%; margin-bottom: 15px; outline: none;
-            ">
+            <!-- PASO 2: Pregunta de seguridad -->
+            <div id="paso2Reset" style="display:none;">
+                <div class="pregunta-box" id="preguntaMostrada">
+                    🔐 Cargando pregunta...
+                </div>
 
-            <label style="color:#c4b5fd; font-size:13px; display:block; margin-bottom:6px;">Confirmar contraseña</label>
-            <input type="password" id="resetConfirmar" placeholder="Repite tu contraseña" style="
-                background: rgba(255,255,255,0.05);
-                border: 1px solid rgba(168,85,247,0.3);
-                border-radius: 12px; color: white;
-                padding: 11px 15px; font-size: 14px;
-                width: 100%; margin-bottom: 20px; outline: none;
-            ">
+                <label class="modal-label">Tu respuesta secreta</label>
+                <input type="text" class="modal-input" id="resetRespuesta"
+                       placeholder="Escribe tu respuesta">
 
-            <button onclick="resetearContrasena()" style="
-                background: linear-gradient(135deg, #c026d3, #a855f7);
-                color: white; border: none; border-radius: 12px;
-                padding: 13px; font-size: 15px; font-weight: 600;
-                width: 100%; cursor: pointer;
-            ">
-                <i class="fas fa-key me-2"></i> Cambiar contraseña
-            </button>
+                <button class="btn-modal" onclick="verificarRespuesta()">
+                    <i class="fas fa-check me-2"></i> Verificar respuesta
+                </button>
+            </div>
+
+<!-- PASO 3: Nueva contraseña -->
+<div id="paso3Reset" style="display:none;">
+    <label class="modal-label">🔒 Nueva contraseña</label>
+    <div style="display:flex; margin-bottom:14px;">
+        <input type="password" class="modal-input" id="resetContrasena"
+               placeholder="Mínimo 6 caracteres"
+               style="border-radius:12px 0 0 12px; border-right:none; margin-bottom:0;">
+        <button type="button" onclick="togglePass('resetContrasena', this)" style="
+            background: rgba(168,85,247,0.1);
+            border: 1px solid rgba(168,85,247,0.3);
+            border-left: none;
+            border-radius: 0 12px 12px 0;
+            color: #9ca3af;
+            padding: 0 14px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        " onmouseover="this.style.color='#a855f7'"
+           onmouseout="this.style.color='#9ca3af'">
+            <i class="fas fa-eye"></i>
+        </button>
+    </div>
+
+    <label class="modal-label">🔒 Confirmar contraseña</label>
+    <div style="display:flex; margin-bottom:14px;">
+        <input type="password" class="modal-input" id="resetConfirmar"
+               placeholder="Repite tu contraseña"
+               style="border-radius:12px 0 0 12px; border-right:none; margin-bottom:0;">
+        <button type="button" onclick="togglePass('resetConfirmar', this)" style="
+            background: rgba(168,85,247,0.1);
+            border: 1px solid rgba(168,85,247,0.3);
+            border-left: none;
+            border-radius: 0 12px 12px 0;
+            color: #9ca3af;
+            padding: 0 14px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        " onmouseover="this.style.color='#a855f7'"
+           onmouseout="this.style.color='#9ca3af'">
+            <i class="fas fa-eye"></i>
+        </button>
+    </div>
+
+    <button class="btn-modal" onclick="resetearContrasena()">
+        <i class="fas fa-key me-2"></i> Cambiar contraseña
+    </button>
+</div>
         </div>
     </div>
-</div>
+
     <div class="card-login">
         <img src="../../images/logo.png" alt="FinanBot" class="logo-small"
              onerror="this.style.display='none'">
@@ -339,15 +571,29 @@
             </div>
         </div>
 
-        <div class="mb-3">
-            <label class="form-label"><i class="fas fa-lock me-1"></i> Contraseña</label>
-            <div class="input-group">
-                <span class="input-group-text"><i class="fas fa-lock"></i></span>
-                <input type="password" class="form-control" id="contrasena"
-                       placeholder="Tu contraseña">
-            </div>
-        </div>
-
+<!-- CONTRASEÑA -->
+<div class="mb-3">
+    <label class="form-label"><i class="fas fa-lock me-1"></i> Contraseña</label>
+    <div class="input-group">
+        <span class="input-group-text"><i class="fas fa-lock"></i></span>
+        <input type="password" class="form-control" id="contrasena"
+               placeholder="Tu contraseña" style="border-radius:0; border-right:none;">
+        <button type="button" onclick="togglePass('contrasena', this)" style="
+            background: rgba(34,211,238,0.1);
+            border: 1px solid rgba(34,211,238,0.3);
+            border-left: none;
+            border-radius: 0 12px 12px 0;
+            color: #9ca3af;
+            padding: 0 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+        " onmouseover="this.style.color='#22d3ee'"
+           onmouseout="this.style.color='#9ca3af'">
+            <i class="fas fa-eye"></i>
+        </button>
+    </div>
+</div>
         <button class="btn-ingresar" id="btnIngresar" onclick="login()">
             <i class="fas fa-sign-in-alt me-2"></i> Ingresar
         </button>
@@ -368,114 +614,205 @@
     </div>
 
     <script>
+  // ============================================
+        // CAPTCHA
+        // ============================================
+        let captchaResultado = 0;
 
-function abrirModal() {
-    document.getElementById('modalOlvide').style.display = 'flex';
-}
+        function generarCaptcha() {
+            const operaciones = ['+', '-', 'x'];
+            const op = operaciones[Math.floor(Math.random() * operaciones.length)];
+            let a, b, resultado;
 
-function cerrarModal() {
-    document.getElementById('modalOlvide').style.display = 'none';
-    document.getElementById('paso1Reset').style.display = 'block';
-    document.getElementById('paso2Reset').style.display = 'none';
-    document.getElementById('resetCorreo').value = '';
-    document.getElementById('resetRespuesta').value = '';
-    document.getElementById('resetContrasena').value = '';
-    document.getElementById('resetConfirmar').value = '';
-    document.getElementById('alertaResetError').style.display = 'none';
-    document.getElementById('alertaResetExito').style.display = 'none';
-}
+            if (op === '+') {
+                a = Math.floor(Math.random() * 10) + 1;
+                b = Math.floor(Math.random() * 10) + 1;
+                resultado = a + b;
+            } else if (op === '-') {
+                a = Math.floor(Math.random() * 10) + 5;
+                b = Math.floor(Math.random() * 5) + 1;
+                resultado = a - b;
+            } else {
+                a = Math.floor(Math.random() * 5) + 1;
+                b = Math.floor(Math.random() * 5) + 1;
+                resultado = a * b;
+            }
 
-async function buscarCuenta() {
-    const correo = document.getElementById('resetCorreo').value.trim();
-    const errorDiv = document.getElementById('alertaResetError');
-    errorDiv.style.display = 'none';
-
-    if (!correo) {
-        errorDiv.textContent = 'Ingresa tu correo.';
-        errorDiv.style.display = 'block';
-        return;
-    }
-
-    try {
-        const response = await fetch('http://127.0.0.1:5000/api/auth/obtener-pregunta', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ correo })
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-            document.getElementById('preguntaMostrada').textContent = '🔐 ' + data.pregunta;
-            document.getElementById('paso1Reset').style.display = 'none';
-            document.getElementById('paso2Reset').style.display = 'block';
-        } else {
-            errorDiv.textContent = data.mensaje;
-            errorDiv.style.display = 'block';
+            captchaResultado = resultado;
+            document.getElementById('captchaTexto').textContent = `${a} ${op} ${b}`;
+            document.getElementById('captchaRespuesta').value = '';
+            document.getElementById('captchaError').style.display = 'none';
         }
-    } catch (error) {
-        errorDiv.textContent = 'No se pudo conectar con el servidor.';
-        errorDiv.style.display = 'block';
-    }
-}
 
-async function resetearContrasena() {
-    const correo = document.getElementById('resetCorreo').value.trim();
-    const respuesta = document.getElementById('resetRespuesta').value.trim();
-    const contrasena = document.getElementById('resetContrasena').value;
-    const confirmar = document.getElementById('resetConfirmar').value;
-    const errorDiv = document.getElementById('alertaResetError');
-    const exitoDiv = document.getElementById('alertaResetExito');
-
-    errorDiv.style.display = 'none';
-    exitoDiv.style.display = 'none';
-
-    if (!respuesta || !contrasena || !confirmar) {
-        errorDiv.textContent = 'Todos los campos son obligatorios.';
-        errorDiv.style.display = 'block';
-        return;
-    }
-
-    if (contrasena.length < 6) {
-        errorDiv.textContent = 'La contraseña debe tener mínimo 6 caracteres.';
-        errorDiv.style.display = 'block';
-        return;
-    }
-
-    if (contrasena !== confirmar) {
-        errorDiv.textContent = 'Las contraseñas no coinciden.';
-        errorDiv.style.display = 'block';
-        return;
-    }
-
-    try {
-        const response = await fetch('http://127.0.0.1:5000/api/auth/resetear-contrasena', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                correo,
-                respuesta,
-                nueva_contrasena: contrasena
-            })
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-            exitoDiv.textContent = '✅ ' + data.mensaje + ' Ya puedes iniciar sesión.';
-            exitoDiv.style.display = 'block';
-            setTimeout(() => cerrarModal(), 3000);
-        } else {
-            errorDiv.textContent = data.mensaje;
-            errorDiv.style.display = 'block';
+        function verificarCaptcha() {
+            const respuesta = parseInt(document.getElementById('captchaRespuesta').value);
+            if (respuesta !== captchaResultado) {
+                document.getElementById('captchaError').style.display = 'block';
+                generarCaptcha();
+                return false;
+            }
+            document.getElementById('captchaError').style.display = 'none';
+            return true;
         }
-    } catch (error) {
-        errorDiv.textContent = 'No se pudo conectar con el servidor.';
-        errorDiv.style.display = 'block';
-    }
-}
 
-async function login() {
+        // ============================================
+        // MODAL
+        // ============================================
+        function abrirModal() {
+            document.getElementById('modalOlvide').classList.add('visible');
+            generarCaptcha();
+        }
+
+        function cerrarModal() {
+            document.getElementById('modalOlvide').classList.remove('visible');
+            document.getElementById('paso1Reset').style.display = 'block';
+            document.getElementById('paso2Reset').style.display = 'none';
+            document.getElementById('paso3Reset').style.display = 'none';
+            document.getElementById('resetCorreo').value = '';
+            document.getElementById('resetRespuesta').value = '';
+            document.getElementById('resetContrasena').value = '';
+            document.getElementById('resetConfirmar').value = '';
+            document.getElementById('alertaResetError').style.display = 'none';
+            document.getElementById('alertaResetExito').style.display = 'none';
+            actualizarDots(1);
+            generarCaptcha();
+        }
+
+        function actualizarDots(paso) {
+            for (let i = 1; i <= 3; i++) {
+                const dot = document.getElementById(`dot${i}`);
+                dot.className = 'paso-dot';
+                if (i < paso) dot.classList.add('completado');
+                else if (i === paso) dot.classList.add('activo');
+            }
+        }
+
+        function mostrarErrorModal(msg) {
+            const div = document.getElementById('alertaResetError');
+            div.textContent = msg;
+            div.style.display = 'block';
+            document.getElementById('alertaResetExito').style.display = 'none';
+        }
+
+        function mostrarExitoModal(msg) {
+            const div = document.getElementById('alertaResetExito');
+            div.textContent = msg;
+            div.style.display = 'block';
+            document.getElementById('alertaResetError').style.display = 'none';
+        }
+
+        async function buscarCuenta() {
+            const correo = document.getElementById('resetCorreo').value.trim();
+            document.getElementById('alertaResetError').style.display = 'none';
+
+            if (!correo) {
+                mostrarErrorModal('Ingresa tu correo electrónico.');
+                return;
+            }
+
+            if (!verificarCaptcha()) {
+                mostrarErrorModal('El captcha es incorrecto. Intenta de nuevo.');
+                return;
+            }
+
+            try {
+                const response = await fetch('http://127.0.0.1:5000/api/auth/obtener-pregunta', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ correo })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    document.getElementById('preguntaMostrada').textContent = '🔐 ' + data.pregunta;
+                    document.getElementById('paso1Reset').style.display = 'none';
+                    document.getElementById('paso2Reset').style.display = 'block';
+                    actualizarDots(2);
+                } else {
+                    mostrarErrorModal(data.mensaje);
+                    generarCaptcha();
+                }
+            } catch (error) {
+                mostrarErrorModal('No se pudo conectar con el servidor.');
+            }
+        }
+
+        async function verificarRespuesta() {
+            const correo = document.getElementById('resetCorreo').value.trim();
+            const respuesta = document.getElementById('resetRespuesta').value.trim();
+
+            if (!respuesta) {
+                mostrarErrorModal('Escribe tu respuesta de seguridad.');
+                return;
+            }
+
+            try {
+                const response = await fetch('http://127.0.0.1:5000/api/auth/verificar-seguridad', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ correo, respuesta })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    document.getElementById('paso2Reset').style.display = 'none';
+                    document.getElementById('paso3Reset').style.display = 'block';
+                    actualizarDots(3);
+                } else {
+                    mostrarErrorModal(data.mensaje);
+                }
+            } catch (error) {
+                mostrarErrorModal('No se pudo conectar con el servidor.');
+            }
+        }
+
+        async function resetearContrasena() {
+            const correo = document.getElementById('resetCorreo').value.trim();
+            const respuesta = document.getElementById('resetRespuesta').value.trim();
+            const contrasena = document.getElementById('resetContrasena').value;
+            const confirmar = document.getElementById('resetConfirmar').value;
+
+            if (!contrasena || !confirmar) {
+                mostrarErrorModal('Completa todos los campos.');
+                return;
+            }
+
+            if (contrasena.length < 6) {
+                mostrarErrorModal('La contraseña debe tener mínimo 6 caracteres.');
+                return;
+            }
+
+            if (contrasena !== confirmar) {
+                mostrarErrorModal('Las contraseñas no coinciden.');
+                return;
+            }
+
+            try {
+                const response = await fetch('http://127.0.0.1:5000/api/auth/resetear-contrasena', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ correo, respuesta, nueva_contrasena: contrasena })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    mostrarExitoModal('✅ ' + data.mensaje + ' Ya puedes iniciar sesión.');
+                    setTimeout(() => cerrarModal(), 3000);
+                } else {
+                    mostrarErrorModal(data.mensaje);
+                }
+            } catch (error) {
+                mostrarErrorModal('No se pudo conectar con el servidor.');
+            }
+        }
+
+        // ============================================
+        // LOGIN
+        // ============================================
+        async function login() {
             const correo = document.getElementById('correo').value.trim();
             const contrasena = document.getElementById('contrasena').value;
             const btn = document.getElementById('btnIngresar');
@@ -500,25 +837,18 @@ async function login() {
 
                 const data = await response.json();
 
- if (response.ok) {
-    localStorage.setItem('token', data.token);
-    localStorage.setItem('usuario', JSON.stringify(data.usuario));
+                if (response.ok) {
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('usuario', JSON.stringify(data.usuario));
+                    mostrarExito('¡Bienvenido ' + data.usuario.nombre + '! Redirigiendo...');
 
-    mostrarExito('¡Bienvenido ' + data.usuario.nombre + '! Redirigiendo...');
-
-    setTimeout(async () => {
-        // Verificar onboarding en MySQL
-        const resPerfil = await fetch('http://127.0.0.1:5000/api/perfil/', {
-            headers: { 'Authorization': `Bearer ${data.token}` }
-        });
-        const perfil = await resPerfil.json();
-
-        if (perfil.onboarding_completado) {
-            window.location.href = 'dashboard.html';
-        } else {
-            window.location.href = 'onboarding.html';
-        }
-    }, 1500);
+                    setTimeout(async () => {
+                        const resPerfil = await fetch('http://127.0.0.1:5000/api/perfil/', {
+                            headers: { 'Authorization': `Bearer ${data.token}` }
+                        });
+                        const perfil = await resPerfil.json();
+                        window.location.href = perfil.onboarding_completado ? 'dashboard.html' : 'onboarding.html';
+                    }, 1500);
 
                 } else {
                     mostrarError(data.mensaje || 'Correo o contraseña incorrectos.');
@@ -541,10 +871,21 @@ async function login() {
             document.getElementById('alertaExito').style.display = 'block';
         }
 
-        // Enter para hacer login
         document.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') login();
         });
+
+        function togglePass(id, btn) {
+    const input = document.getElementById(id);
+    const icon = btn.querySelector('i');
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.className = 'fas fa-eye-slash';
+    } else {
+        input.type = 'password';
+        icon.className = 'fas fa-eye';
+    }
+}
     </script>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
