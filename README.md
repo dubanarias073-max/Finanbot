@@ -7,8 +7,9 @@ Despues de que pongas la carpeta del proyecto en documentos sigue estos pasos:
 cd backend
 python -m venv venv
 source venv/Scripts/activate
-
 generara una carpeta llamada venv significando  que se creo el entorno virtual de flask
+
+
 5. luego coloca estos codigos uno por uno dado ENTER en la terminal de powershell:
 cd backend
 venv\Scripts\Activate
@@ -19,4 +20,6 @@ pip install pymysql
 pip install reportlab --break-system-packages
 pip install openpyxl --break-system-packages
 python app.py
+
+
 6. al hacer todo lo anterior abre  frontend/index.html y pon Go live  (si no tienes isntalado en vs code live server no aparecera)
