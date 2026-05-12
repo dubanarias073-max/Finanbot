@@ -22,7 +22,8 @@ def obtener_perfil():
         'ingreso_mensual': float(usuario.ingreso_mensual or 0),
         'meta_ahorro': float(usuario.meta_ahorro or 0),
         'fecha_registro': usuario.fecha_registro.strftime('%d/%m/%Y'),
-        'onboarding_completado': usuario.onboarding_completado
+        'onboarding_completado': usuario.onboarding_completado,
+        'foto_perfil': usuario.foto_perfil or None
     }), 200
 
 
@@ -45,14 +46,30 @@ def actualizar_perfil():
     if data.get('meta_ahorro') is not None:
         usuario.meta_ahorro = float(data['meta_ahorro'])
 
+    # ── CONTRASEÑA: requiere la actual ──────────────────────────
     if data.get('nueva_contrasena'):
+        contrasena_actual = data.get('contrasena_actual', '').strip()
+
+        if not contrasena_actual:
+            return jsonify({
+                'mensaje': '❌ Debes ingresar tu contraseña actual para cambiarla.'
+            }), 400
+
+        if not bcrypt.check_password_hash(usuario.contrasena_hash, contrasena_actual):
+            return jsonify({
+                'mensaje': '❌ La contraseña actual es incorrecta.'
+            }), 400
+
         usuario.contrasena_hash = bcrypt.generate_password_hash(
             data['nueva_contrasena']
         ).decode('utf-8')
+    # ────────────────────────────────────────────────────────────
 
     if data.get('onboarding_completado') is not None:
         usuario.onboarding_completado = data['onboarding_completado']
 
-    db.session.commit()
+    if 'foto_perfil' in data:
+        usuario.foto_perfil = data['foto_perfil']
 
+    db.session.commit()
     return jsonify({'mensaje': '✅ Perfil actualizado!'}), 200

@@ -35,6 +35,9 @@ from routes.recomendaciones import recomendaciones_bp
 from routes.chat_historial import chat_historial_bp
 from routes.exportar import exportar_bp
 app.register_blueprint(exportar_bp, url_prefix='/api/exportar')
+# En app.py, añade estas dos líneas junto a los otros imports de routes:
+from routes.excel import excel_bp
+app.register_blueprint(excel_bp, url_prefix='/api/exportar')
 
 app.register_blueprint(auth, url_prefix='/api/auth')
 app.register_blueprint(chat_bp, url_prefix='/api/chat')
@@ -51,3 +54,21 @@ def index():
 
 if __name__ == '__main__':
     app.run(debug=True)
+
+    # En app.py, reemplaza la configuración CORS por:
+from flask_cors import CORS
+
+CORS(app, resources={r"/api/*": {
+    "origins": "*",
+    "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    "allow_headers": ["Content-Type", "Authorization"],
+    "supports_credentials": True
+}})
+
+# Y añade esto después de crear la app:
+@app.after_request
+def after_request(response):
+    response.headers.add('Cache-Control', 'no-cache, no-store, must-revalidate')
+    response.headers.add('Pragma', 'no-cache')
+    response.headers.add('Expires', '0')
+    return response

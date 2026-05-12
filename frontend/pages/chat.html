@@ -7,7 +7,53 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
+        /* ── Variables de tema (se sobreescriben por tema.js) ── */
+:root {
+    --bg-body:        radial-gradient(ellipse at top, #1a1a4e 0%, #0f0f2d 50%, #000010 100%);
+    --color-texto:    #ffffff;
+    --sidebar-bg:     rgba(255,255,255,0.03);
+    --sidebar-border: rgba(168,85,247,0.2);
+    --card-bg:        rgba(255,255,255,0.04);
+    --card-border:    rgba(168,85,247,0.15);
+    --input-bg:       rgba(255,255,255,0.05);
+    --input-border:   rgba(168,85,247,0.25);
+    --input-color:    #ffffff;
+    --nav-color:      #9ca3af;
+    --muted:          #6b7280;
+    --secondary:      #9ca3af;
+    --item-bg:        rgba(255,255,255,0.03);
+    --item-border:    rgba(255,255,255,0.06);
+    --label-color:    #c4b5fd;
+    --suffix-bg:      rgba(168,85,247,0.1);
+}
+
+body {
+    background: var(--bg-body);
+    color: var(--color-texto);
+    transition: background 0.4s, color 0.3s;
+}
+
+.sidebar {
+    background: var(--sidebar-bg) !important;
+    border-right-color: var(--sidebar-border) !important;
+}
+
+.card, .avatar-card {
+    background: var(--card-bg) !important;
+    border-color: var(--card-border) !important;
+}
+
+.form-control {
+    background: var(--input-bg) !important;
+    border-color: var(--input-border) !important;
+    color: var(--input-color) !important;
+}
+
+.form-label { color: var(--label-color) !important; }
+.suffix-tag { background: var(--suffix-bg) !important; }
         * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        
 
         body {
             font-family: 'Segoe UI', sans-serif;
@@ -1345,5 +1391,9 @@
     </script>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- En dashboard.html, chat.html, finanzas.html, simulador.html, aprende.html, recomendaciones.html -->
+<script src="tema.js"></script>
+<!-- Si están en pages/ y tema.js también está en pages/: -->
+<script src="tema.js"></script>
 </body>
 </html>

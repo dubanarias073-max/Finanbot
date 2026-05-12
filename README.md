@@ -17,5 +17,6 @@ pip install flask-cors python-dotenv
 pip install flask-sqlalchemy flask-bcrypt flask-jwt-extended
 pip install pymysql
 pip install reportlab --break-system-packages
+pip install openpyxl --break-system-packages
 python app.py
 6. al hacer todo lo anterior abre  frontend/index.html y pon Go live  (si no tienes isntalado en vs code live server no aparecera)
