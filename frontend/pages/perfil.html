@@ -11,183 +11,160 @@
 
         body {
             font-family: 'Segoe UI', sans-serif;
-            min-height: 100vh;
-            color: white;
-            transition: background 0.5s;
+            min-height: 100vh; color: white; transition: background 0.5s;
         }
 
+        /* ══ TEMAS ══════════════════════════════════════════ */
         body.tema-oscuro {
             background: radial-gradient(ellipse at top, #1a1a4e 0%, #0f0f2d 50%, #000010 100%);
-            --card-bg: rgba(255,255,255,0.04);
-            --card-border: rgba(168,85,247,0.15);
-            --input-bg: rgba(255,255,255,0.05);
-            --input-border: rgba(168,85,247,0.25);
+            --card-bg:        rgba(255,255,255,0.04);
+            --card-border:    rgba(168,85,247,0.15);
+            --input-bg:       rgba(255,255,255,0.05);
+            --input-border:   rgba(168,85,247,0.25);
             --text-secondary: #9ca3af;
-            --text-muted: #6b7280;
-            --config-item-bg: rgba(255,255,255,0.03);
-            --config-item-border: rgba(255,255,255,0.06);
+            --text-muted:     #6b7280;
+            --item-bg:        rgba(255,255,255,0.03);
+            --item-border:    rgba(255,255,255,0.06);
+            --sidebar-bg:     rgba(255,255,255,0.03);
+            --sidebar-brd:    rgba(168,85,247,0.2);
         }
 
         body.tema-azul {
             background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #1e40af 100%);
-            --card-bg: rgba(30,58,95,0.6);
-            --card-border: rgba(96,165,250,0.25);
-            --input-bg: rgba(255,255,255,0.06);
-            --input-border: rgba(96,165,250,0.3);
+            --card-bg:        rgba(30,58,95,0.6);
+            --card-border:    rgba(96,165,250,0.25);
+            --input-bg:       rgba(255,255,255,0.06);
+            --input-border:   rgba(96,165,250,0.3);
             --text-secondary: #93c5fd;
-            --text-muted: #60a5fa;
-            --config-item-bg: rgba(30,58,95,0.4);
-            --config-item-border: rgba(96,165,250,0.15);
+            --text-muted:     #60a5fa;
+            --item-bg:        rgba(30,58,95,0.4);
+            --item-border:    rgba(96,165,250,0.15);
+            --sidebar-bg:     rgba(15,23,42,0.85);
+            --sidebar-brd:    rgba(96,165,250,0.25);
         }
 
+        /* ══ SIDEBAR ════════════════════════════════════════ */
         .sidebar {
-            position: fixed; top: 0; left: 0;
-            width: 240px; height: 100vh;
-            background: rgba(255,255,255,0.03);
-            border-right: 1px solid rgba(168,85,247,0.2);
+            position: fixed; top: 0; left: 0; width: 240px; height: 100vh;
+            background: var(--sidebar-bg); border-right: 1px solid var(--sidebar-brd);
             backdrop-filter: blur(20px); z-index: 100;
-            display: flex; flex-direction: column; padding: 25px 0;
+            display: flex; flex-direction: column; padding: 25px 0; transition: background 0.5s;
         }
-
-        .tema-azul .sidebar { background: rgba(15,23,42,0.8); }
-
         .sidebar-logo {
             display: flex; align-items: center; gap: 12px;
-            padding: 0 20px 25px;
-            border-bottom: 1px solid rgba(168,85,247,0.15);
-            margin-bottom: 20px;
+            padding: 0 20px 25px; border-bottom: 1px solid rgba(168,85,247,0.15); margin-bottom: 20px;
         }
-
         .sidebar-logo img { width: 40px; height: 40px; border-radius: 50%; box-shadow: 0 0 15px rgba(168,85,247,0.5); }
-
         .sidebar-logo span {
             font-size: 20px; font-weight: 800;
             background: linear-gradient(90deg, #c026d3, #22d3ee);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         }
-
         .nav-item {
-            display: flex; align-items: center; gap: 12px;
-            padding: 12px 20px; color: #9ca3af; text-decoration: none;
-            font-size: 14px; font-weight: 500; transition: all 0.3s;
-            border-left: 3px solid transparent; margin: 2px 0;
+            display: flex; align-items: center; gap: 12px; padding: 12px 20px;
+            color: var(--text-secondary,#9ca3af); text-decoration: none; font-size: 14px;
+            font-weight: 500; transition: all 0.3s; border-left: 3px solid transparent; margin: 2px 0;
         }
-
         .nav-item:hover, .nav-item.active {
             color: white; background: rgba(168,85,247,0.08); border-left-color: #a855f7;
         }
-
         .nav-item i { width: 18px; text-align: center; font-size: 15px; }
         .nav-item.active i { color: #a855f7; }
-
         .sidebar-bottom { margin-top: auto; padding: 20px; border-top: 1px solid rgba(168,85,247,0.15); }
-
         .btn-cerrar {
-            display: flex; align-items: center; gap: 10px;
-            color: #ef4444; background: rgba(239,68,68,0.08);
-            border: 1px solid rgba(239,68,68,0.2); border-radius: 10px;
-            padding: 10px 15px; font-size: 13px; cursor: pointer;
+            display: flex; align-items: center; gap: 10px; color: #ef4444;
+            background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2);
+            border-radius: 10px; padding: 10px 15px; font-size: 13px; cursor: pointer;
             transition: all 0.3s; width: 100%; text-decoration: none;
         }
-
         .btn-cerrar:hover { background: rgba(239,68,68,0.15); color: #ef4444; }
 
+        /* ══ MAIN ═══════════════════════════════════════════ */
         .main { margin-left: 240px; padding: 30px; min-height: 100vh; }
 
-        .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; }
+        .topbar { margin-bottom: 26px; }
         .topbar h1 { font-size: 24px; font-weight: 700; }
-        .topbar p { color: var(--text-secondary); font-size: 14px; }
+        .topbar p  { color: var(--text-muted); font-size: 14px; margin-top: 3px; }
 
+        /* ══ TABS ════════════════════════════════════════════ */
         .perfil-tabs {
             display: flex; gap: 4px; margin-bottom: 28px;
             border-bottom: 1px solid rgba(255,255,255,0.06);
         }
-
         .perfil-tab {
             padding: 11px 20px; font-size: 14px; font-weight: 500;
             color: var(--text-muted); cursor: pointer; border: none; background: none;
             border-bottom: 2px solid transparent; transition: all 0.3s;
             display: flex; align-items: center; gap: 8px;
         }
-
         .perfil-tab:hover { color: #c4b5fd; }
         .perfil-tab.activo { color: #a855f7; border-bottom-color: #a855f7; font-weight: 600; }
-        .perfil-tab i { font-size: 14px; }
 
         .seccion { display: none; }
         .seccion.visible { display: block; }
 
+        /* ══ CARD ════════════════════════════════════════════ */
         .card {
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            border-radius: 20px; padding: 28px; margin-bottom: 20px;
+            background: var(--card-bg); border: 1px solid var(--card-border);
+            border-radius: 20px; padding: 26px; margin-bottom: 20px;
+            transition: background 0.5s, border-color 0.5s;
         }
-
         .card-header { display: flex; align-items: center; gap: 12px; margin-bottom: 22px; }
-
-        .card-header-icon {
+        .card-icon {
             width: 40px; height: 40px; border-radius: 12px;
             display: flex; align-items: center; justify-content: center; font-size: 18px;
         }
+        .card-title   { font-size: 16px; font-weight: 700; color: white; margin-bottom: 2px; }
+        .card-subtitle{ font-size: 12px; color: var(--text-muted); }
 
-        .card-header-text h3 { font-size: 16px; font-weight: 700; margin-bottom: 2px; color: white; }
-        .card-header-text p { font-size: 12px; color: var(--text-muted); }
-
+        /* ══ TAB CUENTA ══════════════════════════════════════ */
         .perfil-grid { display: grid; grid-template-columns: 270px 1fr; gap: 22px; align-items: start; }
 
-        /* AVATAR — solo inicial, sin foto */
+        /* Avatar */
         .avatar-card {
             background: var(--card-bg); border: 1px solid var(--card-border);
             border-radius: 20px; padding: 28px 22px; text-align: center;
+            transition: background 0.5s;
         }
-
         .avatar-circle {
-            width: 100px; height: 100px; border-radius: 50%;
+            width: 96px; height: 96px; border-radius: 50%;
             background: linear-gradient(135deg, #c026d3, #a855f7, #22d3ee);
             border: 3px solid rgba(168,85,247,0.5);
             display: flex; align-items: center; justify-content: center;
-            font-size: 42px; font-weight: 800; color: white;
-            box-shadow: 0 0 30px rgba(168,85,247,0.5);
-            margin: 0 auto 16px;
-            user-select: none;
+            font-size: 40px; font-weight: 800; color: white;
+            box-shadow: 0 0 30px rgba(168,85,247,0.4);
+            margin: 0 auto 14px; user-select: none;
         }
-
-        .avatar-nombre { font-size: 18px; font-weight: 700; margin-bottom: 3px; color: white; }
-        .avatar-correo { font-size: 13px; color: var(--text-muted); margin-bottom: 14px; }
-
+        .avatar-nombre { font-size: 17px; font-weight: 700; color: white; margin-bottom: 2px; }
+        .avatar-correo { font-size: 12px; color: var(--text-muted); margin-bottom: 12px; }
         .avatar-badge {
             display: inline-flex; align-items: center; gap: 6px;
             background: rgba(74,222,128,0.1); border: 1px solid rgba(74,222,128,0.25);
             color: #4ade80; border-radius: 50px; padding: 4px 14px;
             font-size: 12px; font-weight: 500; margin-bottom: 18px;
         }
-
         .avatar-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-
         .avatar-stat {
-            background: var(--config-item-bg); border: 1px solid var(--config-item-border);
-            border-radius: 12px; padding: 12px 8px; text-align: center;
+            background: var(--item-bg); border: 1px solid var(--item-border);
+            border-radius: 12px; padding: 10px 8px; text-align: center;
         }
-
-        .avatar-stat-val { font-size: 19px; font-weight: 700; color: #a855f7; }
+        .avatar-stat-val   { font-size: 18px; font-weight: 700; color: #a855f7; }
         .avatar-stat-label { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
 
+        /* Form */
         .form-label { color: #c4b5fd; font-size: 13px; font-weight: 500; margin-bottom: 6px; display: block; }
         .form-group { margin-bottom: 14px; }
-        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+        .form-row   { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 
         .form-control {
             background: var(--input-bg); border: 1px solid var(--input-border);
-            border-radius: 12px; color: white;
-            padding: 11px 15px; font-size: 14px; width: 100%;
-            transition: all 0.3s; outline: none;
+            border-radius: 12px; color: white; padding: 11px 15px;
+            font-size: 14px; width: 100%; outline: none; transition: all 0.3s;
         }
-
         .form-control:focus {
             background: rgba(168,85,247,0.08); border-color: #a855f7;
             box-shadow: 0 0 0 3px rgba(168,85,247,0.12);
         }
-
         .form-control::placeholder { color: var(--text-muted); }
         .form-control:disabled { opacity: 0.4; cursor: not-allowed; }
 
@@ -197,14 +174,12 @@
 
         .pass-toggle {
             position: absolute; right: 14px; top: 50%;
-            transform: translateY(-50%); color: #6b7280;
-            cursor: pointer; font-size: 14px; z-index: 2;
-            transition: color 0.2s;
+            transform: translateY(-50%); color: #6b7280; cursor: pointer;
+            font-size: 14px; z-index: 2; transition: color 0.2s;
         }
-
         .pass-toggle:hover { color: #a855f7; }
 
-        .input-suffix { display: flex; align-items: stretch; }
+        .input-suffix { display: flex; }
         .input-suffix .form-control { border-radius: 12px 0 0 12px; border-right: none; }
         .suffix-tag {
             background: rgba(168,85,247,0.1); border: 1px solid rgba(168,85,247,0.25);
@@ -213,300 +188,269 @@
             white-space: nowrap; display: flex; align-items: center;
         }
 
+        /* Distribución */
+        .dist-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 16px; }
+        .dist-item { border-radius: 12px; padding: 13px; text-align: center; }
+        .dist-label { font-size: 11px; margin-bottom: 4px; }
+        .dist-val   { font-size: 15px; font-weight: 700; }
+
+        /* Resumen financiero */
+        .resumen-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
+        .resumen-card {
+            background: var(--item-bg); border: 1px solid var(--item-border);
+            border-radius: 14px; padding: 16px; text-align: center; transition: all 0.3s;
+        }
+        .resumen-card:hover { border-color: rgba(168,85,247,0.25); transform: translateY(-2px); }
+        .resumen-icon  { font-size: 24px; margin-bottom: 6px; }
+        .resumen-label { font-size: 11px; color: var(--text-muted); margin-bottom: 4px; }
+        .resumen-valor { font-size: 16px; font-weight: 700; }
+
+        /* Botones */
         .btn-primary {
             background: linear-gradient(135deg, #c026d3, #a855f7);
             color: white; border: none; border-radius: 12px;
-            padding: 11px 22px; font-size: 14px; font-weight: 600;
-            cursor: pointer; transition: all 0.3s;
-            box-shadow: 0 6px 20px rgba(192,38,211,0.3);
+            padding: 11px 22px; font-size: 14px; font-weight: 600; cursor: pointer;
+            transition: all 0.3s; box-shadow: 0 6px 20px rgba(192,38,211,0.3);
             display: inline-flex; align-items: center; gap: 8px;
         }
-
-        .btn-primary:hover { transform: translateY(-2px); }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(192,38,211,0.45); }
         .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
 
         .btn-secondary {
-            background: var(--config-item-bg); color: var(--text-secondary);
-            border: 1px solid var(--config-item-border); border-radius: 12px;
+            background: var(--item-bg); color: var(--text-secondary);
+            border: 1px solid var(--item-border); border-radius: 12px;
             padding: 11px 22px; font-size: 14px; font-weight: 500; cursor: pointer;
             transition: all 0.3s; display: inline-flex; align-items: center; gap: 8px;
         }
-
         .btn-secondary:hover { opacity: 0.8; }
 
         .btn-success {
             background: rgba(74,222,128,0.1); color: #4ade80;
             border: 1px solid rgba(74,222,128,0.3); border-radius: 8px;
-            padding: 6px 14px; font-size: 12px; cursor: pointer; transition: all 0.3s;
-            display: inline-flex; align-items: center; gap: 5px;
+            padding: 6px 14px; font-size: 12px; cursor: pointer;
+            transition: all 0.3s; display: inline-flex; align-items: center; gap: 5px;
         }
-
         .btn-success:hover { background: rgba(74,222,128,0.2); }
 
         .btn-danger-sm {
             background: rgba(239,68,68,0.1); color: #ef4444;
             border: 1px solid rgba(239,68,68,0.3); border-radius: 8px;
-            padding: 6px 14px; font-size: 12px; cursor: pointer; transition: all 0.3s;
-            display: inline-flex; align-items: center; gap: 5px;
+            padding: 6px 14px; font-size: 12px; cursor: pointer;
+            transition: all 0.3s; display: inline-flex; align-items: center; gap: 5px;
         }
-
         .btn-danger-sm:hover { background: rgba(239,68,68,0.2); }
 
+        /* Alertas */
         .alerta {
             border-radius: 12px; font-size: 14px; padding: 12px 16px;
             margin-bottom: 16px; display: none; align-items: center; gap: 10px;
         }
-
         .alerta-exito { background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.3); color: #86efac; }
         .alerta-error { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); color: #fca5a5; }
 
-        .resumen-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
+        .divider { border: none; border-top: 1px solid var(--item-border); margin: 20px 0; }
 
-        .resumen-card {
-            background: var(--config-item-bg); border: 1px solid var(--config-item-border);
-            border-radius: 14px; padding: 16px; text-align: center; transition: all 0.3s;
-        }
-
-        .resumen-card:hover { border-color: rgba(168,85,247,0.25); }
-        .resumen-icon { font-size: 26px; margin-bottom: 6px; }
-        .resumen-label { font-size: 11px; color: var(--text-muted); margin-bottom: 5px; }
-        .resumen-valor { font-size: 17px; font-weight: 700; }
-
-        .dist-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 16px; }
-        .dist-item { border-radius: 10px; padding: 12px; text-align: center; }
-        .dist-label { font-size: 11px; margin-bottom: 4px; }
-        .dist-val { font-size: 15px; font-weight: 700; }
-
+        /* ══ TAB METAS ═══════════════════════════════════════ */
         .metas-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 20px; }
-
         .meta-stat-card {
-            background: var(--config-item-bg); border: 1px solid var(--config-item-border);
+            background: var(--item-bg); border: 1px solid var(--item-border);
             border-radius: 14px; padding: 16px; text-align: center;
         }
-
-        .meta-stat-val { font-size: 22px; font-weight: 800; margin-bottom: 4px; }
+        .meta-stat-val   { font-size: 22px; font-weight: 800; margin-bottom: 4px; }
         .meta-stat-label { font-size: 12px; color: var(--text-muted); }
 
         .metas-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
 
         .meta-item {
-            background: var(--config-item-bg); border: 1px solid var(--config-item-border);
-            border-radius: 16px; padding: 20px; margin-bottom: 12px;
+            background: var(--item-bg); border: 1px solid var(--item-border);
+            border-radius: 16px; padding: 18px 18px 14px 22px; margin-bottom: 10px;
             transition: all 0.3s; position: relative; overflow: hidden;
         }
-
         .meta-item::before {
-            content: ''; position: absolute; top: 0; left: 0;
-            width: 4px; height: 100%;
+            content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%;
             background: linear-gradient(180deg, #c026d3, #a855f7);
         }
-
         .meta-item.completada::before { background: linear-gradient(180deg, #4ade80, #22d3ee); }
-        .meta-item:hover { border-color: rgba(168,85,247,0.25); }
+        .meta-item:hover { border-color: rgba(168,85,247,0.25); transform: translateX(3px); }
 
-        .meta-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; padding-left: 14px; }
-        .meta-nombre { font-size: 15px; font-weight: 700; margin-bottom: 3px; color: white; }
-        .meta-fecha { font-size: 12px; color: var(--text-muted); }
-
-        .meta-badge {
+        .meta-top     { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+        .meta-nombre  { font-size: 15px; font-weight: 700; color: white; margin-bottom: 3px; }
+        .meta-fecha   { font-size: 12px; color: var(--text-muted); }
+        .meta-badge   {
             background: rgba(168,85,247,0.15); border: 1px solid rgba(168,85,247,0.3);
             color: #c4b5fd; border-radius: 50px; padding: 4px 12px;
             font-size: 12px; font-weight: 700; flex-shrink: 0;
         }
-
         .meta-badge.ok { background: rgba(74,222,128,0.15); border-color: rgba(74,222,128,0.3); color: #4ade80; }
 
-        .meta-barra-wrap { padding-left: 14px; margin-bottom: 10px; }
-
-        .progress-track {
-            background: rgba(255,255,255,0.07); border-radius: 8px;
-            height: 8px; overflow: hidden; margin-bottom: 7px;
-        }
-
+        .progress-track { background: rgba(255,255,255,0.07); border-radius: 8px; height: 7px; overflow: hidden; margin-bottom: 7px; }
         .progress-fill {
             height: 100%; border-radius: 8px;
             background: linear-gradient(90deg, #c026d3, #a855f7, #22d3ee);
             transition: width 0.8s cubic-bezier(0.4,0,0.2,1);
         }
-
         .progress-fill.ok { background: linear-gradient(90deg, #4ade80, #22d3ee); }
 
-        .meta-montos { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); }
+        .meta-montos  { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); }
         .meta-ahorrado { color: #4ade80; font-weight: 600; }
         .meta-faltante { color: #f472b6; font-weight: 600; }
-        .meta-acciones { display: flex; gap: 8px; padding-left: 14px; margin-top: 10px; }
+        .meta-acciones { display: flex; gap: 8px; margin-top: 10px; }
 
         .meta-empty { text-align: center; padding: 40px 20px; }
-        .meta-empty i { font-size: 48px; opacity: 0.15; display: block; margin-bottom: 14px; }
+        .meta-empty i { font-size: 46px; opacity: 0.12; display: block; margin-bottom: 14px; }
         .meta-empty p { font-size: 14px; color: var(--text-muted); margin-bottom: 20px; line-height: 1.7; }
 
+        /* ══ TAB CONFIGURACIÓN ═══════════════════════════════ */
         .config-section-title {
             font-size: 11px; font-weight: 600; color: var(--text-muted);
             text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;
             display: flex; align-items: center; gap: 8px;
         }
-
-        .config-section-title::after { content: ''; flex: 1; height: 1px; background: var(--config-item-border); }
+        .config-section-title::after { content: ''; flex: 1; height: 1px; background: var(--item-border); }
 
         .config-item {
             display: flex; align-items: center; justify-content: space-between;
-            padding: 13px 15px;
-            background: var(--config-item-bg); border: 1px solid var(--config-item-border);
+            padding: 13px 15px; background: var(--item-bg); border: 1px solid var(--item-border);
             border-radius: 12px; margin-bottom: 8px; transition: all 0.3s;
         }
-
         .config-item:hover { opacity: 0.9; }
         .config-item-left { display: flex; align-items: center; gap: 12px; }
-
         .config-item-icon {
             width: 36px; height: 36px; border-radius: 10px;
             display: flex; align-items: center; justify-content: center; font-size: 16px;
         }
+        .config-item-text h4 { font-size: 14px; font-weight: 600; color: white; margin-bottom: 2px; }
+        .config-item-text p  { font-size: 12px; color: var(--text-muted); }
 
-        .config-item-text h4 { font-size: 14px; font-weight: 600; margin-bottom: 2px; color: white; }
-        .config-item-text p { font-size: 12px; color: var(--text-muted); }
-
+        /* Toggle */
         .toggle { position: relative; width: 44px; height: 24px; }
         .toggle input { opacity: 0; width: 0; height: 0; }
-
         .toggle-slider {
-            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            position: absolute; cursor: pointer; inset: 0;
             background: rgba(255,255,255,0.15); border-radius: 24px; transition: all 0.3s;
         }
-
         .toggle-slider::before {
-            content: ''; position: absolute;
-            height: 18px; width: 18px; left: 3px; bottom: 3px;
-            background: white; border-radius: 50%; transition: all 0.3s;
+            content: ''; position: absolute; height: 18px; width: 18px;
+            left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: all 0.3s;
         }
-
         .toggle input:checked + .toggle-slider { background: #a855f7; }
         .toggle input:checked + .toggle-slider::before { transform: translateX(20px); }
 
+        /* Tema */
         .tema-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
-
         .tema-option {
-            border: 2px solid var(--config-item-border); border-radius: 14px;
-            padding: 12px 8px; text-align: center; cursor: pointer;
-            transition: all 0.3s; font-size: 12px; color: var(--text-muted);
+            border: 2px solid var(--item-border); border-radius: 14px;
+            padding: 14px 8px; text-align: center; cursor: pointer;
+            transition: all 0.3s; font-size: 13px; color: var(--text-muted);
         }
-
         .tema-option:hover, .tema-option.activo { border-color: #a855f7; color: white; }
+        .tema-preview { height: 40px; border-radius: 10px; margin-bottom: 8px; }
 
-        .tema-preview { height: 36px; border-radius: 8px; margin-bottom: 7px; }
+        /* Notificación toast */
+        .toast-notif {
+            position: fixed; bottom: 24px; right: 24px; z-index: 9999;
+            background: rgba(26,26,78,0.95); border: 1px solid rgba(168,85,247,0.3);
+            border-radius: 14px; padding: 14px 20px;
+            display: flex; align-items: center; gap: 12px;
+            font-size: 14px; color: white; backdrop-filter: blur(20px);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+            transform: translateY(80px); opacity: 0;
+            transition: all 0.4s cubic-bezier(0.4,0,0.2,1);
+            pointer-events: none; min-width: 280px;
+        }
+        .toast-notif.show { transform: translateY(0); opacity: 1; }
+        .toast-icon { font-size: 20px; flex-shrink: 0; }
 
-        .pass-bar { height: 4px; border-radius: 4px; background: var(--config-item-border); margin-top: 7px; overflow: hidden; }
+        /* ══ TAB SEGURIDAD ═══════════════════════════════════ */
+        .pass-bar { height: 4px; border-radius: 4px; background: var(--item-border); margin-top: 7px; overflow: hidden; }
         .pass-fill { height: 100%; border-radius: 4px; transition: all 0.3s; width: 0%; }
 
         .danger-zone {
             background: rgba(239,68,68,0.05); border: 1px solid rgba(239,68,68,0.15);
             border-radius: 16px; padding: 22px;
         }
-
         .danger-title { font-size: 15px; font-weight: 700; color: #ef4444; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
-        .danger-desc { font-size: 13px; color: var(--text-muted); margin-bottom: 14px; }
-
+        .danger-desc  { font-size: 13px; color: var(--text-muted); margin-bottom: 14px; }
         .btn-danger-full {
             background: rgba(239,68,68,0.1); color: #ef4444;
             border: 1px solid rgba(239,68,68,0.3); border-radius: 10px;
             padding: 10px 20px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s;
         }
-
         .btn-danger-full:hover { background: rgba(239,68,68,0.2); }
 
-        .divider { border: none; border-top: 1px solid var(--config-item-border); margin: 20px 0; }
-
-        /* MODAL */
+        /* ══ MODALES ═════════════════════════════════════════ */
         .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.75); z-index: 999; display: none;
-            align-items: center; justify-content: center; padding: 20px;
+            position: fixed; inset: 0; background: rgba(0,0,0,0.78); z-index: 999;
+            display: none; align-items: center; justify-content: center; padding: 20px;
         }
-
         .modal-overlay.visible { display: flex; }
 
         .modal-box {
             background: #0f0f2d; border: 1px solid rgba(168,85,247,0.3);
-            border-radius: 22px; width: 100%; max-width: 480px;
-            position: relative; box-shadow: 0 25px 60px rgba(0,0,0,0.5);
+            border-radius: 22px; width: 100%; max-width: 500px; position: relative;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.5);
             max-height: 90vh; display: flex; flex-direction: column;
         }
-
         .modal-box::before {
-            content: ''; position: absolute; top: 0; left: 0;
-            width: 100%; height: 3px;
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 3px;
             background: linear-gradient(90deg, #c026d3, #a855f7, #22d3ee);
             border-radius: 22px 22px 0 0;
         }
-
-        .modal-header { padding: 28px 28px 0; flex-shrink: 0; }
-
+        .modal-header { padding: 26px 28px 0; flex-shrink: 0; }
         .modal-body-scroll {
-            overflow-y: auto; padding: 20px 28px 28px;
-            scrollbar-width: thin; scrollbar-color: rgba(168,85,247,0.3) transparent;
-            flex: 1;
+            overflow-y: auto; padding: 18px 28px 26px;
+            scrollbar-width: thin; scrollbar-color: rgba(168,85,247,0.3) transparent; flex: 1;
         }
-
         .modal-body-scroll::-webkit-scrollbar { width: 4px; }
         .modal-body-scroll::-webkit-scrollbar-thumb { background: rgba(168,85,247,0.3); border-radius: 4px; }
 
         .modal-close {
             position: absolute; top: 14px; right: 16px;
-            background: rgba(255,255,255,0.06); border: none;
-            color: #9ca3af; font-size: 15px; cursor: pointer;
-            width: 28px; height: 28px; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center; transition: all 0.3s;
+            background: rgba(255,255,255,0.06); border: none; color: #9ca3af;
+            font-size: 15px; cursor: pointer; width: 28px; height: 28px;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.3s;
         }
-
         .modal-close:hover { background: rgba(239,68,68,0.2); color: #ef4444; }
 
-        .modal-title { font-size: 18px; font-weight: 700; color: #c4b5fd; margin-bottom: 4px; }
-        .modal-subtitle { font-size: 13px; color: #6b7280; margin-bottom: 0; }
+        .modal-title    { font-size: 18px; font-weight: 700; color: #c4b5fd; margin-bottom: 3px; }
+        .modal-subtitle { font-size: 13px; color: #6b7280; }
 
+        /* Modal meta: selectores */
         .emoji-selector { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 14px; }
-
         .emoji-btn {
             width: 36px; height: 36px; border-radius: 9px;
             background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);
             font-size: 19px; cursor: pointer; display: flex; align-items: center;
             justify-content: center; transition: all 0.25s;
         }
-
-        .emoji-btn:hover, .emoji-btn.sel {
-            background: rgba(168,85,247,0.15); border-color: #a855f7; transform: scale(1.1);
-        }
+        .emoji-btn:hover, .emoji-btn.sel { background: rgba(168,85,247,0.15); border-color: #a855f7; transform: scale(1.1); }
 
         .cat-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 7px; margin-bottom: 14px; }
-
         .cat-btn {
-            padding: 9px 6px; border-radius: 10px;
-            background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
-            font-size: 11px; color: #9ca3af; cursor: pointer; text-align: center; transition: all 0.25s;
+            padding: 9px 6px; border-radius: 10px; background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08); font-size: 11px; color: #9ca3af;
+            cursor: pointer; text-align: center; transition: all 0.25s;
         }
-
         .cat-btn:hover, .cat-btn.sel { background: rgba(168,85,247,0.12); border-color: #a855f7; color: white; }
         .cat-icon { font-size: 18px; display: block; margin-bottom: 3px; }
 
         .prio-selector { display: flex; gap: 7px; margin-bottom: 14px; }
-
         .prio-btn {
             flex: 1; padding: 9px; border-radius: 10px;
             border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.04);
             font-size: 12px; font-weight: 600; cursor: pointer; text-align: center; transition: all 0.25s;
         }
-
-        .prio-baja { color: #4ade80; }
-        .prio-baja.sel { background: rgba(74,222,128,0.15); border-color: #4ade80; }
+        .prio-baja  { color: #4ade80; }
+        .prio-baja.sel  { background: rgba(74,222,128,0.15); border-color: #4ade80; }
         .prio-media { color: #fbbf24; }
         .prio-media.sel { background: rgba(251,191,36,0.15); border-color: #fbbf24; }
-        .prio-alta { color: #f472b6; }
-        .prio-alta.sel { background: rgba(244,114,182,0.15); border-color: #f472b6; }
+        .prio-alta  { color: #f472b6; }
+        .prio-alta.sel  { background: rgba(244,114,182,0.15); border-color: #f472b6; }
 
         .meta-calc {
             background: rgba(168,85,247,0.07); border: 1px solid rgba(168,85,247,0.2);
-            border-radius: 12px; padding: 14px 16px; margin: 12px 0;
+            border-radius: 12px; padding: 13px 16px; margin: 12px 0;
         }
-
         .meta-calc-titulo { font-size: 12px; color: #a855f7; font-weight: 600; margin-bottom: 8px; }
         .calc-row { display: flex; justify-content: space-between; font-size: 13px; color: #c4b5fd; margin-bottom: 5px; }
         .calc-row span:last-child { font-weight: 700; color: white; }
@@ -516,994 +460,1130 @@
             color: white; border: none; border-radius: 12px;
             padding: 13px; font-size: 15px; font-weight: 600;
             width: 100%; cursor: pointer; transition: all 0.3s;
-            box-shadow: 0 6px 20px rgba(192,38,211,0.3); margin-top: 4px;
+            box-shadow: 0 6px 20px rgba(192,38,211,0.3); margin-top: 6px;
         }
+        .btn-crear-modal:hover { transform: translateY(-2px); opacity: 0.92; }
 
-        .btn-crear-modal:hover { transform: translateY(-2px); opacity: 0.9; }
-
+        /* Modal abonar */
         .modal-abonar-box {
             background: #0f0f2d; border: 1px solid rgba(168,85,247,0.3);
             border-radius: 22px; padding: 28px; width: 100%; max-width: 380px;
             position: relative; box-shadow: 0 25px 60px rgba(0,0,0,0.5);
         }
-
         .modal-abonar-box::before {
             content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 3px;
-            background: linear-gradient(90deg, #4ade80, #22d3ee);
-            border-radius: 22px 22px 0 0;
+            background: linear-gradient(90deg, #4ade80, #22d3ee); border-radius: 22px 22px 0 0;
         }
+
+        /* Input inline pequeño (modales) */
+        .mini-input {
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(168,85,247,0.25);
+            border-radius: 12px; color: white; padding: 11px 15px;
+            font-size: 14px; width: 100%; outline: none; transition: all 0.3s;
+        }
+        .mini-input:focus { border-color: #a855f7; }
+        .mini-input::placeholder { color: #6b7280; }
+        .mini-input-izq { border-radius: 12px 0 0 12px; border-right: none; }
+        .mini-suffix {
+            background: rgba(168,85,247,0.1); border: 1px solid rgba(168,85,247,0.25);
+            border-left: none; border-radius: 0 12px 12px 0;
+            padding: 11px 12px; font-size: 12px; color: #a855f7;
+            display: flex; align-items: center;
+        }
+
+        /* ══ NOTIFICACIONES WIDGET ═══════════════════════════ */
+        .notif-widget {
+            background: var(--item-bg); border: 1px solid var(--item-border);
+            border-radius: 14px; padding: 16px; margin-bottom: 10px;
+            transition: all 0.3s;
+        }
+        .notif-widget.activo { border-color: rgba(168,85,247,0.3); }
+        .notif-preview {
+            display: flex; align-items: center; gap: 10px; margin-top: 10px;
+            padding: 10px 14px; background: rgba(168,85,247,0.08);
+            border-radius: 10px; font-size: 12px; color: #c4b5fd; line-height: 1.5;
+        }
+        .notif-preview-icon { font-size: 18px; flex-shrink: 0; }
+
+        /* Exportar: estado */
+        .export-status {
+            font-size: 12px; color: var(--text-muted);
+            display: flex; align-items: center; gap: 6px; margin-top: 4px;
+        }
+        .export-dot { width: 7px; height: 7px; border-radius: 50%; background: #4ade80; }
+        .export-dot.loading { background: #fbbf24; animation: blink 1s infinite; }
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
     </style>
 </head>
 <body class="tema-oscuro">
 
-    <div class="sidebar">
-        <div class="sidebar-logo">
-            <img src="../../images/logo.png" alt="FinanBot" onerror="this.style.display='none'">
-            <span>FinanBot</span>
-        </div>
-        <a href="dashboard.html" class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
-        <a href="chat.html" class="nav-item"><i class="fas fa-robot"></i> Chat FinanBot</a>
-        <a href="finanzas.html" class="nav-item"><i class="fas fa-wallet"></i> Mis Finanzas</a>
-        <a href="recomendaciones.html" class="nav-item"><i class="fas fa-lightbulb"></i> Recomendaciones</a>
-        <a href="simulador.html" class="nav-item"><i class="fas fa-chart-line"></i> Simulador</a>
-        <a href="aprende.html" class="nav-item"><i class="fas fa-graduation-cap"></i> Aprende</a>
-        <a href="perfil.html" class="nav-item active"><i class="fas fa-user-circle"></i> Mi Perfil</a>
-        <div class="sidebar-bottom">
-            <a href="../index.html" class="btn-cerrar" onclick="cerrarSesion()">
-                <i class="fas fa-sign-out-alt"></i> Cerrar sesión
-            </a>
-        </div>
+<!-- ══ TOAST ═════════════════════════════════════════════ -->
+<div class="toast-notif" id="toastGlobal">
+    <span class="toast-icon" id="toastIcon">✅</span>
+    <span id="toastMsg">Mensaje</span>
+</div>
+
+<div class="sidebar">
+    <div class="sidebar-logo">
+        <img src="../../images/logo.png" alt="FinanBot" onerror="this.style.display='none'">
+        <span>FinanBot</span>
     </div>
-
-    <!-- MODAL NUEVA META -->
-    <div class="modal-overlay" id="modalMeta">
-        <div class="modal-box">
-            <button class="modal-close" onclick="cerrarModal()">✕</button>
-            <div class="modal-header">
-                <div class="modal-title">🎯 Nueva meta de ahorro</div>
-                <div class="modal-subtitle">Define tu objetivo y te ayudo a planificarlo</div>
-            </div>
-            <div class="modal-body-scroll">
-                <div style="margin-bottom:12px;">
-                    <label class="form-label" style="color:#c4b5fd;">Icono</label>
-                    <div class="emoji-selector">
-                        <button class="emoji-btn sel" onclick="selEmoji(this,'🏖️')">🏖️</button>
-                        <button class="emoji-btn" onclick="selEmoji(this,'💻')">💻</button>
-                        <button class="emoji-btn" onclick="selEmoji(this,'🏠')">🏠</button>
-                        <button class="emoji-btn" onclick="selEmoji(this,'🚗')">🚗</button>
-                        <button class="emoji-btn" onclick="selEmoji(this,'📱')">📱</button>
-                        <button class="emoji-btn" onclick="selEmoji(this,'🎓')">🎓</button>
-                        <button class="emoji-btn" onclick="selEmoji(this,'💍')">💍</button>
-                        <button class="emoji-btn" onclick="selEmoji(this,'🏋️')">🏋️</button>
-                        <button class="emoji-btn" onclick="selEmoji(this,'🌍')">🌍</button>
-                        <button class="emoji-btn" onclick="selEmoji(this,'💰')">💰</button>
-                        <button class="emoji-btn" onclick="selEmoji(this,'🎮')">🎮</button>
-                        <button class="emoji-btn" onclick="selEmoji(this,'🐾')">🐾</button>
-                        <button class="emoji-btn" onclick="selEmoji(this,'✈️')">✈️</button>
-                        <button class="emoji-btn" onclick="selEmoji(this,'🏥')">🏥</button>
-                        <button class="emoji-btn" onclick="selEmoji(this,'🎵')">🎵</button>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label" style="color:#c4b5fd;">Nombre de la meta *</label>
-                    <input type="text" id="metaNombre" placeholder="Ej: Vacaciones en la playa"
-                           style="background:rgba(255,255,255,0.05);border:1px solid rgba(168,85,247,0.25);border-radius:12px;color:white;padding:11px 15px;font-size:14px;width:100%;outline:none;">
-                </div>
-
-                <label class="form-label" style="color:#c4b5fd;">Categoría</label>
-                <div class="cat-grid" style="margin-bottom:12px;">
-                    <div class="cat-btn sel" onclick="selCat(this,'viaje')"><span class="cat-icon">✈️</span>Viaje</div>
-                    <div class="cat-btn" onclick="selCat(this,'tecnologia')"><span class="cat-icon">💻</span>Tecnología</div>
-                    <div class="cat-btn" onclick="selCat(this,'vivienda')"><span class="cat-icon">🏠</span>Vivienda</div>
-                    <div class="cat-btn" onclick="selCat(this,'vehiculo')"><span class="cat-icon">🚗</span>Vehículo</div>
-                    <div class="cat-btn" onclick="selCat(this,'educacion')"><span class="cat-icon">🎓</span>Educación</div>
-                    <div class="cat-btn" onclick="selCat(this,'otro')"><span class="cat-icon">⭐</span>Otro</div>
-                </div>
-
-                <label class="form-label" style="color:#c4b5fd;">Prioridad</label>
-                <div class="prio-selector">
-                    <div class="prio-btn prio-baja" onclick="selPrio(this)">🟢 Baja</div>
-                    <div class="prio-btn prio-media sel" onclick="selPrio(this)">🟡 Media</div>
-                    <div class="prio-btn prio-alta" onclick="selPrio(this)">🔴 Alta</div>
-                </div>
-
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
-                    <div>
-                        <label class="form-label" style="color:#c4b5fd;">Monto objetivo *</label>
-                        <div style="display:flex;">
-                            <input type="number" id="metaObjetivo" placeholder="2.000.000" oninput="calcProy()"
-                                   style="background:rgba(255,255,255,0.05);border:1px solid rgba(168,85,247,0.25);border-right:none;border-radius:12px 0 0 12px;color:white;padding:11px 15px;font-size:14px;width:100%;outline:none;">
-                            <span style="background:rgba(168,85,247,0.1);border:1px solid rgba(168,85,247,0.25);border-left:none;border-radius:0 12px 12px 0;padding:11px 12px;font-size:12px;color:#a855f7;">COP</span>
-                        </div>
-                    </div>
-                    <div>
-                        <label class="form-label" style="color:#c4b5fd;">Ya tengo ahorrado</label>
-                        <div style="display:flex;">
-                            <input type="number" id="metaActual" placeholder="0" value="0" oninput="calcProy()"
-                                   style="background:rgba(255,255,255,0.05);border:1px solid rgba(168,85,247,0.25);border-right:none;border-radius:12px 0 0 12px;color:white;padding:11px 15px;font-size:14px;width:100%;outline:none;">
-                            <span style="background:rgba(168,85,247,0.1);border:1px solid rgba(168,85,247,0.25);border-left:none;border-radius:0 12px 12px 0;padding:11px 12px;font-size:12px;color:#a855f7;">COP</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
-                    <div>
-                        <label class="form-label" style="color:#c4b5fd;">Fecha límite (opcional)</label>
-                        <input type="date" id="metaFecha" oninput="calcProy()"
-                               style="background:rgba(255,255,255,0.05);border:1px solid rgba(168,85,247,0.25);border-radius:12px;color:white;padding:11px 15px;font-size:14px;width:100%;outline:none;">
-                    </div>
-                    <div>
-                        <label class="form-label" style="color:#c4b5fd;">Ahorro mensual estimado</label>
-                        <div style="display:flex;">
-                            <input type="number" id="metaMensual" placeholder="0" oninput="calcProy()"
-                                   style="background:rgba(255,255,255,0.05);border:1px solid rgba(168,85,247,0.25);border-right:none;border-radius:12px 0 0 12px;color:white;padding:11px 15px;font-size:14px;width:100%;outline:none;">
-                            <span style="background:rgba(168,85,247,0.1);border:1px solid rgba(168,85,247,0.25);border-left:none;border-radius:0 12px 12px 0;padding:11px 12px;font-size:12px;color:#a855f7;">COP</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="meta-calc" id="metaCalc" style="display:none;">
-                    <div class="meta-calc-titulo">📊 Proyección de tu meta:</div>
-                    <div class="calc-row"><span>💰 Falta ahorrar:</span><span id="cFaltante">—</span></div>
-                    <div class="calc-row"><span>📅 Tiempo estimado:</span><span id="cTiempo">—</span></div>
-                    <div class="calc-row"><span>📈 Ahorro mensual necesario:</span><span id="cMensual">—</span></div>
-                    <div class="calc-row" id="cInteresRow" style="display:none;"><span>🚀 Con interés 8% anual:</span><span id="cInteres">—</span></div>
-                </div>
-
-                <button class="btn-crear-modal" onclick="crearMeta()">
-                    <i class="fas fa-plus me-2"></i> Crear meta
-                </button>
-            </div>
-        </div>
+    <a href="dashboard.html"       class="nav-item"><i class="fas fa-home"></i>         Dashboard</a>
+    <a href="chat.html"            class="nav-item"><i class="fas fa-robot"></i>         Chat FinanBot</a>
+    <a href="finanzas.html"        class="nav-item"><i class="fas fa-wallet"></i>        Mis Finanzas</a>
+    <a href="recomendaciones.html" class="nav-item"><i class="fas fa-lightbulb"></i>     Recomendaciones</a>
+    <a href="simulador.html"       class="nav-item"><i class="fas fa-chart-line"></i>    Simulador</a>
+    <a href="aprende.html"         class="nav-item"><i class="fas fa-graduation-cap"></i>Aprende</a>
+    <a href="perfil.html"          class="nav-item active"><i class="fas fa-user-circle"></i>Mi Perfil</a>
+    <div class="sidebar-bottom">
+        <a href="../index.html" class="btn-cerrar" onclick="cerrarSesion()">
+            <i class="fas fa-sign-out-alt"></i> Cerrar sesión
+        </a>
     </div>
+</div>
 
-    <!-- MODAL ABONAR -->
-    <div class="modal-overlay" id="modalAbonar">
-        <div class="modal-abonar-box">
-            <button class="modal-close" onclick="cerrarModalAbonar()">✕</button>
-            <div class="modal-title" style="margin-bottom:4px;">💰 Abonar a meta</div>
-            <div style="font-size:13px;color:#6b7280;margin-bottom:20px;">Actualiza el monto total ahorrado</div>
-            <label class="form-label" style="color:#c4b5fd;">Monto total ahorrado ($)</label>
-            <div style="display:flex;margin-bottom:16px;">
-                <input type="number" id="abonarMonto" placeholder="0"
-                       style="background:rgba(255,255,255,0.05);border:1px solid rgba(168,85,247,0.25);border-right:none;border-radius:12px 0 0 12px;color:white;padding:11px 15px;font-size:14px;width:100%;outline:none;">
-                <span style="background:rgba(168,85,247,0.1);border:1px solid rgba(168,85,247,0.25);border-left:none;border-radius:0 12px 12px 0;padding:11px 12px;font-size:12px;color:#a855f7;">COP</span>
+<!-- ══ MODAL NUEVA META ══════════════════════════════════ -->
+<div class="modal-overlay" id="modalMeta">
+    <div class="modal-box">
+        <button class="modal-close" onclick="cerrarModal()">✕</button>
+        <div class="modal-header">
+            <div class="modal-title">🎯 Nueva meta de ahorro</div>
+            <div class="modal-subtitle">Define tu objetivo y te ayudo a planificarlo</div>
+        </div>
+        <div class="modal-body-scroll">
+
+            <div style="margin-bottom:12px;">
+                <label class="form-label">Icono</label>
+                <div class="emoji-selector">
+                    <button class="emoji-btn sel" onclick="selEmoji(this,'🏖️')">🏖️</button>
+                    <button class="emoji-btn" onclick="selEmoji(this,'💻')">💻</button>
+                    <button class="emoji-btn" onclick="selEmoji(this,'🏠')">🏠</button>
+                    <button class="emoji-btn" onclick="selEmoji(this,'🚗')">🚗</button>
+                    <button class="emoji-btn" onclick="selEmoji(this,'📱')">📱</button>
+                    <button class="emoji-btn" onclick="selEmoji(this,'🎓')">🎓</button>
+                    <button class="emoji-btn" onclick="selEmoji(this,'💍')">💍</button>
+                    <button class="emoji-btn" onclick="selEmoji(this,'🏋️')">🏋️</button>
+                    <button class="emoji-btn" onclick="selEmoji(this,'🌍')">🌍</button>
+                    <button class="emoji-btn" onclick="selEmoji(this,'💰')">💰</button>
+                    <button class="emoji-btn" onclick="selEmoji(this,'🎮')">🎮</button>
+                    <button class="emoji-btn" onclick="selEmoji(this,'🐾')">🐾</button>
+                    <button class="emoji-btn" onclick="selEmoji(this,'✈️')">✈️</button>
+                    <button class="emoji-btn" onclick="selEmoji(this,'🏥')">🏥</button>
+                    <button class="emoji-btn" onclick="selEmoji(this,'🎵')">🎵</button>
+                </div>
             </div>
-            <button class="btn-crear-modal" style="background:linear-gradient(135deg,#4ade80,#22d3ee);color:#0f0f2d;" onclick="confirmarAbono()">
-                <i class="fas fa-save me-2"></i> Guardar abono
+
+            <div class="form-group">
+                <label class="form-label">Nombre de la meta *</label>
+                <input type="text" id="metaNombre" class="mini-input" placeholder="Ej: Vacaciones en la playa">
+            </div>
+
+            <label class="form-label">Categoría</label>
+            <div class="cat-grid" style="margin-bottom:12px;">
+                <div class="cat-btn sel" onclick="selCat(this,'viaje')"><span class="cat-icon">✈️</span>Viaje</div>
+                <div class="cat-btn" onclick="selCat(this,'tecnologia')"><span class="cat-icon">💻</span>Tecnología</div>
+                <div class="cat-btn" onclick="selCat(this,'vivienda')"><span class="cat-icon">🏠</span>Vivienda</div>
+                <div class="cat-btn" onclick="selCat(this,'vehiculo')"><span class="cat-icon">🚗</span>Vehículo</div>
+                <div class="cat-btn" onclick="selCat(this,'educacion')"><span class="cat-icon">🎓</span>Educación</div>
+                <div class="cat-btn" onclick="selCat(this,'otro')"><span class="cat-icon">⭐</span>Otro</div>
+            </div>
+
+            <label class="form-label">Prioridad</label>
+            <div class="prio-selector">
+                <div class="prio-btn prio-baja" onclick="selPrio(this)">🟢 Baja</div>
+                <div class="prio-btn prio-media sel" onclick="selPrio(this)">🟡 Media</div>
+                <div class="prio-btn prio-alta" onclick="selPrio(this)">🔴 Alta</div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+                <div>
+                    <label class="form-label">Monto objetivo *</label>
+                    <div style="display:flex;">
+                        <input type="number" id="metaObjetivo" class="mini-input mini-input-izq" placeholder="2.000.000" oninput="calcProy()">
+                        <span class="mini-suffix">COP</span>
+                    </div>
+                </div>
+                <div>
+                    <label class="form-label">Ya tengo ahorrado</label>
+                    <div style="display:flex;">
+                        <input type="number" id="metaActual" class="mini-input mini-input-izq" placeholder="0" value="0" oninput="calcProy()">
+                        <span class="mini-suffix">COP</span>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+                <div>
+                    <label class="form-label">Fecha límite (opcional)</label>
+                    <input type="date" id="metaFecha" class="mini-input" oninput="calcProy()">
+                </div>
+                <div>
+                    <label class="form-label">Ahorro mensual estimado</label>
+                    <div style="display:flex;">
+                        <input type="number" id="metaMensual" class="mini-input mini-input-izq" placeholder="0" oninput="calcProy()">
+                        <span class="mini-suffix">COP</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="meta-calc" id="metaCalc" style="display:none;">
+                <div class="meta-calc-titulo">📊 Proyección de tu meta:</div>
+                <div class="calc-row"><span>💰 Falta ahorrar:</span><span id="cFaltante">—</span></div>
+                <div class="calc-row"><span>📅 Tiempo estimado:</span><span id="cTiempo">—</span></div>
+                <div class="calc-row"><span>📈 Ahorro mensual necesario:</span><span id="cMensual">—</span></div>
+                <div class="calc-row" id="cInteresRow" style="display:none;">
+                    <span>🚀 Con interés 8% anual:</span><span id="cInteres">—</span>
+                </div>
+            </div>
+
+            <button class="btn-crear-modal" onclick="crearMeta()">
+                <i class="fas fa-plus me-2"></i> Crear meta
             </button>
         </div>
     </div>
+</div>
 
-    <!-- MAIN -->
-    <div class="main">
-        <div class="topbar">
+<!-- ══ MODAL ABONAR ══════════════════════════════════════ -->
+<div class="modal-overlay" id="modalAbonar">
+    <div class="modal-abonar-box">
+        <button class="modal-close" onclick="cerrarModalAbonar()">✕</button>
+        <div class="modal-title" style="margin-bottom:4px;">💰 Abonar a meta</div>
+        <div style="font-size:13px;color:#6b7280;margin-bottom:20px;">Ingresa el nuevo total ahorrado</div>
+        <label class="form-label">Monto total ahorrado ($)</label>
+        <div style="display:flex;margin-bottom:16px;">
+            <input type="number" id="abonarMonto" class="mini-input mini-input-izq" placeholder="0">
+            <span class="mini-suffix">COP</span>
+        </div>
+        <button class="btn-crear-modal"
+                style="background:linear-gradient(135deg,#4ade80,#22d3ee);color:#0f0f2d;"
+                onclick="confirmarAbono()">
+            <i class="fas fa-save me-2"></i> Guardar abono
+        </button>
+    </div>
+</div>
+
+<!-- ══ MAIN ══════════════════════════════════════════════ -->
+<div class="main">
+
+    <div class="topbar">
+        <div>
+            <h1>👤 Mi Perfil</h1>
+            <p>Gestiona tu cuenta, configuración y metas de ahorro</p>
+        </div>
+    </div>
+
+    <div class="perfil-tabs">
+        <button class="perfil-tab activo" onclick="cambiarTab('cuenta',this)"><i class="fas fa-user"></i> Mi cuenta</button>
+        <button class="perfil-tab" onclick="cambiarTab('metas',this)"><i class="fas fa-bullseye"></i> Metas</button>
+        <button class="perfil-tab" onclick="cambiarTab('configuracion',this)"><i class="fas fa-cog"></i> Configuración</button>
+        <button class="perfil-tab" onclick="cambiarTab('seguridad',this)"><i class="fas fa-shield-alt"></i> Seguridad</button>
+    </div>
+
+    <!-- ── TAB CUENTA ────────────────────────────────── -->
+    <div class="seccion visible" id="tab-cuenta">
+        <div class="perfil-grid">
+
+            <!-- Avatar -->
             <div>
-                <h1>👤 Mi Perfil</h1>
-                <p>Gestiona tu cuenta, configuración y metas de ahorro</p>
-            </div>
-        </div>
-
-        <div class="perfil-tabs">
-            <button class="perfil-tab activo" onclick="cambiarTab('cuenta', this)"><i class="fas fa-user"></i> Mi cuenta</button>
-            <button class="perfil-tab" onclick="cambiarTab('metas', this)"><i class="fas fa-bullseye"></i> Metas</button>
-            <button class="perfil-tab" onclick="cambiarTab('configuracion', this)"><i class="fas fa-cog"></i> Configuración</button>
-            <button class="perfil-tab" onclick="cambiarTab('seguridad', this)"><i class="fas fa-shield-alt"></i> Seguridad</button>
-        </div>
-
-        <!-- TAB CUENTA -->
-        <div class="seccion visible" id="tab-cuenta">
-            <div class="perfil-grid">
-
-                <!-- AVATAR — solo inicial -->
-                <div>
-                    <div class="avatar-card">
-                        <div class="avatar-circle" id="avatarCircle">
-                            <span id="avatarLetra">U</span>
+                <div class="avatar-card">
+                    <div class="avatar-circle"><span id="avatarLetra">U</span></div>
+                    <div class="avatar-nombre" id="avatarNombre">Usuario</div>
+                    <div class="avatar-correo" id="avatarCorreo">usuario@correo.com</div>
+                    <div class="avatar-badge"><i class="fas fa-check-circle"></i> Cuenta activa</div>
+                    <div class="avatar-stats">
+                        <div class="avatar-stat">
+                            <div class="avatar-stat-val" id="totalTrans">0</div>
+                            <div class="avatar-stat-label">Transacciones</div>
                         </div>
-                        <div class="avatar-nombre" id="avatarNombre">Usuario</div>
-                        <div class="avatar-correo" id="avatarCorreo">usuario@correo.com</div>
-                        <div class="avatar-badge"><i class="fas fa-check-circle"></i> Cuenta activa</div>
-                        <div class="avatar-stats">
-                            <div class="avatar-stat">
-                                <div class="avatar-stat-val" id="totalTrans">0</div>
-                                <div class="avatar-stat-label">Transacciones</div>
-                            </div>
-                            <div class="avatar-stat">
-                                <div class="avatar-stat-val" id="totalSims">0</div>
-                                <div class="avatar-stat-label">Simulaciones</div>
-                            </div>
-                            <div class="avatar-stat">
-                                <div class="avatar-stat-val" id="totalMetas">0</div>
-                                <div class="avatar-stat-label">Metas</div>
-                            </div>
-                            <div class="avatar-stat">
-                                <div class="avatar-stat-val" id="totalDias">1</div>
-                                <div class="avatar-stat-label">Días activo</div>
-                            </div>
+                        <div class="avatar-stat">
+                            <div class="avatar-stat-val" id="totalSims">0</div>
+                            <div class="avatar-stat-label">Simulaciones</div>
                         </div>
-                    </div>
-                </div>
-
-                <!-- FORMULARIO -->
-                <div>
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="card-header-icon" style="background:rgba(168,85,247,0.15);">✏️</div>
-                            <div class="card-header-text">
-                                <h3>Datos personales</h3>
-                                <p>Actualiza tu información de perfil</p>
-                            </div>
+                        <div class="avatar-stat">
+                            <div class="avatar-stat-val" id="totalMetas">0</div>
+                            <div class="avatar-stat-label">Metas</div>
                         </div>
-
-                        <div class="alerta alerta-exito" id="alertaExito">
-                            <i class="fas fa-check-circle"></i> ¡Perfil actualizado!
-                        </div>
-
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label class="form-label">Nombre completo</label>
-                                <div class="input-icon-wrap">
-                                    <i class="fas fa-user input-icon"></i>
-                                    <input type="text" class="form-control" id="nombre" placeholder="Tu nombre completo">
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Correo electrónico</label>
-                                <div class="input-icon-wrap">
-                                    <i class="fas fa-envelope input-icon"></i>
-                                    <input type="email" class="form-control" id="correo" disabled>
-                                </div>
-                            </div>
-                        </div>
-
-                        <hr class="divider">
-
-                        <div class="card-header" style="margin-bottom:14px;">
-                            <div class="card-header-icon" style="background:rgba(251,191,36,0.15);">💰</div>
-                            <div class="card-header-text">
-                                <h3>Información financiera</h3>
-                                <p>Usada para personalizar tus recomendaciones</p>
-                            </div>
-                        </div>
-
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label class="form-label">💰 Ingreso mensual</label>
-                                <div class="input-suffix">
-                                    <input type="number" class="form-control" id="ingresoMensual"
-                                           placeholder="2.500.000" oninput="actualizarDist()">
-                                    <span class="suffix-tag">COP</span>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">🎯 Meta de ahorro mensual</label>
-                                <div class="input-suffix">
-                                    <input type="number" class="form-control" id="metaAhorro" placeholder="500.000">
-                                    <span class="suffix-tag">COP</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div id="distWrap" style="display:none; margin-bottom:16px;">
-                            <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px;">
-                                📋 Distribución recomendada (50/30/20)
-                            </div>
-                            <div class="dist-grid">
-                                <div class="dist-item" style="background:rgba(74,222,128,0.08);border:1px solid rgba(74,222,128,0.2);">
-                                    <div class="dist-label" style="color:#4ade80;">Necesidades 50%</div>
-                                    <div class="dist-val" style="color:#4ade80;" id="dist50">$0</div>
-                                </div>
-                                <div class="dist-item" style="background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.2);">
-                                    <div class="dist-label" style="color:#fbbf24;">Deseos 30%</div>
-                                    <div class="dist-val" style="color:#fbbf24;" id="dist30">$0</div>
-                                </div>
-                                <div class="dist-item" style="background:rgba(34,211,238,0.08);border:1px solid rgba(34,211,238,0.2);">
-                                    <div class="dist-label" style="color:#22d3ee;">Ahorro 20%</div>
-                                    <div class="dist-val" style="color:#22d3ee;" id="dist20">$0</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="card-header" style="margin-bottom:12px;">
-                            <div class="card-header-icon" style="background:rgba(34,211,238,0.1);">📊</div>
-                            <div class="card-header-text">
-                                <h3>Resumen financiero</h3>
-                                <p>Balance actual de tu cuenta</p>
-                            </div>
-                        </div>
-
-                        <div class="resumen-grid" style="margin-bottom:20px;">
-                            <div class="resumen-card">
-                                <div class="resumen-icon">💰</div>
-                                <div class="resumen-label">Ingresos</div>
-                                <div class="resumen-valor" id="resIngresos" style="color:#4ade80">$0</div>
-                            </div>
-                            <div class="resumen-card">
-                                <div class="resumen-icon">💸</div>
-                                <div class="resumen-label">Gastos</div>
-                                <div class="resumen-valor" id="resGastos" style="color:#f472b6">$0</div>
-                            </div>
-                            <div class="resumen-card">
-                                <div class="resumen-icon">📈</div>
-                                <div class="resumen-label">Balance</div>
-                                <div class="resumen-valor" id="resBalance" style="color:#22d3ee">$0</div>
-                            </div>
-                        </div>
-
-                        <div style="display:flex;gap:12px;flex-wrap:wrap;">
-                            <button class="btn-primary" onclick="guardarPerfil()">
-                                <i class="fas fa-save"></i> Guardar cambios
-                            </button>
-                            <button class="btn-secondary" onclick="cargarPerfil()">
-                                <i class="fas fa-undo"></i> Descartar
-                            </button>
+                        <div class="avatar-stat">
+                            <div class="avatar-stat-val" id="totalDias">1</div>
+                            <div class="avatar-stat-label">Días activo</div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- TAB METAS -->
-        <div class="seccion" id="tab-metas">
-            <div class="metas-stats" id="metasStats" style="display:none;">
-                <div class="meta-stat-card">
-                    <div class="meta-stat-val" id="statTotal" style="color:#a855f7">0</div>
-                    <div class="meta-stat-label">Metas totales</div>
-                </div>
-                <div class="meta-stat-card">
-                    <div class="meta-stat-val" id="statCompletas" style="color:#4ade80">0</div>
-                    <div class="meta-stat-label">Completadas</div>
-                </div>
-                <div class="meta-stat-card">
-                    <div class="meta-stat-val" id="statAhorrado" style="color:#22d3ee">$0</div>
-                    <div class="meta-stat-label">Total ahorrado</div>
-                </div>
-            </div>
-
-            <div class="card">
-                <div class="metas-header">
-                    <div>
-                        <h3 style="font-size:17px;font-weight:700;margin-bottom:4px;color:white;">🎯 Mis Metas de Ahorro</h3>
-                        <p style="font-size:13px;color:var(--text-muted);">Define objetivos claros y sigue tu progreso</p>
-                    </div>
-                    <button class="btn-primary" onclick="abrirModal()">
-                        <i class="fas fa-plus"></i> Nueva meta
-                    </button>
-                </div>
-                <div id="listaMetas">
-                    <div style="text-align:center;color:var(--text-muted);padding:20px;font-size:14px;">Cargando metas...</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- TAB CONFIGURACIÓN -->
-        <div class="seccion" id="tab-configuracion">
-            <div style="max-width:680px;">
+            <!-- Formulario -->
+            <div>
                 <div class="card">
                     <div class="card-header">
-                        <div class="card-header-icon" style="background:rgba(168,85,247,0.15);">🎨</div>
-                        <div class="card-header-text">
-                            <h3>Apariencia</h3>
-                            <p>Personaliza el tema de FinanBot</p>
+                        <div class="card-icon" style="background:rgba(168,85,247,0.15);">✏️</div>
+                        <div>
+                            <div class="card-title">Datos personales</div>
+                            <div class="card-subtitle">Actualiza tu información de perfil</div>
                         </div>
                     </div>
 
-                    <div class="config-section-title">Tema de color</div>
-                    <div class="tema-grid">
-                        <div class="tema-option activo" id="temaOscuro" onclick="aplicarTema('oscuro', this)">
-                            <div class="tema-preview" style="background:linear-gradient(135deg,#1a1a4e,#0f0f2d);height:40px;border-radius:8px;margin-bottom:8px;"></div>
-                            🌙 Oscuro
+                    <div class="alerta alerta-exito" id="alertaExito">
+                        <i class="fas fa-check-circle"></i> ¡Perfil actualizado!
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Nombre completo</label>
+                            <div class="input-icon-wrap">
+                                <i class="fas fa-user input-icon"></i>
+                                <input type="text" class="form-control" id="nombre" placeholder="Tu nombre completo">
+                            </div>
                         </div>
-                        <div class="tema-option" id="temaAzul" onclick="aplicarTema('azul', this)">
-                            <div class="tema-preview" style="background:linear-gradient(135deg,#1e3a5f,#1e40af);height:40px;border-radius:8px;margin-bottom:8px;"></div>
-                            🌊 Azul
+                        <div class="form-group">
+                            <label class="form-label">Correo electrónico</label>
+                            <div class="input-icon-wrap">
+                                <i class="fas fa-envelope input-icon"></i>
+                                <input type="email" class="form-control" id="correo" disabled>
+                            </div>
                         </div>
                     </div>
 
                     <hr class="divider">
-                    <div class="config-section-title">Preferencias</div>
 
-                    <div class="config-item">
-                        <div class="config-item-left">
-                            <div class="config-item-icon" style="background:rgba(168,85,247,0.12);">🔔</div>
-                            <div class="config-item-text">
-                                <h4>Notificaciones de metas</h4>
-                                <p>Alertas cuando te acerques a tu meta</p>
-                            </div>
-                        </div>
-                        <label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label>
-                    </div>
-
-                    <div class="config-item">
-                        <div class="config-item-left">
-                            <div class="config-item-icon" style="background:rgba(34,211,238,0.12);">📊</div>
-                            <div class="config-item-text">
-                                <h4>Resumen semanal</h4>
-                                <p>Análisis de tus finanzas cada semana</p>
-                            </div>
-                        </div>
-                        <label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label>
-                    </div>
-
-                    <div class="config-item">
-                        <div class="config-item-left">
-                            <div class="config-item-icon" style="background:rgba(74,222,128,0.12);">💡</div>
-                            <div class="config-item-text">
-                                <h4>Tips financieros</h4>
-                                <p>Consejos personalizados en el dashboard</p>
-                            </div>
-                        </div>
-                        <label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div class="card-header">
-                        <div class="card-header-icon" style="background:rgba(34,211,238,0.15);">📤</div>
-                        <div class="card-header-text">
-                            <h3>Exportar datos</h3>
-                            <p>Descarga tus datos financieros</p>
-                        </div>
-                    </div>
-
-                    <div class="config-item" style="cursor:pointer;" onclick="exportarPDF()">
-                        <div class="config-item-left">
-                            <div class="config-item-icon" style="background:rgba(239,68,68,0.12);">📄</div>
-                            <div class="config-item-text">
-                                <h4>Exportar PDF</h4>
-                                <p>Transacciones, metas, simulaciones y recomendaciones</p>
-                            </div>
-                        </div>
-                        <i class="fas fa-chevron-right" style="color:var(--text-muted);"></i>
-                    </div>
-
-                    <div class="config-item" style="cursor:pointer;" onclick="exportarExcel()">
-                        <div class="config-item-left">
-                            <div class="config-item-icon" style="background:rgba(74,222,128,0.12);">📊</div>
-                            <div class="config-item-text">
-                                <h4>Exportar a Excel</h4>
-                                <p>Transacciones, metas y simulaciones con gráficas</p>
-                            </div>
-                        </div>
-                        <i class="fas fa-chevron-right" style="color:var(--text-muted);"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- TAB SEGURIDAD -->
-        <div class="seccion" id="tab-seguridad">
-            <div style="max-width:680px;">
-                <div class="card">
-                    <div class="card-header">
-                        <div class="card-header-icon" style="background:rgba(168,85,247,0.15);">🔒</div>
-                        <div class="card-header-text">
-                            <h3>Cambiar contraseña</h3>
-                            <p>Actualiza tu contraseña de acceso</p>
-                        </div>
-                    </div>
-
-                    <div class="alerta alerta-exito" id="alertaPassOk">
-                        <i class="fas fa-check-circle"></i> ¡Contraseña actualizada correctamente!
-                    </div>
-                    <div class="alerta alerta-error" id="alertaPassError">
-                        <i class="fas fa-times-circle"></i> Error
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Contraseña actual</label>
-                        <div class="input-icon-wrap" style="position:relative;">
-                            <i class="fas fa-lock input-icon"></i>
-                            <input type="password" class="form-control" id="passActual"
-                                   placeholder="Tu contraseña actual" style="padding-right:44px;">
-                            <i class="fas fa-eye pass-toggle" onclick="togglePass('passActual',this)"></i>
+                    <div class="card-header" style="margin-bottom:14px;">
+                        <div class="card-icon" style="background:rgba(251,191,36,0.15);">💰</div>
+                        <div>
+                            <div class="card-title">Información financiera</div>
+                            <div class="card-subtitle">Usada para personalizar tus recomendaciones</div>
                         </div>
                     </div>
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label">Nueva contraseña</label>
-                            <div class="input-icon-wrap" style="position:relative;">
-                                <i class="fas fa-lock input-icon"></i>
-                                <input type="password" class="form-control" id="passNueva"
-                                       placeholder="Mínimo 6 caracteres"
-                                       oninput="checkPass(this.value)" style="padding-right:44px;">
-                                <i class="fas fa-eye pass-toggle" onclick="togglePass('passNueva',this)"></i>
+                            <label class="form-label">💰 Ingreso mensual</label>
+                            <div class="input-suffix">
+                                <input type="number" class="form-control" id="ingresoMensual"
+                                       placeholder="2.500.000" oninput="actualizarDist()">
+                                <span class="suffix-tag">COP</span>
                             </div>
-                            <div class="pass-bar"><div id="passBar" class="pass-fill"></div></div>
-                            <div id="passText" style="font-size:11px;color:var(--text-muted);margin-top:4px;"></div>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Confirmar contraseña</label>
-                            <div class="input-icon-wrap" style="position:relative;">
-                                <i class="fas fa-lock input-icon"></i>
-                                <input type="password" class="form-control" id="passConfirmar"
-                                       placeholder="Repite la contraseña" style="padding-right:44px;">
-                                <i class="fas fa-eye pass-toggle" onclick="togglePass('passConfirmar',this)"></i>
+                            <label class="form-label">🎯 Meta de ahorro mensual</label>
+                            <div class="input-suffix">
+                                <input type="number" class="form-control" id="metaAhorro" placeholder="500.000">
+                                <span class="suffix-tag">COP</span>
                             </div>
                         </div>
                     </div>
 
-                    <button class="btn-primary" onclick="cambiarContrasena()">
-                        <i class="fas fa-key"></i> Cambiar contraseña
-                    </button>
-                </div>
-
-                <div class="card">
-                    <div class="card-header">
-                        <div class="card-header-icon" style="background:rgba(251,191,36,0.15);">🔐</div>
-                        <div class="card-header-text">
-                            <h3>Sesión activa</h3>
-                            <p>Información sobre tu sesión actual</p>
+                    <div id="distWrap" style="display:none;margin-bottom:16px;">
+                        <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px;">
+                            📋 Distribución recomendada (50/30/20)
                         </div>
-                    </div>
-                    <div class="config-item">
-                        <div class="config-item-left">
-                            <div class="config-item-icon" style="background:rgba(34,211,238,0.12);">💻</div>
-                            <div class="config-item-text">
-                                <h4>Sesión actual</h4>
-                                <p>Activa — Token JWT válido por 7 días</p>
+                        <div class="dist-grid">
+                            <div class="dist-item" style="background:rgba(74,222,128,0.08);border:1px solid rgba(74,222,128,0.2);">
+                                <div class="dist-label" style="color:#4ade80;">Necesidades 50%</div>
+                                <div class="dist-val"   style="color:#4ade80;" id="dist50">$0</div>
+                            </div>
+                            <div class="dist-item" style="background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.2);">
+                                <div class="dist-label" style="color:#fbbf24;">Deseos 30%</div>
+                                <div class="dist-val"   style="color:#fbbf24;" id="dist30">$0</div>
+                            </div>
+                            <div class="dist-item" style="background:rgba(34,211,238,0.08);border:1px solid rgba(34,211,238,0.2);">
+                                <div class="dist-label" style="color:#22d3ee;">Ahorro 20%</div>
+                                <div class="dist-val"   style="color:#22d3ee;" id="dist20">$0</div>
                             </div>
                         </div>
-                        <span style="background:rgba(74,222,128,0.1);border:1px solid rgba(74,222,128,0.3);color:#4ade80;border-radius:50px;padding:4px 12px;font-size:12px;">● Activa</span>
                     </div>
-                </div>
 
-                <div class="danger-zone">
-                    <div class="danger-title"><i class="fas fa-exclamation-triangle"></i> Zona de peligro</div>
-                    <div class="danger-desc">Cerrar sesión eliminará todos los datos locales. Tus datos en el servidor permanecen seguros.</div>
-                    <button class="btn-danger-full" onclick="cerrarSesionCompleto()">
-                        <i class="fas fa-sign-out-alt me-2"></i> Cerrar sesión en este dispositivo
-                    </button>
+                    <div class="card-header" style="margin-bottom:12px;">
+                        <div class="card-icon" style="background:rgba(34,211,238,0.1);">📊</div>
+                        <div>
+                            <div class="card-title">Resumen financiero</div>
+                            <div class="card-subtitle">Balance actual de tu cuenta</div>
+                        </div>
+                    </div>
+
+                    <div class="resumen-grid" style="margin-bottom:20px;">
+                        <div class="resumen-card">
+                            <div class="resumen-icon">💰</div>
+                            <div class="resumen-label">Ingresos totales</div>
+                            <div class="resumen-valor" id="resIngresos" style="color:#4ade80">$0</div>
+                        </div>
+                        <div class="resumen-card">
+                            <div class="resumen-icon">💸</div>
+                            <div class="resumen-label">Gastos totales</div>
+                            <div class="resumen-valor" id="resGastos" style="color:#f472b6">$0</div>
+                        </div>
+                        <div class="resumen-card">
+                            <div class="resumen-icon">📈</div>
+                            <div class="resumen-label">Balance</div>
+                            <div class="resumen-valor" id="resBalance" style="color:#22d3ee">$0</div>
+                        </div>
+                    </div>
+
+                    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                        <button class="btn-primary" onclick="guardarPerfil()">
+                            <i class="fas fa-save"></i> Guardar cambios
+                        </button>
+                        <button class="btn-secondary" onclick="cargarPerfil()">
+                            <i class="fas fa-undo"></i> Descartar
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <script>
-        const token = localStorage.getItem('token');
-        let metaSeleccionada = null;
-        let emoji = '🏖️';
-        let catSel = 'viaje';
-        let prioSel = 'media';
+    <!-- ── TAB METAS ─────────────────────────────────── -->
+    <div class="seccion" id="tab-metas">
+        <div class="metas-stats" id="metasStats" style="display:none;">
+            <div class="meta-stat-card">
+                <div class="meta-stat-val" id="statTotal" style="color:#a855f7">0</div>
+                <div class="meta-stat-label">Metas totales</div>
+            </div>
+            <div class="meta-stat-card">
+                <div class="meta-stat-val" id="statCompletas" style="color:#4ade80">0</div>
+                <div class="meta-stat-label">Completadas</div>
+            </div>
+            <div class="meta-stat-card">
+                <div class="meta-stat-val" id="statAhorrado" style="color:#22d3ee">$0</div>
+                <div class="meta-stat-label">Total ahorrado</div>
+            </div>
+        </div>
 
-        // TEMA
-        function aplicarTema(tema, btn) {
-            document.body.className = 'tema-' + tema;
+        <div class="card">
+            <div class="metas-header">
+                <div>
+                    <h3 style="font-size:17px;font-weight:700;color:white;margin-bottom:4px;">🎯 Mis Metas de Ahorro</h3>
+                    <p style="font-size:13px;color:var(--text-muted);">Define objetivos claros y sigue tu progreso</p>
+                </div>
+                <button class="btn-primary" onclick="abrirModal()">
+                    <i class="fas fa-plus"></i> Nueva meta
+                </button>
+            </div>
+            <div id="listaMetas">
+                <div style="text-align:center;color:var(--text-muted);padding:20px;font-size:14px;">Cargando metas...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── TAB CONFIGURACIÓN ──────────────────────────── -->
+    <div class="seccion" id="tab-configuracion">
+        <div style="max-width:680px;">
+
+            <!-- Apariencia -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon" style="background:rgba(168,85,247,0.15);">🎨</div>
+                    <div>
+                        <div class="card-title">Apariencia</div>
+                        <div class="card-subtitle">Personaliza el tema de FinanBot</div>
+                    </div>
+                </div>
+
+                <div class="config-section-title">Tema de color</div>
+                <div class="tema-grid">
+                    <div class="tema-option activo" id="temaOscuro" onclick="aplicarTema('oscuro',this)">
+                        <div class="tema-preview" style="background:linear-gradient(135deg,#1a1a4e,#0f0f2d);"></div>
+                        🌙 Oscuro
+                    </div>
+                    <div class="tema-option" id="temaAzul" onclick="aplicarTema('azul',this)">
+                        <div class="tema-preview" style="background:linear-gradient(135deg,#1e3a5f,#1e40af);"></div>
+                        🌊 Azul
+                    </div>
+                </div>
+
+                <hr class="divider">
+                <div class="config-section-title">Preferencias de notificaciones</div>
+
+                <!-- Toggle 1: Notificaciones de metas -->
+                <div class="config-item" id="itemNotifMetas">
+                    <div class="config-item-left">
+                        <div class="config-item-icon" style="background:rgba(168,85,247,0.12);">🔔</div>
+                        <div class="config-item-text">
+                            <h4>Notificaciones de metas</h4>
+                            <p id="descNotifMetas">Alertas cuando te acerques a tu meta</p>
+                        </div>
+                    </div>
+                    <label class="toggle">
+                        <input type="checkbox" id="toggleMetas" checked onchange="guardarPreferencia('notifMetas', this.checked)">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <!-- Preview notif metas -->
+                <div class="notif-preview" id="previewMetas">
+                    <span class="notif-preview-icon">🔔</span>
+                    <span>Activo — Verás alertas en el dashboard cuando una meta llegue al 75% o 100% de su objetivo.</span>
+                </div>
+
+                <!-- Toggle 2: Resumen semanal -->
+                <div class="config-item" id="itemResumenSemanal" style="margin-top:10px;">
+                    <div class="config-item-left">
+                        <div class="config-item-icon" style="background:rgba(34,211,238,0.12);">📊</div>
+                        <div class="config-item-text">
+                            <h4>Resumen semanal</h4>
+                            <p id="descResumen">Análisis de tus finanzas cada semana</p>
+                        </div>
+                    </div>
+                    <label class="toggle">
+                        <input type="checkbox" id="toggleResumen" checked onchange="guardarPreferencia('resumenSemanal', this.checked)">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="notif-preview" id="previewResumen">
+                    <span class="notif-preview-icon">📊</span>
+                    <span>Activo — El dashboard mostrará un resumen de ingresos, gastos y progreso de metas de la última semana.</span>
+                </div>
+
+                <!-- Toggle 3: Tips financieros -->
+                <div class="config-item" id="itemTips" style="margin-top:10px;">
+                    <div class="config-item-left">
+                        <div class="config-item-icon" style="background:rgba(74,222,128,0.12);">💡</div>
+                        <div class="config-item-text">
+                            <h4>Tips financieros</h4>
+                            <p id="descTips">Consejos personalizados en el dashboard</p>
+                        </div>
+                    </div>
+                    <label class="toggle">
+                        <input type="checkbox" id="toggleTips" checked onchange="guardarPreferencia('tipsFinancieros', this.checked)">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="notif-preview" id="previewTips">
+                    <span class="notif-preview-icon">💡</span>
+                    <span>Activo — Se mostrarán tips basados en tus recomendaciones activas y comportamiento financiero.</span>
+                </div>
+            </div>
+
+            <!-- Exportar -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon" style="background:rgba(34,211,238,0.15);">📤</div>
+                    <div>
+                        <div class="card-title">Exportar datos</div>
+                        <div class="card-subtitle">Descarga tus datos financieros</div>
+                    </div>
+                </div>
+
+                <div class="config-item" style="cursor:pointer;" onclick="exportarPDF()">
+                    <div class="config-item-left">
+                        <div class="config-item-icon" style="background:rgba(239,68,68,0.12);">📄</div>
+                        <div class="config-item-text">
+                            <h4>Exportar PDF</h4>
+                            <div class="export-status" id="statusPDF">
+                                <span class="export-dot"></span>
+                                Transacciones, metas, simulaciones y análisis financiero
+                            </div>
+                        </div>
+                    </div>
+                    <i class="fas fa-chevron-right" style="color:var(--text-muted);"></i>
+                </div>
+
+                <div class="config-item" style="cursor:pointer;margin-top:8px;" onclick="exportarExcel()">
+                    <div class="config-item-left">
+                        <div class="config-item-icon" style="background:rgba(74,222,128,0.12);">📊</div>
+                        <div class="config-item-text">
+                            <h4>Exportar a Excel</h4>
+                            <div class="export-status" id="statusExcel">
+                                <span class="export-dot"></span>
+                                6 hojas: Resumen, Transacciones, Categorías, Metas, Simulaciones, Plan Financiero
+                            </div>
+                        </div>
+                    </div>
+                    <i class="fas fa-chevron-right" style="color:var(--text-muted);"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── TAB SEGURIDAD ──────────────────────────────── -->
+    <div class="seccion" id="tab-seguridad">
+        <div style="max-width:680px;">
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon" style="background:rgba(168,85,247,0.15);">🔒</div>
+                    <div>
+                        <div class="card-title">Cambiar contraseña</div>
+                        <div class="card-subtitle">Actualiza tu contraseña de acceso</div>
+                    </div>
+                </div>
+
+                <div class="alerta alerta-exito" id="alertaPassOk">
+                    <i class="fas fa-check-circle"></i> ¡Contraseña actualizada correctamente!
+                </div>
+                <div class="alerta alerta-error" id="alertaPassError">
+                    <i class="fas fa-times-circle"></i> Error
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Contraseña actual</label>
+                    <div class="input-icon-wrap" style="position:relative;">
+                        <i class="fas fa-lock input-icon"></i>
+                        <input type="password" class="form-control" id="passActual"
+                               placeholder="Tu contraseña actual" style="padding-right:44px;">
+                        <i class="fas fa-eye pass-toggle" onclick="togglePass('passActual',this)"></i>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Nueva contraseña</label>
+                        <div class="input-icon-wrap" style="position:relative;">
+                            <i class="fas fa-lock input-icon"></i>
+                            <input type="password" class="form-control" id="passNueva"
+                                   placeholder="Mínimo 6 caracteres"
+                                   oninput="checkPass(this.value)" style="padding-right:44px;">
+                            <i class="fas fa-eye pass-toggle" onclick="togglePass('passNueva',this)"></i>
+                        </div>
+                        <div class="pass-bar"><div id="passBar" class="pass-fill"></div></div>
+                        <div id="passText" style="font-size:11px;color:var(--text-muted);margin-top:4px;"></div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Confirmar contraseña</label>
+                        <div class="input-icon-wrap" style="position:relative;">
+                            <i class="fas fa-lock input-icon"></i>
+                            <input type="password" class="form-control" id="passConfirmar"
+                                   placeholder="Repite la contraseña" style="padding-right:44px;">
+                            <i class="fas fa-eye pass-toggle" onclick="togglePass('passConfirmar',this)"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="btn-primary" onclick="cambiarContrasena()">
+                    <i class="fas fa-key"></i> Cambiar contraseña
+                </button>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon" style="background:rgba(251,191,36,0.15);">🔐</div>
+                    <div>
+                        <div class="card-title">Sesión activa</div>
+                        <div class="card-subtitle">Información sobre tu sesión actual</div>
+                    </div>
+                </div>
+                <div class="config-item">
+                    <div class="config-item-left">
+                        <div class="config-item-icon" style="background:rgba(34,211,238,0.12);">💻</div>
+                        <div class="config-item-text">
+                            <h4>Sesión actual</h4>
+                            <p>Activa — Token JWT válido por 7 días</p>
+                        </div>
+                    </div>
+                    <span style="background:rgba(74,222,128,0.1);border:1px solid rgba(74,222,128,0.3);color:#4ade80;border-radius:50px;padding:4px 12px;font-size:12px;">● Activa</span>
+                </div>
+            </div>
+
+            <div class="danger-zone">
+                <div class="danger-title"><i class="fas fa-exclamation-triangle"></i> Zona de peligro</div>
+                <div class="danger-desc">Cerrar sesión eliminará todos los datos locales. Tus datos en el servidor permanecen seguros.</div>
+                <button class="btn-danger-full" onclick="cerrarSesionCompleto()">
+                    <i class="fas fa-sign-out-alt me-2"></i> Cerrar sesión en este dispositivo
+                </button>
+            </div>
+        </div>
+    </div>
+
+</div><!-- /main -->
+
+<script>
+    const token = localStorage.getItem('token');
+    let metaSeleccionada = null;
+    let emoji = '🏖️', catSel = 'viaje', prioSel = 'media';
+
+    // ── TEMA ──────────────────────────────────────────────
+    (function() {
+        const t = localStorage.getItem('finanbot_tema') || 'oscuro';
+        document.body.className = 'tema-' + t;
+        document.addEventListener('DOMContentLoaded', () => {
+            const ids = { oscuro:'temaOscuro', azul:'temaAzul' };
             document.querySelectorAll('.tema-option').forEach(o => o.classList.remove('activo'));
-            btn.classList.add('activo');
-            localStorage.setItem('finanbot_tema', tema);
+            document.getElementById(ids[t])?.classList.add('activo');
+        });
+    })();
+
+    function aplicarTema(tema, btn) {
+        document.body.className = 'tema-' + tema;
+        document.querySelectorAll('.tema-option').forEach(o => o.classList.remove('activo'));
+        btn.classList.add('activo');
+        localStorage.setItem('finanbot_tema', tema);
+        toast('✅', `Tema "${tema === 'oscuro' ? 'Oscuro 🌙' : 'Azul 🌊'}" aplicado`);
+    }
+
+    // ── PREFERENCIAS (toggles funcionales) ───────────────
+    const PREFS_KEY = 'finanbot_prefs';
+
+    function cargarPreferencias() {
+        const prefs = JSON.parse(localStorage.getItem(PREFS_KEY) || '{}');
+        const defaults = { notifMetas: true, resumenSemanal: true, tipsFinancieros: true };
+        return Object.assign(defaults, prefs);
+    }
+
+    function guardarPreferencia(clave, valor) {
+        const prefs = cargarPreferencias();
+        prefs[clave] = valor;
+        localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
+        actualizarPreviewToggle(clave, valor);
+        toast(valor ? '✅' : '🔕', getToggleMsg(clave, valor));
+    }
+
+    function getToggleMsg(clave, valor) {
+        const nombres = {
+            notifMetas:      'Notificaciones de metas',
+            resumenSemanal:  'Resumen semanal',
+            tipsFinancieros: 'Tips financieros',
+        };
+        return `${nombres[clave]} ${valor ? 'activado' : 'desactivado'}`;
+    }
+
+    function actualizarPreviewToggle(clave, activo) {
+        const previews = {
+            notifMetas:      { id: 'previewMetas',   txt: 'Activo — Verás alertas en el dashboard cuando una meta llegue al 75% o 100% de su objetivo.',   icon: '🔔' },
+            resumenSemanal:  { id: 'previewResumen', txt: 'Activo — El dashboard mostrará un resumen de ingresos, gastos y progreso de metas de la última semana.', icon: '📊' },
+            tipsFinancieros: { id: 'previewTips',    txt: 'Activo — Se mostrarán tips basados en tus recomendaciones activas y comportamiento financiero.',   icon: '💡' },
+        };
+        const p = previews[clave];
+        if (!p) return;
+        const el = document.getElementById(p.id);
+        if (activo) {
+            el.style.display = 'flex';
+            el.querySelector('span:last-child').textContent = p.txt;
+        } else {
+            el.style.display = 'none';
         }
+    }
 
-        // Cargar tema guardado
-        (function() {
-            const t = localStorage.getItem('finanbot_tema') || 'oscuro';
-            document.body.className = 'tema-' + t;
-            const ids = { oscuro: 'temaOscuro', azul: 'temaAzul' };
-            document.addEventListener('DOMContentLoaded', () => {
-                if (ids[t]) {
-                    document.querySelectorAll('.tema-option').forEach(o => o.classList.remove('activo'));
-                    document.getElementById(ids[t])?.classList.add('activo');
-                }
-            });
-        })();
+    function aplicarPreferenciasGuardadas() {
+        const prefs = cargarPreferencias();
+        // Metas
+        document.getElementById('toggleMetas').checked    = prefs.notifMetas;
+        document.getElementById('toggleResumen').checked  = prefs.resumenSemanal;
+        document.getElementById('toggleTips').checked     = prefs.tipsFinancieros;
+        // Actualizar previews
+        actualizarPreviewToggle('notifMetas',      prefs.notifMetas);
+        actualizarPreviewToggle('resumenSemanal',  prefs.resumenSemanal);
+        actualizarPreviewToggle('tipsFinancieros', prefs.tipsFinancieros);
+    }
 
-        // TABS
-        function cambiarTab(tab, btn) {
-            document.querySelectorAll('.seccion').forEach(s => s.classList.remove('visible'));
-            document.querySelectorAll('.perfil-tab').forEach(t => t.classList.remove('activo'));
-            document.getElementById('tab-' + tab).classList.add('visible');
-            btn.classList.add('activo');
+    // ── TOAST ────────────────────────────────────────────
+    let toastTimer = null;
+    function toast(icono, msg) {
+        const t = document.getElementById('toastGlobal');
+        document.getElementById('toastIcon').textContent = icono;
+        document.getElementById('toastMsg').textContent  = msg;
+        t.classList.add('show');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => t.classList.remove('show'), 3200);
+    }
+
+    // ── TABS ─────────────────────────────────────────────
+    function cambiarTab(tab, btn) {
+        document.querySelectorAll('.seccion').forEach(s => s.classList.remove('visible'));
+        document.querySelectorAll('.perfil-tab').forEach(t => t.classList.remove('activo'));
+        document.getElementById('tab-' + tab).classList.add('visible');
+        btn.classList.add('activo');
+    }
+
+    // ── OJO CONTRASEÑA ───────────────────────────────────
+    function togglePass(id, icon) {
+        const inp = document.getElementById(id);
+        const show = inp.type === 'password';
+        inp.type = show ? 'text' : 'password';
+        icon.className = show ? 'fas fa-eye-slash pass-toggle' : 'fas fa-eye pass-toggle';
+        icon.style.color = show ? '#a855f7' : '#6b7280';
+    }
+
+    // ── MODAL META ───────────────────────────────────────
+    function abrirModal() {
+        document.getElementById('modalMeta').classList.add('visible');
+        document.getElementById('metaFecha').min = new Date().toISOString().split('T')[0];
+        const ing = parseFloat(document.getElementById('ingresoMensual').value) || 0;
+        if (ing > 0 && !document.getElementById('metaMensual').value) {
+            document.getElementById('metaMensual').value = Math.round(ing * 0.2);
+            calcProy();
         }
+    }
+    function cerrarModal() {
+        document.getElementById('modalMeta').classList.remove('visible');
+        document.getElementById('metaCalc').style.display = 'none';
+    }
+    function cerrarModalAbonar() { document.getElementById('modalAbonar').classList.remove('visible'); }
 
-        // OJO contraseña
-        function togglePass(inputId, iconEl) {
-            const input = document.getElementById(inputId);
-            const mostrar = input.type === 'password';
-            input.type = mostrar ? 'text' : 'password';
-            iconEl.className = mostrar
-                ? 'fas fa-eye-slash pass-toggle'
-                : 'fas fa-eye pass-toggle';
-            iconEl.style.color = mostrar ? '#a855f7' : '#6b7280';
-        }
+    function selEmoji(btn, e) {
+        document.querySelectorAll('.emoji-btn').forEach(b => b.classList.remove('sel'));
+        btn.classList.add('sel'); emoji = e;
+    }
+    function selCat(btn, c) {
+        document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('sel'));
+        btn.classList.add('sel'); catSel = c;
+    }
+    function selPrio(btn) {
+        document.querySelectorAll('.prio-btn').forEach(b => b.classList.remove('sel'));
+        btn.classList.add('sel');
+        prioSel = btn.textContent.includes('Baja') ? 'baja' : btn.textContent.includes('Alta') ? 'alta' : 'media';
+    }
 
-        // MODAL META
-        function abrirModal() {
-            document.getElementById('modalMeta').classList.add('visible');
-            document.getElementById('metaFecha').min = new Date().toISOString().split('T')[0];
-            const ing = parseFloat(document.getElementById('ingresoMensual').value) || 0;
-            if (ing > 0 && !document.getElementById('metaMensual').value) {
-                document.getElementById('metaMensual').value = Math.round(ing * 0.2);
-                calcProy();
-            }
-        }
+    // ── PROYECCIÓN META ───────────────────────────────────
+    function calcProy() {
+        const obj = parseFloat(document.getElementById('metaObjetivo').value) || 0;
+        const act = parseFloat(document.getElementById('metaActual').value)   || 0;
+        const men = parseFloat(document.getElementById('metaMensual').value)  || 0;
+        const fechaStr = document.getElementById('metaFecha').value;
 
-        function cerrarModal() {
-            document.getElementById('modalMeta').classList.remove('visible');
-            document.getElementById('metaCalc').style.display = 'none';
-        }
+        if (obj <= 0) { document.getElementById('metaCalc').style.display = 'none'; return; }
+        document.getElementById('metaCalc').style.display = 'block';
 
-        function cerrarModalAbonar() {
-            document.getElementById('modalAbonar').classList.remove('visible');
-        }
+        const faltante = Math.max(0, obj - act);
+        document.getElementById('cFaltante').textContent = '$' + Math.round(faltante).toLocaleString('es-CO');
 
-        function selEmoji(btn, e) {
-            document.querySelectorAll('.emoji-btn').forEach(b => b.classList.remove('sel'));
-            btn.classList.add('sel'); emoji = e;
-        }
+        if (men > 0) {
+            const meses = Math.ceil(faltante / men);
+            const a = Math.floor(meses / 12), m = meses % 12;
+            let txt = '';
+            if (a > 0) txt += `${a} año${a>1?'s':''}`;
+            if (m > 0) txt += ` y ${m} mes${m>1?'es':''}`;
+            document.getElementById('cTiempo').textContent = txt || 'Ya alcanzada';
 
-        function selCat(btn, c) {
-            document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('sel'));
-            btn.classList.add('sel'); catSel = c;
-        }
-
-        function selPrio(btn) {
-            document.querySelectorAll('.prio-btn').forEach(b => b.classList.remove('sel'));
-            btn.classList.add('sel');
-            prioSel = btn.textContent.includes('Baja') ? 'baja' : btn.textContent.includes('Alta') ? 'alta' : 'media';
-        }
-
-        // PROYECCIÓN META
-        function calcProy() {
-            const obj = parseFloat(document.getElementById('metaObjetivo').value) || 0;
-            const act = parseFloat(document.getElementById('metaActual').value) || 0;
-            const men = parseFloat(document.getElementById('metaMensual').value) || 0;
-            const fechaStr = document.getElementById('metaFecha').value;
-
-            if (obj <= 0) { document.getElementById('metaCalc').style.display = 'none'; return; }
-            document.getElementById('metaCalc').style.display = 'block';
-
-            const faltante = Math.max(0, obj - act);
-            document.getElementById('cFaltante').textContent = '$' + Math.round(faltante).toLocaleString('es-CO');
-
-            if (men > 0) {
-                const meses = Math.ceil(faltante / men);
-                const a = Math.floor(meses / 12), m = meses % 12;
-                let t = '';
-                if (a > 0) t += `${a} año${a > 1 ? 's' : ''}`;
-                if (m > 0) t += ` y ${m} mes${m > 1 ? 'es' : ''}`;
-                document.getElementById('cTiempo').textContent = t || 'Ya alcanzada';
-
-                const tm = 0.08 / 12;
-                let ac = act, mc = 0;
-                while (ac < obj && mc < 1200) { ac = ac * (1 + tm) + men; mc++; }
-                if (mc < meses) {
-                    document.getElementById('cInteresRow').style.display = 'flex';
-                    const a2 = Math.floor(mc / 12), m2 = mc % 12;
-                    let t2 = '';
-                    if (a2 > 0) t2 += `${a2} año${a2 > 1 ? 's' : ''}`;
-                    if (m2 > 0) t2 += ` y ${m2} mes${m2 > 1 ? 'es' : ''}`;
-                    document.getElementById('cInteres').textContent = t2 || `${mc} meses`;
-                } else {
-                    document.getElementById('cInteresRow').style.display = 'none';
-                }
-            }
-
-            if (fechaStr) {
-                const diff = Math.max(1, Math.ceil((new Date(fechaStr) - new Date()) / (1000*60*60*24*30)));
-                document.getElementById('cMensual').textContent = '$' + Math.round(faltante / diff).toLocaleString('es-CO') + '/mes';
+            const tm = 0.08 / 12;
+            let ac = act, mc = 0;
+            while (ac < obj && mc < 1200) { ac = ac * (1 + tm) + men; mc++; }
+            if (mc < meses) {
+                document.getElementById('cInteresRow').style.display = 'flex';
+                const a2 = Math.floor(mc/12), m2 = mc%12;
+                let t2 = '';
+                if (a2>0) t2 += `${a2} año${a2>1?'s':''}`;
+                if (m2>0) t2 += ` y ${m2} mes${m2>1?'es':''}`;
+                document.getElementById('cInteres').textContent = t2 || `${mc} meses`;
             } else {
-                document.getElementById('cMensual').textContent = men > 0 ? '$' + men.toLocaleString('es-CO') + '/mes' : '—';
+                document.getElementById('cInteresRow').style.display = 'none';
             }
         }
 
-        // DISTRIBUCIÓN 50/30/20
-        function actualizarDist() {
-            const ing = parseFloat(document.getElementById('ingresoMensual').value) || 0;
-            document.getElementById('distWrap').style.display = ing > 0 ? 'block' : 'none';
-            if (ing > 0) {
-                document.getElementById('dist50').textContent = '$' + Math.round(ing * 0.5).toLocaleString('es-CO');
-                document.getElementById('dist30').textContent = '$' + Math.round(ing * 0.3).toLocaleString('es-CO');
-                document.getElementById('dist20').textContent = '$' + Math.round(ing * 0.2).toLocaleString('es-CO');
+        if (fechaStr) {
+            const diff = Math.max(1, Math.ceil((new Date(fechaStr) - new Date()) / (1000*60*60*24*30)));
+            document.getElementById('cMensual').textContent = '$' + Math.round(faltante / diff).toLocaleString('es-CO') + '/mes';
+        } else {
+            document.getElementById('cMensual').textContent = men > 0 ? '$' + men.toLocaleString('es-CO') + '/mes' : '—';
+        }
+    }
+
+    // ── 50/30/20 ─────────────────────────────────────────
+    function actualizarDist() {
+        const ing = parseFloat(document.getElementById('ingresoMensual').value) || 0;
+        document.getElementById('distWrap').style.display = ing > 0 ? 'block' : 'none';
+        if (ing > 0) {
+            document.getElementById('dist50').textContent = '$' + Math.round(ing * 0.5).toLocaleString('es-CO');
+            document.getElementById('dist30').textContent = '$' + Math.round(ing * 0.3).toLocaleString('es-CO');
+            document.getElementById('dist20').textContent = '$' + Math.round(ing * 0.2).toLocaleString('es-CO');
+        }
+    }
+
+    // ── CARGAR PERFIL ────────────────────────────────────
+    async function cargarPerfil() {
+        if (!token) return;
+        try {
+            const res = await fetch('http://127.0.0.1:5000/api/perfil/', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const u = await res.json();
+                document.getElementById('avatarLetra').textContent = u.nombre.charAt(0).toUpperCase();
+                document.getElementById('avatarNombre').textContent = u.nombre;
+                document.getElementById('avatarCorreo').textContent = u.correo;
+                document.getElementById('nombre').value = u.nombre;
+                document.getElementById('correo').value = u.correo;
+                document.getElementById('ingresoMensual').value = u.ingreso_mensual || '';
+                document.getElementById('metaAhorro').value    = u.meta_ahorro     || '';
+                actualizarDist();
+                localStorage.setItem('usuario', JSON.stringify(u));
             }
-        }
+        } catch(e) { console.error(e); }
+    }
 
-        // CARGAR PERFIL
-        async function cargarPerfil() {
-            if (!token) return;
-            try {
-                const res = await fetch('http://127.0.0.1:5000/api/perfil/', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (res.ok) {
-                    const u = await res.json();
-                    document.getElementById('avatarLetra').textContent = u.nombre.charAt(0).toUpperCase();
-                    document.getElementById('avatarNombre').textContent = u.nombre;
-                    document.getElementById('avatarCorreo').textContent = u.correo;
-                    document.getElementById('nombre').value = u.nombre;
-                    document.getElementById('correo').value = u.correo;
-                    document.getElementById('ingresoMensual').value = u.ingreso_mensual || '';
-                    document.getElementById('metaAhorro').value = u.meta_ahorro || '';
-                    actualizarDist();
-                    localStorage.setItem('usuario', JSON.stringify(u));
-                }
-            } catch (e) { console.error(e); }
-        }
-
-        async function cargarStats() {
-            if (!token) return;
-            try {
-                const r1 = await fetch('http://127.0.0.1:5000/api/transacciones/', { headers: { 'Authorization': `Bearer ${token}` } });
-                if (r1.ok) {
-                    const t = await r1.json();
-                    document.getElementById('totalTrans').textContent = t.length;
-                    const ing = t.filter(x => x.tipo === 'ingreso').reduce((s, x) => s + x.monto, 0);
-                    const gas = t.filter(x => x.tipo === 'gasto').reduce((s, x) => s + x.monto, 0);
-                    const bal = ing - gas;
-                    document.getElementById('resIngresos').textContent = '$' + ing.toLocaleString('es-CO');
-                    document.getElementById('resGastos').textContent = '$' + gas.toLocaleString('es-CO');
-                    document.getElementById('resBalance').textContent = '$' + Math.abs(bal).toLocaleString('es-CO');
-                    document.getElementById('resBalance').style.color = bal >= 0 ? '#4ade80' : '#f472b6';
-                }
-                const r2 = await fetch('http://127.0.0.1:5000/api/simulaciones/', { headers: { 'Authorization': `Bearer ${token}` } });
-                if (r2.ok) document.getElementById('totalSims').textContent = (await r2.json()).length;
-            } catch (e) { console.error(e); }
-        }
-
-        async function cargarMetas() {
-            if (!token) return;
-            try {
-                const res = await fetch('http://127.0.0.1:5000/api/metas/', { headers: { 'Authorization': `Bearer ${token}` } });
-                if (res.ok) {
-                    const metas = await res.json();
-                    renderMetas(metas);
-                    document.getElementById('totalMetas').textContent = metas.length;
-                    if (metas.length > 0) {
-                        document.getElementById('metasStats').style.display = 'grid';
-                        document.getElementById('statTotal').textContent = metas.length;
-                        document.getElementById('statCompletas').textContent = metas.filter(m => m.completada).length;
-                        document.getElementById('statAhorrado').textContent = '$' + Math.round(metas.reduce((s, m) => s + m.monto_actual, 0)).toLocaleString('es-CO');
-                    }
-                }
-            } catch (e) { console.error(e); }
-        }
-
-        function renderMetas(metas) {
-            const lista = document.getElementById('listaMetas');
-            if (!metas.length) {
-                lista.innerHTML = `
-                    <div class="meta-empty">
-                        <i class="fas fa-bullseye"></i>
-                        <p>Aún no tienes metas de ahorro.<br>Crea tu primera meta y empieza a construir tu futuro financiero.</p>
-                        <button class="btn-primary" onclick="abrirModal()"><i class="fas fa-plus"></i> Crear mi primera meta</button>
-                    </div>`;
-                return;
+    async function cargarStats() {
+        if (!token) return;
+        try {
+            const r1 = await fetch('http://127.0.0.1:5000/api/transacciones/', { headers: { 'Authorization': `Bearer ${token}` } });
+            if (r1.ok) {
+                const ts = await r1.json();
+                document.getElementById('totalTrans').textContent = ts.length;
+                const ing = ts.filter(x => x.tipo==='ingreso').reduce((s,x)=>s+x.monto,0);
+                const gas = ts.filter(x => x.tipo==='gasto').reduce((s,x)=>s+x.monto,0);
+                const bal = ing - gas;
+                document.getElementById('resIngresos').textContent = '$' + Math.round(ing).toLocaleString('es-CO');
+                document.getElementById('resGastos').textContent   = '$' + Math.round(gas).toLocaleString('es-CO');
+                document.getElementById('resBalance').textContent  = '$' + Math.abs(Math.round(bal)).toLocaleString('es-CO');
+                document.getElementById('resBalance').style.color  = bal >= 0 ? '#4ade80' : '#f472b6';
             }
-            lista.innerHTML = metas.map(m => {
-                const faltante = m.monto_objetivo - m.monto_actual;
-                return `
-                <div class="meta-item ${m.completada ? 'completada' : ''}">
-                    <div class="meta-top">
-                        <div class="meta-info">
-                            <div class="meta-nombre">${m.nombre} ${m.completada ? '🎉' : ''}</div>
-                            ${m.fecha_limite ? `<div class="meta-fecha">📅 Límite: ${m.fecha_limite}</div>` : ''}
-                        </div>
-                        <span class="meta-badge ${m.completada ? 'ok' : ''}">
-                            ${m.completada ? '✅ Completada' : m.porcentaje + '%'}
-                        </span>
-                    </div>
-                    <div class="meta-barra-wrap">
-                        <div class="progress-track">
-                            <div class="progress-fill ${m.completada ? 'ok' : ''}" style="width:${m.porcentaje}%"></div>
-                        </div>
-                        <div class="meta-montos">
-                            <span class="meta-ahorrado">💰 $${m.monto_actual.toLocaleString('es-CO')} ahorrados</span>
-                            <span class="meta-faltante">${!m.completada ? '⬆️ Faltan $' + faltante.toLocaleString('es-CO') : '🎯 $' + m.monto_objetivo.toLocaleString('es-CO')}</span>
-                        </div>
-                    </div>
-                    <div class="meta-acciones">
-                        ${!m.completada ? `<button class="btn-success" onclick="abrirAbonar(${m.id}, ${m.monto_actual})"><i class="fas fa-plus"></i> Abonar</button>` : ''}
-                        <button class="btn-danger-sm" onclick="eliminarMeta(${m.id})"><i class="fas fa-trash"></i> Eliminar</button>
-                    </div>
+            const r2 = await fetch('http://127.0.0.1:5000/api/simulaciones/', { headers: { 'Authorization': `Bearer ${token}` } });
+            if (r2.ok) document.getElementById('totalSims').textContent = (await r2.json()).length;
+        } catch(e) { console.error(e); }
+    }
+
+    async function cargarMetas() {
+        if (!token) return;
+        try {
+            const res = await fetch('http://127.0.0.1:5000/api/metas/', { headers: { 'Authorization': `Bearer ${token}` } });
+            if (res.ok) {
+                const metas = await res.json();
+                renderMetas(metas);
+                document.getElementById('totalMetas').textContent = metas.length;
+                if (metas.length > 0) {
+                    document.getElementById('metasStats').style.display = 'grid';
+                    document.getElementById('statTotal').textContent    = metas.length;
+                    document.getElementById('statCompletas').textContent= metas.filter(m=>m.completada).length;
+                    document.getElementById('statAhorrado').textContent = '$' + Math.round(metas.reduce((s,m)=>s+m.monto_actual,0)).toLocaleString('es-CO');
+                }
+            }
+        } catch(e) { console.error(e); }
+    }
+
+    function renderMetas(metas) {
+        const lista = document.getElementById('listaMetas');
+        if (!metas.length) {
+            lista.innerHTML = `
+                <div class="meta-empty">
+                    <i class="fas fa-bullseye"></i>
+                    <p>Aún no tienes metas de ahorro.<br>Crea tu primera meta y empieza a construir tu futuro financiero.</p>
+                    <button class="btn-primary" onclick="abrirModal()"><i class="fas fa-plus"></i> Crear mi primera meta</button>
                 </div>`;
-            }).join('');
+            return;
         }
+        lista.innerHTML = metas.map(m => {
+            const faltante = m.monto_objetivo - m.monto_actual;
+            return `
+            <div class="meta-item ${m.completada ? 'completada' : ''}">
+                <div class="meta-top">
+                    <div>
+                        <div class="meta-nombre">${m.nombre} ${m.completada ? '🎉' : ''}</div>
+                        ${m.fecha_limite ? `<div class="meta-fecha">📅 Límite: ${m.fecha_limite}</div>` : ''}
+                    </div>
+                    <span class="meta-badge ${m.completada ? 'ok' : ''}">
+                        ${m.completada ? '✅ Completada' : (m.porcentaje || 0) + '%'}
+                    </span>
+                </div>
+                <div class="meta-barra-wrap" style="padding-left:0;">
+                    <div class="progress-track">
+                        <div class="progress-fill ${m.completada ? 'ok' : ''}" style="width:${m.porcentaje || 0}%"></div>
+                    </div>
+                    <div class="meta-montos">
+                        <span class="meta-ahorrado">💰 $${Math.round(m.monto_actual).toLocaleString('es-CO')} ahorrados</span>
+                        <span class="meta-faltante">${!m.completada ? '⬆️ Faltan $' + Math.round(faltante).toLocaleString('es-CO') : '🎯 $' + Math.round(m.monto_objetivo).toLocaleString('es-CO')}</span>
+                    </div>
+                </div>
+                <div class="meta-acciones">
+                    ${!m.completada ? `<button class="btn-success" onclick="abrirAbonar(${m.id},${m.monto_actual})"><i class="fas fa-plus"></i> Abonar</button>` : ''}
+                    <button class="btn-danger-sm" onclick="eliminarMeta(${m.id})"><i class="fas fa-trash"></i> Eliminar</button>
+                </div>
+            </div>`;
+        }).join('');
+    }
 
-        // CRUD METAS
-        async function crearMeta() {
-            const nombre = document.getElementById('metaNombre').value.trim();
-            const obj = document.getElementById('metaObjetivo').value;
-            const act = document.getElementById('metaActual').value || 0;
-            const fecha = document.getElementById('metaFecha').value;
-            if (!nombre || !obj) { alert('El nombre y el monto objetivo son obligatorios.'); return; }
-            try {
-                const res = await fetch('http://127.0.0.1:5000/api/metas/', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({ nombre: `${emoji} ${nombre}`, monto_objetivo: parseFloat(obj), monto_actual: parseFloat(act), fecha_limite: fecha || null })
-                });
-                if (res.ok) {
-                    cerrarModal();
-                    ['metaNombre','metaObjetivo','metaFecha','metaMensual'].forEach(id => document.getElementById(id).value = '');
-                    document.getElementById('metaActual').value = '0';
-                    await cargarMetas();
-                } else alert('Error al crear la meta.');
-            } catch (e) { alert('No se pudo conectar.'); }
-        }
+    // ── CRUD METAS ───────────────────────────────────────
+    async function crearMeta() {
+        const nombre = document.getElementById('metaNombre').value.trim();
+        const obj    = document.getElementById('metaObjetivo').value;
+        const act    = document.getElementById('metaActual').value || 0;
+        const fecha  = document.getElementById('metaFecha').value;
+        if (!nombre || !obj) { toast('⚠️','El nombre y el monto objetivo son obligatorios.'); return; }
+        try {
+            const res = await fetch('http://127.0.0.1:5000/api/metas/', {
+                method: 'POST',
+                headers: { 'Content-Type':'application/json', 'Authorization':`Bearer ${token}` },
+                body: JSON.stringify({ nombre:`${emoji} ${nombre}`, monto_objetivo:parseFloat(obj), monto_actual:parseFloat(act), fecha_limite:fecha||null })
+            });
+            if (res.ok) {
+                cerrarModal();
+                ['metaNombre','metaObjetivo','metaFecha','metaMensual'].forEach(id=>document.getElementById(id).value='');
+                document.getElementById('metaActual').value='0';
+                await cargarMetas();
+                toast('🎯','Meta creada con éxito');
+            } else toast('❌','Error al crear la meta.');
+        } catch(e) { toast('❌','No se pudo conectar.'); }
+    }
 
-        async function eliminarMeta(id) {
-            if (!confirm('¿Eliminar esta meta? No se puede deshacer.')) return;
-            try {
-                const res = await fetch(`http://127.0.0.1:5000/api/metas/${id}`, {
-                    method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (res.ok) await cargarMetas();
-                else alert('Error al eliminar.');
-            } catch (e) { alert('No se pudo conectar.'); }
-        }
+    async function eliminarMeta(id) {
+        if (!confirm('¿Eliminar esta meta? No se puede deshacer.')) return;
+        try {
+            const res = await fetch(`http://127.0.0.1:5000/api/metas/${id}`, {
+                method:'DELETE', headers:{'Authorization':`Bearer ${token}`}
+            });
+            if (res.ok) { await cargarMetas(); toast('🗑️','Meta eliminada'); }
+            else toast('❌','Error al eliminar.');
+        } catch(e) { toast('❌','No se pudo conectar.'); }
+    }
 
-        function abrirAbonar(id, actual) {
-            metaSeleccionada = id;
-            document.getElementById('abonarMonto').value = actual;
-            document.getElementById('modalAbonar').classList.add('visible');
-        }
+    function abrirAbonar(id, actual) {
+        metaSeleccionada = id;
+        document.getElementById('abonarMonto').value = actual;
+        document.getElementById('modalAbonar').classList.add('visible');
+    }
 
-        async function confirmarAbono() {
-            const monto = parseFloat(document.getElementById('abonarMonto').value);
-            if (!monto || monto < 0) { alert('Monto inválido.'); return; }
-            try {
-                const res = await fetch(`http://127.0.0.1:5000/api/metas/${metaSeleccionada}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({ monto_actual: monto })
-                });
-                if (res.ok) { cerrarModalAbonar(); await cargarMetas(); }
-            } catch (e) { console.error(e); }
-        }
+    async function confirmarAbono() {
+        const monto = parseFloat(document.getElementById('abonarMonto').value);
+        if (!monto || monto < 0) { toast('⚠️','Monto inválido.'); return; }
+        try {
+            const res = await fetch(`http://127.0.0.1:5000/api/metas/${metaSeleccionada}`, {
+                method:'PUT',
+                headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},
+                body: JSON.stringify({ monto_actual: monto })
+            });
+            if (res.ok) { cerrarModalAbonar(); await cargarMetas(); toast('💰','Abono registrado'); }
+        } catch(e) { console.error(e); }
+    }
 
-        // GUARDAR PERFIL
-        async function guardarPerfil() {
-            const nombre = document.getElementById('nombre').value.trim();
-            const ingreso = document.getElementById('ingresoMensual').value;
-            const meta = document.getElementById('metaAhorro').value;
-            if (!nombre) { alert('El nombre no puede estar vacío.'); return; }
-            try {
-                const res = await fetch('http://127.0.0.1:5000/api/perfil/', {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({ nombre, ingreso_mensual: ingreso, meta_ahorro: meta })
-                });
-                if (res.ok) {
-                    document.getElementById('avatarLetra').textContent = nombre.charAt(0).toUpperCase();
-                    document.getElementById('avatarNombre').textContent = nombre;
-                    mostrarAlerta('alertaExito', '¡Perfil actualizado exitosamente!');
-                    const u = JSON.parse(localStorage.getItem('usuario') || '{}');
-                    u.nombre = nombre;
-                    localStorage.setItem('usuario', JSON.stringify(u));
-                } else alert('Error al actualizar perfil.');
-            } catch (e) { alert('No se pudo conectar.'); }
-        }
+    // ── GUARDAR PERFIL ───────────────────────────────────
+    async function guardarPerfil() {
+        const nombre  = document.getElementById('nombre').value.trim();
+        const ingreso = document.getElementById('ingresoMensual').value;
+        const meta    = document.getElementById('metaAhorro').value;
+        if (!nombre) { toast('⚠️','El nombre no puede estar vacío.'); return; }
+        try {
+            const res = await fetch('http://127.0.0.1:5000/api/perfil/', {
+                method:'PUT',
+                headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},
+                body: JSON.stringify({ nombre, ingreso_mensual:ingreso, meta_ahorro:meta })
+            });
+            if (res.ok) {
+                document.getElementById('avatarLetra').textContent = nombre.charAt(0).toUpperCase();
+                document.getElementById('avatarNombre').textContent = nombre;
+                const u = JSON.parse(localStorage.getItem('usuario')||'{}');
+                u.nombre = nombre; localStorage.setItem('usuario', JSON.stringify(u));
+                toast('✅','¡Perfil actualizado exitosamente!');
+                mostrarAlerta('alertaExito','¡Perfil actualizado!');
+            } else toast('❌','Error al actualizar perfil.');
+        } catch(e) { toast('❌','No se pudo conectar.'); }
+    }
 
-        // CONTRASEÑA
-        async function cambiarContrasena() {
-            const actual = document.getElementById('passActual').value.trim();
-            const nueva = document.getElementById('passNueva').value;
-            const conf = document.getElementById('passConfirmar').value;
-            if (!actual) { mostrarError('Debes ingresar tu contraseña actual.'); return; }
-            if (!nueva || !conf) { mostrarError('Completa todos los campos.'); return; }
-            if (nueva.length < 6) { mostrarError('Mínimo 6 caracteres.'); return; }
-            if (nueva !== conf) { mostrarError('Las contraseñas no coinciden.'); return; }
-            try {
-                const res = await fetch('http://127.0.0.1:5000/api/perfil/', {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({ contrasena_actual: actual, nueva_contrasena: nueva })
-                });
-                const data = await res.json();
-                if (res.ok) {
-                    ['passNueva','passConfirmar','passActual'].forEach(id => document.getElementById(id).value = '');
-                    mostrarAlerta('alertaPassOk', '✅ Contraseña actualizada correctamente.');
-                } else {
-                    mostrarError(data.mensaje || 'Error al cambiar contraseña.');
-                }
-            } catch (e) { mostrarError('No se pudo conectar.'); }
-        }
+    // ── CONTRASEÑA ───────────────────────────────────────
+    async function cambiarContrasena() {
+        const actual = document.getElementById('passActual').value.trim();
+        const nueva  = document.getElementById('passNueva').value;
+        const conf   = document.getElementById('passConfirmar').value;
+        if (!actual)         { mostrarError('Debes ingresar tu contraseña actual.'); return; }
+        if (!nueva || !conf) { mostrarError('Completa todos los campos.'); return; }
+        if (nueva.length<6)  { mostrarError('Mínimo 6 caracteres.'); return; }
+        if (nueva !== conf)  { mostrarError('Las contraseñas no coinciden.'); return; }
+        try {
+            const res = await fetch('http://127.0.0.1:5000/api/perfil/', {
+                method:'PUT',
+                headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},
+                body: JSON.stringify({ contrasena_actual:actual, nueva_contrasena:nueva })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                ['passNueva','passConfirmar','passActual'].forEach(id=>document.getElementById(id).value='');
+                document.getElementById('passBar').style.width = '0%';
+                document.getElementById('passText').textContent = '';
+                toast('✅','Contraseña actualizada correctamente');
+                mostrarAlerta('alertaPassOk','✅ Contraseña actualizada.');
+            } else mostrarError(data.mensaje || 'Error al cambiar contraseña.');
+        } catch(e) { mostrarError('No se pudo conectar.'); }
+    }
 
-        function checkPass(v) {
-            const bar = document.getElementById('passBar');
-            const txt = document.getElementById('passText');
-            if (!v) { bar.style.width = '0%'; txt.textContent = ''; return; }
-            let f = 0;
-            if (v.length >= 6) f++; if (v.length >= 10) f++;
-            if (/[A-Z]/.test(v)) f++; if (/[0-9]/.test(v)) f++; if (/[^A-Za-z0-9]/.test(v)) f++;
-            const n = [
-                { w:'20%', c:'#ef4444', t:'Muy débil' },
-                { w:'40%', c:'#f59e0b', t:'Débil' },
-                { w:'60%', c:'#fbbf24', t:'Regular' },
-                { w:'80%', c:'#4ade80', t:'Fuerte' },
-                { w:'100%', c:'#22d3ee', t:'Muy fuerte' },
-            ][Math.min(f - 1, 4)];
-            bar.style.width = n.w; bar.style.background = n.c;
-            txt.textContent = n.t; txt.style.color = n.c;
-        }
+    function checkPass(v) {
+        const bar = document.getElementById('passBar');
+        const txt = document.getElementById('passText');
+        if (!v) { bar.style.width='0%'; txt.textContent=''; return; }
+        let f=0;
+        if(v.length>=6)f++; if(v.length>=10)f++;
+        if(/[A-Z]/.test(v))f++; if(/[0-9]/.test(v))f++; if(/[^A-Za-z0-9]/.test(v))f++;
+        const n=[
+            {w:'20%',c:'#ef4444',t:'Muy débil'},
+            {w:'40%',c:'#f59e0b',t:'Débil'},
+            {w:'60%',c:'#fbbf24',t:'Regular'},
+            {w:'80%',c:'#4ade80',t:'Fuerte'},
+            {w:'100%',c:'#22d3ee',t:'Muy fuerte'},
+        ][Math.min(f-1,4)];
+        bar.style.width=n.w; bar.style.background=n.c;
+        txt.textContent=n.t; txt.style.color=n.c;
+    }
 
-        // EXPORTAR PDF
-        async function exportarPDF() {
-            try {
-                const res = await fetch('http://127.0.0.1:5000/api/exportar/pdf', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (res.ok) {
-                    const blob = await res.blob();
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `FinanBot_${new Date().toLocaleDateString('es-CO').replace(/\//g,'-')}.pdf`;
-                    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-                    window.URL.revokeObjectURL(url);
-                } else alert('Error al generar el PDF.');
-            } catch (e) { alert('No se pudo conectar.'); }
-        }
+    // ── EXPORTAR ─────────────────────────────────────────
+    async function exportarPDF() {
+        const dot = document.querySelector('#statusPDF .export-dot');
+        const p   = document.getElementById('statusPDF');
+        const orig = p.innerHTML;
+        dot.classList.add('loading');
+        p.childNodes[1].textContent = ' Generando PDF...';
+        try {
+            const res = await fetch('http://127.0.0.1:5000/api/exportar/pdf', {
+                headers:{'Authorization':`Bearer ${token}`}
+            });
+            if (res.ok) {
+                const blob = await res.blob();
+                const url  = window.URL.createObjectURL(blob);
+                const a    = document.createElement('a');
+                a.href = url;
+                a.download = `FinanBot_${new Date().toLocaleDateString('es-CO').replace(/\//g,'-')}.pdf`;
+                document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+                toast('📄','PDF generado y descargado');
+            } else toast('❌','Error al generar el PDF.');
+        } catch(e) { toast('❌','No se pudo conectar.'); }
+        p.innerHTML = orig;
+    }
 
-        // EXPORTAR EXCEL
-        async function exportarExcel() {
-            const item = event.currentTarget;
-            const p = item.querySelector('.config-item-text p');
-            const orig = p.textContent;
-            p.textContent = '⏳ Generando Excel...';
-            try {
-                const res = await fetch('http://127.0.0.1:5000/api/exportar/excel', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (res.ok) {
-                    const blob = await res.blob();
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `FinanBot_${new Date().toLocaleDateString('es-CO').replace(/\//g,'-')}.xlsx`;
-                    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-                    window.URL.revokeObjectURL(url);
-                } else {
-                    const data = await res.json().catch(() => ({}));
-                    alert(data.mensaje || 'Error al generar el Excel.');
-                }
-            } catch (e) { alert('No se pudo conectar.'); }
-            p.textContent = orig;
-        }
-
-        // UTILIDADES
-        function mostrarAlerta(id, msg) {
-            const el = document.getElementById(id);
-            if (!el) return;
-            if (msg) el.innerHTML = `<i class="fas fa-check-circle"></i> ${msg}`;
-            el.style.display = 'flex';
-            setTimeout(() => el.style.display = 'none', 3500);
-        }
-
-        function mostrarError(msg) {
-            const el = document.getElementById('alertaPassError');
-            if (!el) { alert(msg); return; }
-            el.innerHTML = `<i class="fas fa-times-circle"></i> ${msg}`;
-            el.style.display = 'flex';
-            setTimeout(() => el.style.display = 'none', 4000);
-        }
-
-        function cerrarSesion() {
-            localStorage.removeItem('token');
-            localStorage.removeItem('usuario');
-        }
-
-        function cerrarSesionCompleto() {
-            if (confirm('¿Cerrar sesión?')) {
-                localStorage.clear();
-                window.location.href = '../index.html';
+    async function exportarExcel() {
+        const dot  = document.querySelector('#statusExcel .export-dot');
+        const span = document.querySelector('#statusExcel');
+        const orig = span.innerHTML;
+        dot.classList.add('loading');
+        span.childNodes[1].textContent = ' Generando Excel (6 hojas)...';
+        try {
+            const res = await fetch('http://127.0.0.1:5000/api/exportar/excel', {
+                headers:{'Authorization':`Bearer ${token}`}
+            });
+            if (res.ok) {
+                const blob = await res.blob();
+                const url  = window.URL.createObjectURL(blob);
+                const a    = document.createElement('a');
+                a.href = url;
+                a.download = `FinanBot_${new Date().toLocaleDateString('es-CO').replace(/\//g,'-')}.xlsx`;
+                document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+                toast('📊','Excel generado y descargado');
+            } else {
+                const data = await res.json().catch(()=>({}));
+                toast('❌', data.mensaje || 'Error al generar el Excel.');
             }
-        }
+        } catch(e) { toast('❌','No se pudo conectar.'); }
+        span.innerHTML = orig;
+    }
 
-        // INICIALIZAR
-        cargarPerfil();
-        cargarStats();
-        cargarMetas();
+    // ── UTILS ─────────────────────────────────────────────
+    function mostrarAlerta(id, msg) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        if (msg) el.innerHTML = `<i class="fas fa-check-circle"></i> ${msg}`;
+        el.style.display = 'flex';
+        setTimeout(()=>el.style.display='none', 3500);
+    }
+    function mostrarError(msg) {
+        const el = document.getElementById('alertaPassError');
+        if (!el) { toast('❌', msg); return; }
+        el.innerHTML = `<i class="fas fa-times-circle"></i> ${msg}`;
+        el.style.display = 'flex';
+        setTimeout(()=>el.style.display='none', 4000);
+    }
+    function cerrarSesion() {
+        localStorage.removeItem('token');
+        localStorage.removeItem('usuario');
+    }
+    function cerrarSesionCompleto() {
+        if (confirm('¿Cerrar sesión?')) { localStorage.clear(); window.location.href='../index.html'; }
+    }
 
-        const reg = localStorage.getItem('finanbot_registro');
-        if (!reg) localStorage.setItem('finanbot_registro', Date.now());
-        document.getElementById('totalDias').textContent =
-            Math.max(1, Math.floor((Date.now() - parseInt(localStorage.getItem('finanbot_registro'))) / 86400000));
-    </script>
+    // ── INIT ─────────────────────────────────────────────
+    cargarPerfil();
+    cargarStats();
+    cargarMetas();
+    aplicarPreferenciasGuardadas();
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="tema.js"></script>
+    const reg = localStorage.getItem('finanbot_registro');
+    if (!reg) localStorage.setItem('finanbot_registro', Date.now());
+    document.getElementById('totalDias').textContent =
+        Math.max(1, Math.floor((Date.now() - parseInt(localStorage.getItem('finanbot_registro'))) / 86400000));
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="tema.js"></script>
 </body>
 </html>

@@ -7,429 +7,382 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
-        /* ── Variables de tema (se sobreescriben por tema.js) ── */
-:root {
-    --bg-body:        radial-gradient(ellipse at top, #1a1a4e 0%, #0f0f2d 50%, #000010 100%);
-    --color-texto:    #ffffff;
-    --sidebar-bg:     rgba(255,255,255,0.03);
-    --sidebar-border: rgba(168,85,247,0.2);
-    --card-bg:        rgba(255,255,255,0.04);
-    --card-border:    rgba(168,85,247,0.15);
-    --input-bg:       rgba(255,255,255,0.05);
-    --input-border:   rgba(168,85,247,0.25);
-    --input-color:    #ffffff;
-    --nav-color:      #9ca3af;
-    --muted:          #6b7280;
-    --secondary:      #9ca3af;
-    --item-bg:        rgba(255,255,255,0.03);
-    --item-border:    rgba(255,255,255,0.06);
-    --label-color:    #c4b5fd;
-    --suffix-bg:      rgba(168,85,247,0.1);
-}
-
-body {
-    background: var(--bg-body);
-    color: var(--color-texto);
-    transition: background 0.4s, color 0.3s;
-}
-
-.sidebar {
-    background: var(--sidebar-bg) !important;
-    border-right-color: var(--sidebar-border) !important;
-}
-
-.card, .avatar-card {
-    background: var(--card-bg) !important;
-    border-color: var(--card-border) !important;
-}
-
-.form-control {
-    background: var(--input-bg) !important;
-    border-color: var(--input-border) !important;
-    color: var(--input-color) !important;
-}
-
-.form-label { color: var(--label-color) !important; }
-.suffix-tag { background: var(--suffix-bg) !important; }
-
-        
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             font-family: 'Segoe UI', sans-serif;
-            background: radial-gradient(ellipse at top, #1a1a4e 0%, #0f0f2d 50%, #000010 100%);
-            min-height: 100vh;
-            color: white;
+            min-height: 100vh; color: white; transition: background 0.4s;
         }
 
+        body.tema-oscuro {
+            background: radial-gradient(ellipse at top, #1a1a4e 0%, #0f0f2d 50%, #000010 100%);
+            --card-bg: rgba(255,255,255,0.04);
+            --card-border: rgba(168,85,247,0.15);
+            --item-bg: rgba(255,255,255,0.03);
+            --item-border: rgba(255,255,255,0.06);
+            --input-bg: rgba(255,255,255,0.05);
+            --input-border: rgba(168,85,247,0.3);
+            --muted: #6b7280; --secondary: #9ca3af;
+            --sidebar-bg: rgba(255,255,255,0.03);
+            --sidebar-brd: rgba(168,85,247,0.2);
+        }
+
+        body.tema-azul {
+            background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #1e40af 100%);
+            --card-bg: rgba(30,58,95,0.6);
+            --card-border: rgba(96,165,250,0.25);
+            --item-bg: rgba(30,58,95,0.4);
+            --item-border: rgba(96,165,250,0.15);
+            --input-bg: rgba(255,255,255,0.06);
+            --input-border: rgba(96,165,250,0.35);
+            --muted: #60a5fa; --secondary: #93c5fd;
+            --sidebar-bg: rgba(15,23,42,0.85);
+            --sidebar-brd: rgba(96,165,250,0.25);
+        }
+
+        /* SIDEBAR */
         .sidebar {
-            position: fixed;
-            top: 0; left: 0;
-            width: 240px;
-            height: 100vh;
-            background: rgba(255,255,255,0.03);
-            border-right: 1px solid rgba(168, 85, 247, 0.2);
-            backdrop-filter: blur(20px);
-            z-index: 100;
-            display: flex;
-            flex-direction: column;
-            padding: 25px 0;
+            position: fixed; top: 0; left: 0; width: 240px; height: 100vh;
+            background: var(--sidebar-bg); border-right: 1px solid var(--sidebar-brd);
+            backdrop-filter: blur(20px); z-index: 100;
+            display: flex; flex-direction: column; padding: 25px 0;
         }
 
         .sidebar-logo {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 0 20px 25px;
-            border-bottom: 1px solid rgba(168, 85, 247, 0.15);
-            margin-bottom: 20px;
+            display: flex; align-items: center; gap: 12px;
+            padding: 0 20px 25px; border-bottom: 1px solid rgba(168,85,247,0.15); margin-bottom: 20px;
         }
 
-        .sidebar-logo img {
-            width: 40px; height: 40px;
-            border-radius: 50%;
-            box-shadow: 0 0 15px rgba(168, 85, 247, 0.5);
-        }
+        .sidebar-logo img { width: 40px; height: 40px; border-radius: 50%; box-shadow: 0 0 15px rgba(168,85,247,0.5); }
 
         .sidebar-logo span {
-            font-size: 20px;
-            font-weight: 800;
+            font-size: 20px; font-weight: 800;
             background: linear-gradient(90deg, #c026d3, #22d3ee);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         }
 
         .nav-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px 20px;
-            color: #9ca3af;
-            text-decoration: none;
-            font-size: 14px;
-            font-weight: 500;
-            transition: all 0.3s;
-            border-left: 3px solid transparent;
-            margin: 2px 0;
+            display: flex; align-items: center; gap: 12px; padding: 12px 20px;
+            color: var(--secondary,#9ca3af); text-decoration: none; font-size: 14px;
+            font-weight: 500; transition: all 0.3s; border-left: 3px solid transparent; margin: 2px 0;
         }
 
         .nav-item:hover, .nav-item.active {
-            color: white;
-            background: rgba(168, 85, 247, 0.08);
-            border-left-color: #a855f7;
+            color: white; background: rgba(168,85,247,0.08); border-left-color: #a855f7;
         }
 
         .nav-item i { width: 18px; text-align: center; font-size: 15px; }
         .nav-item.active i { color: #a855f7; }
 
-        .sidebar-bottom {
-            margin-top: auto;
-            padding: 20px;
-            border-top: 1px solid rgba(168, 85, 247, 0.15);
-        }
+        .sidebar-bottom { margin-top: auto; padding: 20px; border-top: 1px solid rgba(168,85,247,0.15); }
 
         .btn-cerrar {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            color: #ef4444;
-            background: rgba(239, 68, 68, 0.08);
-            border: 1px solid rgba(239, 68, 68, 0.2);
-            border-radius: 10px;
-            padding: 10px 15px;
-            font-size: 13px;
-            cursor: pointer;
-            transition: all 0.3s;
-            width: 100%;
-            text-decoration: none;
+            display: flex; align-items: center; gap: 10px; color: #ef4444;
+            background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2);
+            border-radius: 10px; padding: 10px 15px; font-size: 13px; cursor: pointer;
+            transition: all 0.3s; width: 100%; text-decoration: none;
         }
 
-        .btn-cerrar:hover { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+        .btn-cerrar:hover { background: rgba(239,68,68,0.15); color: #ef4444; }
 
+        /* MAIN */
         .main { margin-left: 240px; padding: 30px; min-height: 100vh; }
 
-        .page-title { font-size: 24px; font-weight: 700; margin-bottom: 5px; }
-        .page-subtitle { color: #9ca3af; font-size: 14px; margin-bottom: 30px; }
+        /* TOPBAR */
+        .topbar { margin-bottom: 28px; }
+        .topbar h1 { font-size: 24px; font-weight: 700; }
+        .topbar p { color: var(--secondary,#9ca3af); font-size: 14px; margin-top: 3px; }
+
+        /* ── BUSCADOR TIPO GOOGLE ── */
+        .buscador-wrap {
+            background: var(--card-bg); border: 1px solid var(--card-border);
+            border-radius: 20px; padding: 28px; margin-bottom: 28px;
+        }
+
+        .buscador-titulo {
+            font-size: 17px; font-weight: 700; color: #c4b5fd;
+            margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
+        }
+
+        .buscador-input-wrap {
+            position: relative; margin-bottom: 14px;
+        }
+
+        .buscador-input-wrap i {
+            position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
+            color: var(--muted,#6b7280); font-size: 15px; pointer-events: none;
+        }
+
+        .buscador-input {
+            width: 100%; background: var(--input-bg); border: 1px solid var(--input-border);
+            border-radius: 50px; color: white; padding: 14px 20px 14px 46px;
+            font-size: 15px; outline: none; transition: all 0.3s;
+        }
+
+        .buscador-input:focus { border-color: #a855f7; box-shadow: 0 0 0 3px rgba(168,85,247,0.12); }
+        .buscador-input::placeholder { color: var(--muted,#6b7280); }
+
+        .sugerencias-rapidas { display: flex; flex-wrap: wrap; gap: 8px; }
+
+        .sug-btn {
+            background: var(--item-bg); border: 1px solid var(--item-border);
+            color: var(--secondary,#9ca3af); border-radius: 50px; padding: 6px 14px;
+            font-size: 12px; cursor: pointer; transition: all 0.3s;
+        }
+
+        .sug-btn:hover { background: rgba(168,85,247,0.12); border-color: #a855f7; color: white; }
+
+        /* RESULTADO BÚSQUEDA */
+        .resultado-busqueda {
+            background: var(--card-bg); border: 1px solid rgba(168,85,247,0.25);
+            border-radius: 18px; padding: 24px; margin-bottom: 28px; display: none;
+        }
+
+        .resultado-busqueda.visible { display: block; }
+
+        .resultado-header {
+            display: flex; justify-content: space-between; align-items: flex-start;
+            margin-bottom: 16px;
+        }
+
+        .resultado-pregunta { font-size: 13px; color: var(--muted,#6b7280); margin-bottom: 6px; }
+        .resultado-titulo { font-size: 18px; font-weight: 700; color: white; }
+
+        .btn-cerrar-res {
+            background: var(--item-bg); border: 1px solid var(--item-border);
+            color: var(--secondary,#9ca3af); border-radius: 8px; padding: 6px 10px;
+            font-size: 12px; cursor: pointer; transition: all 0.3s; flex-shrink: 0;
+        }
+
+        .btn-cerrar-res:hover { background: rgba(239,68,68,0.1); color: #ef4444; border-color: rgba(239,68,68,0.3); }
+
+        .resultado-body { font-size: 14px; color: var(--secondary,#9ca3af); line-height: 1.8; }
+        .resultado-body h4 { color: #a855f7; font-size: 15px; font-weight: 700; margin: 18px 0 8px; }
+        .resultado-body p { margin-bottom: 12px; }
+        .resultado-body ul { padding-left: 18px; margin-bottom: 12px; }
+        .resultado-body li { margin-bottom: 6px; }
+
+        .res-highlight {
+            background: rgba(168,85,247,0.08); border-left: 3px solid #a855f7;
+            padding: 12px 16px; border-radius: 0 10px 10px 0; margin: 14px 0; color: white; font-size: 13px;
+        }
+
+        .res-ejemplo {
+            background: rgba(34,211,238,0.07); border: 1px solid rgba(34,211,238,0.2);
+            border-radius: 12px; padding: 14px 18px; margin: 14px 0; color: #67e8f9; font-size: 13px;
+        }
+
+        .res-tags { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 16px; }
+
+        .res-tag {
+            background: rgba(168,85,247,0.1); border: 1px solid rgba(168,85,247,0.2);
+            color: #c4b5fd; border-radius: 50px; padding: 3px 12px; font-size: 12px; cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .res-tag:hover { background: rgba(168,85,247,0.2); border-color: #a855f7; color: white; }
 
         /* TABS */
-        .tabs {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 30px;
-            flex-wrap: wrap;
+        .tabs-nav {
+            display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap;
         }
 
         .tab-btn {
-            background: rgba(255,255,255,0.04);
-            border: 1px solid rgba(168, 85, 247, 0.2);
-            border-radius: 50px;
-            padding: 10px 20px;
-            font-size: 13px;
-            color: #9ca3af;
-            cursor: pointer;
-            transition: all 0.3s;
+            background: var(--item-bg); border: 1px solid var(--item-border);
+            color: var(--secondary,#9ca3af); border-radius: 50px; padding: 10px 20px;
+            font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.3s;
+            display: flex; align-items: center; gap: 7px;
         }
 
         .tab-btn:hover, .tab-btn.activo {
-            background: rgba(168, 85, 247, 0.15);
-            border-color: #a855f7;
-            color: white;
+            background: rgba(168,85,247,0.15); border-color: #a855f7; color: white; font-weight: 600;
         }
-
-        /* CARDS DE ARTÍCULOS */
-        .articulos-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
-            margin-bottom: 40px;
-        }
-
-        .articulo-card {
-            background: rgba(255,255,255,0.04);
-            border: 1px solid rgba(168, 85, 247, 0.15);
-            border-radius: 18px;
-            padding: 25px;
-            cursor: pointer;
-            transition: all 0.3s;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .articulo-card::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 3px;
-            background: linear-gradient(90deg, #c026d3, #22d3ee);
-        }
-
-        .articulo-card:hover {
-            transform: translateY(-5px);
-            border-color: rgba(168, 85, 247, 0.4);
-            box-shadow: 0 15px 40px rgba(168, 85, 247, 0.15);
-        }
-
-        .articulo-icono { font-size: 40px; margin-bottom: 15px; }
-        .articulo-categoria {
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: #a855f7;
-            font-weight: 600;
-            margin-bottom: 8px;
-        }
-
-        .articulo-titulo {
-            font-size: 16px;
-            font-weight: 700;
-            margin-bottom: 10px;
-            color: white;
-        }
-
-        .articulo-desc {
-            font-size: 13px;
-            color: #9ca3af;
-            line-height: 1.6;
-            margin-bottom: 15px;
-        }
-
-        .articulo-tiempo {
-            font-size: 12px;
-            color: #6b7280;
-        }
-
-        .nivel-badge {
-            display: inline-block;
-            border-radius: 50px;
-            padding: 3px 10px;
-            font-size: 11px;
-            font-weight: 600;
-            margin-bottom: 10px;
-        }
-
-        .nivel-basico { background: rgba(74,222,128,0.15); color: #4ade80; }
-        .nivel-intermedio { background: rgba(251,191,36,0.15); color: #fbbf24; }
-        .nivel-avanzado { background: rgba(239,68,68,0.15); color: #f87171; }
-
-        /* MODAL ARTÍCULO */
-        .modal-articulo {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8);
-            z-index: 999;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        .modal-articulo.visible { display: flex; }
-
-        .modal-content {
-            background: #0f0f2d;
-            border: 1px solid rgba(168, 85, 247, 0.3);
-            border-radius: 24px;
-            padding: 40px;
-            width: 100%;
-            max-width: 700px;
-            max-height: 80vh;
-            overflow-y: auto;
-            position: relative;
-            scrollbar-width: thin;
-            scrollbar-color: rgba(168, 85, 247, 0.3) transparent;
-        }
-
-        .modal-close {
-            position: absolute;
-            top: 20px; right: 25px;
-            background: rgba(255,255,255,0.08);
-            border: none;
-            color: white;
-            font-size: 18px;
-            cursor: pointer;
-            width: 35px; height: 35px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .modal-icono { font-size: 50px; margin-bottom: 15px; }
-        .modal-titulo { font-size: 24px; font-weight: 800; margin-bottom: 20px; color: white; }
-
-        .modal-body { font-size: 15px; color: #c4b5fd; line-height: 1.8; }
-        .modal-body h3 { color: #a855f7; font-size: 17px; margin: 20px 0 10px; font-weight: 700; }
-        .modal-body p { margin-bottom: 15px; }
-        .modal-body ul { padding-left: 20px; margin-bottom: 15px; }
-        .modal-body li { margin-bottom: 8px; }
-        .modal-body .highlight {
-            background: rgba(168, 85, 247, 0.1);
-            border-left: 4px solid #a855f7;
-            padding: 15px 20px;
-            border-radius: 0 12px 12px 0;
-            margin: 15px 0;
-            color: white;
-        }
-        .modal-body .ejemplo {
-            background: rgba(34, 211, 238, 0.08);
-            border: 1px solid rgba(34, 211, 238, 0.2);
-            border-radius: 12px;
-            padding: 15px 20px;
-            margin: 15px 0;
-            color: #67e8f9;
-        }
-
-        /* GLOSARIO */
-        .glosario-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
-        }
-
-        .termino-card {
-            background: rgba(255,255,255,0.04);
-            border: 1px solid rgba(168, 85, 247, 0.15);
-            border-radius: 14px;
-            padding: 18px;
-            transition: all 0.3s;
-        }
-
-        .termino-card:hover {
-            background: rgba(168, 85, 247, 0.08);
-            border-color: rgba(168, 85, 247, 0.4);
-        }
-
-        .termino { font-size: 15px; font-weight: 700; color: #a855f7; margin-bottom: 8px; }
-        .definicion { font-size: 13px; color: #9ca3af; line-height: 1.6; }
-
-        /* CALCULADORAS */
-        .calc-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 20px;
-        }
-
-        .calc-card {
-            background: rgba(255,255,255,0.04);
-            border: 1px solid rgba(168, 85, 247, 0.15);
-            border-radius: 18px;
-            padding: 25px;
-        }
-
-        .calc-titulo {
-            font-size: 16px;
-            font-weight: 700;
-            color: #c4b5fd;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .calc-input-label {
-            font-size: 13px;
-            color: #9ca3af;
-            margin-bottom: 5px;
-            display: block;
-        }
-
-        .calc-input {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(168, 85, 247, 0.3);
-            border-radius: 10px;
-            color: white;
-            padding: 10px 14px;
-            font-size: 14px;
-            width: 100%;
-            margin-bottom: 12px;
-            outline: none;
-        }
-
-        .calc-input:focus { border-color: #a855f7; }
-
-        .btn-calcular {
-            background: linear-gradient(135deg, #c026d3, #a855f7);
-            color: white;
-            border: none;
-            border-radius: 10px;
-            padding: 11px;
-            font-size: 14px;
-            font-weight: 600;
-            width: 100%;
-            cursor: pointer;
-            transition: all 0.3s;
-            margin-top: 5px;
-        }
-
-        .btn-calcular:hover { transform: translateY(-2px); opacity: 0.9; }
-
-        .calc-resultado {
-            background: rgba(168, 85, 247, 0.08);
-            border: 1px solid rgba(168, 85, 247, 0.2);
-            border-radius: 12px;
-            padding: 15px;
-            margin-top: 15px;
-            display: none;
-            text-align: center;
-        }
-
-        .calc-resultado-valor {
-            font-size: 26px;
-            font-weight: 800;
-            color: #4ade80;
-            margin-bottom: 5px;
-        }
-
-        .calc-resultado-label { font-size: 13px; color: #9ca3af; }
 
         .seccion { display: none; }
         .seccion.visible { display: block; }
+
+        /* ── ARTÍCULOS ── */
+        .articulos-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 18px; margin-bottom: 28px; }
+
+        .art-card {
+            background: var(--card-bg); border: 1px solid var(--card-border);
+            border-radius: 18px; padding: 22px; cursor: pointer; transition: all 0.3s; position: relative; overflow: hidden;
+        }
+
+        .art-card::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 3px;
+            background: linear-gradient(90deg, #c026d3, #22d3ee); transition: height 0.3s;
+        }
+
+        .art-card:hover { transform: translateY(-5px); border-color: rgba(168,85,247,0.35); box-shadow: 0 14px 35px rgba(0,0,0,0.3); }
+        .art-card:hover::before { height: 5px; }
+
+        .art-emoji { font-size: 36px; margin-bottom: 12px; display: block; transition: transform 0.3s; }
+        .art-card:hover .art-emoji { transform: scale(1.1); }
+
+        .art-nivel {
+            display: inline-block; border-radius: 50px; padding: 2px 10px;
+            font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;
+        }
+
+        .nivel-basico      { background: rgba(74,222,128,0.15);  color: #4ade80; }
+        .nivel-intermedio  { background: rgba(251,191,36,0.15);  color: #fbbf24; }
+        .nivel-avanzado    { background: rgba(239,68,68,0.15);   color: #f87171; }
+
+        .art-cat { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #a855f7; font-weight: 600; margin-bottom: 6px; }
+        .art-titulo { font-size: 15px; font-weight: 700; color: white; margin-bottom: 8px; line-height: 1.35; }
+        .art-desc { font-size: 13px; color: var(--secondary,#9ca3af); line-height: 1.55; margin-bottom: 12px; }
+        .art-meta { font-size: 11px; color: var(--muted,#6b7280); display: flex; align-items: center; gap: 10px; }
+
+        /* MODAL ARTÍCULO */
+        .modal-art {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 9999; display: none;
+            align-items: center; justify-content: center; padding: 20px;
+        }
+
+        .modal-art.visible { display: flex; }
+
+        .modal-art-content {
+            background: #0f0f2d; border: 1px solid rgba(168,85,247,0.3);
+            border-radius: 24px; padding: 36px; width: 100%; max-width: 720px;
+            max-height: 85vh; overflow-y: auto; position: relative;
+        }
+
+        body.tema-azul .modal-art-content { background: #0f172a; }
+
+        .modal-art-content::-webkit-scrollbar { width: 5px; }
+        .modal-art-content::-webkit-scrollbar-track { background: transparent; }
+        .modal-art-content::-webkit-scrollbar-thumb { background: rgba(168,85,247,0.4); border-radius: 10px; }
+
+        .modal-close-btn {
+            position: absolute; top: 18px; right: 22px; background: rgba(255,255,255,0.08);
+            border: none; color: white; width: 34px; height: 34px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        .modal-close-btn:hover { background: rgba(239,68,68,0.2); color: #ef4444; }
+
+        .modal-art-emoji { font-size: 48px; display: block; margin-bottom: 12px; }
+        .modal-art-titulo { font-size: 22px; font-weight: 800; color: white; margin-bottom: 20px; line-height: 1.3; }
+
+        .modal-art-body { font-size: 14px; color: #c4b5fd; line-height: 1.85; }
+        .modal-art-body h3 { color: #a855f7; font-size: 16px; font-weight: 700; margin: 20px 0 10px; }
+        .modal-art-body p { margin-bottom: 12px; }
+        .modal-art-body ul { padding-left: 18px; margin-bottom: 12px; }
+        .modal-art-body li { margin-bottom: 7px; }
+
+        .modal-art-body .hl {
+            background: rgba(168,85,247,0.1); border-left: 4px solid #a855f7;
+            padding: 14px 18px; border-radius: 0 12px 12px 0; margin: 14px 0; color: white; font-size: 13px;
+        }
+
+        .modal-art-body .ej {
+            background: rgba(34,211,238,0.07); border: 1px solid rgba(34,211,238,0.2);
+            border-radius: 12px; padding: 14px 18px; margin: 14px 0; color: #67e8f9; font-size: 13px; line-height: 1.7;
+        }
+
+        /* ── GLOSARIO ── */
+        .glosario-busqueda { position: relative; margin-bottom: 20px; }
+        .glosario-busqueda i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--muted,#6b7280); }
+
+        .glosario-search {
+            width: 100%; background: var(--input-bg); border: 1px solid var(--input-border);
+            border-radius: 12px; color: white; padding: 11px 14px 11px 38px;
+            font-size: 14px; outline: none; transition: all 0.3s;
+        }
+
+        .glosario-search:focus { border-color: #a855f7; }
+        .glosario-search::placeholder { color: var(--muted,#6b7280); }
+
+        .glosario-letras { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 20px; }
+
+        .letra-btn {
+            background: var(--item-bg); border: 1px solid var(--item-border);
+            color: var(--secondary,#9ca3af); border-radius: 8px; width: 34px; height: 34px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.3s;
+        }
+
+        .letra-btn:hover, .letra-btn.activo { background: rgba(168,85,247,0.15); border-color: #a855f7; color: white; }
+
+        .glosario-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 12px; }
+
+        .termino-card {
+            background: var(--item-bg); border: 1px solid var(--item-border);
+            border-radius: 14px; padding: 16px; transition: all 0.3s;
+        }
+
+        .termino-card:hover { background: rgba(168,85,247,0.08); border-color: rgba(168,85,247,0.3); }
+
+        .termino-nombre { font-size: 14px; font-weight: 700; color: #a855f7; margin-bottom: 6px; }
+        .termino-def { font-size: 13px; color: var(--secondary,#9ca3af); line-height: 1.55; }
+        .termino-cat { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted,#6b7280); margin-top: 6px; }
+
+        /* ── CALCULADORAS ── */
+        .calcs-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 20px; }
+
+        .calc-card {
+            background: var(--card-bg); border: 1px solid var(--card-border);
+            border-radius: 18px; padding: 24px;
+        }
+
+        .calc-titulo {
+            font-size: 15px; font-weight: 700; color: #c4b5fd;
+            margin-bottom: 18px; display: flex; align-items: center; gap: 9px;
+        }
+
+        .calc-titulo-icon { font-size: 20px; }
+
+        .form-group { margin-bottom: 13px; }
+
+        .calc-label { font-size: 12px; color: var(--secondary,#9ca3af); margin-bottom: 5px; display: block; }
+
+        .calc-input {
+            background: var(--input-bg); border: 1px solid var(--input-border);
+            border-radius: 10px; color: white; padding: 10px 14px;
+            font-size: 14px; width: 100%; outline: none; transition: all 0.3s;
+        }
+
+        .calc-input:focus { border-color: #a855f7; box-shadow: 0 0 0 2px rgba(168,85,247,0.1); }
+        .calc-input::placeholder { color: var(--muted,#6b7280); }
+
+        .calc-select {
+            background: var(--input-bg); border: 1px solid var(--input-border);
+            border-radius: 10px; color: white; padding: 10px 14px;
+            font-size: 14px; width: 100%; outline: none; transition: all 0.3s;
+        }
+
+        .calc-select option { background: #1a1a4e; }
+
+        .btn-calc {
+            background: linear-gradient(135deg, #c026d3, #a855f7);
+            color: white; border: none; border-radius: 10px;
+            padding: 12px; font-size: 14px; font-weight: 600;
+            width: 100%; cursor: pointer; transition: all 0.3s;
+            box-shadow: 0 6px 20px rgba(192,38,211,0.25);
+            display: flex; align-items: center; justify-content: center; gap: 7px;
+        }
+
+        .btn-calc:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(192,38,211,0.4); }
+
+        .calc-resultado {
+            background: rgba(168,85,247,0.07); border: 1px solid rgba(168,85,247,0.2);
+            border-radius: 12px; padding: 16px; margin-top: 14px; display: none;
+        }
+
+        .calc-res-principal { font-size: 24px; font-weight: 800; color: #4ade80; margin-bottom: 4px; }
+        .calc-res-label { font-size: 12px; color: var(--muted,#6b7280); }
+        .calc-res-extra { margin-top: 10px; }
+        .calc-res-fila { display: flex; justify-content: space-between; font-size: 13px; padding: 5px 0; border-bottom: 1px solid var(--item-border); }
+        .calc-res-fila:last-child { border-bottom: none; }
+        .calc-res-fila span:first-child { color: var(--secondary,#9ca3af); }
+        .calc-res-fila strong { color: white; }
     </style>
 </head>
-<body>
+<body class="tema-oscuro">
 
-    <!-- SIDEBAR -->
     <div class="sidebar">
         <div class="sidebar-logo">
             <img src="../../images/logo.png" alt="FinanBot" onerror="this.style.display='none'">
@@ -450,776 +403,941 @@ body {
     </div>
 
     <!-- MODAL ARTÍCULO -->
-    <div class="modal-articulo" id="modalArticulo">
-        <div class="modal-content">
-            <button class="modal-close" onclick="cerrarArticulo()">✕</button>
-            <div class="modal-icono" id="modalIcono"></div>
-            <div class="modal-titulo" id="modalTitulo"></div>
-            <div class="modal-body" id="modalBody"></div>
+    <div class="modal-art" id="modalArt">
+        <div class="modal-art-content">
+            <button class="modal-close-btn" onclick="cerrarModal()">✕</button>
+            <span class="modal-art-emoji" id="modalEmoji"></span>
+            <div class="modal-art-titulo" id="modalTitulo"></div>
+            <div class="modal-art-body" id="modalBody"></div>
         </div>
     </div>
 
-    <!-- MAIN -->
     <div class="main">
-        <h1 class="page-title">📚 Aprende Finanzas</h1>
-        <p class="page-subtitle">Guías, artículos y calculadoras para mejorar tu educación financiera</p>
+
+        <div class="topbar">
+            <h1>📚 Centro de Aprendizaje</h1>
+            <p>Investiga, calcula y aprende todo sobre finanzas personales</p>
+        </div>
+
+        <!-- ── BUSCADOR TIPO GOOGLE ── -->
+        <div class="buscador-wrap">
+            <div class="buscador-titulo">
+                <i class="fas fa-search" style="color:#a855f7;"></i>
+                Busca cualquier concepto financiero
+            </div>
+            <div class="buscador-input-wrap">
+                <i class="fas fa-search"></i>
+                <input type="text" class="buscador-input" id="busquedaInput"
+                       placeholder="Ej: ¿Qué es el interés compuesto? ¿Cómo salir de deudas?..."
+                       onkeydown="if(event.key==='Enter') buscar()">
+            </div>
+            <div class="sugerencias-rapidas">
+                <span style="font-size:12px;color:var(--muted,#6b7280);align-self:center;">Búsquedas frecuentes:</span>
+                <button class="sug-btn" onclick="buscarDireto('¿Qué es el CDT?')">¿Qué es el CDT?</button>
+                <button class="sug-btn" onclick="buscarDireto('Regla 50/30/20')">Regla 50/30/20</button>
+                <button class="sug-btn" onclick="buscarDireto('Cómo salir de deudas')">Salir de deudas</button>
+                <button class="sug-btn" onclick="buscarDireto('Fondo de emergencia')">Fondo de emergencia</button>
+                <button class="sug-btn" onclick="buscarDireto('Interés compuesto')">Interés compuesto</button>
+                <button class="sug-btn" onclick="buscarDireto('Pensión en Colombia')">Pensión Colombia</button>
+                <button class="sug-btn" onclick="buscarDireto('Inflación')">Inflación</button>
+                <button class="sug-btn" onclick="buscarDireto('Criptomonedas')">Criptomonedas</button>
+            </div>
+        </div>
+
+        <!-- RESULTADO DE BÚSQUEDA -->
+        <div class="resultado-busqueda" id="resultadoBusqueda">
+            <div class="resultado-header">
+                <div>
+                    <div class="resultado-pregunta" id="resPregunta"></div>
+                    <div class="resultado-titulo" id="resTitulo"></div>
+                </div>
+                <button class="btn-cerrar-res" onclick="cerrarResultado()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="resultado-body" id="resCuerpo"></div>
+            <div class="res-tags" id="resTags"></div>
+        </div>
 
         <!-- TABS -->
-        <div class="tabs">
-            <button class="tab-btn activo" onclick="mostrarSeccion('articulos', this)">
-                📖 Artículos
+        <div class="tabs-nav">
+            <button class="tab-btn activo" onclick="setTab('articulos',this)">
+                <i class="fas fa-book-open"></i> Artículos
             </button>
-            <button class="tab-btn" onclick="mostrarSeccion('glosario', this)">
-                📋 Glosario
+            <button class="tab-btn" onclick="setTab('calculadoras',this)">
+                <i class="fas fa-calculator"></i> Calculadoras
             </button>
-            <button class="tab-btn" onclick="mostrarSeccion('calculadoras', this)">
-                🧮 Calculadoras
+            <button class="tab-btn" onclick="setTab('glosario',this)">
+                <i class="fas fa-list-alt"></i> Glosario
             </button>
         </div>
 
-        <!-- SECCIÓN ARTÍCULOS -->
+        <!-- ══ ARTÍCULOS ══ -->
         <div class="seccion visible" id="seccion-articulos">
-            <div class="articulos-grid">
-
-                <div class="articulo-card" onclick="abrirArticulo('ahorro')">
-                    <div class="articulo-icono">💰</div>
-                    <div class="nivel-badge nivel-basico">Básico</div>
-                    <div class="articulo-categoria">Ahorro</div>
-                    <div class="articulo-titulo">¿Cómo empezar a ahorrar desde cero?</div>
-                    <div class="articulo-desc">Aprende las estrategias más efectivas para empezar a ahorrar sin importar cuánto ganas.</div>
-                    <div class="articulo-tiempo">⏱️ 5 min de lectura</div>
-                </div>
-
-                <div class="articulo-card" onclick="abrirArticulo('presupuesto')">
-                    <div class="articulo-icono">📋</div>
-                    <div class="nivel-badge nivel-basico">Básico</div>
-                    <div class="articulo-categoria">Presupuesto</div>
-                    <div class="articulo-titulo">La regla 50/30/20 explicada</div>
-                    <div class="articulo-desc">Descubre cómo distribuir tu salario de forma inteligente con esta regla simple y efectiva.</div>
-                    <div class="articulo-tiempo">⏱️ 4 min de lectura</div>
-                </div>
-
-                <div class="articulo-card" onclick="abrirArticulo('deudas')">
-                    <div class="articulo-icono">💳</div>
-                    <div class="nivel-badge nivel-basico">Básico</div>
-                    <div class="articulo-categoria">Deudas</div>
-                    <div class="articulo-titulo">Cómo salir de deudas paso a paso</div>
-                    <div class="articulo-desc">Dos métodos probados para eliminar tus deudas: Bola de Nieve y Avalancha.</div>
-                    <div class="articulo-tiempo">⏱️ 6 min de lectura</div>
-                </div>
-
-                <div class="articulo-card" onclick="abrirArticulo('inversion')">
-                    <div class="articulo-icono">📈</div>
-                    <div class="nivel-badge nivel-intermedio">Intermedio</div>
-                    <div class="articulo-categoria">Inversión</div>
-                    <div class="articulo-titulo">Inversiones para principiantes en Colombia</div>
-                    <div class="articulo-desc">CDT, fondos de inversión, acciones: cuál elegir según tu perfil de riesgo.</div>
-                    <div class="articulo-tiempo">⏱️ 8 min de lectura</div>
-                </div>
-
-                <div class="articulo-card" onclick="abrirArticulo('emergencia')">
-                    <div class="articulo-icono">🚨</div>
-                    <div class="nivel-badge nivel-basico">Básico</div>
-                    <div class="articulo-categoria">Emergencias</div>
-                    <div class="articulo-titulo">Por qué necesitas un fondo de emergencia</div>
-                    <div class="articulo-desc">Aprende cuánto debes tener ahorrado y dónde guardarlo para estar protegido.</div>
-                    <div class="articulo-tiempo">⏱️ 5 min de lectura</div>
-                </div>
-
-                <div class="articulo-card" onclick="abrirArticulo('interes')">
-                    <div class="articulo-icono">🔢</div>
-                    <div class="nivel-badge nivel-intermedio">Intermedio</div>
-                    <div class="articulo-categoria">Conceptos</div>
-                    <div class="articulo-titulo">Interés simple vs interés compuesto</div>
-                    <div class="articulo-desc">Entiende la diferencia y cómo el interés compuesto puede multiplicar tu dinero.</div>
-                    <div class="articulo-tiempo">⏱️ 7 min de lectura</div>
-                </div>
-
-                <div class="articulo-card" onclick="abrirArticulo('pension')">
-                    <div class="articulo-icono">👴</div>
-                    <div class="nivel-badge nivel-intermedio">Intermedio</div>
-                    <div class="articulo-categoria">Pensión</div>
-                    <div class="articulo-titulo">Colpensiones vs fondos privados</div>
-                    <div class="articulo-desc">Entiende las diferencias entre los dos regímenes pensionales en Colombia.</div>
-                    <div class="articulo-tiempo">⏱️ 9 min de lectura</div>
-                </div>
-
-                <div class="articulo-card" onclick="abrirArticulo('inflacion')">
-                    <div class="articulo-icono">📉</div>
-                    <div class="nivel-badge nivel-intermedio">Intermedio</div>
-                    <div class="articulo-categoria">Economía</div>
-                    <div class="articulo-titulo">Cómo protegerte de la inflación</div>
-                    <div class="articulo-desc">La inflación reduce el poder de tu dinero. Aprende cómo protegerlo.</div>
-                    <div class="articulo-tiempo">⏱️ 6 min de lectura</div>
-                </div>
-
-                <div class="articulo-card" onclick="abrirArticulo('cripto')">
-                    <div class="articulo-icono">₿</div>
-                    <div class="nivel-badge nivel-avanzado">Avanzado</div>
-                    <div class="articulo-categoria">Criptomonedas</div>
-                    <div class="articulo-titulo">Criptomonedas: riesgos y realidades</div>
-                    <div class="articulo-desc">Todo lo que debes saber antes de invertir en criptomonedas en Colombia.</div>
-                    <div class="articulo-tiempo">⏱️ 8 min de lectura</div>
-                </div>
-
-            </div>
+            <div class="articulos-grid" id="articulosGrid"></div>
         </div>
 
-        <!-- SECCIÓN GLOSARIO -->
-        <div class="seccion" id="seccion-glosario">
-            <div class="glosario-grid">
-                <div class="termino-card">
-                    <div class="termino">💰 Ahorro</div>
-                    <div class="definicion">Parte del ingreso que no se gasta y se reserva para uso futuro. Es la base de la salud financiera.</div>
-                </div>
-                <div class="termino-card">
-                    <div class="termino">📈 Inversión</div>
-                    <div class="definicion">Destinar dinero con el objetivo de obtener una ganancia futura. Implica un nivel de riesgo.</div>
-                </div>
-                <div class="termino-card">
-                    <div class="termino">🏦 CDT</div>
-                    <div class="definicion">Certificado de Depósito a Término. Producto bancario donde depositas dinero por un plazo fijo a cambio de una tasa de interés.</div>
-                </div>
-                <div class="termino-card">
-                    <div class="termino">📉 Inflación</div>
-                    <div class="definicion">Aumento generalizado y sostenido de los precios. Reduce el poder adquisitivo del dinero con el tiempo.</div>
-                </div>
-                <div class="termino-card">
-                    <div class="termino">🔄 Interés compuesto</div>
-                    <div class="definicion">Interés que se calcula sobre el capital inicial más los intereses acumulados. Es el "octavo maravilla del mundo".</div>
-                </div>
-                <div class="termino-card">
-                    <div class="termino">📊 TRM</div>
-                    <div class="definicion">Tasa Representativa del Mercado. Es el valor del dólar estadounidense en pesos colombianos.</div>
-                </div>
-                <div class="termino-card">
-                    <div class="termino">🏛️ DTF</div>
-                    <div class="definicion">Depósito a Término Fijo. Tasa de referencia del mercado financiero colombiano usada para créditos.</div>
-                </div>
-                <div class="termino-card">
-                    <div class="termino">💳 Crédito</div>
-                    <div class="definicion">Préstamo de dinero que debes devolver con intereses en un plazo determinado.</div>
-                </div>
-                <div class="termino-card">
-                    <div class="termino">📋 Presupuesto</div>
-                    <div class="definicion">Plan financiero que organiza tus ingresos y gastos para un período determinado.</div>
-                </div>
-                <div class="termino-card">
-                    <div class="termino">🎯 Liquidez</div>
-                    <div class="definicion">Facilidad con la que un activo puede convertirse en efectivo sin perder valor.</div>
-                </div>
-                <div class="termino-card">
-                    <div class="termino">⚖️ Activo</div>
-                    <div class="definicion">Bien o derecho que tiene valor económico y pertenece a una persona o empresa.</div>
-                </div>
-                <div class="termino-card">
-                    <div class="termino">📌 Pasivo</div>
-                    <div class="definicion">Deuda u obligación financiera que debes pagar en el futuro. Ejemplo: créditos, hipotecas.</div>
-                </div>
-                <div class="termino-card">
-                    <div class="termino">🏠 Patrimonio</div>
-                    <div class="definicion">Diferencia entre tus activos y pasivos. Es tu riqueza neta real.</div>
-                </div>
-                <div class="termino-card">
-                    <div class="termino">📦 Diversificación</div>
-                    <div class="definicion">Estrategia de invertir en diferentes activos para reducir el riesgo. "No poner todos los huevos en una canasta".</div>
-                </div>
-                <div class="termino-card">
-                    <div class="termino">🔐 AFP</div>
-                    <div class="definicion">Administradora de Fondos de Pensiones. Entidad privada que gestiona los ahorros pensionales.</div>
-                </div>
-                <div class="termino-card">
-                    <div class="termino">💼 Flujo de caja</div>
-                    <div class="definicion">Movimiento de dinero que entra y sale de tu bolsillo en un período determinado.</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- SECCIÓN CALCULADORAS -->
+        <!-- ══ CALCULADORAS ══ -->
         <div class="seccion" id="seccion-calculadoras">
-            <div class="calc-grid">
+            <div class="calcs-grid">
 
-                <!-- Calculadora Interés Simple -->
+                <!-- 1. Interés Simple -->
                 <div class="calc-card">
-                    <div class="calc-titulo">
-                        <span>📊</span> Interés Simple
+                    <div class="calc-titulo"><span class="calc-titulo-icon">📊</span> Interés Simple</div>
+                    <div class="form-group">
+                        <label class="calc-label">Capital inicial ($)</label>
+                        <input type="number" class="calc-input" id="is-k" placeholder="Ej: 1.000.000">
                     </div>
-                    <label class="calc-input-label">Capital inicial ($)</label>
-                    <input type="number" class="calc-input" id="is-capital" placeholder="Ej: 1000000">
-                    <label class="calc-input-label">Tasa de interés anual (%)</label>
-                    <input type="number" class="calc-input" id="is-tasa" placeholder="Ej: 8">
-                    <label class="calc-input-label">Tiempo (meses)</label>
-                    <input type="number" class="calc-input" id="is-tiempo" placeholder="Ej: 12">
-                    <button class="btn-calcular" onclick="calcularInteresSimple()">Calcular</button>
+                    <div class="form-group">
+                        <label class="calc-label">Tasa anual (%)</label>
+                        <input type="number" class="calc-input" id="is-t" placeholder="Ej: 8">
+                    </div>
+                    <div class="form-group">
+                        <label class="calc-label">Tiempo (meses)</label>
+                        <input type="number" class="calc-input" id="is-m" placeholder="Ej: 12">
+                    </div>
+                    <button class="btn-calc" onclick="calcIS()"><i class="fas fa-equals"></i> Calcular</button>
                     <div class="calc-resultado" id="res-is">
-                        <div class="calc-resultado-valor" id="val-is">$0</div>
-                        <div class="calc-resultado-label">Interés generado</div>
-                        <div style="font-size:13px; color:#c4b5fd; margin-top:8px;">
-                            Capital final: <strong id="total-is">$0</strong>
+                        <div class="calc-res-principal" id="is-interes">$0</div>
+                        <div class="calc-res-label">Interés generado</div>
+                        <div class="calc-res-extra">
+                            <div class="calc-res-fila"><span>Capital inicial</span><strong id="is-capital">$0</strong></div>
+                            <div class="calc-res-fila"><span>Interés total</span><strong id="is-interes2" style="color:#4ade80">$0</strong></div>
+                            <div class="calc-res-fila"><span>Total final</span><strong id="is-total" style="color:#fbbf24">$0</strong></div>
+                            <div class="calc-res-fila"><span>Tasa mensual</span><strong id="is-mensual" style="color:#22d3ee">0%</strong></div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Calculadora Interés Compuesto -->
+                <!-- 2. Interés Compuesto -->
                 <div class="calc-card">
-                    <div class="calc-titulo">
-                        <span>📈</span> Interés Compuesto
+                    <div class="calc-titulo"><span class="calc-titulo-icon">📈</span> Interés Compuesto</div>
+                    <div class="form-group">
+                        <label class="calc-label">Capital inicial ($)</label>
+                        <input type="number" class="calc-input" id="ic-k" placeholder="Ej: 1.000.000">
                     </div>
-                    <label class="calc-input-label">Capital inicial ($)</label>
-                    <input type="number" class="calc-input" id="ic-capital" placeholder="Ej: 1000000">
-                    <label class="calc-input-label">Tasa de interés anual (%)</label>
-                    <input type="number" class="calc-input" id="ic-tasa" placeholder="Ej: 10">
-                    <label class="calc-input-label">Tiempo (años)</label>
-                    <input type="number" class="calc-input" id="ic-tiempo" placeholder="Ej: 5">
-                    <button class="btn-calcular" onclick="calcularInteresCompuesto()">Calcular</button>
+                    <div class="form-group">
+                        <label class="calc-label">Aporte mensual adicional ($)</label>
+                        <input type="number" class="calc-input" id="ic-a" placeholder="Ej: 100.000 (opcional)" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label class="calc-label">Tasa anual (%)</label>
+                        <input type="number" class="calc-input" id="ic-t" placeholder="Ej: 10">
+                    </div>
+                    <div class="form-group">
+                        <label class="calc-label">Tiempo (años)</label>
+                        <input type="number" class="calc-input" id="ic-y" placeholder="Ej: 5">
+                    </div>
+                    <button class="btn-calc" onclick="calcIC()"><i class="fas fa-equals"></i> Calcular</button>
                     <div class="calc-resultado" id="res-ic">
-                        <div class="calc-resultado-valor" id="val-ic">$0</div>
-                        <div class="calc-resultado-label">Interés generado</div>
-                        <div style="font-size:13px; color:#c4b5fd; margin-top:8px;">
-                            Capital final: <strong id="total-ic">$0</strong>
+                        <div class="calc-res-principal" id="ic-ganancia">$0</div>
+                        <div class="calc-res-label">Ganancia con interés compuesto</div>
+                        <div class="calc-res-extra">
+                            <div class="calc-res-fila"><span>Total invertido</span><strong id="ic-invertido">$0</strong></div>
+                            <div class="calc-res-fila"><span>Intereses ganados</span><strong id="ic-intereses" style="color:#4ade80">$0</strong></div>
+                            <div class="calc-res-fila"><span>Total final</span><strong id="ic-total" style="color:#fbbf24">$0</strong></div>
+                            <div class="calc-res-fila"><span>Rentabilidad</span><strong id="ic-renta" style="color:#a855f7">0%</strong></div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Calculadora 50/30/20 -->
+                <!-- 3. Regla 50/30/20 -->
                 <div class="calc-card">
-                    <div class="calc-titulo">
-                        <span>🎯</span> Regla 50/30/20
+                    <div class="calc-titulo"><span class="calc-titulo-icon">🎯</span> Regla 50/30/20</div>
+                    <div class="form-group">
+                        <label class="calc-label">Ingreso mensual ($)</label>
+                        <input type="number" class="calc-input" id="rg-ing" placeholder="Ej: 2.500.000">
                     </div>
-                    <label class="calc-input-label">Tu ingreso mensual ($)</label>
-                    <input type="number" class="calc-input" id="ing-mensual" placeholder="Ej: 2500000">
-                    <button class="btn-calcular" onclick="calcular502030()">Calcular distribución</button>
-                    <div class="calc-resultado" id="res-502030" style="text-align:left;">
-                        <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-                            <span style="color:#4ade80;">🟢 50% Necesidades:</span>
-                            <strong id="val-necesidades" style="color:#4ade80;">$0</strong>
+                    <div class="form-group">
+                        <label class="calc-label">Gastos fijos actuales ($) <span style="color:var(--muted);font-size:11px;">(opcional)</span></label>
+                        <input type="number" class="calc-input" id="rg-fijos" placeholder="Ej: 1.200.000" value="0">
+                    </div>
+                    <button class="btn-calc" onclick="calcRegla()"><i class="fas fa-equals"></i> Calcular distribución</button>
+                    <div class="calc-resultado" id="res-rg" style="text-align:left;">
+                        <div class="calc-res-extra">
+                            <div class="calc-res-fila">
+                                <span>🟢 50% Necesidades</span>
+                                <strong id="rg-nec" style="color:#4ade80">$0</strong>
+                            </div>
+                            <div class="calc-res-fila">
+                                <span>🟡 30% Deseos</span>
+                                <strong id="rg-des" style="color:#fbbf24">$0</strong>
+                            </div>
+                            <div class="calc-res-fila">
+                                <span>🔵 20% Ahorro/Inversión</span>
+                                <strong id="rg-aho" style="color:#22d3ee">$0</strong>
+                            </div>
+                            <div class="calc-res-fila" id="rg-aviso-wrap" style="display:none;">
+                                <span>⚠️ Tus gastos fijos</span>
+                                <strong id="rg-aviso" style="color:#f87171">$0</strong>
+                            </div>
                         </div>
-                        <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-                            <span style="color:#fbbf24;">🟡 30% Deseos:</span>
-                            <strong id="val-deseos" style="color:#fbbf24;">$0</strong>
-                        </div>
-                        <div style="display:flex; justify-content:space-between;">
-                            <span style="color:#22d3ee;">🔵 20% Ahorro:</span>
-                            <strong id="val-ahorro" style="color:#22d3ee;">$0</strong>
+                        <div id="rg-mensaje" style="font-size:12px;margin-top:10px;color:var(--muted);"></div>
+                    </div>
+                </div>
+
+                <!-- 4. Meta de ahorro -->
+                <div class="calc-card">
+                    <div class="calc-titulo"><span class="calc-titulo-icon">🏁</span> ¿Cuándo alcanzo mi meta?</div>
+                    <div class="form-group">
+                        <label class="calc-label">Monto de la meta ($)</label>
+                        <input type="number" class="calc-input" id="mt-obj" placeholder="Ej: 5.000.000">
+                    </div>
+                    <div class="form-group">
+                        <label class="calc-label">Ya tengo ahorrado ($)</label>
+                        <input type="number" class="calc-input" id="mt-act" placeholder="Ej: 500.000" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label class="calc-label">Ahorro mensual ($)</label>
+                        <input type="number" class="calc-input" id="mt-men" placeholder="Ej: 300.000">
+                    </div>
+                    <div class="form-group">
+                        <label class="calc-label">Rendimiento mensual % <span style="color:var(--muted);font-size:11px;">(opcional)</span></label>
+                        <input type="number" class="calc-input" id="mt-ren" placeholder="Ej: 0.8" value="0" step="0.1">
+                    </div>
+                    <button class="btn-calc" onclick="calcMeta()"><i class="fas fa-equals"></i> Calcular</button>
+                    <div class="calc-resultado" id="res-mt">
+                        <div class="calc-res-principal" id="mt-tiempo">0 meses</div>
+                        <div class="calc-res-label" id="mt-label">Para alcanzar tu meta</div>
+                        <div class="calc-res-extra">
+                            <div class="calc-res-fila"><span>Faltante</span><strong id="mt-faltante" style="color:#f472b6">$0</strong></div>
+                            <div class="calc-res-fila"><span>Total ahorros</span><strong id="mt-total" style="color:#4ade80">$0</strong></div>
+                            <div class="calc-res-fila"><span>Fecha estimada</span><strong id="mt-fecha" style="color:#22d3ee">—</strong></div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Calculadora Meta de Ahorro -->
+                <!-- 5. Retención en la fuente -->
                 <div class="calc-card">
-                    <div class="calc-titulo">
-                        <span>🎯</span> ¿Cuándo alcanzo mi meta?
+                    <div class="calc-titulo"><span class="calc-titulo-icon">🧾</span> Retención en la Fuente</div>
+                    <div class="form-group">
+                        <label class="calc-label">Ingreso mensual bruto ($)</label>
+                        <input type="number" class="calc-input" id="rf-ing" placeholder="Ej: 3.500.000">
                     </div>
-                    <label class="calc-input-label">Monto de tu meta ($)</label>
-                    <input type="number" class="calc-input" id="meta-monto" placeholder="Ej: 5000000">
-                    <label class="calc-input-label">Ya tengo ahorrado ($)</label>
-                    <input type="number" class="calc-input" id="meta-actual" placeholder="Ej: 500000" value="0">
-                    <label class="calc-input-label">Puedo ahorrar al mes ($)</label>
-                    <input type="number" class="calc-input" id="meta-mensual" placeholder="Ej: 300000">
-                    <button class="btn-calcular" onclick="calcularMeta()">Calcular</button>
-                    <div class="calc-resultado" id="res-meta">
-                        <div class="calc-resultado-valor" id="val-meta">0 meses</div>
-                        <div class="calc-resultado-label" id="label-meta">Para alcanzar tu meta</div>
+                    <div class="form-group">
+                        <label class="calc-label">Deducciones (salud + pensión) ($)</label>
+                        <input type="number" class="calc-input" id="rf-ded" placeholder="Ej: 280.000" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label class="calc-label">Otros descuentos ($)</label>
+                        <input type="number" class="calc-input" id="rf-otros" placeholder="Ej: 0" value="0">
+                    </div>
+                    <button class="btn-calc" onclick="calcRetencion()"><i class="fas fa-equals"></i> Calcular</button>
+                    <div class="calc-resultado" id="res-rf">
+                        <div class="calc-res-principal" id="rf-neto">$0</div>
+                        <div class="calc-res-label">Salario neto mensual</div>
+                        <div class="calc-res-extra">
+                            <div class="calc-res-fila"><span>Ingreso bruto</span><strong id="rf-bruto">$0</strong></div>
+                            <div class="calc-res-fila"><span>Salud (4%)</span><strong id="rf-salud" style="color:#f472b6">$0</strong></div>
+                            <div class="calc-res-fila"><span>Pensión (4%)</span><strong id="rf-pension" style="color:#f472b6">$0</strong></div>
+                            <div class="calc-res-fila"><span>Retención estimada</span><strong id="rf-retencion" style="color:#f87171">$0</strong></div>
+                            <div class="calc-res-fila"><span>Neto final</span><strong id="rf-neto2" style="color:#4ade80">$0</strong></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 6. Cuota de crédito -->
+                <div class="calc-card">
+                    <div class="calc-titulo"><span class="calc-titulo-icon">💳</span> Cuota de Crédito (Cuota Fija)</div>
+                    <div class="form-group">
+                        <label class="calc-label">Monto del crédito ($)</label>
+                        <input type="number" class="calc-input" id="cr-monto" placeholder="Ej: 5.000.000">
+                    </div>
+                    <div class="form-group">
+                        <label class="calc-label">Tasa de interés anual (%)</label>
+                        <input type="number" class="calc-input" id="cr-tasa" placeholder="Ej: 24">
+                    </div>
+                    <div class="form-group">
+                        <label class="calc-label">Plazo (meses)</label>
+                        <input type="number" class="calc-input" id="cr-plazo" placeholder="Ej: 24">
+                    </div>
+                    <button class="btn-calc" onclick="calcCredito()"><i class="fas fa-equals"></i> Calcular cuota</button>
+                    <div class="calc-resultado" id="res-cr">
+                        <div class="calc-res-principal" id="cr-cuota">$0/mes</div>
+                        <div class="calc-res-label">Cuota mensual fija</div>
+                        <div class="calc-res-extra">
+                            <div class="calc-res-fila"><span>Total a pagar</span><strong id="cr-total" style="color:#f472b6">$0</strong></div>
+                            <div class="calc-res-fila"><span>Total intereses</span><strong id="cr-intereses" style="color:#f87171">$0</strong></div>
+                            <div class="calc-res-fila"><span>Costo del crédito</span><strong id="cr-costo" style="color:#fbbf24">0%</strong></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 7. Inflación real -->
+                <div class="calc-card">
+                    <div class="calc-titulo"><span class="calc-titulo-icon">📉</span> Impacto de la Inflación</div>
+                    <div class="form-group">
+                        <label class="calc-label">Monto actual ($)</label>
+                        <input type="number" class="calc-input" id="inf-monto" placeholder="Ej: 1.000.000">
+                    </div>
+                    <div class="form-group">
+                        <label class="calc-label">Inflación anual (%)</label>
+                        <input type="number" class="calc-input" id="inf-tasa" placeholder="Ej: 9.28" value="9.28">
+                    </div>
+                    <div class="form-group">
+                        <label class="calc-label">Años proyectados</label>
+                        <input type="number" class="calc-input" id="inf-anos" placeholder="Ej: 5">
+                    </div>
+                    <button class="btn-calc" onclick="calcInflacion()"><i class="fas fa-equals"></i> Calcular pérdida</button>
+                    <div class="calc-resultado" id="res-inf">
+                        <div class="calc-res-principal" id="inf-perdida" style="color:#f472b6">$0</div>
+                        <div class="calc-res-label">Poder adquisitivo perdido</div>
+                        <div class="calc-res-extra">
+                            <div class="calc-res-fila"><span>Valor hoy</span><strong id="inf-hoy">$0</strong></div>
+                            <div class="calc-res-fila"><span>Valor real en X años</span><strong id="inf-futuro" style="color:#f87171">$0</strong></div>
+                            <div class="calc-res-fila"><span>Pérdida total</span><strong id="inf-total" style="color:#f472b6">$0</strong></div>
+                            <div class="calc-res-fila"><span>Para superar inflación necesitas</span><strong id="inf-necesitas" style="color:#4ade80">+9.28% anual</strong></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 8. Pensión voluntaria -->
+                <div class="calc-card">
+                    <div class="calc-titulo"><span class="calc-titulo-icon">👴</span> Pensión Voluntaria</div>
+                    <div class="form-group">
+                        <label class="calc-label">Ingreso mensual ($)</label>
+                        <input type="number" class="calc-input" id="pv-ing" placeholder="Ej: 3.000.000">
+                    </div>
+                    <div class="form-group">
+                        <label class="calc-label">Aporte mensual voluntario ($)</label>
+                        <input type="number" class="calc-input" id="pv-aporte" placeholder="Ej: 300.000">
+                    </div>
+                    <div class="form-group">
+                        <label class="calc-label">Años de aporte</label>
+                        <input type="number" class="calc-input" id="pv-anos" placeholder="Ej: 20">
+                    </div>
+                    <div class="form-group">
+                        <label class="calc-label">Rendimiento anual esperado (%)</label>
+                        <input type="number" class="calc-input" id="pv-rend" placeholder="Ej: 8" value="8">
+                    </div>
+                    <button class="btn-calc" onclick="calcPension()"><i class="fas fa-equals"></i> Calcular</button>
+                    <div class="calc-resultado" id="res-pv">
+                        <div class="calc-res-principal" id="pv-capital">$0</div>
+                        <div class="calc-res-label">Capital pensional acumulado</div>
+                        <div class="calc-res-extra">
+                            <div class="calc-res-fila"><span>Total aportado</span><strong id="pv-total">$0</strong></div>
+                            <div class="calc-res-fila"><span>Rendimientos</span><strong id="pv-rendimientos" style="color:#4ade80">$0</strong></div>
+                            <div class="calc-res-fila"><span>Ahorro impuestos/año</span><strong id="pv-impuestos" style="color:#22d3ee">$0</strong></div>
+                        </div>
                     </div>
                 </div>
 
             </div>
         </div>
+
+        <!-- ══ GLOSARIO ══ -->
+        <div class="seccion" id="seccion-glosario">
+            <div class="glosario-busqueda">
+                <i class="fas fa-search"></i>
+                <input type="text" class="glosario-search" id="glosarioSearch"
+                       placeholder="Buscar término financiero..."
+                       oninput="filtrarGlosario()">
+            </div>
+            <div class="glosario-letras" id="glosarioLetras"></div>
+            <div class="glosario-grid" id="glosarioGrid"></div>
+        </div>
+
     </div>
 
     <script>
-        // TABS
-        function mostrarSeccion(seccion, btn) {
-            document.querySelectorAll('.seccion').forEach(s => s.classList.remove('visible'));
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('activo'));
-            document.getElementById('seccion-' + seccion).classList.add('visible');
-            btn.classList.add('activo');
-        }
-
-        // ARTÍCULOS
-        const articulos = {
-            ahorro: {
-                icono: '💰',
-                titulo: '¿Cómo empezar a ahorrar desde cero?',
-                contenido: `
-                    <p>Ahorrar parece difícil cuando sientes que el dinero nunca alcanza. Pero con la estrategia correcta, cualquier persona puede empezar a ahorrar sin importar cuánto gana.</p>
-
-                    <h3>🎯 Regla #1: Págate a ti primero</h3>
-                    <p>Apenas recibas tu salario, transfiere inmediatamente un porcentaje a una cuenta de ahorros separada. No esperes a "ver qué sobra" porque generalmente no sobra nada.</p>
-
-                    <div class="highlight">
-                        💡 <strong>Tip:</strong> Empieza con el 10% de tu ingreso. Si ganas $1.500.000, ahorra $150.000 antes de cualquier gasto.
-                    </div>
-
-                    <h3>📋 Regla #2: Aplica el método 50/30/20</h3>
-                    <ul>
-                        <li><strong>50%</strong> para necesidades: arriendo, comida, transporte, servicios</li>
-                        <li><strong>30%</strong> para deseos: entretenimiento, ropa, salidas</li>
-                        <li><strong>20%</strong> para ahorro e inversión</li>
-                    </ul>
-
-                    <h3>🔍 Regla #3: Identifica y elimina gastos hormiga</h3>
-                    <p>Los gastos hormiga son pequeños gastos cotidianos que parecen insignificantes pero se acumulan:</p>
-                    <div class="ejemplo">
-                        ☕ Café diario: $3.000 × 30 días = <strong>$90.000/mes</strong><br>
-                        🚌 Taxis innecesarios: $15.000 × 8 veces = <strong>$120.000/mes</strong><br>
-                        📱 Apps que no usas: $25.000/mes<br>
-                        <strong>Total: $235.000/mes que podrían ser ahorro</strong>
-                    </div>
-
-                    <h3>🏦 Regla #4: Automatiza tu ahorro</h3>
-                    <p>Configura una transferencia automática el día que recibes tu salario. Lo que no ves, no lo gastas. La mayoría de bancos colombianos permiten programar transferencias automáticas.</p>
-
-                    <h3>🎯 Metas claras = más motivación</h3>
-                    <p>No ahorro "por ahorrar". Define para qué estás ahorrando: fondo de emergencia, viaje, computador, entrada de apartamento. Esto aumenta tu motivación y constancia.</p>
-
-                    <div class="highlight">
-                        ✅ <strong>Reto de 30 días:</strong> Anota cada gasto durante un mes. Al final identificarás exactamente dónde puedes recortar y cuánto puedes ahorrar.
-                    </div>
-                `
-            },
-            presupuesto: {
-                icono: '📋',
-                titulo: 'La regla 50/30/20 explicada',
-                contenido: `
-                    <p>La regla 50/30/20 es una de las estrategias de presupuesto más populares y efectivas del mundo. Fue popularizada por la senadora estadounidense Elizabeth Warren y es perfectamente aplicable en Colombia.</p>
-
-                    <h3>🟢 50% — Necesidades básicas</h3>
-                    <p>Son los gastos que no puedes evitar: los que son esenciales para vivir.</p>
-                    <ul>
-                        <li>Arriendo o cuota de vivienda</li>
-                        <li>Alimentación básica</li>
-                        <li>Transporte al trabajo</li>
-                        <li>Servicios públicos (agua, luz, gas, internet)</li>
-                        <li>Salud y medicamentos</li>
-                        <li>Educación</li>
-                    </ul>
-
-                    <h3>🟡 30% — Deseos y estilo de vida</h3>
-                    <p>Son gastos importantes para tu bienestar pero no esenciales para sobrevivir.</p>
-                    <ul>
-                        <li>Entretenimiento (Netflix, cine, conciertos)</li>
-                        <li>Restaurantes y salidas</li>
-                        <li>Ropa y accesorios</li>
-                        <li>Hobbies y deportes</li>
-                        <li>Viajes y vacaciones</li>
-                    </ul>
-
-                    <h3>🔵 20% — Ahorro e inversión</h3>
-                    <p>Esta es la parte más importante para tu futuro financiero.</p>
-                    <ul>
-                        <li>Fondo de emergencia</li>
-                        <li>Inversiones (CDT, fondos, acciones)</li>
-                        <li>Pago extra de deudas</li>
-                        <li>Pensión voluntaria</li>
-                    </ul>
-
-                    <div class="ejemplo">
-                        <strong>Ejemplo con salario de $2.000.000:</strong><br><br>
-                        🟢 Necesidades (50%): $1.000.000<br>
-                        🟡 Deseos (30%): $600.000<br>
-                        🔵 Ahorro (20%): $400.000
-                    </div>
-
-                    <div class="highlight">
-                        💡 <strong>¿Qué pasa si mis necesidades superan el 50%?</strong> Es normal al principio. Ajusta los porcentajes a tu realidad: 60/20/20 o 70/15/15. Lo importante es siempre destinar algo al ahorro.
-                    </div>
-                `
-            },
-            deudas: {
-                icono: '💳',
-                titulo: 'Cómo salir de deudas paso a paso',
-                contenido: `
-                    <p>Las deudas son uno de los principales obstáculos para la salud financiera. Pero con un plan claro, cualquier deuda puede eliminarse.</p>
-
-                    <h3>📋 Paso 1: Haz un inventario de tus deudas</h3>
-                    <p>Anota todas tus deudas con esta información:</p>
-                    <div class="ejemplo">
-                        | Deuda | Monto | Cuota mensual | Tasa de interés |<br>
-                        | Tarjeta de crédito | $2.000.000 | $200.000 | 28% EA |<br>
-                        | Crédito de libre inversión | $5.000.000 | $350.000 | 18% EA |<br>
-                        | Préstamo a familiar | $500.000 | $100.000 | 0% |
-                    </div>
-
-                    <h3>⛄ Método Bola de Nieve (recomendado para motivación)</h3>
-                    <p>Paga primero la deuda más pequeña, independiente de la tasa de interés.</p>
-                    <ul>
-                        <li>Paga el mínimo en todas las deudas</li>
-                        <li>Destina todo el dinero extra a la deuda más pequeña</li>
-                        <li>Cuando la elimines, ese dinero va a la siguiente</li>
-                        <li>Cada deuda eliminada genera motivación para continuar</li>
-                    </ul>
-
-                    <h3>🌊 Método Avalancha (recomendado para ahorrar dinero)</h3>
-                    <p>Paga primero la deuda con mayor tasa de interés.</p>
-                    <ul>
-                        <li>Paga el mínimo en todas las deudas</li>
-                        <li>Destina todo el dinero extra a la deuda con mayor interés</li>
-                        <li>Ahorras más dinero en intereses a largo plazo</li>
-                    </ul>
-
-                    <div class="highlight">
-                        🚨 <strong>Reglas de oro mientras pagas deudas:</strong>
-                        <ul style="margin-top:10px;">
-                            <li>No adquieras nuevas deudas</li>
-                            <li>Evita los créditos de "gota a gota" — son ilegales y peligrosos</li>
-                            <li>Si tienes mora, negocia con el banco antes de ignorarlos</li>
-                            <li>Llama a la Superfinanciera si tienes problemas: 01 8000 120 100</li>
-                        </ul>
-                    </div>
-                `
-            },
-            inversion: {
-                icono: '📈',
-                titulo: 'Inversiones para principiantes en Colombia',
-                contenido: `
-                    <p>Invertir no es solo para ricos. En Colombia puedes empezar a invertir con muy poco dinero y hacer crecer tu patrimonio de forma segura.</p>
-
-                    <h3>⚠️ Antes de invertir, debes tener:</h3>
-                    <ul>
-                        <li>✅ Fondo de emergencia de 3-6 meses de gastos</li>
-                        <li>✅ Deudas de alto interés pagadas</li>
-                        <li>✅ Conocimiento básico del producto donde vas a invertir</li>
-                    </ul>
-
-                    <h3>🏦 Opciones de inversión en Colombia:</h3>
-
-                    <div class="ejemplo">
-                        <strong>1. CDT (Certificado de Depósito a Término)</strong><br>
-                        • Riesgo: Muy bajo ✅<br>
-                        • Rentabilidad: 8% - 14% anual<br>
-                        • Plazo mínimo: 30 días<br>
-                        • Ideal para: Dinero que no necesitas pronto<br>
-                        • Dónde: Cualquier banco colombiano
-                    </div>
-
-                    <div class="ejemplo">
-                        <strong>2. Fondos de inversión colectiva</strong><br>
-                        • Riesgo: Bajo a medio ✅<br>
-                        • Rentabilidad: Variable según el fondo<br>
-                        • Desde: $50.000<br>
-                        • Ideal para: Diversificar sin complicaciones<br>
-                        • Dónde: Fiduciarias, Daviplata, Nequi
-                    </div>
-
-                    <div class="ejemplo">
-                        <strong>3. Acciones en la BVC</strong><br>
-                        • Riesgo: Alto ⚠️<br>
-                        • Rentabilidad: Variable (puede ser negativa)<br>
-                        • Ideal para: Largo plazo (5+ años)<br>
-                        • Dónde: Comisionistas de bolsa
-                    </div>
-
-                    <h3>📌 Reglas de oro para invertir:</h3>
-                    <ul>
-                        <li>Nunca inviertas dinero que necesites en el corto plazo</li>
-                        <li>Diversifica: no pongas todo en un solo producto</li>
-                        <li>Invierte a largo plazo para maximizar rendimientos</li>
-                        <li>Desconfía de rendimientos "garantizados" muy altos</li>
-                        <li>Infórmate antes de firmar cualquier contrato</li>
-                    </ul>
-
-                    <div class="highlight">
-                        💡 <strong>Usa el Simulador de FinanBot</strong> para ver cómo crecería tu dinero con diferentes opciones de inversión sin arriesgar un peso real.
-                    </div>
-                `
-            },
-            emergencia: {
-                icono: '🚨',
-                titulo: 'Por qué necesitas un fondo de emergencia',
-                contenido: `
-                    <p>Un fondo de emergencia es tu red de seguridad financiera. Es dinero guardado específicamente para imprevistos, no para gastos planeados.</p>
-
-                    <h3>❓ ¿Para qué sirve?</h3>
-                    <ul>
-                        <li>Pérdida de empleo inesperada</li>
-                        <li>Emergencia médica no cubierta por EPS</li>
-                        <li>Reparación urgente del carro o la casa</li>
-                        <li>Cualquier gasto urgente e imprevisto</li>
-                    </ul>
-
-                    <h3>💰 ¿Cuánto debo tener?</h3>
-                    <div class="ejemplo">
-                        <strong>Mínimo:</strong> 3 meses de gastos básicos<br>
-                        <strong>Ideal:</strong> 6 meses de gastos básicos<br>
-                        <strong>Si eres independiente:</strong> 9-12 meses<br><br>
-                        <em>Ejemplo: Si gastas $1.500.000/mes, tu fondo ideal es $9.000.000</em>
-                    </div>
-
-                    <h3>🏦 ¿Dónde guardarlo?</h3>
-                    <ul>
-                        <li>✅ Cuenta de ahorros con fácil acceso</li>
-                        <li>✅ Fondo de liquidez (Daviplata Inversión, Nequi)</li>
-                        <li>✅ CDT a 30 días (renovable)</li>
-                        <li>❌ NO en inversiones de largo plazo</li>
-                        <li>❌ NO en efectivo en casa</li>
-                        <li>❌ NO en criptomonedas</li>
-                    </ul>
-
-                    <h3>📅 ¿Cómo construirlo?</h3>
-                    <ul>
-                        <li>Empieza con $50.000 o $100.000 este mes</li>
-                        <li>Automatiza una transferencia mensual fija</li>
-                        <li>No lo toques salvo emergencia real</li>
-                        <li>Si lo usas, reconstitúyelo lo antes posible</li>
-                    </ul>
-
-                    <div class="highlight">
-                        ⚠️ <strong>Regla de oro:</strong> El fondo de emergencia va ANTES que cualquier inversión. Sin él, cualquier imprevisto te enviará de vuelta a las deudas.
-                    </div>
-                `
-            },
-            interes: {
-                icono: '🔢',
-                titulo: 'Interés simple vs interés compuesto',
-                contenido: `
-                    <p>Entender la diferencia entre interés simple y compuesto es fundamental para tomar mejores decisiones de ahorro e inversión.</p>
-
-                    <h3>📊 Interés Simple</h3>
-                    <p>Se calcula siempre sobre el capital inicial. Los intereses no generan nuevos intereses.</p>
-                    <div class="ejemplo">
-                        <strong>Fórmula:</strong> Interés = Capital × Tasa × Tiempo<br><br>
-                        <strong>Ejemplo:</strong> Inviertes $1.000.000 al 10% anual por 3 años<br>
-                        Interés anual: $100.000<br>
-                        Interés en 3 años: $300.000<br>
-                        <strong>Total: $1.300.000</strong>
-                    </div>
-
-                    <h3>📈 Interés Compuesto</h3>
-                    <p>Se calcula sobre el capital inicial MÁS los intereses acumulados. Los intereses generan nuevos intereses. Albert Einstein lo llamó "la octava maravilla del mundo".</p>
-                    <div class="ejemplo">
-                        <strong>Fórmula:</strong> Total = Capital × (1 + Tasa)^Tiempo<br><br>
-                        <strong>Ejemplo:</strong> Inviertes $1.000.000 al 10% anual por 3 años<br>
-                        Año 1: $1.000.000 × 1.10 = $1.100.000<br>
-                        Año 2: $1.100.000 × 1.10 = $1.210.000<br>
-                        Año 3: $1.210.000 × 1.10 = $1.331.000<br>
-                        <strong>Total: $1.331.000 (vs $1.300.000 del simple)</strong>
-                    </div>
-
-                    <h3>⏰ El poder del tiempo</h3>
-                    <p>Con el interés compuesto, el tiempo es tu mejor aliado. Cuanto antes empieces, más crece tu dinero:</p>
-                    <div class="ejemplo">
-                        $1.000.000 al 10% anual:<br>
-                        • En 10 años: $2.593.742<br>
-                        • En 20 años: $6.727.500<br>
-                        • En 30 años: $17.449.402<br>
-                        <strong>¡El dinero se multiplicó 17 veces!</strong>
-                    </div>
-
-                    <div class="highlight">
-                        💡 <strong>Conclusión:</strong> Busca siempre productos que usen interés compuesto para tus ahorros e inversiones. Usa nuestra calculadora de interés compuesto para ver el potencial de tu dinero.
-                    </div>
-                `
-            },
-            pension: {
-                icono: '👴',
-                titulo: 'Colpensiones vs fondos privados',
-                contenido: `
-                    <p>En Colombia existen dos regímenes pensionales y elegir el correcto puede hacer una gran diferencia en tu jubilación.</p>
-
-                    <h3>🏛️ Colpensiones (Régimen de Prima Media)</h3>
-                    <ul>
-                        <li>El Estado administra tu dinero</li>
-                        <li>Tu pensión depende de tu salario y semanas cotizadas</li>
-                        <li>Requiere 1.300 semanas cotizadas</li>
-                        <li>Edad: 57 años mujer / 62 años hombre</li>
-                        <li>Pensión mínima garantizada: 1 salario mínimo</li>
-                        <li>Ideal para: Empleados con salarios bajos-medios que cotizarán toda su vida</li>
-                    </ul>
-
-                    <h3>🏢 Fondos Privados — RAIS (Porvenir, Protección, Colfondos)</h3>
-                    <ul>
-                        <li>Tu dinero va a una cuenta individual a tu nombre</li>
-                        <li>La pensión depende de cuánto ahorraste y la rentabilidad</li>
-                        <li>Puedes hacer aportes voluntarios para aumentar tu pensión</li>
-                        <li>Los aportes voluntarios tienen beneficios tributarios</li>
-                        <li>Ideal para: Personas con ingresos altos o independientes</li>
-                    </ul>
-
-                    <div class="highlight">
-                        ⚠️ <strong>Realidad actual:</strong> El 75% de los colombianos NO se pensiona. La mejor estrategia es complementar con ahorro e inversión personal, independiente del régimen que elijas.
-                    </div>
-
-                    <h3>💡 Consejos importantes:</h3>
-                    <ul>
-                        <li>Cotiza desde el primer trabajo, así sea poco tiempo</li>
-                        <li>Revisa tu extracto pensional cada año</li>
-                        <li>Si eres independiente, cotiza al menos el mínimo</li>
-                        <li>Considera aportes voluntarios para reducir impuestos</li>
-                        <li>No dejes de cotizar por períodos largos</li>
-                    </ul>
-                `
-            },
-            inflacion: {
-                icono: '📉',
-                titulo: 'Cómo protegerte de la inflación',
-                contenido: `
-                    <p>La inflación es el aumento generalizado de precios. Si la inflación es del 10% anual, lo que hoy cuesta $100.000 el año próximo costará $110.000.</p>
-
-                    <h3>📊 ¿Cómo afecta tu dinero?</h3>
-                    <div class="ejemplo">
-                        Si tienes $1.000.000 guardados en efectivo y la inflación es del 10%:<br><br>
-                        • Hoy puedes comprar: 100 artículos de $10.000<br>
-                        • En un año: solo puedes comprar 90 artículos de $11.000<br>
-                        <strong>Perdiste el 10% de tu poder adquisitivo</strong>
-                    </div>
-
-                    <h3>🇨🇴 Inflación en Colombia:</h3>
-                    <p>Colombia ha tenido inflaciones históricas entre 3% y 13% anual. Esto significa que el dinero quieto SIEMPRE pierde valor.</p>
-
-                    <h3>🛡️ Cómo proteger tu dinero:</h3>
-
-                    <div class="ejemplo">
-                        <strong>✅ Opciones que vencen la inflación:</strong><br>
-                        • CDT con tasas superiores a la inflación (actualmente 10-14%)<br>
-                        • Fondos de inversión en renta variable<br>
-                        • Finca raíz (valorización histórica superior a la inflación)<br>
-                        • Acciones de empresas sólidas<br>
-                        • Inversión en dólares u otras monedas estables
-                    </div>
-
-                    <div class="ejemplo">
-                        <strong>❌ Lo que NO debes hacer:</strong><br>
-                        • Guardar dinero en efectivo por meses<br>
-                        • Tener todo en cuenta de ahorros con tasa baja<br>
-                        • Guardar dinero "bajo el colchón"
-                    </div>
-
-                    <div class="highlight">
-                        💡 <strong>Regla simple:</strong> Tu dinero debe crecer a una tasa MAYOR que la inflación para que realmente crezca en términos reales. Si la inflación es del 10% y tu CDT paga 12%, ganaste un 2% real.
-                    </div>
-                `
-            },
-            cripto: {
-                icono: '₿',
-                titulo: 'Criptomonedas: riesgos y realidades',
-                contenido: `
-                    <p>Las criptomonedas generan mucho entusiasmo, pero también muchos riesgos. Antes de invertir, debes entender exactamente en qué te estás metiendo.</p>
-
-                    <h3>❓ ¿Qué son las criptomonedas?</h3>
-                    <p>Son monedas digitales descentralizadas que funcionan en redes blockchain. Las más conocidas son Bitcoin (BTC), Ethereum (ETH) y stablecoins como USDT.</p>
-
-                    <h3>⚠️ Riesgos reales:</h3>
-                    <ul>
-                        <li><strong>Volatilidad extrema:</strong> Pueden subir 50% o bajar 80% en semanas</li>
-                        <li><strong>Sin regulación:</strong> No hay entidad que te proteja si pierdes dinero</li>
-                        <li><strong>Estafas frecuentes:</strong> Proyectos falsos, rug pulls, esquemas Ponzi</li>
-                        <li><strong>Complejidad técnica:</strong> Si pierdes tu clave privada, pierdes todo</li>
-                        <li><strong>Manipulación:</strong> El mercado puede ser manipulado por "ballenas"</li>
-                    </ul>
-
-                    <div class="ejemplo">
-                        <strong>Ejemplo de volatilidad:</strong><br>
-                        Bitcoin en noviembre 2021: $68.000 USD<br>
-                        Bitcoin en junio 2022: $17.000 USD<br>
-                        <strong>Caída del 75% en 7 meses</strong>
-                    </div>
-
-                    <h3>✅ Si decides invertir en criptos:</h3>
-                    <ul>
-                        <li>Solo invierte lo que puedes permitirte perder COMPLETAMENTE</li>
-                        <li>Máximo el 5% de tu portafolio de inversión</li>
-                        <li>Usa plataformas reconocidas: Binance, Coinbase</li>
-                        <li>NO sigas consejos de grupos de WhatsApp o Telegram</li>
-                        <li>Guarda tus claves privadas de forma segura</li>
-                        <li>Infórmate sobre las implicaciones tributarias en Colombia</li>
-                    </ul>
-
-                    <div class="highlight">
-                        🚨 <strong>Señales de estafa:</strong> Promesas de rendimientos garantizados muy altos, presión para invertir rápido, proyectos sin whitepaper claro, influencers pagados para promocionar monedas desconocidas.
-                    </div>
-                `
-            }
-        };
-
-        function abrirArticulo(id) {
-            const art = articulos[id];
-            document.getElementById('modalIcono').textContent = art.icono;
-            document.getElementById('modalTitulo').textContent = art.titulo;
-            document.getElementById('modalBody').innerHTML = art.contenido;
-            document.getElementById('modalArticulo').classList.add('visible');
-        }
-
-        function cerrarArticulo() {
-            document.getElementById('modalArticulo').classList.remove('visible');
-        }
-
-        // CALCULADORAS
-        function calcularInteresSimple() {
-            const capital = parseFloat(document.getElementById('is-capital').value);
-            const tasa = parseFloat(document.getElementById('is-tasa').value) / 100;
-            const tiempo = parseFloat(document.getElementById('is-tiempo').value) / 12;
-
-            if (!capital || !tasa || !tiempo) { alert('Completa todos los campos.'); return; }
-
-            const interes = capital * tasa * tiempo;
-            const total = capital + interes;
-
-            document.getElementById('val-is').textContent = '$' + Math.round(interes).toLocaleString('es-CO');
-            document.getElementById('total-is').textContent = '$' + Math.round(total).toLocaleString('es-CO');
-            document.getElementById('res-is').style.display = 'block';
-        }
-
-        function calcularInteresCompuesto() {
-            const capital = parseFloat(document.getElementById('ic-capital').value);
-            const tasa = parseFloat(document.getElementById('ic-tasa').value) / 100;
-            const tiempo = parseFloat(document.getElementById('ic-tiempo').value);
-
-            if (!capital || !tasa || !tiempo) { alert('Completa todos los campos.'); return; }
-
-            const total = capital * Math.pow(1 + tasa, tiempo);
-            const interes = total - capital;
-
-            document.getElementById('val-ic').textContent = '$' + Math.round(interes).toLocaleString('es-CO');
-            document.getElementById('total-ic').textContent = '$' + Math.round(total).toLocaleString('es-CO');
-            document.getElementById('res-ic').style.display = 'block';
-        }
-
-        function calcular502030() {
-            const ingreso = parseFloat(document.getElementById('ing-mensual').value);
-            if (!ingreso) { alert('Ingresa tu ingreso mensual.'); return; }
-
-            document.getElementById('val-necesidades').textContent = '$' + Math.round(ingreso * 0.5).toLocaleString('es-CO');
-            document.getElementById('val-deseos').textContent = '$' + Math.round(ingreso * 0.3).toLocaleString('es-CO');
-            document.getElementById('val-ahorro').textContent = '$' + Math.round(ingreso * 0.2).toLocaleString('es-CO');
-            document.getElementById('res-502030').style.display = 'block';
-        }
-
-        function calcularMeta() {
-            const meta = parseFloat(document.getElementById('meta-monto').value);
-            const actual = parseFloat(document.getElementById('meta-actual').value) || 0;
-            const mensual = parseFloat(document.getElementById('meta-mensual').value);
-
-            if (!meta || !mensual) { alert('Completa los campos obligatorios.'); return; }
-
-            const faltante = meta - actual;
-            if (faltante <= 0) {
-                document.getElementById('val-meta').textContent = '¡Ya alcanzaste tu meta!';
-                document.getElementById('label-meta').textContent = '🎉 Felicitaciones';
-            } else {
-                const meses = Math.ceil(faltante / mensual);
-                const anos = Math.floor(meses / 12);
-                const mesesRestantes = meses % 12;
-
-                let texto = meses + ' meses';
-                if (anos > 0) texto = anos + ' año' + (anos > 1 ? 's' : '') + (mesesRestantes > 0 ? ' y ' + mesesRestantes + ' mes' + (mesesRestantes > 1 ? 'es' : '') : '');
-
-                document.getElementById('val-meta').textContent = texto;
-                document.getElementById('label-meta').textContent = 'Para alcanzar tu meta de $' + meta.toLocaleString('es-CO');
-            }
-            document.getElementById('res-meta').style.display = 'block';
-        }
+        // ── TEMA ──────────────────────────────────────────
+        (function() {
+            const t = localStorage.getItem('finanbot_tema') || 'oscuro';
+            document.body.className = 'tema-' + t;
+        })();
 
         function cerrarSesion() {
             localStorage.removeItem('token');
             localStorage.removeItem('usuario');
         }
+
+        // ── TABS ──────────────────────────────────────────
+        function setTab(id, btn) {
+            document.querySelectorAll('.seccion').forEach(s => s.classList.remove('visible'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('activo'));
+            document.getElementById('seccion-' + id).classList.add('visible');
+            btn.classList.add('activo');
+        }
+
+        // ═══════════════════════════════════════════════════
+        //  BASE DE CONOCIMIENTO FINANCIERO
+        // ═══════════════════════════════════════════════════
+        const BASE = {
+            'cdt': {
+                titulo: 'CDT — Certificado de Depósito a Término',
+                cuerpo: `
+                    <h4>¿Qué es el CDT?</h4>
+                    <p>Es un producto de ahorro ofrecido por bancos y cooperativas donde depositas una cantidad de dinero por un plazo fijo (mínimo 30 días) a cambio de una tasa de interés pactada desde el inicio.</p>
+                    <div class="res-ejemplo">
+                        <strong>Ejemplo real:</strong><br>
+                        Inviertes $2.000.000 en un CDT al 12% anual por 12 meses.<br>
+                        Al vencer: $2.000.000 × (1 + 0.12) = <strong>$2.240.000</strong><br>
+                        Ganaste $240.000 sin hacer nada.
+                    </div>
+                    <h4>Características clave</h4>
+                    <ul>
+                        <li>Tasa garantizada desde el inicio (no varía)</li>
+                        <li>Mínimo desde $100.000 en algunos bancos</li>
+                        <li>Plazos: 30, 60, 90, 180, 360 días o más</li>
+                        <li>Retiro anticipado pierde intereses o cobra penalidad</li>
+                        <li>Asegurado por el Fondo de Garantías Financieras (Fogafín) hasta $50M</li>
+                    </ul>
+                    <h4>Tasas actuales (referencia 2024)</h4>
+                    <ul>
+                        <li>CDT corto plazo (30-90 días): 8% - 10% EA</li>
+                        <li>CDT mediano plazo (180-360 días): 10% - 13% EA</li>
+                        <li>CDT largo plazo (+1 año): 12% - 14% EA</li>
+                    </ul>
+                    <div class="res-highlight">💡 El CDT es ideal si tienes dinero que no necesitarás en el corto plazo. La tasa es predecible y el riesgo es casi cero.</div>`,
+                tags: ['interés simple', 'ahorro', 'bancos', 'inversión segura']
+            },
+            'regla 50/30/20': {
+                titulo: 'La Regla 50/30/20 para presupuestar tu dinero',
+                cuerpo: `
+                    <h4>¿En qué consiste?</h4>
+                    <p>Es una estrategia de presupuesto que divide tus ingresos en tres categorías principales. Fue popularizada por Elizabeth Warren y es aplicable a cualquier nivel de ingresos.</p>
+                    <div class="res-ejemplo">
+                        🟢 <strong>50% Necesidades:</strong> Arriendo, comida, transporte, servicios, salud<br>
+                        🟡 <strong>30% Deseos:</strong> Entretenimiento, ropa, salidas, hobbies<br>
+                        🔵 <strong>20% Ahorro e inversión:</strong> CDT, metas, pensión voluntaria, emergencias
+                    </div>
+                    <h4>Ejemplo con $2.500.000</h4>
+                    <ul>
+                        <li>Necesidades (50%): $1.250.000</li>
+                        <li>Deseos (30%): $750.000</li>
+                        <li>Ahorro (20%): $500.000</li>
+                    </ul>
+                    <div class="res-highlight">⚠️ Si tus necesidades superan el 50%, ajusta: 60/20/20 o 70/15/15. Lo más importante es siempre destinar algo al ahorro, aunque sea el 5%.</div>`,
+                tags: ['presupuesto', 'ahorro', 'planificación financiera']
+            },
+            'interés compuesto': {
+                titulo: 'Interés Compuesto — El poder de hacer crecer el dinero',
+                cuerpo: `
+                    <h4>¿Qué es?</h4>
+                    <p>Es el interés que se calcula sobre el capital inicial más los intereses ya acumulados. En otras palabras: los intereses generan nuevos intereses. Albert Einstein lo llamó "la octava maravilla del mundo".</p>
+                    <div class="res-ejemplo">
+                        <strong>Fórmula:</strong> Capital Final = Capital × (1 + Tasa)^Tiempo<br><br>
+                        <strong>Ejemplo:</strong> $1.000.000 al 10% anual durante 10 años:<br>
+                        = $1.000.000 × (1.10)^10<br>
+                        = <strong>$2.593.742</strong> (ganaste $1.593.742 sin hacer nada)
+                    </div>
+                    <h4>Comparación: Simple vs Compuesto</h4>
+                    <ul>
+                        <li>Interés simple a 10 años: $2.000.000</li>
+                        <li>Interés compuesto a 10 años: $2.593.742</li>
+                        <li>Diferencia: $593.742 extra solo por el efecto compuesto</li>
+                    </ul>
+                    <div class="res-highlight">⏳ La clave es el tiempo. Quien empieza a invertir a los 25 años tiene una ventaja enorme sobre quien empieza a los 35, aunque invierta la misma cantidad mensual.</div>`,
+                tags: ['inversión', 'CDT', 'fondos', 'tiempo', 'rentabilidad']
+            },
+            'fondo de emergencia': {
+                titulo: 'Fondo de Emergencia — Tu red de seguridad financiera',
+                cuerpo: `
+                    <h4>¿Qué es y por qué lo necesitas?</h4>
+                    <p>Es dinero reservado exclusivamente para imprevistos: pérdida de empleo, enfermedad, daño urgente del carro o la casa. Sin él, cualquier emergencia te empuja a las deudas.</p>
+                    <h4>¿Cuánto necesitas?</h4>
+                    <ul>
+                        <li>Empleado estable: 3 meses de gastos básicos</li>
+                        <li>Empleado en empresa inestable: 6 meses</li>
+                        <li>Trabajador independiente: 6-12 meses</li>
+                    </ul>
+                    <div class="res-ejemplo">
+                        Si gastas $1.500.000/mes en necesidades básicas:<br>
+                        Fondo mínimo = $4.500.000 (3 meses)<br>
+                        Fondo ideal = $9.000.000 (6 meses)
+                    </div>
+                    <h4>¿Dónde guardarlo?</h4>
+                    <ul>
+                        <li>✅ Cuenta de ahorros con acceso inmediato</li>
+                        <li>✅ Fondo de liquidez (Daviplata, Nequi inversión)</li>
+                        <li>✅ CDT a 30 días renovable</li>
+                        <li>❌ NO en criptomonedas</li>
+                        <li>❌ NO en inversiones de largo plazo</li>
+                    </ul>
+                    <div class="res-highlight">⚠️ El fondo de emergencia va PRIMERO que cualquier inversión. Es tu escudo. Sin él estás expuesto a cualquier imprevisto.</div>`,
+                tags: ['ahorro', 'seguridad financiera', 'emergencias', 'presupuesto']
+            },
+            'salir de deudas': {
+                titulo: 'Cómo salir de deudas — Métodos bola de nieve y avalancha',
+                cuerpo: `
+                    <h4>Paso 1: Inventario de deudas</h4>
+                    <p>Anota todas tus deudas: monto, cuota mensual y tasa de interés. Solo conociendo el enemigo puedes derrotarlo.</p>
+                    <h4>⛄ Método Bola de Nieve (recomendado para motivación)</h4>
+                    <p>Paga primero la deuda más pequeña sin importar la tasa. Cada deuda eliminada te da impulso para la siguiente.</p>
+                    <ul>
+                        <li>Paga el mínimo en todas las deudas</li>
+                        <li>Dinero extra → deuda más pequeña</li>
+                        <li>Al eliminarla, ese dinero pasa a la siguiente</li>
+                    </ul>
+                    <h4>🌊 Método Avalancha (recomendado para ahorrar más)</h4>
+                    <p>Paga primero la deuda con mayor tasa de interés. Matemáticamente más eficiente.</p>
+                    <div class="res-ejemplo">
+                        Si tienes: Tarjeta 28% + Crédito 18% + Familiar 0%<br>
+                        Avalancha: Tarjeta → Crédito → Familiar<br>
+                        Bola de nieve: Según monto total de menor a mayor
+                    </div>
+                    <div class="res-highlight">🚨 Mientras pagas deudas: NO adquieras nuevas deudas. Evita los "gota a gota" — son ilegales y con tasas del 300%+ anual.</div>`,
+                tags: ['deudas', 'crédito', 'tarjeta de crédito', 'finanzas personales']
+            },
+            'inflación': {
+                titulo: 'Inflación — Cómo proteger el poder de tu dinero',
+                cuerpo: `
+                    <h4>¿Qué es la inflación?</h4>
+                    <p>Es el aumento generalizado y sostenido de los precios. Si la inflación es del 10%, lo que hoy cuesta $100.000 el próximo año costará $110.000.</p>
+                    <div class="res-ejemplo">
+                        <strong>Ejemplo impacto:</strong><br>
+                        Tienes $1.000.000 en efectivo. Inflación: 10% anual.<br>
+                        Hoy compras 100 artículos de $10.000.<br>
+                        En 1 año: solo compras 90 artículos (cuestan $11.000 c/u).<br>
+                        <strong>Perdiste el 10% de tu poder de compra.</strong>
+                    </div>
+                    <h4>¿Cómo protegerse?</h4>
+                    <ul>
+                        <li>✅ CDT con tasa superior a la inflación</li>
+                        <li>✅ Fondos de inversión en renta variable</li>
+                        <li>✅ Finca raíz (valorización histórica)</li>
+                        <li>✅ Acciones de empresas sólidas</li>
+                        <li>❌ Efectivo guardado por meses</li>
+                        <li>❌ Cuentas de ahorros con tasa muy baja</li>
+                    </ul>
+                    <div class="res-highlight">💡 Si la inflación es 9% y tu CDT paga 12%, ganaste un 3% real. Tu dinero creció en términos de poder adquisitivo.</div>`,
+                tags: ['economía', 'inflación', 'inversión', 'poder adquisitivo']
+            },
+            'pensión en colombia': {
+                titulo: 'Pensión en Colombia — Colpensiones vs Fondos Privados',
+                cuerpo: `
+                    <h4>Régimen de Prima Media — Colpensiones</h4>
+                    <ul>
+                        <li>El Estado administra tu dinero</li>
+                        <li>Requiere 1.300 semanas cotizadas</li>
+                        <li>Edad: 57 mujeres / 62 hombres</li>
+                        <li>Pensión mínima garantizada: 1 SMMLV</li>
+                        <li>Mejor para: salarios bajos con muchos años de cotización</li>
+                    </ul>
+                    <h4>Régimen de Ahorro Individual — AFP (Porvenir, Protección, Colfondos)</h4>
+                    <ul>
+                        <li>Cuenta individual a tu nombre</li>
+                        <li>La pensión depende de lo que ahorraste y la rentabilidad</li>
+                        <li>Puedes hacer aportes voluntarios</li>
+                        <li>Mejor para: ingresos altos e independientes</li>
+                    </ul>
+                    <div class="res-ejemplo">
+                        Aportes voluntarios a pensión privada = deducibles de renta<br>
+                        (Art. 126-1 E.T. Colombia)<br>
+                        Ejemplo: Aportando $300.000/mes adicionales,<br>
+                        ahorras ~$57.000/mes en impuestos (retención en la fuente).
+                    </div>
+                    <div class="res-highlight">⚠️ El 75% de colombianos NO se pensiona. Complementa siempre con ahorro e inversión personal, sea cual sea tu régimen.</div>`,
+                tags: ['pensión', 'colpensiones', 'fondos privados', 'jubilación', 'Colombia']
+            },
+            'criptomonedas': {
+                titulo: 'Criptomonedas — Riesgos y realidades antes de invertir',
+                cuerpo: `
+                    <h4>¿Qué son?</h4>
+                    <p>Monedas digitales descentralizadas que funcionan en redes blockchain. Las más conocidas: Bitcoin (BTC), Ethereum (ETH), stablecoins (USDT).</p>
+                    <h4>⚠️ Riesgos reales que debes conocer</h4>
+                    <ul>
+                        <li><strong>Volatilidad extrema:</strong> Bitcoin cayó 75% en 7 meses (2021-2022)</li>
+                        <li><strong>Sin regulación:</strong> No hay entidad que te proteja si pierdes</li>
+                        <li><strong>Estafas frecuentes:</strong> Proyectos falsos, rug pulls, pirámides</li>
+                        <li><strong>Complejidad técnica:</strong> Si pierdes tu clave privada, pierdes todo</li>
+                    </ul>
+                    <div class="res-ejemplo">
+                        Bitcoin noviembre 2021: $68.000 USD<br>
+                        Bitcoin junio 2022: $17.000 USD<br>
+                        <strong>Caída del 75% en 7 meses</strong>
+                    </div>
+                    <h4>Si decides invertir</h4>
+                    <ul>
+                        <li>Máximo 5% de tu portafolio total</li>
+                        <li>Solo lo que puedes perder completamente</li>
+                        <li>Plataformas reconocidas: Binance, Coinbase</li>
+                        <li>Nunca sigas consejos de grupos de Telegram/WhatsApp</li>
+                    </ul>
+                    <div class="res-highlight">🚨 Señales de estafa: rendimientos "garantizados" muy altos, presión para invertir rápido, sin whitepaper, influencers pagados.</div>`,
+                tags: ['criptomonedas', 'bitcoin', 'blockchain', 'riesgo', 'inversión']
+            },
+        };
+
+        function buscarDireto(q) {
+            document.getElementById('busquedaInput').value = q;
+            buscar();
+        }
+
+        function buscar() {
+            const q = document.getElementById('busquedaInput').value.trim().toLowerCase();
+            if (!q) return;
+
+            // Buscar en la base de conocimiento
+            let encontrado = null;
+            let keyEncontrada = null;
+
+            for (const [key, val] of Object.entries(BASE)) {
+                if (q.includes(key) || key.includes(q) ||
+                    val.titulo.toLowerCase().includes(q) ||
+                    (val.tags && val.tags.some(t => t.includes(q) || q.includes(t)))) {
+                    encontrado = val;
+                    keyEncontrada = key;
+                    break;
+                }
+            }
+
+            if (encontrado) {
+                document.getElementById('resPregunta').textContent = '📖 Resultado para: "' + document.getElementById('busquedaInput').value + '"';
+                document.getElementById('resTitulo').textContent = encontrado.titulo;
+                document.getElementById('resCuerpo').innerHTML = encontrado.cuerpo;
+                document.getElementById('resTags').innerHTML = (encontrado.tags || []).map(t =>
+                    `<span class="res-tag" onclick="buscarDireto('${t}')">${t}</span>`
+                ).join('');
+            } else {
+                document.getElementById('resPregunta').textContent = '🔍 Búsqueda: "' + document.getElementById('busquedaInput').value + '"';
+                document.getElementById('resTitulo').textContent = 'Concepto no encontrado en la base de datos';
+                document.getElementById('resCuerpo').innerHTML = `
+                    <p>No encontramos información específica sobre "<strong>${document.getElementById('busquedaInput').value}</strong>". Prueba con:</p>
+                    <ul>
+                        <li>¿Qué es el CDT?</li><li>Interés compuesto</li><li>Regla 50/30/20</li>
+                        <li>Fondo de emergencia</li><li>Inflación</li><li>Cómo salir de deudas</li>
+                    </ul>
+                    <p>O consulta directamente con el <a href="chat.html" style="color:#a855f7;text-decoration:none;">Chat FinanBot</a> — responde cualquier pregunta financiera.</p>`;
+                document.getElementById('resTags').innerHTML = '';
+            }
+
+            document.getElementById('resultadoBusqueda').classList.add('visible');
+            document.getElementById('resultadoBusqueda').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function cerrarResultado() {
+            document.getElementById('resultadoBusqueda').classList.remove('visible');
+            document.getElementById('busquedaInput').value = '';
+        }
+
+        // ═══════════════════════════════════════════════════
+        //  ARTÍCULOS
+        // ═══════════════════════════════════════════════════
+        const ARTICULOS = [
+            { id: 'ahorro',      emoji: '💰', nivel: 'basico',     cat: 'Ahorro',       titulo: '¿Cómo empezar a ahorrar desde cero?',        desc: 'Estrategias efectivas para ahorrar sin importar cuánto ganas.', min: 5 },
+            { id: 'presupuesto', emoji: '📋', nivel: 'basico',     cat: 'Presupuesto',  titulo: 'La regla 50/30/20 explicada',                desc: 'Distribuye tu salario de forma inteligente con esta regla simple.', min: 4 },
+            { id: 'deudas',      emoji: '💳', nivel: 'basico',     cat: 'Deudas',       titulo: 'Salir de deudas: bola de nieve y avalancha',  desc: 'Dos métodos probados para eliminar tus deudas de una vez.', min: 6 },
+            { id: 'inversion',   emoji: '📈', nivel: 'intermedio', cat: 'Inversión',    titulo: 'Inversiones para principiantes en Colombia',  desc: 'CDT, fondos de inversión, acciones: cuál elegir según tu perfil.', min: 8 },
+            { id: 'emergencia',  emoji: '🛡️', nivel: 'basico',     cat: 'Seguridad',    titulo: 'El fondo de emergencia: tu red de seguridad', desc: 'Cuánto necesitas, dónde guardarlo y cómo construirlo.', min: 5 },
+            { id: 'interes',     emoji: '🔢', nivel: 'intermedio', cat: 'Conceptos',    titulo: 'Interés simple vs interés compuesto',         desc: 'Entiende la diferencia y cómo multiplicar tu dinero en el tiempo.', min: 7 },
+            { id: 'pension',     emoji: '👴', nivel: 'intermedio', cat: 'Pensión',      titulo: 'Colpensiones vs fondos privados en Colombia',  desc: 'Todo lo que debes saber sobre los dos regímenes pensionales.', min: 9 },
+            { id: 'inflacion',   emoji: '📉', nivel: 'intermedio', cat: 'Economía',     titulo: 'Cómo protegerte de la inflación',             desc: 'La inflación reduce tu dinero. Aprende a protegerlo y hacerlo crecer.', min: 6 },
+            { id: 'cripto',      emoji: '₿',  nivel: 'avanzado',   cat: 'Criptos',      titulo: 'Criptomonedas: riesgos y realidades',         desc: 'Lo que debes saber antes de invertir en criptomonedas.', min: 8 },
+            { id: 'diversifica', emoji: '🌱', nivel: 'intermedio', cat: 'Estrategia',   titulo: 'Por qué diversificar tus ingresos',           desc: 'Depender de un solo ingreso es el mayor riesgo. Aprende cómo diversificar.', min: 5 },
+            { id: 'habitos',     emoji: '🧠', nivel: 'basico',     cat: 'Psicología',   titulo: 'Hábitos financieros que cambian tu vida',     desc: 'Los 7 hábitos que separan a quienes logran riqueza de quienes no.', min: 6 },
+            { id: 'finca',       emoji: '🏠', nivel: 'avanzado',   cat: 'Inversión',    titulo: 'Invertir en finca raíz en Colombia',          desc: 'Vivienda, locales, lotes: cómo evaluar una inversión inmobiliaria.', min: 10 },
+        ];
+
+        const CONTENIDOS = {
+            ahorro: `<h3>🎯 Págate a ti primero</h3><p>Apenas recibas tu salario, transfiere un % fijo a una cuenta separada antes de gastar en cualquier cosa. No esperes "ver qué sobra" porque casi nunca sobra.</p><div class="hl">💡 Empieza con el 10%. Si ganas $1.500.000, separa $150.000 antes de cualquier gasto.</div><h3>🔍 Elimina gastos hormiga</h3><div class="ej">☕ Café diario: $3.000 × 30 = $90.000/mes<br>🚕 Taxis innecesarios: $15.000 × 8 = $120.000/mes<br>📱 Apps que no usas: $25.000/mes<br><strong>Total: $235.000/mes que podrías estar ahorrando</strong></div><h3>🤖 Automatiza tu ahorro</h3><p>Configura una transferencia automática el día que recibes tu pago. Lo que no ves, no lo gastas. La mayoría de bancos colombianos permiten automatizar transferencias.</p><h3>🎯 Define para qué ahorras</h3><p>No ahorra "por ahorrar". Define metas concretas: fondo de emergencia, viaje, computador, entrada de apartamento. Las metas claras multiplican la motivación.</p><div class="hl">✅ Reto de 30 días: anota cada gasto durante un mes. Al final sabrás exactamente cuánto puedes ahorrar.</div>`,
+            presupuesto: `<h3>🟢 50% — Necesidades básicas</h3><p>Gastos que no puedes evitar: arriendo, comida, transporte, servicios públicos, salud, educación.</p><h3>🟡 30% — Deseos</h3><p>Gastos importantes para tu bienestar pero no esenciales: entretenimiento, ropa, salidas, hobbies, suscripciones.</p><h3>🔵 20% — Ahorro e inversión</h3><p>Fondo de emergencia, CDT, metas de ahorro, pensión voluntaria, inversiones.</p><div class="ej"><strong>Ejemplo con $2.000.000:</strong><br>🟢 Necesidades (50%): $1.000.000<br>🟡 Deseos (30%): $600.000<br>🔵 Ahorro (20%): $400.000</div><div class="hl">⚠️ Si tus necesidades superan el 50%, ajusta: 60/20/20. Lo importante es SIEMPRE guardar algo.</div>`,
+            deudas: `<h3>Paso 1: Inventario completo</h3><p>Anota todas tus deudas: nombre, monto total, cuota mensual y tasa de interés. Sin este mapa no puedes avanzar.</p><h3>⛄ Método Bola de Nieve</h3><p>Paga primero la deuda más pequeña. Cada deuda eliminada genera motivación y momentum.</p><ul><li>Paga el mínimo en todas</li><li>Dinero extra → deuda más pequeña</li><li>Al eliminarla, ese dinero va a la siguiente</li></ul><h3>🌊 Método Avalancha</h3><p>Paga primero la de mayor tasa de interés. Matemáticamente ahorras más dinero.</p><div class="ej">Si tienes: Tarjeta 28% + Crédito 18% + Familiar 0%<br>Avalancha: Tarjeta → Crédito → Familiar<br>(Ahorras más en intereses)</div><div class="hl">🚨 Mientras pagas deudas: NO adquieras nuevas. Evita "gota a gota" — tasas del 300%+ anual.</div>`,
+            inversion: `<h3>Antes de invertir necesitas:</h3><ul><li>✅ Fondo de emergencia de 3 meses</li><li>✅ Deudas de alto interés pagadas</li><li>✅ Conocimiento del producto</li></ul><div class="ej"><strong>CDT:</strong> Riesgo muy bajo · 8-14% anual · Desde $100.000<br><strong>Fondos:</strong> Riesgo bajo-medio · Variable · Desde $50.000<br><strong>Acciones BVC:</strong> Riesgo alto · Variable · Largo plazo</div><h3>Reglas de oro</h3><ul><li>Nunca inviertas dinero que necesites pronto</li><li>Diversifica: no pongas todo en un solo lugar</li><li>Invierte a largo plazo para maximizar</li><li>Desconfía de rendimientos "garantizados" muy altos</li></ul><div class="hl">💡 Usa el Simulador de FinanBot para ver cómo crecería tu dinero sin riesgo real.</div>`,
+            emergencia: `<h3>¿Para qué sirve?</h3><ul><li>Pérdida de empleo inesperada</li><li>Emergencia médica no cubierta</li><li>Reparación urgente del carro o casa</li><li>Cualquier gasto urgente e imprevisto</li></ul><div class="ej">Si gastas $1.500.000/mes en básicos:<br>Fondo mínimo: $4.500.000 (3 meses)<br>Fondo ideal: $9.000.000 (6 meses)</div><h3>¿Dónde guardarlo?</h3><ul><li>✅ Cuenta de ahorros de fácil acceso</li><li>✅ Fondo de liquidez (Nequi, Daviplata)</li><li>✅ CDT a 30 días renovable</li><li>❌ NO en criptomonedas ni inversiones largas</li></ul><div class="hl">⚠️ El fondo de emergencia va ANTES que cualquier inversión. Es tu primera prioridad financiera.</div>`,
+            interes: `<h3>Interés Simple</h3><p>Se calcula siempre sobre el capital inicial. Los intereses no generan más intereses.</p><div class="ej">$1.000.000 al 10% anual × 3 años = $300.000 en intereses. Total: $1.300.000</div><h3>Interés Compuesto</h3><p>Se calcula sobre el capital + intereses acumulados. Los intereses generan nuevos intereses.</p><div class="ej">$1.000.000 al 10% compuesto × 3 años:<br>Año 1: $1.100.000 · Año 2: $1.210.000 · Año 3: $1.331.000<br><strong>Total: $1.331.000 (vs $1.300.000 del simple)</strong></div><h3>El poder del tiempo</h3><div class="ej">$1.000.000 al 10% compuesto anual:<br>10 años: $2.593.742<br>20 años: $6.727.500<br>30 años: $17.449.402</div><div class="hl">💡 Usa siempre interés compuesto para tus inversiones. Usa la calculadora de FinanBot para ver tu proyección real.</div>`,
+            pension: `<h3>Colpensiones (Prima Media)</h3><ul><li>El Estado administra tu dinero</li><li>1.300 semanas cotizadas requeridas</li><li>57 años mujeres / 62 hombres</li><li>Pensión mínima garantizada: 1 SMMLV</li></ul><h3>AFP — Fondos Privados (RAIS)</h3><ul><li>Cuenta individual a tu nombre</li><li>Puedes hacer aportes voluntarios (deducibles de renta)</li><li>Mejor para ingresos altos</li></ul><div class="ej">Aportes voluntarios deducibles de renta:<br>Art. 126-1 E.T. Colombia<br>$300.000/mes en pensión voluntaria = ~$57.000/mes menos en impuestos</div><div class="hl">⚠️ El 75% de colombianos NO se pensiona. Complementa siempre con ahorro e inversión personal.</div>`,
+            inflacion: `<h3>¿Cómo te afecta?</h3><div class="ej">$1.000.000 hoy con inflación del 10%:<br>Hoy compras 100 artículos de $10.000.<br>En 1 año: solo 90 artículos (cuestan $11.000).<br><strong>Perdiste el 10% de tu poder de compra.</strong></div><h3>Cómo protegerte</h3><ul><li>✅ CDT con tasas superiores a la inflación</li><li>✅ Fondos de inversión</li><li>✅ Finca raíz (valorización histórica)</li><li>❌ Efectivo guardado por meses</li></ul><div class="hl">💡 Si inflación = 9% y tu CDT paga 12%, ganaste un 3% real. Tu dinero creció en poder adquisitivo.</div>`,
+            cripto: `<h3>Riesgos reales</h3><ul><li>Volatilidad extrema: Bitcoin cayó 75% en 7 meses</li><li>Sin regulación ni protección estatal</li><li>Estafas, rug pulls y pirámides frecuentes</li><li>Si pierdes la clave privada, pierdes todo</li></ul><div class="ej">Bitcoin noviembre 2021: $68.000 USD<br>Bitcoin junio 2022: $17.000 USD<br><strong>Caída del 75% en 7 meses</strong></div><h3>Si decides invertir</h3><ul><li>Máximo 5% de tu portafolio</li><li>Solo dinero que puedes perder</li><li>Plataformas serias: Binance, Coinbase</li><li>Nunca sigas grupos de Telegram/WhatsApp</li></ul><div class="hl">🚨 Señales de estafa: rendimientos garantizados muy altos, presión para invertir rápido, sin whitepaper claro.</div>`,
+            diversifica: `<h3>¿Por qué diversificar?</h3><p>Depender de un solo ingreso es el mayor riesgo financiero. Si se corta (despido, enfermedad, cierre), tu flujo de caja desaparece de inmediato.</p><h3>Opciones de segunda fuente</h3><ul><li>Freelance o consultoría en tu área de expertise</li><li>Venta de productos digitales (cursos, ebooks)</li><li>Inversiones que generen dividendos o intereses</li><li>Emprendimiento de bajo capital inicial</li></ul><div class="ej">Segunda fuente de $300.000/mes:<br>En un año extra: $3.600.000<br>En 5 años (invertidos): mucho más<br><strong>Cambia completamente tu seguridad financiera.</strong></div><div class="hl">💡 No necesitas reemplazar tu ingreso actual. Con un 20% adicional cambias completamente tu estabilidad.</div>`,
+            habitos: `<h3>Los 7 hábitos financieros</h3><ul><li>1. Registra cada peso que gastas</li><li>2. Págate a ti primero (10-20% del ingreso)</li><li>3. Vive por debajo de tus posibilidades</li><li>4. Aprende constantemente sobre dinero</li><li>5. Evita deudas de consumo (tarjetas mal usadas)</li><li>6. Invierte aunque sea poco pero constante</li><li>7. Revisa y ajusta tu presupuesto cada mes</li></ul><div class="ej">El hábito #1 es el más poderoso: quienes registran sus gastos ahorran en promedio un 20% más que quienes no lo hacen.</div><div class="hl">🧠 Los hábitos financieros no se forman en un día. Empieza con uno solo esta semana.</div>`,
+            finca: `<h3>¿Por qué finca raíz en Colombia?</h3><ul><li>Valorización histórica del 5-12% anual en ciudades principales</li><li>Ingreso por arriendo (3-6% anual del valor del inmueble)</li><li>Cobertura contra la inflación</li><li>Tangible y difícil de perder todo el valor</li></ul><h3>Cómo evaluar una inversión</h3><div class="ej">Inmueble: $200.000.000<br>Arriendo mensual: $1.000.000<br>Rentabilidad anual: $12.000.000 / $200.000.000 = 6%<br><strong>¿Supera la inflación? ✅ Sí (si inflación es 9%, más valorización ~12% total)</strong></div><h3>Riesgos</h3><ul><li>Baja liquidez (no puedes vender rápido)</li><li>Requiere capital inicial alto</li><li>Costos de mantenimiento y administración</li><li>Riesgo de inquilinos problemáticos</li></ul><div class="hl">💡 Si no tienes capital para comprar, considera los fondos de finca raíz (REITS o fiducias inmobiliarias en Colombia).</div>`,
+        };
+
+        function renderArticulos() {
+            const grid = document.getElementById('articulosGrid');
+            grid.innerHTML = ARTICULOS.map(a => `
+                <div class="art-card" onclick="abrirArticulo('${a.id}')">
+                    <span class="art-emoji">${a.emoji}</span>
+                    <span class="art-nivel nivel-${a.nivel}">${a.nivel.charAt(0).toUpperCase()+a.nivel.slice(1)}</span>
+                    <div class="art-cat">${a.cat}</div>
+                    <div class="art-titulo">${a.titulo}</div>
+                    <div class="art-desc">${a.desc}</div>
+                    <div class="art-meta">
+                        <span>⏱️ ${a.min} min</span>
+                        <span>→ Leer artículo</span>
+                    </div>
+                </div>`).join('');
+        }
+
+        function abrirArticulo(id) {
+            const a = ARTICULOS.find(x => x.id === id);
+            if (!a) return;
+            document.getElementById('modalEmoji').textContent = a.emoji;
+            document.getElementById('modalTitulo').textContent = a.titulo;
+            document.getElementById('modalBody').innerHTML = CONTENIDOS[id] || '<p>Contenido en construcción.</p>';
+            document.getElementById('modalArt').classList.add('visible');
+        }
+
+        function cerrarModal() {
+            document.getElementById('modalArt').classList.remove('visible');
+        }
+
+        document.getElementById('modalArt').addEventListener('click', function(e) {
+            if (e.target === this) cerrarModal();
+        });
+
+        // ═══════════════════════════════════════════════════
+        //  CALCULADORAS
+        // ═══════════════════════════════════════════════════
+        function fmt(v) { return '$' + Math.round(v).toLocaleString('es-CO'); }
+
+        function calcIS() {
+            const k = parseFloat(document.getElementById('is-k').value);
+            const t = parseFloat(document.getElementById('is-t').value) / 100;
+            const m = parseFloat(document.getElementById('is-m').value);
+            if (!k || !t || !m) { alert('Completa todos los campos.'); return; }
+            const tMensual = t / 12;
+            const interes = k * tMensual * m;
+            const total = k + interes;
+            document.getElementById('is-interes').textContent  = fmt(interes);
+            document.getElementById('is-capital').textContent  = fmt(k);
+            document.getElementById('is-interes2').textContent = fmt(interes);
+            document.getElementById('is-total').textContent    = fmt(total);
+            document.getElementById('is-mensual').textContent  = (tMensual * 100).toFixed(3) + '%';
+            document.getElementById('res-is').style.display = 'block';
+        }
+
+        function calcIC() {
+            const k = parseFloat(document.getElementById('ic-k').value);
+            const a = parseFloat(document.getElementById('ic-a').value) || 0;
+            const t = parseFloat(document.getElementById('ic-t').value) / 100;
+            const y = parseFloat(document.getElementById('ic-y').value);
+            if (!k || !t || !y) { alert('Completa todos los campos.'); return; }
+            const meses = y * 12;
+            const tm = t / 12;
+            let bal = k;
+            for (let i = 0; i < meses; i++) bal = bal * (1 + tm) + a;
+            const invertido = k + a * meses;
+            const intereses = bal - invertido;
+            const renta = ((bal / k) - 1) * 100;
+            document.getElementById('ic-ganancia').textContent  = fmt(intereses);
+            document.getElementById('ic-invertido').textContent = fmt(invertido);
+            document.getElementById('ic-intereses').textContent = fmt(intereses);
+            document.getElementById('ic-total').textContent     = fmt(bal);
+            document.getElementById('ic-renta').textContent     = renta.toFixed(2) + '%';
+            document.getElementById('res-ic').style.display = 'block';
+        }
+
+        function calcRegla() {
+            const ing = parseFloat(document.getElementById('rg-ing').value);
+            const fijos = parseFloat(document.getElementById('rg-fijos').value) || 0;
+            if (!ing) { alert('Ingresa tu ingreso mensual.'); return; }
+            document.getElementById('rg-nec').textContent = fmt(ing * 0.5);
+            document.getElementById('rg-des').textContent = fmt(ing * 0.3);
+            document.getElementById('rg-aho').textContent = fmt(ing * 0.2);
+            const pctFijos = fijos / ing * 100;
+            if (fijos > 0) {
+                document.getElementById('rg-aviso-wrap').style.display = 'flex';
+                document.getElementById('rg-aviso').textContent = fmt(fijos) + ' (' + pctFijos.toFixed(0) + '%)';
+                let msg = '';
+                if (pctFijos > 70) msg = '⚠️ Tus gastos fijos representan el ' + pctFijos.toFixed(0) + '% de tus ingresos. Zona crítica.';
+                else if (pctFijos > 50) msg = '⚠️ Tus gastos fijos superan el 50% recomendado. Considera reducirlos.';
+                else msg = '✅ Tus gastos fijos están en un rango controlado.';
+                document.getElementById('rg-mensaje').textContent = msg;
+            }
+            document.getElementById('res-rg').style.display = 'block';
+        }
+
+        function calcMeta() {
+            const obj = parseFloat(document.getElementById('mt-obj').value);
+            const act = parseFloat(document.getElementById('mt-act').value) || 0;
+            const men = parseFloat(document.getElementById('mt-men').value);
+            const ren = parseFloat(document.getElementById('mt-ren').value) || 0;
+            if (!obj || !men) { alert('Completa los campos obligatorios.'); return; }
+            const faltante = Math.max(0, obj - act);
+            if (faltante === 0) {
+                document.getElementById('mt-tiempo').textContent = '¡Ya la lograste! 🎉';
+                document.getElementById('mt-label').textContent  = 'Felicitaciones';
+                document.getElementById('mt-faltante').textContent = '$0';
+                document.getElementById('mt-total').textContent    = fmt(act);
+                document.getElementById('mt-fecha').textContent    = 'Ahora mismo';
+                document.getElementById('res-mt').style.display = 'block';
+                return;
+            }
+            let meses = 0, bal = act;
+            if (ren > 0) {
+                const tm = ren / 100;
+                while (bal < obj && meses < 1200) { bal = bal * (1 + tm) + men; meses++; }
+            } else {
+                meses = Math.ceil(faltante / men);
+                bal = act + men * meses;
+            }
+            const anos = Math.floor(meses / 12);
+            const mr   = meses % 12;
+            let txt = meses + ' mes' + (meses !== 1 ? 'es' : '');
+            if (anos > 0) txt = anos + ' año' + (anos > 1 ? 's' : '') + (mr > 0 ? ' y ' + mr + ' mes' + (mr > 1 ? 'es' : '') : '');
+            const fecha = new Date(); fecha.setMonth(fecha.getMonth() + meses);
+            document.getElementById('mt-tiempo').textContent   = txt;
+            document.getElementById('mt-label').textContent    = 'Para alcanzar $' + obj.toLocaleString('es-CO');
+            document.getElementById('mt-faltante').textContent = fmt(faltante);
+            document.getElementById('mt-total').textContent    = fmt(bal);
+            document.getElementById('mt-fecha').textContent    = fecha.toLocaleDateString('es-CO', { month: 'long', year: 'numeric' });
+            document.getElementById('res-mt').style.display = 'block';
+        }
+
+        function calcRetencion() {
+            const bruto = parseFloat(document.getElementById('rf-ing').value);
+            const ded   = parseFloat(document.getElementById('rf-ded').value) || 0;
+            const otros = parseFloat(document.getElementById('rf-otros').value) || 0;
+            if (!bruto) { alert('Ingresa el ingreso bruto.'); return; }
+            const salud   = bruto * 0.04;
+            const pension = bruto * 0.04;
+            const base    = Math.max(0, bruto - salud - pension - ded - otros);
+            const UVT     = 47065;
+            const baseUVT = base / UVT;
+            let retencion = 0;
+            if (baseUVT > 1090) retencion = base * 0.39 - 27657 * UVT;
+            else if (baseUVT > 640) retencion = base * 0.33 - 21003 * UVT;
+            else if (baseUVT > 300) retencion = base * 0.28 - 7662 * UVT;
+            else if (baseUVT > 150) retencion = base * 0.19 - 972 * UVT;
+            else if (baseUVT > 95) retencion = base * 0.19 - 1311 * UVT;
+            else if (baseUVT > 87) retencion = base * 0.19 - 1485 * UVT;
+            retencion = Math.max(0, retencion);
+            const neto = bruto - salud - pension - retencion - otros;
+            document.getElementById('rf-bruto').textContent    = fmt(bruto);
+            document.getElementById('rf-salud').textContent    = fmt(salud);
+            document.getElementById('rf-pension').textContent  = fmt(pension);
+            document.getElementById('rf-retencion').textContent = fmt(retencion);
+            document.getElementById('rf-neto').textContent     = fmt(neto);
+            document.getElementById('rf-neto2').textContent    = fmt(neto);
+            document.getElementById('res-rf').style.display   = 'block';
+        }
+
+        function calcCredito() {
+            const P = parseFloat(document.getElementById('cr-monto').value);
+            const r = parseFloat(document.getElementById('cr-tasa').value) / 100 / 12;
+            const n = parseFloat(document.getElementById('cr-plazo').value);
+            if (!P || !r || !n) { alert('Completa todos los campos.'); return; }
+            const cuota = P * r * Math.pow(1+r,n) / (Math.pow(1+r,n)-1);
+            const total    = cuota * n;
+            const intereses = total - P;
+            const costo    = (intereses / P * 100);
+            document.getElementById('cr-cuota').textContent    = fmt(cuota) + '/mes';
+            document.getElementById('cr-total').textContent    = fmt(total);
+            document.getElementById('cr-intereses').textContent = fmt(intereses);
+            document.getElementById('cr-costo').textContent    = costo.toFixed(1) + '%';
+            document.getElementById('res-cr').style.display   = 'block';
+        }
+
+        function calcInflacion() {
+            const monto = parseFloat(document.getElementById('inf-monto').value);
+            const tasa  = parseFloat(document.getElementById('inf-tasa').value) / 100;
+            const anos  = parseFloat(document.getElementById('inf-anos').value);
+            if (!monto || !tasa || !anos) { alert('Completa todos los campos.'); return; }
+            const futuro  = monto / Math.pow(1 + tasa, anos);
+            const perdida = monto - futuro;
+            document.getElementById('inf-perdida').textContent  = fmt(perdida);
+            document.getElementById('inf-hoy').textContent      = fmt(monto);
+            document.getElementById('inf-futuro').textContent   = fmt(futuro);
+            document.getElementById('inf-total').textContent    = fmt(perdida);
+            document.getElementById('inf-necesitas').textContent = '+' + (tasa * 100).toFixed(2) + '% anual mínimo';
+            document.getElementById('res-inf').style.display   = 'block';
+        }
+
+        function calcPension() {
+            const ing    = parseFloat(document.getElementById('pv-ing').value);
+            const aporte = parseFloat(document.getElementById('pv-aporte').value);
+            const anos   = parseFloat(document.getElementById('pv-anos').value);
+            const rend   = parseFloat(document.getElementById('pv-rend').value) / 100;
+            if (!ing || !aporte || !anos) { alert('Completa todos los campos.'); return; }
+            const meses = anos * 12;
+            const tm    = rend / 12;
+            let bal = 0;
+            for (let i = 0; i < meses; i++) bal = bal * (1 + tm) + aporte;
+            const totalAportado  = aporte * meses;
+            const rendimientos   = bal - totalAportado;
+            const ahorroImpuestos = aporte * 0.19 * 12;
+            document.getElementById('pv-capital').textContent      = fmt(bal);
+            document.getElementById('pv-total').textContent        = fmt(totalAportado);
+            document.getElementById('pv-rendimientos').textContent = fmt(rendimientos);
+            document.getElementById('pv-impuestos').textContent    = fmt(ahorroImpuestos);
+            document.getElementById('res-pv').style.display        = 'block';
+        }
+
+        // ═══════════════════════════════════════════════════
+        //  GLOSARIO
+        // ═══════════════════════════════════════════════════
+        const GLOSARIO = [
+            { nombre: 'Activo',             def: 'Bien o derecho con valor económico que pertenece a una persona. Ejemplos: dinero, propiedades, inversiones.',                          cat: 'Conceptos básicos' },
+            { nombre: 'AFP',                def: 'Administradora de Fondos de Pensiones. Entidad privada que gestiona ahorros pensionales en el régimen RAIS.',                         cat: 'Pensión' },
+            { nombre: 'Ahorro',             def: 'Parte del ingreso que no se gasta y se reserva para uso futuro. Base de toda salud financiera.',                                      cat: 'Conceptos básicos' },
+            { nombre: 'Amortización',       def: 'Proceso de pago gradual de una deuda mediante cuotas periódicas que incluyen capital e intereses.',                                   cat: 'Crédito' },
+            { nombre: 'Apalancamiento',     def: 'Uso de deuda para aumentar la capacidad de inversión. Puede multiplicar ganancias pero también pérdidas.',                            cat: 'Inversión' },
+            { nombre: 'Balance',            def: 'Diferencia entre tus ingresos y gastos en un período. Balance positivo significa que ingresas más de lo que gastas.',                 cat: 'Conceptos básicos' },
+            { nombre: 'BVC',                def: 'Bolsa de Valores de Colombia. Mercado donde se compran y venden acciones de empresas colombianas.',                                   cat: 'Inversión' },
+            { nombre: 'Capital',            def: 'Monto inicial de dinero que se invierte o presta. Base sobre la que se calculan los intereses.',                                      cat: 'Conceptos básicos' },
+            { nombre: 'CDT',                def: 'Certificado de Depósito a Término. Producto bancario donde depositas dinero a un plazo fijo a cambio de una tasa de interés pactada.', cat: 'Ahorro e inversión' },
+            { nombre: 'Colpensiones',       def: 'Administradora estatal del régimen de prima media pensional en Colombia. Gestiona los aportes de quienes no están en fondos privados.', cat: 'Pensión' },
+            { nombre: 'Crédito',            def: 'Préstamo de dinero que debes devolver con intereses en un plazo determinado.',                                                        cat: 'Crédito' },
+            { nombre: 'Cuota fija',         def: 'Modalidad de pago de crédito donde la cuota mensual no varía durante todo el plazo. Se calcula con el sistema francés.',              cat: 'Crédito' },
+            { nombre: 'Diversificación',    def: 'Estrategia de invertir en múltiples activos para reducir el riesgo. "No pongas todos los huevos en la misma canasta".',              cat: 'Inversión' },
+            { nombre: 'Dividendo',          def: 'Parte de las ganancias de una empresa que se distribuye entre sus accionistas. Fuente de ingreso pasivo en inversión en acciones.',   cat: 'Inversión' },
+            { nombre: 'DTF',                def: 'Depósito a Término Fijo. Tasa de referencia del mercado financiero colombiano usada como base para créditos.',                        cat: 'Economía' },
+            { nombre: 'EA (Efectivo Anual)',def: 'Tasa de interés que muestra el rendimiento o costo real de una inversión o crédito considerando la capitalización.',                  cat: 'Tasas' },
+            { nombre: 'Fondo de emergencia',def: 'Dinero reservado para imprevistos. Mínimo 3 meses de gastos básicos guardados en cuenta de fácil acceso.',                           cat: 'Ahorro e inversión' },
+            { nombre: 'Flujo de caja',      def: 'Movimiento de dinero que entra y sale de tu economía personal en un período determinado.',                                            cat: 'Conceptos básicos' },
+            { nombre: 'Inflación',          def: 'Aumento generalizado y sostenido de los precios. Reduce el poder adquisitivo del dinero con el tiempo.',                              cat: 'Economía' },
+            { nombre: 'Interés compuesto',  def: 'Interés calculado sobre el capital inicial más los intereses ya acumulados. Los intereses generan nuevos intereses.',                 cat: 'Tasas' },
+            { nombre: 'Interés simple',     def: 'Interés calculado siempre sobre el capital inicial únicamente. Los intereses no generan nuevos intereses.',                           cat: 'Tasas' },
+            { nombre: 'IPC',                def: 'Índice de Precios al Consumidor. Mide la variación de precios de una canasta de bienes y servicios. Referencia de la inflación.',    cat: 'Economía' },
+            { nombre: 'Inversión',          def: 'Destinar dinero con el objetivo de obtener una ganancia futura. Implica un nivel de riesgo.',                                         cat: 'Ahorro e inversión' },
+            { nombre: 'Liquidez',           def: 'Facilidad con la que un activo puede convertirse en efectivo sin perder valor. El efectivo es el activo más líquido.',               cat: 'Conceptos básicos' },
+            { nombre: 'Pasivo',             def: 'Deuda u obligación financiera que debes pagar en el futuro. Ejemplos: créditos, hipotecas, tarjetas de crédito.',                    cat: 'Conceptos básicos' },
+            { nombre: 'Patrimonio',         def: 'Diferencia entre tus activos y pasivos. Representa tu riqueza neta real.',                                                            cat: 'Conceptos básicos' },
+            { nombre: 'Pensión voluntaria', def: 'Aportes adicionales que haces a un fondo de pensión más allá de lo obligatorio. Son deducibles de renta en Colombia.',               cat: 'Pensión' },
+            { nombre: 'Presupuesto',        def: 'Plan financiero que organiza tus ingresos y gastos para un período. Herramienta fundamental para controlar el dinero.',              cat: 'Conceptos básicos' },
+            { nombre: 'Rentabilidad',       def: 'Ganancia obtenida sobre una inversión expresada como porcentaje. Indica qué tan productivo fue tu dinero.',                          cat: 'Inversión' },
+            { nombre: 'Retención en la fuente', def: 'Anticipo del impuesto de renta que descuenta el empleador directamente del salario del trabajador.',                             cat: 'Impuestos' },
+            { nombre: 'SMMLV',              def: 'Salario Mínimo Mensual Legal Vigente en Colombia. Para 2024: $1.300.000.',                                                            cat: 'Economía' },
+            { nombre: 'Tasa EA',            def: 'Tasa Efectiva Anual. Expresa el costo o rendimiento real de un producto financiero por año, considerando capitalización.',           cat: 'Tasas' },
+            { nombre: 'TRM',                def: 'Tasa Representativa del Mercado. Valor oficial del dólar estadounidense en pesos colombianos, fijada diariamente por el Banco de la República.', cat: 'Economía' },
+            { nombre: 'UVT',                def: 'Unidad de Valor Tributario. Valor de referencia para calcular impuestos en Colombia. Para 2024: $47.065.',                           cat: 'Impuestos' },
+        ];
+
+        function renderGlosario(lista) {
+            const grid = document.getElementById('glosarioGrid');
+            if (!lista.length) {
+                grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;color:var(--muted,#6b7280);padding:30px;">No se encontraron términos.</div>`;
+                return;
+            }
+            grid.innerHTML = lista.map(t => `
+                <div class="termino-card">
+                    <div class="termino-nombre">${t.nombre}</div>
+                    <div class="termino-def">${t.def}</div>
+                    <div class="termino-cat">${t.cat}</div>
+                </div>`).join('');
+        }
+
+        function filtrarGlosario() {
+            const q = document.getElementById('glosarioSearch').value.toLowerCase();
+            renderGlosario(GLOSARIO.filter(t =>
+                t.nombre.toLowerCase().includes(q) ||
+                t.def.toLowerCase().includes(q) ||
+                t.cat.toLowerCase().includes(q)
+            ));
+        }
+
+        function renderLetras() {
+            const letras = [...new Set(GLOSARIO.map(t => t.nombre[0].toUpperCase()))].sort();
+            const div = document.getElementById('glosarioLetras');
+            div.innerHTML = `<button class="letra-btn activo" onclick="filtrarPorLetra('', this)">Todos</button>` +
+                letras.map(l => `<button class="letra-btn" onclick="filtrarPorLetra('${l}', this)">${l}</button>`).join('');
+        }
+
+        function filtrarPorLetra(letra, btn) {
+            document.querySelectorAll('.letra-btn').forEach(b => b.classList.remove('activo'));
+            btn.classList.add('activo');
+            document.getElementById('glosarioSearch').value = '';
+            if (!letra) renderGlosario(GLOSARIO);
+            else renderGlosario(GLOSARIO.filter(t => t.nombre[0].toUpperCase() === letra));
+        }
+
+        // ── INIT ──────────────────────────────────────────
+        renderArticulos();
+        renderGlosario(GLOSARIO);
+        renderLetras();
     </script>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- En dashboard.html, chat.html, finanzas.html, simulador.html, aprende.html, recomendaciones.html -->
-<script src="tema.js"></script>
-<!-- Si están en pages/ y tema.js también está en pages/: -->
-<script src="tema.js"></script>
+    <script src="tema.js"></script>
 </body>
 </html>
