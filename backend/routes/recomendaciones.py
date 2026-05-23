@@ -1,603 +1,399 @@
 
-#Recomendaciones.py
 # routes/recomendaciones.py
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from models import Transaccion, MetaAhorro, Simulacion, Usuario
 from extensions import db
 from collections import defaultdict
-from datetime import datetime, date, timedelta
- 
+from datetime import date, timedelta
+
 recomendaciones_bp = Blueprint('recomendaciones', __name__)
- 
- 
-# ─────────────────────────────────────────────────────────
-#  GET — Obtener recomendaciones personalizadas
-# ─────────────────────────────────────────────────────────
+
+
 @recomendaciones_bp.route('/', methods=['GET'])
 @jwt_required()
 def obtener_recomendaciones():
     usuario_id = int(get_jwt_identity())
- 
-    usuario       = Usuario.query.get(usuario_id)
-    transacciones = Transaccion.query.filter_by(usuario_id=usuario_id).order_by(Transaccion.fecha.desc()).all()
-    metas         = MetaAhorro.query.filter_by(usuario_id=usuario_id).all()
-    simulaciones  = Simulacion.query.filter_by(usuario_id=usuario_id).all()
- 
+
+    usuario      = Usuario.query.get(usuario_id)
+    transacciones = Transaccion.query.filter_by(usuario_id=usuario_id)\
+                                     .order_by(Transaccion.fecha.desc()).all()
+    metas        = MetaAhorro.query.filter_by(usuario_id=usuario_id).all()
+    simulaciones = Simulacion.query.filter_by(usuario_id=usuario_id).all()
+
     if not usuario:
         return jsonify([]), 404
- 
-    recs = []
-    rid  = 1
- 
-    def add(tipo, prioridad, icono, titulo, descripcion,
-            beneficios, accion, link,
-            ahorro_potencial=0, progreso=None, dato_clave=None,
-            condicion_completada=False):
-        """
-        condicion_completada = True  →  la recomendación ya fue superada,
-        se omite del listado (no se muestra).
-        """
-        nonlocal rid
-        if condicion_completada:
-            rid += 1
-            return          # ← si ya se cumplió, simplemente no la agregamos
- 
-        r = {
-            'id':              rid,
-            'tipo':            tipo,
-            'prioridad':       prioridad,
-            'icono':           icono,
-            'titulo':          titulo,
-            'descripcion':     descripcion,
-            'beneficios':      beneficios,
-            'accion':          accion,
-            'link':            link,
-            'completada':      False,
-            'ahorro_potencial': round(float(ahorro_potencial)),
-        }
-        if progreso is not None:
-            r['progreso'] = min(int(progreso), 100)
-        if dato_clave:
-            r['dato_clave'] = dato_clave
-        rid += 1
-        recs.append(r)
- 
-    # ── MÉTRICAS ─────────────────────────────────────────
+
+    # ── MÉTRICAS BASE ─────────────────────────────────────
     total_ingresos = sum(float(t.monto) for t in transacciones if t.tipo == 'ingreso')
     total_gastos   = sum(float(t.monto) for t in transacciones if t.tipo == 'gasto')
     balance        = total_ingresos - total_gastos
     ing_mensual    = float(usuario.ingreso_mensual or 0)
-    meta_mensual   = float(usuario.meta_ahorro     or 0)
+    meta_mensual   = float(usuario.meta_ahorro or 0)
     num_trans      = len(transacciones)
- 
-    # Categorías — t.categoria es string directo
-    gastos_cat   = defaultdict(float)
+
+    gastos_cat = defaultdict(float)
     ingresos_cat = defaultdict(float)
     for t in transacciones:
-        cat = t.categoria if isinstance(t.categoria, str) else (t.categoria.nombre if t.categoria else 'Otros')
+        cat = t.categoria if isinstance(t.categoria, str) else (
+            t.categoria.nombre if t.categoria else 'Otros'
+        )
         if t.tipo == 'gasto':
-            gastos_cat[cat]   += float(t.monto)
+            gastos_cat[cat] += float(t.monto)
         else:
             ingresos_cat[cat] += float(t.monto)
- 
-    cat_mayor        = max(gastos_cat, key=gastos_cat.get) if gastos_cat else None
-    monto_cat_mayor  = gastos_cat[cat_mayor] if cat_mayor else 0
-    pct_gastos       = round(total_gastos / total_ingresos * 100) if total_ingresos > 0 else 0
-    pct_cat_mayor    = round(monto_cat_mayor / total_gastos * 100) if total_gastos > 0 else 0
- 
-    metas_completas = [m for m in metas if m.completada]
+
+    cat_mayor       = max(gastos_cat, key=gastos_cat.get) if gastos_cat else None
+    monto_cat_mayor = gastos_cat[cat_mayor] if cat_mayor else 0
+    pct_gastos      = round(total_gastos / total_ingresos * 100) if total_ingresos > 0 else 0
+    pct_cat_mayor   = round(monto_cat_mayor / total_gastos * 100) if total_gastos > 0 else 0
+
     metas_activas   = [m for m in metas if not m.completada]
-    total_ahorrado  = sum(float(m.monto_actual)   for m in metas)
-    total_meta_obj  = sum(float(m.monto_objetivo) for m in metas)
- 
-    hace_30         = date.today() - timedelta(days=30)
+    metas_completas = [m for m in metas if m.completada]
     dias_registro   = len(set(t.fecha for t in transacciones if t.fecha))
- 
-    # ── SIN DATOS ─────────────────────────────────────────
+
+    recs = []
+    rid  = 1
+
+    # ════════════════════════════════════════════════════════
+    #  REGLA PRINCIPAL:
+    #  Cada bloque decide si muestra UNA recomendación
+    #  según el estado real del usuario.
+    #  Máximo ~5-6 recomendaciones activas a la vez.
+    # ════════════════════════════════════════════════════════
+
+    # ── 1. SIN DATOS: solo esta, nada más ────────────────
     if num_trans == 0:
-        recs.append({
+        return jsonify([{
             'id': 1, 'tipo': 'info', 'prioridad': 'Alta',
             'icono': '📝',
-            'titulo': 'Comienza registrando tus finanzas',
+            'titulo': 'Registra tu primera transacción',
             'descripcion': (
-                'FinanBot necesita al menos una transacción para darte '
-                'recomendaciones personalizadas. '
-                'Registra tu primer ingreso o gasto y el análisis se activa automáticamente.'
+                'Aún no tienes movimientos registrados. '
+                'Con solo una transacción FinanBot empieza a analizar tus finanzas '
+                'y a darte consejos reales.'
             ),
             'beneficios': [
-                'Visibilidad total sobre tu dinero',
-                'Recomendaciones ajustadas a tu realidad',
-                'Detectar gastos que no notas día a día',
+                'Activa el análisis automático de tus finanzas',
+                'Recibe recomendaciones personalizadas',
+                'Ve cómo evoluciona tu balance en el dashboard',
             ],
-            'accion': 'Registrar primera transacción', 'link': 'finanzas.html',
+            'accion': 'Ir a Mis Finanzas', 'link': 'finanzas.html',
             'completada': False, 'ahorro_potencial': 0,
-            'dato_clave': '💡 Solo necesitas 5 minutos. Registra lo de hoy y FinanBot hace el resto.',
+            'dato_clave': '💡 Registra lo de hoy — solo toma 30 segundos.',
+        }]), 200
+
+    # ── 2. BALANCE NEGATIVO (prioridad máxima) ────────────
+    #    Solo aparece si realmente hay déficit
+    if balance < 0 and total_ingresos > 0:
+        recs.append({
+            'id': rid, 'tipo': 'alerta', 'prioridad': 'Alta',
+            'icono': '🚨',
+            'titulo': 'Tus gastos superan tus ingresos',
+            'descripcion': (
+                f'Tu balance es -${abs(balance):,.0f}. '
+                f'La categoría que más pesa es "{cat_mayor}" '
+                f'(${monto_cat_mayor:,.0f}). Recórtala primero.'
+            ),
+            'beneficios': [
+                f'Reducir "{cat_mayor}" un 20% libera ${monto_cat_mayor * 0.2:,.0f}' if cat_mayor else 'Revisa tus gastos por categoría',
+                'Prioriza arriendo, comida y servicios básicos',
+                'Elimina gastos recurrentes que no usas',
+            ],
+            'accion': 'Ver mis gastos', 'link': 'finanzas.html',
+            'completada': False,
+            'ahorro_potencial': round(abs(balance)),
+            'progreso': max(0, min(100, round((1 - abs(balance) / max(total_ingresos, 1)) * 100))),
+            'dato_clave': f'🎯 Meta inmediata: recortar ${abs(balance):,.0f} para llegar a $0 de déficit.',
         })
-        return jsonify(recs), 200
- 
-    # ═══════════════════════════════════════════════════════
-    #  1 — BALANCE NEGATIVO
-    #      Se va cuando balance >= 0
-    # ═══════════════════════════════════════════════════════
-    add(
-        'alerta', 'Alta', '🚨',
-        'Tus gastos superan tus ingresos',
-        (
-            f'Tu balance es -${abs(balance):,.0f}. '
-            f'Cada mes que pasa sin corregirlo aumenta el déficit. '
-            f'Identifica la categoría de mayor gasto y recórtala primero.'
-        ),
-        [
-            f'Recortar {cat_mayor} un 20% = ${monto_cat_mayor * 0.2:,.0f} liberados' if cat_mayor else 'Revisar todos los gastos',
-            'Pagar primero servicios básicos (arriendo, servicios, comida)',
-            'Evitar gastos de entretenimiento hasta equilibrar el balance',
-        ],
-        'Ver mis gastos', 'finanzas.html',
-        ahorro_potencial=abs(balance),
-        progreso=max(0, min(100, round((1 - abs(balance) / max(total_ingresos, 1)) * 100))),
-        dato_clave=f'🎯 Meta inmediata: reducir ${abs(balance):,.0f} en gastos para llegar a $0 de déficit.',
-        condicion_completada=(balance >= 0),   # ← desaparece cuando se equilibra
-    )
- 
-    # ═══════════════════════════════════════════════════════
-    #  2 — SIN INGRESOS
-    #      Se va cuando hay al menos 1 ingreso registrado
-    # ═══════════════════════════════════════════════════════
-    add(
-        'advertencia', 'Alta', '💼',
-        'No tienes ingresos registrados',
-        (
-            'Tienes gastos pero ningún ingreso. '
-            'Sin esa información no podemos calcular tu balance real '
-            'ni qué porcentaje de tus ingresos estás gastando.'
-        ),
-        [
-            'Registra tu salario aunque sea una vez al mes',
-            'Activa el análisis completo de balance',
-            'Permite recomendaciones de ahorro personalizadas',
-        ],
-        'Registrar ingreso', 'finanzas.html',
-        dato_clave='💡 Con un ingreso registrado, todas las métricas del dashboard se activan.',
-        condicion_completada=(total_ingresos > 0),   # ← desaparece cuando hay ingresos
-    )
- 
-    # ═══════════════════════════════════════════════════════
-    #  3 — GASTOS > 90 %
-    #      Se va cuando pct_gastos < 90
-    # ═══════════════════════════════════════════════════════
-    if total_ingresos > 0:
-        add(
-            'alerta', 'Alta', '⚡',
-            f'Gastas el {pct_gastos}% de tus ingresos — zona de riesgo',
-            (
-                f'Solo te queda el {100 - pct_gastos}% libre. '
-                f'Cualquier imprevisto te llevaría al déficit. '
-                f'La regla de oro es no superar el 80% en gastos.'
+        rid += 1
+
+    # ── 3. GASTOS ELEVADOS (solo si > 85 % y balance >= 0) ─
+    #    No aparece si ya mostró alerta de balance negativo
+    elif total_ingresos > 0 and pct_gastos > 85:
+        recs.append({
+            'id': rid, 'tipo': 'advertencia', 'prioridad': 'Alta',
+            'icono': '⚡',
+            'titulo': f'Gastas el {pct_gastos}% de tus ingresos',
+            'descripcion': (
+                f'Solo te queda el {100 - pct_gastos}% libre al mes. '
+                f'Un imprevisto pequeño podría ponerte en déficit. '
+                f'Lo recomendado es no superar el 80%.'
             ),
-            [
-                f'Bajar al 80% libera ${total_ingresos * (pct_gastos/100 - 0.8):,.0f}/mes',
-                'Revisar suscripciones automáticas que ya no usas',
-                f'Limitar {cat_mayor} a ${monto_cat_mayor * 0.8:,.0f} el próximo mes' if cat_mayor else 'Revisar la categoría de mayor gasto',
+            'beneficios': [
+                f'Bajar al 80% libera ${round(total_ingresos * (pct_gastos/100 - 0.8)):,.0f}/mes',
+                'Revisa suscripciones automáticas activas',
+                f'Limita "{cat_mayor}" a ${round(monto_cat_mayor * 0.8):,.0f} este mes' if cat_mayor else 'Analiza tu categoría principal',
             ],
-            'Ver mis gastos', 'finanzas.html',
-            ahorro_potencial=round(total_ingresos * (pct_gastos/100 - 0.8)),
-            progreso=max(0, 100 - pct_gastos),
-            dato_clave=f'🎯 Meta: reducir gastos a ${total_ingresos * 0.8:,.0f} (80% de ${total_ingresos:,.0f}).',
-            condicion_completada=(pct_gastos < 90 or total_ingresos == 0),
-        )
- 
-    # ═══════════════════════════════════════════════════════
-    #  4 — GASTOS 70–90 % (aviso moderado)
-    #      Se va cuando pct_gastos < 70 o >= 90 (ya cubre la alerta 3)
-    # ═══════════════════════════════════════════════════════
-    if total_ingresos > 0:
-        add(
-            'advertencia', 'Media', '⚠️',
-            f'Usas el {pct_gastos}% de tus ingresos en gastos',
-            (
-                f'Estás dentro del rango, pero cerca del límite recomendado (80%). '
-                f'Reducir aunque sea ${total_ingresos * 0.05:,.0f}/mes te da un colchón importante.'
+            'accion': 'Ver mis gastos', 'link': 'finanzas.html',
+            'completada': False,
+            'ahorro_potencial': round(total_ingresos * (pct_gastos / 100 - 0.8)),
+            'progreso': max(0, 100 - pct_gastos),
+            'dato_clave': f'🎯 Meta: no superar ${round(total_ingresos * 0.8):,.0f}/mes en gastos.',
+        })
+        rid += 1
+
+    # ── 4. CATEGORÍA DOMINANTE (> 45 %, solo con 5+ trans) ─
+    #    Aparece cuando hay datos suficientes para que sea real
+    if cat_mayor and pct_cat_mayor > 45 and num_trans >= 5:
+        recs.append({
+            'id': rid, 'tipo': 'advertencia', 'prioridad': 'Media',
+            'icono': '📊',
+            'titulo': f'"{cat_mayor}" es el {pct_cat_mayor}% de tus gastos',
+            'descripcion': (
+                f'${monto_cat_mayor:,.0f} concentrados en una sola categoría. '
+                f'Reducirla un 15% libera ${round(monto_cat_mayor * 0.15):,.0f} '
+                f'sin cambiar drásticamente tu estilo de vida.'
             ),
-            [
-                f'Reducir al 70% libera ${total_ingresos * (pct_gastos/100 - 0.7):,.0f}/mes',
-                'Aplica la regla 50/30/20 para estructurar tu presupuesto',
-                'Revisa gastos recurrentes automáticos',
+            'beneficios': [
+                f'Reducir 15%: +${round(monto_cat_mayor * 0.15):,.0f}/mes libres',
+                f'Establece un tope fijo mensual para {cat_mayor}',
+                'Compara precios antes de cada compra en esa categoría',
             ],
-            'Aplicar regla 50/30/20', 'aprende.html',
-            ahorro_potencial=round(total_ingresos * (pct_gastos/100 - 0.7)),
-            progreso=round((1 - (pct_gastos - 70) / 20) * 100),
-            dato_clave=f'📋 Meta: no superar ${total_ingresos * 0.7:,.0f}/mes en gastos.',
-            condicion_completada=(pct_gastos < 70 or pct_gastos >= 90 or total_ingresos == 0),
-        )
- 
-    # ═══════════════════════════════════════════════════════
-    #  5 — SIN METAS DE AHORRO
-    #      Se va cuando el usuario crea al menos 1 meta
-    # ═══════════════════════════════════════════════════════
-    add(
-        'advertencia', 'Media', '🎯',
-        'No tienes metas de ahorro definidas',
-        (
-            'Sin metas, el dinero que "sobra" tiende a gastarse sin rumbo. '
-            'Una meta concreta (fondo de emergencia, viaje, tecnología) '
-            'le da propósito a cada peso que guardas.'
-        ),
-        [
-            'Crea un fondo de emergencia: 3 meses de gastos',
-            'Define una meta de corto plazo alcanzable en 3-6 meses',
-            'Las personas con metas ahorran 3x más que las que no las tienen',
-        ],
-        'Crear mi primera meta', 'perfil.html',
-        ahorro_potencial=max(balance, 0) * 6,
-        dato_clave=f'💡 Con tu balance actual puedes alcanzar ${max(balance,0)*6:,.0f} en 6 meses si ahorras consistente.',
-        condicion_completada=(len(metas) > 0),   # ← desaparece al crear cualquier meta
-    )
- 
-    # ═══════════════════════════════════════════════════════
-    #  6 — CATEGORÍA DOMINANTE (> 40 %)
-    #      Se va cuando esa categoría baja del 40 %
-    # ═══════════════════════════════════════════════════════
-    if cat_mayor and total_gastos > 0:
-        add(
-            'advertencia', 'Media', '📊',
-            f'"{cat_mayor}" consume el {pct_cat_mayor}% de tus gastos',
-            (
-                f'Tienes ${monto_cat_mayor:,.0f} concentrados en {cat_mayor}. '
-                f'Lo recomendado es que ninguna categoría supere el 35-40%. '
-                f'Reducir un 15% aquí generaría ${monto_cat_mayor * 0.15:,.0f} libres al mes.'
+            'accion': 'Ver mis gastos', 'link': 'finanzas.html',
+            'completada': False,
+            'ahorro_potencial': round(monto_cat_mayor * 0.15),
+            'progreso': max(0, 100 - pct_cat_mayor),
+            'dato_clave': f'🔍 Revisa los últimos gastos en {cat_mayor} — casi siempre hay 1 evitable.',
+        })
+        rid += 1
+
+    # ── 5. SIN METAS (solo si tiene 3+ transacciones) ─────
+    #    No tiene sentido mostrarla al inicio, cuando aún no entiende la app
+    if len(metas) == 0 and num_trans >= 3:
+        recs.append({
+            'id': rid, 'tipo': 'advertencia', 'prioridad': 'Media',
+            'icono': '🎯',
+            'titulo': 'Crea tu primera meta de ahorro',
+            'descripcion': (
+                'El dinero sin destino se gasta solo. '
+                'Una meta concreta (fondo de emergencia, viaje, tecnología) '
+                'le da propósito a cada peso que guardas.'
             ),
-            [
-                f'Reducir 15% en {cat_mayor}: +${monto_cat_mayor * 0.15:,.0f}/mes',
-                'Comparar precios antes de cada compra de esa categoría',
-                'Establecer un límite fijo mensual para este rubro',
+            'beneficios': [
+                'Las personas con metas ahorran 3× más',
+                'Define un objetivo alcanzable en 3-6 meses',
+                'FinanBot te avisa cuando estés cerca de lograrlo',
             ],
-            'Ver mis gastos', 'finanzas.html',
-            ahorro_potencial=round(monto_cat_mayor * 0.15),
-            progreso=max(0, 100 - pct_cat_mayor),
-            dato_clave=f'🔍 Revisa los últimos 5 gastos en {cat_mayor} — casi siempre hay al menos 1 evitable.',
-            condicion_completada=(pct_cat_mayor <= 40),
-        )
- 
-    # ═══════════════════════════════════════════════════════
-    #  7 — POCOS REGISTROS (< 8)
-    #      Se va cuando hay 8 o más transacciones
-    # ═══════════════════════════════════════════════════════
-    add(
-        'info', 'Baja', '📅',
-        f'Solo tienes {num_trans} transacción(es) — registra más',
-        (
-            'Con pocos datos las recomendaciones son generales. '
-            'Con 2-3 semanas de registro diario FinanBot detecta patrones '
-            'y te da un diagnóstico mucho más preciso y útil.'
-        ),
-        [
-            'Detectar en qué días gastas más',
-            'Identificar gastos repetitivos que no notas',
-            'Pronóstico de balance para fin de mes',
-        ],
-        'Registrar transacciones', 'finanzas.html',
-        progreso=round(num_trans / 8 * 100),
-        dato_clave='📱 Tip: registra cada gasto en el momento, antes de que lo olvides.',
-        condicion_completada=(num_trans >= 8),   # ← desaparece con 8+ transacciones
-    )
- 
-    # ═══════════════════════════════════════════════════════
-    #  8 — FONDO DE EMERGENCIA
-    #      Se va cuando el balance cubre los 3 meses
-    # ═══════════════════════════════════════════════════════
-    if total_ingresos > 0 or ing_mensual > 0:
-        fondo_obj     = (ing_mensual if ing_mensual > 0 else total_ingresos) * 3
-        cobertura     = max(0, balance)
-        pct_fondo     = min(100, round(cobertura / fondo_obj * 100)) if fondo_obj > 0 else 0
-        tiene_fondo   = any('emergencia' in m.nombre.lower() or 'fondo' in m.nombre.lower() for m in metas)
- 
-        add(
-            'info', 'Media', '🛡️',
-            'Construye tu fondo de emergencia',
-            (
-                f'Un fondo de emergencia de ${fondo_obj:,.0f} (3 meses de ingresos) '
-                f'es la base de cualquier plan financiero sólido. '
-                f'Actualmente tu cobertura es del {pct_fondo}%.'
-            ),
-            [
-                'Protección ante pérdida de empleo o enfermedad',
-                'Evitar endeudarte en situaciones críticas',
-                'Tomar decisiones financieras sin presión',
-            ],
-            'Crear meta de emergencia', 'perfil.html',
-            ahorro_potencial=round(max(0, fondo_obj - cobertura)),
-            progreso=pct_fondo,
-            dato_clave=f'🎯 Meta: ${fondo_obj:,.0f} · Cobertura actual: {pct_fondo}% (${cobertura:,.0f}).',
-            condicion_completada=(pct_fondo >= 100 or tiene_fondo),  # ← desaparece si ya tiene la meta o el fondo completo
-        )
- 
-    # ═══════════════════════════════════════════════════════
-    #  9 — REGLA 50/30/20
-    #      Solo aparece si tiene ingreso mensual registrado
-    #      Se va cuando el pct de gastos baja del 80 %
-    # ═══════════════════════════════════════════════════════
-    if ing_mensual > 0:
-        n50 = ing_mensual * 0.5
-        n30 = ing_mensual * 0.3
-        n20 = ing_mensual * 0.2
-        add(
-            'info', 'Media', '📋',
-            'Aplica la regla 50/30/20 a tu salario',
-            (
-                f'Con tu ingreso mensual de ${ing_mensual:,.0f} tienes una guía clara. '
-                f'Esta regla equilibra necesidades, calidad de vida y futuro financiero.'
-            ),
-            [
-                f'50% necesidades (${n50:,.0f}): arriendo, comida, transporte, salud',
-                f'30% deseos (${n30:,.0f}): entretenimiento, ropa, salidas',
-                f'20% ahorro e inversión (${n20:,.0f}): CDT, metas, pensión',
-            ],
-            'Ir al simulador', 'simulador.html',
-            ahorro_potencial=round(n20 * 12),
-            dato_clave=f'💰 Ahorrando ${n20:,.0f}/mes (20%), en 1 año tendrías ${n20*12:,.0f}.',
-            condicion_completada=(pct_gastos <= 80 and total_ingresos > 0),
-        )
- 
-    # ═══════════════════════════════════════════════════════
-    #  10 — META DE AHORRO MENSUAL vs REALIDAD
-    #       Se va cuando el ahorro real >= meta mensual
-    # ═══════════════════════════════════════════════════════
+            'accion': 'Crear mi primera meta', 'link': 'perfil.html',
+            'completada': False,
+            'ahorro_potencial': round(max(balance, 0) * 6),
+            'dato_clave': f'💡 Con tu balance actual podrías acumular ${round(max(balance,0)*6):,.0f} en 6 meses.',
+        })
+        rid += 1
+
+    # ── 6. META MENSUAL vs REALIDAD (solo si la tiene configurada) ─
     if meta_mensual > 0 and total_ingresos > 0:
         ahorro_real = max(0, balance)
         pct_meta    = min(100, round(ahorro_real / meta_mensual * 100))
         brecha      = max(0, meta_mensual - ahorro_real)
- 
-        add(
-            'advertencia', 'Media', '🎯',
-            f'Tu ahorro real está al {pct_meta}% de tu meta mensual',
-            (
-                f'Tu meta de ahorro mensual es ${meta_mensual:,.0f} '
-                f'pero tu balance actual es ${ahorro_real:,.0f}. '
-                f'Hay una brecha de ${brecha:,.0f} que debes cerrar.'
-            ),
-            [
-                f'Reducir ${brecha:,.0f} en gastos cierra la brecha',
-                'Transfiere el ahorro el mismo día que cobres',
-                'Lo que no ves en cuenta corriente, no lo gastas',
-            ],
-            'Ajustar mis gastos', 'finanzas.html',
-            ahorro_potencial=brecha,
-            progreso=pct_meta,
-            dato_clave=f'💡 Truco: el día de pago, transfiere ${meta_mensual:,.0f} a una cuenta separada antes de gastar.',
-            condicion_completada=(ahorro_real >= meta_mensual),   # ← desaparece cuando cumple la meta
+        if ahorro_real < meta_mensual:
+            recs.append({
+                'id': rid, 'tipo': 'advertencia', 'prioridad': 'Media',
+                'icono': '🎯',
+                'titulo': f'Vas al {pct_meta}% de tu meta mensual',
+                'descripcion': (
+                    f'Tu meta es ahorrar ${meta_mensual:,.0f}/mes '
+                    f'pero tu balance actual es ${ahorro_real:,.0f}. '
+                    f'Faltan ${brecha:,.0f} para cerrar la brecha.'
+                ),
+                'beneficios': [
+                    f'Reducir ${brecha:,.0f} en gastos cierra la brecha',
+                    'Transfiere el ahorro el mismo día que cobres',
+                    'Lo que no ves en tu cuenta no lo gastas',
+                ],
+                'accion': 'Ajustar mis gastos', 'link': 'finanzas.html',
+                'completada': False,
+                'ahorro_potencial': brecha,
+                'progreso': pct_meta,
+                'dato_clave': f'💡 El día de pago, separa ${meta_mensual:,.0f} antes de gastar nada.',
+            })
+            rid += 1
+
+    # ── 7. FONDO DE EMERGENCIA (solo si tiene 8+ trans y no tiene meta de fondo) ─
+    #    Aparece cuando el usuario ya usa la app con regularidad
+    if num_trans >= 8 and total_ingresos > 0:
+        tiene_fondo = any(
+            'emergencia' in m.nombre.lower() or 'fondo' in m.nombre.lower()
+            for m in metas
         )
- 
-    # ═══════════════════════════════════════════════════════
-    #  11 — SIMULADOR NO USADO
-    #       Se va cuando hace al menos 1 simulación
-    # ═══════════════════════════════════════════════════════
-    add(
-        'info', 'Baja', '🔬',
-        'Prueba el simulador de inversiones',
-        (
-            'El simulador te muestra cuánto crecería tu dinero con CDT, '
-            'fondos o acciones — sin arriesgar un peso real. '
-            'Es la forma más segura de aprender a invertir.'
-        ),
-        [
-            'Simula CDT, fondos y acciones sin riesgo',
-            'Compara distintas tasas y plazos en segundos',
-            'Entiende el interés compuesto con tus propios números',
-        ],
-        'Ir al simulador', 'simulador.html',
-        dato_clave='💡 Prueba: $1.000.000 al 10% por 24 meses. El resultado te sorprenderá.',
-        condicion_completada=(len(simulaciones) > 0),   # ← desaparece al usar el simulador
-    )
- 
-    # ═══════════════════════════════════════════════════════
-    #  12 — INTERÉS COMPUESTO (solo si tiene balance positivo)
-    #       Se va cuando ya invirtió (tiene simulaciones)
-    # ═══════════════════════════════════════════════════════
-    if balance > 0:
+        if not tiene_fondo:
+            base      = ing_mensual if ing_mensual > 0 else total_ingresos
+            fondo_obj = base * 3
+            recs.append({
+                'id': rid, 'tipo': 'info', 'prioridad': 'Media',
+                'icono': '🛡️',
+                'titulo': 'Crea tu fondo de emergencia',
+                'descripcion': (
+                    f'Un fondo de ${fondo_obj:,.0f} (3 meses de ingresos) '
+                    f'es la base de cualquier plan financiero sólido. '
+                    f'Es lo primero que debes tener antes de invertir.'
+                ),
+                'beneficios': [
+                    'Protección ante despido, enfermedad o imprevistos',
+                    'Evitas endeudarte en momentos críticos',
+                    'Tomas decisiones sin presión financiera',
+                ],
+                'accion': 'Crear meta de emergencia', 'link': 'perfil.html',
+                'completada': False,
+                'ahorro_potencial': round(fondo_obj),
+                'dato_clave': f'🎯 Meta: ${fondo_obj:,.0f} · Empieza con ${round(fondo_obj/12):,.0f}/mes durante 1 año.',
+            })
+            rid += 1
+
+    # ── 8. SIMULADOR (solo si balance > 0 y nunca ha simulado) ─
+    #    Solo tiene sentido sugerirlo cuando hay dinero disponible
+    if balance > 0 and len(simulaciones) == 0 and num_trans >= 5:
         capital_sug = round(balance * 0.5)
-        r_1a  = round(capital_sug * (1.10 ** 1))
-        r_5a  = round(capital_sug * (1.10 ** 5))
-        r_10a = round(capital_sug * (1.10 ** 10))
-        add(
-            'info', 'Baja', '📈',
-            'Tu balance puede generar dinero solo — Interés compuesto',
-            (
-                f'Si invirtieras ${capital_sug:,.0f} (50% de tu balance) '
-                f'al 10% anual, ese dinero crece sin que hagas nada más. '
-                f'El tiempo es tu mayor aliado.'
+        recs.append({
+            'id': rid, 'tipo': 'info', 'prioridad': 'Baja',
+            'icono': '📈',
+            'titulo': 'Tu balance puede generar dinero solo',
+            'descripcion': (
+                f'Tienes ${balance:,.0f} de balance positivo. '
+                f'Si invirtieras ${capital_sug:,.0f} al 10% anual, '
+                f'en 5 años tendrías ${round(capital_sug * 1.10**5):,.0f} sin hacer nada más.'
             ),
-            [
-                f'En 1 año: ${r_1a:,.0f} (ganancia ${r_1a - capital_sug:,.0f})',
-                f'En 5 años: ${r_5a:,.0f} (ganancia ${r_5a - capital_sug:,.0f})',
-                f'En 10 años: ${r_10a:,.0f} (ganancia ${r_10a - capital_sug:,.0f})',
+            'beneficios': [
+                f'En 1 año: ${round(capital_sug * 1.10):,.0f} (+${round(capital_sug * 0.10):,.0f})',
+                f'En 5 años: ${round(capital_sug * 1.10**5):,.0f} (+${round(capital_sug * (1.10**5-1)):,.0f})',
+                'CDT, fondos o acciones desde $100.000 en Colombia',
             ],
-            'Simular ahora', 'simulador.html',
-            ahorro_potencial=r_5a - capital_sug,
-            dato_clave=f'⏳ Quien empieza hoy con ${capital_sug:,.0f} tiene ventaja enorme sobre quien espera un año.',
-            condicion_completada=(len(simulaciones) > 0),
-        )
- 
-    # ═══════════════════════════════════════════════════════
-    #  13 — INFLACIÓN: DINERO QUIETO PIERDE VALOR
-    #       Se va cuando hace alguna simulación (invirtió)
-    # ═══════════════════════════════════════════════════════
-    if balance > 0:
-        inflacion   = 9.28
-        perdida_inf = round(balance * inflacion / 100)
-        add(
-            'info', 'Baja', '📉',
-            'El dinero parado pierde valor — Protégete de la inflación',
-            (
-                f'Con inflación del {inflacion}% anual, '
-                f'tu balance de ${balance:,.0f} pierde ${perdida_inf:,.0f} '
-                f'de poder adquisitivo cada año si no lo inviertes.'
+            'accion': 'Ir al simulador', 'link': 'simulador.html',
+            'completada': False,
+            'ahorro_potencial': round(capital_sug * (1.10**5 - 1)),
+            'dato_clave': f'⏳ Quien empieza hoy con ${capital_sug:,.0f} tiene ventaja enorme sobre quien espera un año.',
+        })
+        rid += 1
+
+    # ── 9. REGLA 50/30/20 (solo si tiene ingreso mensual Y pct > 80) ─
+    #    Educativa, aparece cuando hay contexto suficiente
+    if ing_mensual > 0 and pct_gastos > 80 and num_trans >= 5:
+        n20 = round(ing_mensual * 0.2)
+        recs.append({
+            'id': rid, 'tipo': 'info', 'prioridad': 'Baja',
+            'icono': '📋',
+            'titulo': 'Aplica la regla 50/30/20',
+            'descripcion': (
+                f'Con tu salario de ${ing_mensual:,.0f}: '
+                f'50% para necesidades (${round(ing_mensual*0.5):,.0f}), '
+                f'30% para deseos (${round(ing_mensual*0.3):,.0f}) '
+                f'y 20% para ahorro (${n20:,.0f}).'
             ),
-            [
-                f'CDT 10-14% anual supera la inflación ({inflacion}%)',
-                'Fondos de inversión: mayor rendimiento a largo plazo',
-                'Cualquier rendimiento > inflación es ganancia real',
+            'beneficios': [
+                f'Ahorra ${n20:,.0f}/mes sin sacrificar calidad de vida',
+                f'En 1 año de ahorro: ${n20*12:,.0f}',
+                'Estructura clara sin hacer un presupuesto complicado',
             ],
-            'Simular protección', 'simulador.html',
-            ahorro_potencial=perdida_inf,
-            dato_clave=f'💸 No invertir hoy te cuesta ${perdida_inf:,.0f}/año en poder de compra perdido.',
-            condicion_completada=(len(simulaciones) > 0),
-        )
- 
-    # ═══════════════════════════════════════════════════════
-    #  14 — PENSIÓN VOLUNTARIA (solo si ingreso >= 1.5 M)
-    #       Siempre aparece (educativa)
-    # ═══════════════════════════════════════════════════════
-    if ing_mensual >= 1500000:
-        aporte_pens   = round(ing_mensual * 0.1)
-        beneficio_tri = round(aporte_pens * 0.19)
-        add(
-            'info', 'Baja', '👴',
-            'Aportes voluntarios a pensión — Ahorra y paga menos impuestos',
-            (
-                f'Aportando el 10% de tu salario (${aporte_pens:,.0f}/mes) '
-                f'a pensión voluntaria reduces tu base gravable y '
-                f'ahorras ~${beneficio_tri:,.0f} en impuestos al mes.'
-            ),
-            [
-                f'Ahorro en impuestos: ~${beneficio_tri:,.0f}/mes',
-                f'Capital pensional anual adicional: ${aporte_pens * 12:,.0f}',
-                'Deducible de renta (Art. 126-1, E.T. Colombia)',
-            ],
-            'Aprender más', 'aprende.html',
-            ahorro_potencial=beneficio_tri * 12,
-            dato_clave=f'📑 Con ${aporte_pens:,.0f}/mes en pensión voluntaria ahorras ${beneficio_tri * 12:,.0f}/año en impuestos.',
-            condicion_completada=False,   # siempre visible si cumple el ingreso
-        )
- 
-    # ═══════════════════════════════════════════════════════
-    #  15 — DIVERSIFICACIÓN DE INGRESOS
-    #       Se va cuando tiene 2+ categorías de ingresos
-    # ═══════════════════════════════════════════════════════
-    add(
-        'info', 'Baja', '🌱',
-        'Tienes una sola fuente de ingresos — diversifica',
-        (
-            'Depender de un solo ingreso es el mayor riesgo financiero personal. '
-            'Si se corta (despido, enfermedad), tu flujo de caja desaparece. '
-            'Una segunda fuente pequeña cambia completamente tu seguridad.'
-        ),
-        [
-            'Freelance o consultoría en tu área',
-            'Venta de productos digitales o físicos',
-            'Inversiones que generen dividendos o intereses',
-        ],
-        'Explorar opciones', 'aprende.html',
-        dato_clave='💡 Una segunda fuente de $300.000/mes cambia completamente tu seguridad financiera.',
-        condicion_completada=(len(ingresos_cat) >= 2),   # ← desaparece con 2+ fuentes de ingreso
-    )
- 
-    # ═══════════════════════════════════════════════════════
-    #  ÉXITOS — Solo aparecen cuando realmente se logran
-    # ═══════════════════════════════════════════════════════
- 
-    # Balance positivo y gastos < 70 %
+            'accion': 'Aprender más', 'link': 'aprende.html',
+            'completada': False,
+            'ahorro_potencial': n20 * 12,
+            'dato_clave': f'💰 Ahorrando ${n20:,.0f}/mes, en 1 año tendrías ${n20*12:,.0f}.',
+        })
+        rid += 1
+
+    # ════════════════════════════════════════════════════════
+    #  ÉXITOS — Aparecen cuando realmente se logran
+    # ════════════════════════════════════════════════════════
+
+    # Balance positivo y gastos controlados
     if balance > 0 and pct_gastos < 70 and total_ingresos > 0:
-        ahorro_sug   = round(balance * 0.2)
-        res_1a       = round(ahorro_sug * 12 * 1.10)
         recs.append({
             'id': rid, 'tipo': 'exito', 'prioridad': 'Baja',
             'icono': '💰',
-            'titulo': f'¡Excelente! Gastas solo el {pct_gastos}% — Momento de invertir',
+            'titulo': f'¡Excelente! Solo gastas el {pct_gastos}% — estás listo para invertir',
             'descripcion': (
-                f'Tu control financiero es sobresaliente. '
-                f'Con balance positivo de ${balance:,.0f} y gastos controlados, '
-                f'estás listo para hacer crecer tu dinero.'
+                f'Balance positivo de ${balance:,.0f} y gastos bajo control. '
+                f'Este es el momento ideal para hacer crecer tu dinero.'
             ),
             'beneficios': [
-                f'CDT al 12% con ${ahorro_sug:,.0f} → ${round(ahorro_sug * 1.12):,.0f} en 1 año',
-                f'En 1 año de aportes mensuales tendrías ~${res_1a:,.0f}',
+                f'CDT al 12%: ${round(balance*0.5*1.12):,.0f} en 1 año con ${round(balance*0.5):,.0f}',
                 'Considera activos que generen ingreso pasivo',
+                'Sube tu meta de ahorro mensual un 20%',
             ],
             'accion': 'Simular inversión', 'link': 'simulador.html',
             'completada': False,
             'ahorro_potencial': round(balance * 0.2 * 12),
-            'dato_clave': f'📈 Invirtiendo el 20% de tu balance (${ahorro_sug:,.0f}/mes), en 1 año tendrías ~${res_1a:,.0f}.',
+            'dato_clave': f'📈 Invirtiendo el 20% de tu balance mensual, en 1 año acumulas ~${round(balance*0.2*12):,.0f}.',
         })
         rid += 1
- 
+
     # Meta mensual cumplida
     if meta_mensual > 0 and max(0, balance) >= meta_mensual:
         excedente = max(0, balance) - meta_mensual
         recs.append({
             'id': rid, 'tipo': 'exito', 'prioridad': 'Baja',
             'icono': '✅',
-            'titulo': '¡Estás cumpliendo tu meta de ahorro mensual!',
+            'titulo': '¡Cumpliste tu meta de ahorro mensual!',
             'descripcion': (
-                f'Tu meta era ${meta_mensual:,.0f} y llevas ${max(0,balance):,.0f} ahorrados. '
-                f'Estás ${excedente:,.0f} por encima de lo planeado. '
-                f'Considera aumentar la meta o redirigir el excedente a inversión.'
+                f'Meta: ${meta_mensual:,.0f} · Llevas: ${max(0,balance):,.0f}. '
+                f'Estás ${excedente:,.0f} por encima. '
+                f'Considera subir la meta o llevar el excedente a inversión.'
             ),
             'beneficios': [
                 f'Superaste la meta en ${excedente:,.0f}',
-                f'Sube la meta a ${round(meta_mensual * 1.2):,.0f} (+20%) para crecer más rápido',
-                'Redirige el excedente a un CDT o fondo de inversión',
+                f'Sube la meta a ${round(meta_mensual*1.2):,.0f} (+20%)',
+                'Redirige el excedente a un CDT o fondo',
             ],
             'accion': 'Actualizar mi meta', 'link': 'perfil.html',
             'completada': False,
             'ahorro_potencial': excedente * 12,
-            'dato_clave': f'🚀 Sube tu meta a ${round(meta_mensual * 1.2):,.0f} (+20%) para acelerar tu progreso.',
             'progreso': 100,
+            'dato_clave': f'🚀 Sube tu meta a ${round(meta_mensual*1.2):,.0f} para seguir creciendo.',
         })
         rid += 1
- 
-    # Metas casi completadas
+
+    # Metas casi completadas (≥ 80 %)
     for m in metas_activas:
-        pct_m = round(float(m.monto_actual) / float(m.monto_objetivo) * 100) if m.monto_objetivo > 0 else 0
-        if pct_m >= 75:
-            faltante = float(m.monto_objetivo) - float(m.monto_actual)
+        if m.monto_objetivo <= 0:
+            continue
+        pct_m    = round(float(m.monto_actual) / float(m.monto_objetivo) * 100)
+        faltante = float(m.monto_objetivo) - float(m.monto_actual)
+        if pct_m >= 80:
             recs.append({
                 'id': rid, 'tipo': 'exito', 'prioridad': 'Baja',
                 'icono': '🚀',
-                'titulo': f'¡Casi lo logras! "{m.nombre}" está al {pct_m}%',
+                'titulo': f'¡Casi lo logras! "{m.nombre}" al {pct_m}%',
                 'descripcion': (
                     f'Solo faltan ${faltante:,.0f} para completar esta meta. '
-                    f'Un aporte extra esta semana puede cerrarla antes de lo esperado.'
+                    f'Un aporte extra esta semana puede cerrarla.'
                 ),
                 'beneficios': [
-                    f'Faltan ${faltante:,.0f} para completar la meta',
+                    f'Faltan ${faltante:,.0f} — estás muy cerca',
                     'Un aporte extra la cierra antes de lo previsto',
                     'Al completarla, crea una meta más ambiciosa',
                 ],
-                'accion': 'Ver mis metas', 'link': 'perfil.html',
+                'accion': 'Abonar a la meta', 'link': 'perfil.html',
                 'completada': False,
                 'ahorro_potencial': 0,
                 'progreso': pct_m,
                 'dato_clave': f'🏁 Con ${round(faltante/2):,.0f} en 2 abonos cierras esta meta.',
             })
             rid += 1
- 
-    # Metas completadas — celebrar
+
+    # Metas completadas
     if metas_completas:
         total_comp = sum(float(m.monto_objetivo) for m in metas_completas)
         recs.append({
             'id': rid, 'tipo': 'exito', 'prioridad': 'Baja',
             'icono': '🏆',
-            'titulo': f'¡{len(metas_completas)} meta(s) completada(s)! Sigue así',
+            'titulo': f'¡{len(metas_completas)} meta(s) completada(s)!',
             'descripcion': (
-                f'Has demostrado disciplina real. '
                 f'Llevas ${total_comp:,.0f} ahorrados en metas cumplidas. '
-                f'Ese capital ahora puede ir a inversión o a una meta más grande.'
+                f'Esa disciplina es lo que separa a quienes logran sus metas de los que no.'
             ),
             'beneficios': [
                 f'${total_comp:,.0f} ahorrados en metas cumplidas',
                 'Reinvierte en una meta más ambiciosa',
-                f'Siguiente reto: meta de ${total_comp * 1.5:,.0f} (50% más)',
+                f'Siguiente reto: ${round(total_comp * 1.5):,.0f} (50% más)',
             ],
             'accion': 'Crear nueva meta', 'link': 'perfil.html',
-            'completada': False,
-            'ahorro_potencial': 0,
-            'progreso': 100,
-            'dato_clave': f'🎯 Siguiente reto: una meta de ${total_comp * 1.5:,.0f} (50% más de lo que ya lograste).',
+            'completada': False, 'ahorro_potencial': 0, 'progreso': 100,
+            'dato_clave': f'🎯 Siguiente reto: una meta de ${round(total_comp * 1.5):,.0f}.',
         })
         rid += 1
- 
-    # Simulador usado — siguiente nivel
+
+    # Simulador usado
     if len(simulaciones) > 0:
         ultima = simulaciones[-1]
         gan    = float(ultima.resultado_final) - float(ultima.capital_inicial)
@@ -607,51 +403,26 @@ def obtener_recomendaciones():
             'titulo': f'¡Usas el simulador! {len(simulaciones)} simulación(es)',
             'descripcion': (
                 f'Tu última simulación proyectó una ganancia de ${gan:,.0f}. '
-                f'El siguiente paso es convertir esa simulación en una inversión real.'
+                f'El siguiente paso es convertirla en una inversión real.'
             ),
             'beneficios': [
-                f'Última proyección: ganancia de ${gan:,.0f}',
+                f'Última proyección: +${gan:,.0f}',
                 'CDT disponibles desde $100.000 en bancos colombianos',
-                'Compara múltiples tasas antes de decidir',
+                'Compara tasas antes de decidir',
             ],
             'accion': 'Nueva simulación', 'link': 'simulador.html',
-            'completada': False,
-            'ahorro_potencial': 0,
-            'progreso': min(100, len(simulaciones) * 20),
-            'dato_clave': f'📊 {len(simulaciones)} simulación(es). El próximo paso: abre un CDT real con ese capital.',
+            'completada': False, 'ahorro_potencial': 0,
+            'progreso': min(100, len(simulaciones) * 25),
+            'dato_clave': f'📊 {len(simulaciones)} simulación(es). Próximo paso: abre un CDT real con ese capital.',
         })
         rid += 1
- 
-    # Buen ritmo de registro
-    if dias_registro >= 7:
-        recs.append({
-            'id': rid, 'tipo': 'exito', 'prioridad': 'Baja',
-            'icono': '📋',
-            'titulo': f'¡{dias_registro} días registrando! Gran hábito',
-            'descripcion': (
-                'Registrar consistentemente es uno de los hábitos más poderosos '
-                'para mejorar la salud financiera. '
-                'La mayoría de personas abandona en la primera semana — tú no.'
-            ),
-            'beneficios': [
-                'Base de datos real para análisis precisos',
-                'Patrones de gasto identificables',
-                'Predicciones confiables para el futuro',
-            ],
-            'accion': 'Ver mis finanzas', 'link': 'finanzas.html',
-            'completada': False,
-            'ahorro_potencial': 0,
-            'progreso': min(100, round(dias_registro / 30 * 100)),
-            'dato_clave': f'📅 {dias_registro} días. La meta es 30 días continuos para consolidar el hábito.',
-        })
-        rid += 1
- 
-    # ── ORDENAR ───────────────────────────────────────────
+
+    # ── ORDENAR: alertas primero, luego advertencias, info, éxitos ─
     orden_tipo = {'alerta': 0, 'advertencia': 1, 'info': 2, 'exito': 3}
     orden_prio = {'Alta': 0, 'Media': 1, 'Baja': 2}
     recs.sort(key=lambda r: (
         orden_tipo.get(r['tipo'], 4),
         orden_prio.get(r['prioridad'], 3)
     ))
- 
+
     return jsonify(recs), 200

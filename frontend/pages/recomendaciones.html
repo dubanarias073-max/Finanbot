@@ -6,14 +6,13 @@
     <title>FinanBot - Recomendaciones</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            font-family: 'Segoe UI', sans-serif;
-            min-height: 100vh;
-            color: white;
-            transition: background 0.4s;
+            font-family: 'DM Sans', sans-serif;
+            min-height: 100vh; color: white; transition: background 0.4s;
         }
 
         body.tema-oscuro {
@@ -26,8 +25,7 @@
             --secondary:    #9ca3af;
             --sidebar-bg:   rgba(255,255,255,0.03);
             --sidebar-brd:  rgba(168,85,247,0.2);
-            --stats-bg:     linear-gradient(135deg,rgba(168,85,247,0.05),rgba(34,211,238,0.05));
-            --stats-border: rgba(168,85,247,0.2);
+            --glass:        rgba(255,255,255,0.03);
         }
 
         body.tema-azul {
@@ -40,1080 +38,1119 @@
             --secondary:    #93c5fd;
             --sidebar-bg:   rgba(15,23,42,0.85);
             --sidebar-brd:  rgba(96,165,250,0.25);
-            --stats-bg:     linear-gradient(135deg,rgba(96,165,250,0.08),rgba(34,211,238,0.08));
-            --stats-border: rgba(96,165,250,0.2);
+            --glass:        rgba(30,58,95,0.3);
         }
 
-        /* SIDEBAR */
+        /* ══ SIDEBAR ════════════════════════════════════════ */
         .sidebar {
-            position: fixed; top: 0; left: 0;
-            width: 240px; height: 100vh;
-            background: var(--sidebar-bg);
-            border-right: 1px solid var(--sidebar-brd);
+            position: fixed; top: 0; left: 0; width: 240px; height: 100vh;
+            background: var(--sidebar-bg); border-right: 1px solid var(--sidebar-brd);
             backdrop-filter: blur(20px); z-index: 100;
             display: flex; flex-direction: column; padding: 25px 0;
+            transition: background 0.4s;
         }
-
         .sidebar-logo {
             display: flex; align-items: center; gap: 12px;
-            padding: 0 20px 25px;
-            border-bottom: 1px solid rgba(168,85,247,0.15);
-            margin-bottom: 20px;
+            padding: 0 20px 25px; border-bottom: 1px solid rgba(168,85,247,0.15); margin-bottom: 20px;
         }
-
         .sidebar-logo img { width: 40px; height: 40px; border-radius: 50%; box-shadow: 0 0 15px rgba(168,85,247,0.5); }
-
         .sidebar-logo span {
             font-size: 20px; font-weight: 800;
             background: linear-gradient(90deg, #c026d3, #22d3ee);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         }
-
         .nav-item {
             display: flex; align-items: center; gap: 12px;
             padding: 12px 20px; color: var(--secondary,#9ca3af); text-decoration: none;
             font-size: 14px; font-weight: 500; transition: all 0.3s;
             border-left: 3px solid transparent; margin: 2px 0;
         }
-
-        .nav-item:hover, .nav-item.active {
-            color: white; background: rgba(168,85,247,0.08); border-left-color: #a855f7;
-        }
-
+        .nav-item:hover, .nav-item.active { color: white; background: rgba(168,85,247,0.08); border-left-color: #a855f7; }
         .nav-item i { width: 18px; text-align: center; font-size: 15px; }
         .nav-item.active i { color: #a855f7; }
-
-        .sidebar-bottom {
-            margin-top: auto; padding: 20px;
-            border-top: 1px solid rgba(168,85,247,0.15);
-        }
-
+        .sidebar-bottom { margin-top: auto; padding: 20px; border-top: 1px solid rgba(168,85,247,0.15); }
         .btn-cerrar {
-            display: flex; align-items: center; gap: 10px;
-            color: #ef4444; background: rgba(239,68,68,0.08);
-            border: 1px solid rgba(239,68,68,0.2); border-radius: 10px;
-            padding: 10px 15px; font-size: 13px; cursor: pointer;
+            display: flex; align-items: center; gap: 10px; color: #ef4444;
+            background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2);
+            border-radius: 10px; padding: 10px 15px; font-size: 13px; cursor: pointer;
             transition: all 0.3s; width: 100%; text-decoration: none;
         }
-
         .btn-cerrar:hover { background: rgba(239,68,68,0.15); color: #ef4444; }
 
-        /* MAIN */
-        .main { margin-left: 240px; padding: 30px; min-height: 100vh; }
+        /* ══ MAIN ═══════════════════════════════════════════ */
+        .main { margin-left: 240px; padding: 32px 36px; min-height: 100vh; }
 
-        /* TOPBAR */
-        .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 26px; }
-        .topbar h1 { font-size: 24px; font-weight: 700; }
-        .topbar p { color: var(--secondary,#9ca3af); font-size: 14px; margin-top: 3px; }
-
-        .topbar-right { display: flex; gap: 10px; }
+        /* ══ TOPBAR ══════════════════════════════════════════ */
+        .topbar {
+            display: flex; justify-content: space-between; align-items: flex-start;
+            margin-bottom: 28px;
+        }
+        .topbar h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; display: flex; align-items: center; gap: 10px; }
+        .topbar h1 span.grad {
+            background: linear-gradient(90deg, #c4b5fd, #22d3ee);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .topbar p { color: var(--secondary); font-size: 14px; margin-top: 4px; }
+        .topbar-right { display: flex; gap: 10px; align-items: center; }
 
         .btn-accion {
             background: var(--card-bg); border: 1px solid var(--card-border);
-            color: var(--secondary,#9ca3af); border-radius: 10px;
-            padding: 9px 16px; font-size: 13px; cursor: pointer;
-            transition: all 0.3s; display: flex; align-items: center; gap: 7px;
+            color: var(--secondary); border-radius: 12px;
+            padding: 10px 18px; font-size: 13px; font-weight: 500; cursor: pointer;
+            transition: all 0.3s; display: flex; align-items: center; gap: 8px;
+            font-family: 'DM Sans', sans-serif;
         }
+        .btn-accion:hover { background: rgba(168,85,247,0.12); color: white; border-color: #a855f7; transform: translateY(-1px); }
 
-        .btn-accion:hover { background: rgba(168,85,247,0.1); color: white; border-color: #a855f7; }
+        /* ══ BANNER DE NOTIFICACIONES DESACTIVADO ════════════ */
+        .banner-muted {
+            display: none;
+            align-items: center; gap: 14px;
+            background: rgba(107,114,128,0.08); border: 1px solid rgba(107,114,128,0.2);
+            border-radius: 14px; padding: 14px 20px; margin-bottom: 22px;
+            font-size: 13px; color: var(--secondary);
+        }
+        .banner-muted.visible { display: flex; }
+        .banner-muted a { color: #a855f7; text-decoration: none; font-weight: 600; }
+        .banner-muted a:hover { color: #c4b5fd; }
 
-        /* RESUMEN 4 CARDS */
+        /* ══ MÉTRICAS 4 TARJETAS ═════════════════════════════ */
         .resumen-grid {
             display: grid; grid-template-columns: repeat(4,1fr);
-            gap: 18px; margin-bottom: 22px;
+            gap: 16px; margin-bottom: 24px;
         }
-
         .resumen-card {
             background: var(--card-bg); border: 1px solid var(--card-border);
             border-radius: 18px; padding: 20px;
             position: relative; overflow: hidden; transition: all 0.3s;
         }
-
         .resumen-card::before {
             content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 3px;
         }
-
         .resumen-card:nth-child(1)::before { background: linear-gradient(90deg,#22d3ee,#38bdf8); }
         .resumen-card:nth-child(2)::before { background: linear-gradient(90deg,#c026d3,#a855f7); }
         .resumen-card:nth-child(3)::before { background: linear-gradient(90deg,#4ade80,#22d3ee); }
         .resumen-card:nth-child(4)::before { background: linear-gradient(90deg,#f59e0b,#fbbf24); }
+        .resumen-card:hover { transform: translateY(-4px); border-color: rgba(168,85,247,0.3); box-shadow: 0 8px 30px rgba(0,0,0,0.2); }
 
-        .resumen-card:hover { transform: translateY(-4px); border-color: rgba(168,85,247,0.3); }
+        .resumen-icon { font-size: 22px; margin-bottom: 10px; }
+        .resumen-label { font-size: 10px; color: var(--secondary); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
+        .resumen-valor { font-size: 20px; font-weight: 800; margin-bottom: 4px; font-family: 'Space Mono', monospace; }
+        .resumen-sub { font-size: 12px; color: var(--muted); }
 
-        .resumen-icon { font-size: 24px; margin-bottom: 10px; }
-        .resumen-label { font-size: 11px; color: var(--secondary,#9ca3af); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
-        .resumen-valor { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
-        .resumen-sub { font-size: 12px; color: var(--muted,#6b7280); }
-
-        /* ANÁLISIS FINANCIERO VISUAL */
+        /* ══ ANÁLISIS VISUAL ═════════════════════════════════ */
         .analisis-section {
-            background: var(--stats-bg); border: 1px solid var(--stats-border);
-            border-radius: 18px; padding: 22px; margin-bottom: 22px;
-        }
-
-        .analisis-titulo {
-            font-size: 14px; font-weight: 700; color: #c4b5fd;
-            margin-bottom: 18px; display: flex; align-items: center; gap: 8px;
-        }
-
-        .analisis-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
-
-        .analisis-item {
             background: var(--card-bg); border: 1px solid var(--card-border);
-            border-radius: 14px; padding: 16px;
+            border-radius: 18px; padding: 22px; margin-bottom: 22px;
+            position: relative; overflow: hidden;
         }
-
-        .analisis-item-label { font-size: 11px; color: var(--secondary,#9ca3af); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
-        .analisis-item-valor { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
-
+        .analisis-section::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px;
+            background: linear-gradient(90deg, #c026d3, #a855f7, #22d3ee, #4ade80);
+        }
+        .seccion-titulo {
+            font-size: 14px; font-weight: 700; color: #c4b5fd;
+            margin-bottom: 18px; display: flex; align-items: center; gap: 9px;
+        }
+        .analisis-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; }
+        .analisis-item {
+            background: var(--item-bg); border: 1px solid var(--item-border);
+            border-radius: 14px; padding: 16px; transition: all 0.3s;
+        }
+        .analisis-item:hover { border-color: rgba(168,85,247,0.25); }
+        .analisis-item-label { font-size: 10px; color: var(--secondary); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; }
+        .analisis-item-valor { font-size: 20px; font-weight: 800; margin-bottom: 10px; font-family: 'Space Mono', monospace; }
         .barra-track { height: 6px; background: var(--item-border); border-radius: 6px; overflow: hidden; }
         .barra-fill { height: 100%; border-radius: 6px; transition: width 1.2s cubic-bezier(0.4,0,0.2,1); }
+        .barra-verde { background: linear-gradient(90deg,#4ade80,#22d3ee); }
+        .barra-rosa  { background: linear-gradient(90deg,#c026d3,#f472b6); }
+        .barra-amar  { background: linear-gradient(90deg,#f59e0b,#fbbf24); }
+        .barra-cyan  { background: linear-gradient(90deg,#22d3ee,#38bdf8); }
+        .analisis-nota { font-size: 12px; color: var(--muted); margin-top: 8px; line-height: 1.4; }
 
-        .barra-verde  { background: linear-gradient(90deg,#4ade80,#22d3ee); }
-        .barra-rosa   { background: linear-gradient(90deg,#c026d3,#f472b6); }
-        .barra-amar   { background: linear-gradient(90deg,#f59e0b,#fbbf24); }
-        .barra-cyan   { background: linear-gradient(90deg,#22d3ee,#38bdf8); }
-
-        .analisis-nota { font-size: 12px; color: var(--muted,#6b7280); margin-top: 6px; }
-
-        /* REGLA 50/30/20 */
+        /* ══ REGLA 50/30/20 ══════════════════════════════════ */
         .regla-section {
             background: var(--card-bg); border: 1px solid var(--card-border);
             border-radius: 18px; padding: 22px; margin-bottom: 22px;
         }
-
         .regla-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; margin-top: 14px; }
-
-        .regla-item {
-            border-radius: 14px; padding: 16px; text-align: center;
-        }
-
-        .regla-50 { background: rgba(34,211,238,0.08); border: 1px solid rgba(34,211,238,0.2); }
-        .regla-30 { background: rgba(168,85,247,0.08); border: 1px solid rgba(168,85,247,0.2); }
-        .regla-20 { background: rgba(74,222,128,0.08); border: 1px solid rgba(74,222,128,0.2); }
-
-        .regla-pct { font-size: 28px; font-weight: 800; margin-bottom: 4px; }
+        .regla-item { border-radius: 16px; padding: 18px; text-align: center; }
+        .regla-50 { background: rgba(34,211,238,0.07); border: 1px solid rgba(34,211,238,0.2); }
+        .regla-30 { background: rgba(168,85,247,0.07); border: 1px solid rgba(168,85,247,0.2); }
+        .regla-20 { background: rgba(74,222,128,0.07); border: 1px solid rgba(74,222,128,0.2); }
+        .regla-pct { font-size: 30px; font-weight: 800; margin-bottom: 4px; font-family: 'Space Mono', monospace; }
         .regla-50 .regla-pct { color: #22d3ee; }
         .regla-30 .regla-pct { color: #a855f7; }
         .regla-20 .regla-pct { color: #4ade80; }
+        .regla-nombre { font-size: 13px; font-weight: 700; color: white; margin-bottom: 4px; }
+        .regla-monto  { font-size: 17px; font-weight: 800; margin-bottom: 6px; font-family: 'Space Mono', monospace; }
+        .regla-desc   { font-size: 11px; color: var(--muted); line-height: 1.5; }
+        .regla-estado { font-size: 11px; font-weight: 700; margin-top: 10px; }
 
-        .regla-nombre { font-size: 13px; font-weight: 600; color: white; margin-bottom: 4px; }
-        .regla-monto { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
-        .regla-desc { font-size: 11px; color: var(--muted,#6b7280); line-height: 1.4; }
-        .regla-estado { font-size: 11px; font-weight: 600; margin-top: 8px; }
-
-        /* STATS CONTADORES */
+        /* ══ STATS BAR ═══════════════════════════════════════ */
         .stats-bar {
             display: grid; grid-template-columns: repeat(4,1fr);
-            gap: 0; text-align: center;
-            background: var(--stats-bg); border: 1px solid var(--stats-border);
-            border-radius: 14px; padding: 18px 0; margin-bottom: 22px;
+            background: var(--card-bg); border: 1px solid var(--card-border);
+            border-radius: 16px; overflow: hidden; margin-bottom: 22px;
         }
-
-        .stat-bar-item { position: relative; padding: 4px 0; }
-
+        .stat-bar-item {
+            padding: 18px 10px; text-align: center; position: relative;
+            transition: background 0.3s;
+        }
+        .stat-bar-item:hover { background: rgba(168,85,247,0.05); }
         .stat-bar-item:not(:last-child)::after {
-            content: ''; position: absolute; right: 0; top: 10%; height: 80%;
+            content: ''; position: absolute; right: 0; top: 20%; height: 60%;
             width: 1px; background: var(--item-border);
         }
+        .stat-bar-num { font-size: 28px; font-weight: 800; margin-bottom: 5px; font-family: 'Space Mono', monospace; }
+        .stat-bar-lbl { font-size: 11px; color: var(--secondary); text-transform: uppercase; letter-spacing: 0.8px; }
 
-        .stat-bar-num { font-size: 26px; font-weight: 800; color: #c4b5fd; margin-bottom: 4px; }
-        .stat-bar-lbl { font-size: 11px; color: var(--secondary,#9ca3af); text-transform: uppercase; letter-spacing: 1px; }
-
-        /* FILTROS */
+        /* ══ FILTROS ═════════════════════════════════════════ */
         .filtros-bar { display: flex; gap: 8px; margin-bottom: 22px; flex-wrap: wrap; align-items: center; }
-
-        .filtros-label { font-size: 13px; color: var(--secondary,#9ca3af); }
-
+        .filtros-label { font-size: 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
         .filter-chip {
             background: var(--item-bg); border: 1px solid var(--item-border);
-            color: var(--secondary,#9ca3af); border-radius: 50px;
-            padding: 8px 16px; font-size: 13px; cursor: pointer;
-            transition: all 0.3s; display: flex; align-items: center; gap: 6px;
+            color: var(--secondary); border-radius: 50px;
+            padding: 8px 16px; font-size: 13px; font-weight: 500; cursor: pointer;
+            transition: all 0.25s; display: flex; align-items: center; gap: 6px;
+            font-family: 'DM Sans', sans-serif;
         }
+        .filter-chip:hover { background: rgba(168,85,247,0.1); border-color: rgba(168,85,247,0.3); color: white; transform: translateY(-1px); }
+        .filter-chip.activo               { background: rgba(168,85,247,0.15); border-color: #a855f7; color: white; font-weight: 700; box-shadow: 0 0 14px rgba(168,85,247,0.2); }
+        .filter-chip.chip-alerta.activo      { background: rgba(239,68,68,0.15);  border-color: #ef4444; color: #f87171; box-shadow: 0 0 14px rgba(239,68,68,0.2); }
+        .filter-chip.chip-advertencia.activo { background: rgba(245,158,11,0.15); border-color: #f59e0b; color: #fbbf24; box-shadow: 0 0 14px rgba(245,158,11,0.2); }
+        .filter-chip.chip-exito.activo       { background: rgba(74,222,128,0.15); border-color: #4ade80; color: #4ade80; box-shadow: 0 0 14px rgba(74,222,128,0.2); }
+        .filter-chip.chip-info.activo        { background: rgba(34,211,238,0.15); border-color: #22d3ee; color: #22d3ee; box-shadow: 0 0 14px rgba(34,211,238,0.2); }
 
-        .filter-chip:hover { background: rgba(168,85,247,0.1); border-color: rgba(168,85,247,0.3); color: white; }
-        .filter-chip.activo { background: rgba(168,85,247,0.15); border-color: #a855f7; color: white; font-weight: 600; }
-        .filter-chip.chip-alerta.activo      { background: rgba(239,68,68,0.15);  border-color: #ef4444; color: #f87171; }
-        .filter-chip.chip-advertencia.activo { background: rgba(245,158,11,0.15); border-color: #f59e0b; color: #fbbf24; }
-        .filter-chip.chip-exito.activo       { background: rgba(74,222,128,0.15); border-color: #4ade80; color: #4ade80; }
-        .filter-chip.chip-info.activo        { background: rgba(168,85,247,0.15); border-color: #a855f7; color: #c4b5fd; }
-
-        /* GRID RECOMENDACIONES */
+        /* ══ GRID RECOMENDACIONES ════════════════════════════ */
         .rec-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(340px,1fr)); gap: 20px; }
 
-        /* CARD */
         .rec-card {
             background: var(--card-bg); border: 1px solid var(--card-border);
             border-radius: 20px; padding: 24px; position: relative; overflow: hidden;
-            transition: all 0.3s; display: flex; flex-direction: column;
+            transition: all 0.35s; display: flex; flex-direction: column;
         }
-
         .rec-card::before {
             content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 4px;
             transition: height 0.3s;
         }
-
         .rec-card.alerta::before      { background: linear-gradient(90deg,#ef4444,#f87171); }
         .rec-card.advertencia::before { background: linear-gradient(90deg,#f59e0b,#fbbf24); }
         .rec-card.exito::before       { background: linear-gradient(90deg,#4ade80,#22d3ee); }
         .rec-card.info::before        { background: linear-gradient(90deg,#a855f7,#22d3ee); }
 
-        .rec-card:hover { transform: translateY(-5px); border-color: rgba(168,85,247,0.3); box-shadow: 0 16px 40px rgba(0,0,0,0.3); }
+        /* Glow sutil por tipo */
+        .rec-card.alerta:hover      { border-color: rgba(239,68,68,0.4);   box-shadow: 0 12px 40px rgba(239,68,68,0.1); }
+        .rec-card.advertencia:hover { border-color: rgba(245,158,11,0.4);  box-shadow: 0 12px 40px rgba(245,158,11,0.1); }
+        .rec-card.exito:hover       { border-color: rgba(74,222,128,0.4);  box-shadow: 0 12px 40px rgba(74,222,128,0.1); }
+        .rec-card.info:hover        { border-color: rgba(168,85,247,0.4);  box-shadow: 0 12px 40px rgba(168,85,247,0.1); }
+        .rec-card:hover { transform: translateY(-5px); }
         .rec-card:hover::before { height: 6px; }
 
         .rec-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
 
         .rec-emoji {
-            width: 54px; height: 54px; border-radius: 16px;
+            width: 52px; height: 52px; border-radius: 15px;
             display: flex; align-items: center; justify-content: center;
             font-size: 26px; transition: transform 0.3s; flex-shrink: 0;
         }
-
-        .rec-card:hover .rec-emoji { transform: scale(1.12) rotate(-4deg); }
-
-        .rec-card.alerta      .rec-emoji { background: rgba(239,68,68,0.1); }
-        .rec-card.advertencia .rec-emoji { background: rgba(245,158,11,0.1); }
-        .rec-card.exito       .rec-emoji { background: rgba(74,222,128,0.1); }
-        .rec-card.info        .rec-emoji { background: rgba(168,85,247,0.1); }
+        .rec-card:hover .rec-emoji { transform: scale(1.12) rotate(-5deg); }
+        .rec-card.alerta      .rec-emoji { background: rgba(239,68,68,0.12); }
+        .rec-card.advertencia .rec-emoji { background: rgba(245,158,11,0.12); }
+        .rec-card.exito       .rec-emoji { background: rgba(74,222,128,0.12); }
+        .rec-card.info        .rec-emoji { background: rgba(168,85,247,0.12); }
 
         .rec-badges { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
-
         .badge-tipo {
-            border-radius: 50px; padding: 3px 10px;
+            border-radius: 50px; padding: 4px 11px;
             font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+            display: flex; align-items: center; gap: 5px;
         }
+        .badge-alerta      { background: rgba(239,68,68,0.15);   color: #f87171; }
+        .badge-advertencia { background: rgba(245,158,11,0.15);  color: #fbbf24; }
+        .badge-exito       { background: rgba(74,222,128,0.15);  color: #4ade80; }
+        .badge-info        { background: rgba(168,85,247,0.15);  color: #c4b5fd; }
+        .badge-prio { border-radius: 50px; padding: 3px 10px; font-size: 10px; font-weight: 600; }
+        .prio-Alta  { background: rgba(239,68,68,0.12);  color: #f87171; }
+        .prio-Media { background: rgba(245,158,11,0.12); color: #fbbf24; }
+        .prio-Baja  { background: rgba(74,222,128,0.12); color: #4ade80; }
 
-        .badge-alerta      { background: rgba(239,68,68,0.2);   color: #f87171; }
-        .badge-advertencia { background: rgba(245,158,11,0.2);  color: #fbbf24; }
-        .badge-exito       { background: rgba(74,222,128,0.2);  color: #4ade80; }
-        .badge-info        { background: rgba(168,85,247,0.2);  color: #c4b5fd; }
+        .rec-titulo      { font-size: 15px; font-weight: 700; color: white; margin-bottom: 10px; line-height: 1.4; letter-spacing: -0.2px; }
+        .rec-descripcion { font-size: 13px; color: var(--secondary); line-height: 1.7; margin-bottom: 14px; flex: 1; }
 
-        .badge-prio {
-            border-radius: 50px; padding: 3px 10px;
-            font-size: 10px; font-weight: 600;
-        }
-
-        .prio-Alta  { background: rgba(239,68,68,0.15);  color: #f87171; }
-        .prio-Media { background: rgba(245,158,11,0.15); color: #fbbf24; }
-        .prio-Baja  { background: rgba(74,222,128,0.15); color: #4ade80; }
-
-        .rec-titulo { font-size: 16px; font-weight: 700; color: white; margin-bottom: 10px; line-height: 1.35; }
-
-        .rec-descripcion { font-size: 13px; color: var(--secondary,#9ca3af); line-height: 1.65; margin-bottom: 16px; flex: 1; }
-
-        /* BENEFICIOS */
-        .rec-beneficios { margin-bottom: 16px; }
-
+        .rec-beneficios { margin-bottom: 14px; }
         .beneficio {
             display: flex; align-items: flex-start; gap: 8px;
-            font-size: 13px; color: #c4b5fd; margin-bottom: 6px; line-height: 1.4;
+            font-size: 13px; color: #c4b5fd; margin-bottom: 6px; line-height: 1.45;
         }
-
         .beneficio i { color: #4ade80; font-size: 11px; margin-top: 3px; flex-shrink: 0; }
 
-        /* DATO CLAVE */
         .dato-clave {
-            background: rgba(168,85,247,0.07); border: 1px solid rgba(168,85,247,0.2);
-            border-radius: 10px; padding: 10px 14px; margin-bottom: 16px;
-            font-size: 13px; color: #c4b5fd; display: flex; align-items: center; gap: 8px;
+            background: rgba(168,85,247,0.06); border: 1px solid rgba(168,85,247,0.18);
+            border-radius: 11px; padding: 10px 14px; margin-bottom: 14px;
+            font-size: 12px; color: #c4b5fd; display: flex; align-items: flex-start; gap: 8px; line-height: 1.5;
         }
 
-        /* AHORRO TAG */
         .ahorro-tag {
             display: inline-flex; align-items: center; gap: 6px;
-            background: rgba(74,222,128,0.1); border: 1px solid rgba(74,222,128,0.25);
-            color: #4ade80; border-radius: 8px; padding: 5px 12px;
-            font-size: 12px; font-weight: 600; margin-bottom: 16px;
+            background: rgba(74,222,128,0.1); border: 1px solid rgba(74,222,128,0.22);
+            color: #4ade80; border-radius: 9px; padding: 5px 12px;
+            font-size: 12px; font-weight: 700; margin-bottom: 14px;
+            font-family: 'Space Mono', monospace;
         }
 
-        /* PROGRESO */
-        .rec-progreso { margin-bottom: 16px; }
-
-        .progreso-hdr { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted,#6b7280); margin-bottom: 7px; }
-
+        .rec-progreso { margin-bottom: 14px; }
+        .progreso-hdr { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-bottom: 7px; font-weight: 600; }
         .progreso-track { height: 6px; background: var(--item-border); border-radius: 6px; overflow: hidden; }
-
         .progreso-fill {
             height: 100%; border-radius: 6px;
             background: linear-gradient(90deg,#a855f7,#22d3ee);
             transition: width 1.2s cubic-bezier(0.4,0,0.2,1);
         }
 
-        /* BTN */
         .rec-btn {
             display: flex; align-items: center; justify-content: space-between;
             background: var(--item-bg); border: 1px solid var(--item-border);
-            color: var(--secondary,#9ca3af); border-radius: 12px;
+            color: var(--secondary); border-radius: 12px;
             padding: 11px 16px; font-size: 13px; font-weight: 600;
             text-decoration: none; cursor: pointer; transition: all 0.3s; margin-top: auto;
+            font-family: 'DM Sans', sans-serif;
         }
-
         .rec-btn:hover { background: rgba(168,85,247,0.12); border-color: #a855f7; color: white; transform: translateX(3px); }
         .rec-btn i { transition: transform 0.3s; }
-        .rec-btn:hover i { transform: translateX(4px); }
+        .rec-btn:hover i { transform: translateX(5px); }
 
-        /* VACÍO */
+        /* ══ ESTADO VACÍO ════════════════════════════════════ */
         .estado-vacio {
-            text-align: center; color: var(--muted,#6b7280);
-            padding: 60px 40px; background: var(--card-bg);
+            text-align: center; color: var(--muted);
+            padding: 70px 40px; background: var(--card-bg);
             border: 1px dashed var(--card-border); border-radius: 20px;
         }
+        .estado-vacio-icon {
+            width: 80px; height: 80px; border-radius: 50%;
+            background: rgba(168,85,247,0.06); border: 2px dashed rgba(168,85,247,0.2);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 36px; margin: 0 auto 20px;
+        }
+        .estado-vacio h3 { font-size: 18px; color: white; margin-bottom: 8px; font-weight: 700; }
+        .estado-vacio p  { font-size: 14px; color: var(--secondary); line-height: 1.6; }
 
-        .estado-vacio i { font-size: 48px; opacity: 0.15; display: block; margin-bottom: 18px; }
-        .estado-vacio h3 { font-size: 18px; color: white; margin-bottom: 8px; font-weight: 600; }
-        .estado-vacio p { font-size: 14px; color: var(--secondary,#9ca3af); }
+        /* ══ BANNER DE ALERTAS SILENCIADAS POR TIPO ══════════ */
+        /* Tarjeta especial cuando las alertas están silenciadas */
+        .rec-card.silenciada {
+            opacity: 0.45; filter: grayscale(40%);
+            pointer-events: none; position: relative;
+        }
+        .silenciado-overlay {
+            position: absolute; inset: 0; border-radius: 20px;
+            background: rgba(0,0,0,0.3);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 13px; color: var(--secondary); gap: 8px;
+            pointer-events: none;
+        }
 
-        /* TOAST */
+        /* ══ TOAST ═══════════════════════════════════════════ */
         .toast-notif {
-            position: fixed; bottom: 28px; right: 28px;
-            background: rgba(26,26,78,0.97); border: 1px solid rgba(168,85,247,0.3);
-            border-radius: 14px; padding: 14px 20px; font-size: 14px; font-weight: 500;
-            color: white; box-shadow: 0 8px 30px rgba(0,0,0,0.4); z-index: 9999;
+            position: fixed; bottom: 26px; right: 26px;
+            background: rgba(15,15,45,0.97); border: 1px solid rgba(168,85,247,0.35);
+            border-radius: 14px; padding: 13px 20px; font-size: 14px;
+            color: white; box-shadow: 0 10px 40px rgba(0,0,0,0.5); z-index: 9999;
             display: flex; align-items: center; gap: 10px;
-            animation: slideUp 0.3s ease;
+            transform: translateY(80px); opacity: 0;
+            transition: all 0.4s cubic-bezier(0.34,1.56,0.64,1);
+            pointer-events: none; min-width: 260px;
         }
+        .toast-notif.show { transform: translateY(0); opacity: 1; }
 
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to   { opacity: 1; transform: translateY(0); }
+        /* ══ PANEL NOTIF SETTINGS (esquina) ══════════════════ */
+        .notif-settings-btn {
+            background: var(--card-bg); border: 1px solid var(--card-border);
+            border-radius: 12px; padding: 10px 16px; font-size: 13px; font-weight: 500;
+            color: var(--secondary); cursor: pointer; transition: all 0.3s;
+            display: flex; align-items: center; gap: 8px; font-family: 'DM Sans', sans-serif;
+            position: relative;
         }
+        .notif-settings-btn:hover { background: rgba(168,85,247,0.1); color: white; border-color: #a855f7; }
+        .notif-dot {
+            width: 8px; height: 8px; border-radius: 50%; background: #4ade80;
+            position: absolute; top: -2px; right: -2px;
+            box-shadow: 0 0 6px rgba(74,222,128,0.7);
+        }
+        .notif-dot.off { background: #6b7280; box-shadow: none; }
 
-        .toast-notif.exito { border-color: rgba(74,222,128,0.4); }
+        /* Panel dropdown */
+        .notif-panel {
+            position: absolute; top: calc(100% + 10px); right: 0;
+            width: 300px; background: #0f0f2d;
+            border: 1px solid rgba(168,85,247,0.3); border-radius: 16px;
+            padding: 18px; z-index: 200; display: none;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            animation: panelIn 0.25s ease;
+        }
+        @keyframes panelIn { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
+        .notif-panel.visible { display: block; }
+        .notif-panel-titulo {
+            font-size: 12px; font-weight: 700; color: #a855f7;
+            text-transform: uppercase; letter-spacing: 1px; margin-bottom: 14px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .notif-row {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+        .notif-row:last-child { border-bottom: none; padding-bottom: 0; }
+        .notif-row-left { display: flex; align-items: center; gap: 10px; }
+        .notif-row-icon { font-size: 18px; width: 28px; text-align: center; }
+        .notif-row-text { font-size: 13px; font-weight: 500; color: white; }
+        .notif-row-sub  { font-size: 11px; color: var(--muted); margin-top: 1px; }
+
+        /* Mini toggle */
+        .mini-toggle { position: relative; width: 38px; height: 21px; flex-shrink: 0; }
+        .mini-toggle input { opacity: 0; width: 0; height: 0; }
+        .mini-slider {
+            position: absolute; cursor: pointer; inset: 0;
+            background: rgba(255,255,255,0.12); border-radius: 21px; transition: all 0.3s;
+        }
+        .mini-slider::before {
+            content: ''; position: absolute; height: 15px; width: 15px;
+            left: 3px; bottom: 3px; background: white; border-radius: 50%;
+            transition: all 0.3s; box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+        }
+        .mini-toggle input:checked + .mini-slider { background: linear-gradient(135deg,#c026d3,#a855f7); }
+        .mini-toggle input:checked + .mini-slider::before { transform: translateX(17px); }
+
+        .notif-panel-footer {
+            margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.06);
+            font-size: 11px; color: var(--muted); display: flex; align-items: center; gap: 6px;
+        }
+        .notif-panel-footer a { color: #a855f7; text-decoration: none; }
     </style>
 </head>
 <body class="tema-oscuro">
 
-    <div class="sidebar">
-        <div class="sidebar-logo">
-            <img src="../../images/logo.png" alt="FinanBot" onerror="this.style.display='none'">
-            <span>FinanBot</span>
+<!-- TOAST -->
+<div class="toast-notif" id="toastGlobal">
+    <span id="toastIcon">💡</span>
+    <span id="toastMsg">Mensaje</span>
+</div>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+    <div class="sidebar-logo">
+        <img src="../../images/logo.png" alt="FinanBot" onerror="this.style.display='none'">
+        <span>FinanBot</span>
+    </div>
+    <a href="dashboard.html"       class="nav-item"><i class="fas fa-home"></i>         Dashboard</a>
+    <a href="chat.html"            class="nav-item"><i class="fas fa-robot"></i>         Chat FinanBot</a>
+    <a href="finanzas.html"        class="nav-item"><i class="fas fa-wallet"></i>        Mis Finanzas</a>
+    <a href="recomendaciones.html" class="nav-item active"><i class="fas fa-lightbulb"></i> Recomendaciones</a>
+    <a href="simulador.html"       class="nav-item"><i class="fas fa-chart-line"></i>    Simulador</a>
+    <a href="aprende.html"         class="nav-item"><i class="fas fa-graduation-cap"></i>Aprende</a>
+    <a href="perfil.html"          class="nav-item"><i class="fas fa-user-circle"></i>   Mi Perfil</a>
+    <div class="sidebar-bottom">
+        <a href="../index.html" class="btn-cerrar" onclick="cerrarSesion()">
+            <i class="fas fa-sign-out-alt"></i> Cerrar sesión
+        </a>
+    </div>
+</div>
+
+<div class="main">
+
+    <!-- TOPBAR -->
+    <div class="topbar">
+        <div>
+            <h1><i class="fas fa-lightbulb" style="color:#a855f7;font-size:22px;"></i> <span class="grad">Recomendaciones</span></h1>
+            <p>Análisis financiero personalizado basado en tus datos reales</p>
         </div>
-        <a href="dashboard.html" class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
-        <a href="chat.html" class="nav-item"><i class="fas fa-robot"></i> Chat FinanBot</a>
-        <a href="finanzas.html" class="nav-item"><i class="fas fa-wallet"></i> Mis Finanzas</a>
-        <a href="recomendaciones.html" class="nav-item active"><i class="fas fa-lightbulb"></i> Recomendaciones</a>
-        <a href="simulador.html" class="nav-item"><i class="fas fa-chart-line"></i> Simulador</a>
-        <a href="aprende.html" class="nav-item"><i class="fas fa-graduation-cap"></i> Aprende</a>
-        <a href="perfil.html" class="nav-item"><i class="fas fa-user-circle"></i> Mi Perfil</a>
-        <div class="sidebar-bottom">
-            <a href="../index.html" class="btn-cerrar" onclick="cerrarSesion()">
-                <i class="fas fa-sign-out-alt"></i> Cerrar sesión
-            </a>
+        <div class="topbar-right">
+            <button class="btn-accion" onclick="cargarTodo()">
+                <i class="fas fa-sync-alt"></i> Actualizar
+            </button>
+            <button class="btn-accion" onclick="location.href='chat.html'">
+                <i class="fas fa-robot"></i> Pedir consejo
+            </button>
+            <!-- Botón de configuración de notificaciones con panel -->
+            <div style="position:relative;">
+                <button class="notif-settings-btn" id="btnNotifSettings" onclick="togglePanel()">
+                    <i class="fas fa-bell"></i> Notificaciones
+                    <div class="notif-dot" id="notifDot"></div>
+                </button>
+                <div class="notif-panel" id="notifPanel">
+                    <div class="notif-panel-titulo">
+                        <i class="fas fa-sliders-h"></i> Alertas en esta página
+                    </div>
+
+                    <!-- Toggle: Alertas urgentes -->
+                    <div class="notif-row">
+                        <div class="notif-row-left">
+                            <span class="notif-row-icon">🚨</span>
+                            <div>
+                                <div class="notif-row-text">Alertas urgentes</div>
+                                <div class="notif-row-sub">Mostrar tarjetas de tipo "Urgente"</div>
+                            </div>
+                        </div>
+                        <label class="mini-toggle">
+                            <input type="checkbox" id="tnAlerta" checked onchange="guardarNotifRec()">
+                            <span class="mini-slider"></span>
+                        </label>
+                    </div>
+
+                    <!-- Toggle: Advertencias -->
+                    <div class="notif-row">
+                        <div class="notif-row-left">
+                            <span class="notif-row-icon">⚠️</span>
+                            <div>
+                                <div class="notif-row-text">Advertencias</div>
+                                <div class="notif-row-sub">Mostrar tarjetas de "Atención"</div>
+                            </div>
+                        </div>
+                        <label class="mini-toggle">
+                            <input type="checkbox" id="tnAdvertencia" checked onchange="guardarNotifRec()">
+                            <span class="mini-slider"></span>
+                        </label>
+                    </div>
+
+                    <!-- Toggle: Éxitos -->
+                    <div class="notif-row">
+                        <div class="notif-row-left">
+                            <span class="notif-row-icon">✅</span>
+                            <div>
+                                <div class="notif-row-text">Éxitos y logros</div>
+                                <div class="notif-row-sub">Mostrar tarjetas de celebración</div>
+                            </div>
+                        </div>
+                        <label class="mini-toggle">
+                            <input type="checkbox" id="tnExito" checked onchange="guardarNotifRec()">
+                            <span class="mini-slider"></span>
+                        </label>
+                    </div>
+
+                    <!-- Toggle: Consejos -->
+                    <div class="notif-row">
+                        <div class="notif-row-left">
+                            <span class="notif-row-icon">💡</span>
+                            <div>
+                                <div class="notif-row-text">Consejos informativos</div>
+                                <div class="notif-row-sub">Mostrar tarjetas de tipo "Consejo"</div>
+                            </div>
+                        </div>
+                        <label class="mini-toggle">
+                            <input type="checkbox" id="tnInfo" checked onchange="guardarNotifRec()">
+                            <span class="mini-slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="notif-panel-footer">
+                        <i class="fas fa-info-circle"></i>
+                        Más opciones en <a href="perfil.html">Mi Perfil → Configuración</a>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <div class="main">
-
-        <!-- TOPBAR -->
-        <div class="topbar">
-            <div>
-                <h1>💡 Recomendaciones</h1>
-                <p>Análisis financiero personalizado en tiempo real basado en tus datos</p>
-            </div>
-            <div class="topbar-right">
-                <button class="btn-accion" onclick="cargarTodo()">
-                    <i class="fas fa-sync-alt"></i> Actualizar
-                </button>
-                <button class="btn-accion" onclick="location.href='chat.html'">
-                    <i class="fas fa-robot"></i> Pedir consejo al bot
-                </button>
-            </div>
-        </div>
-
-        <!-- RESUMEN -->
-        <div class="resumen-grid">
-            <div class="resumen-card">
-                <div class="resumen-icon">💰</div>
-                <div class="resumen-label">Ingresos totales</div>
-                <div class="resumen-valor" id="resIngresos" style="color:#4ade80">$0</div>
-                <div class="resumen-sub" id="resIngresosN">0 registros</div>
-            </div>
-            <div class="resumen-card">
-                <div class="resumen-icon">💸</div>
-                <div class="resumen-label">Gastos totales</div>
-                <div class="resumen-valor" id="resGastos" style="color:#f472b6">$0</div>
-                <div class="resumen-sub" id="resGastosN">0 registros</div>
-            </div>
-            <div class="resumen-card">
-                <div class="resumen-icon">📊</div>
-                <div class="resumen-label">Balance actual</div>
-                <div class="resumen-valor" id="resBalance" style="color:#22d3ee">$0</div>
-                <div class="resumen-sub" id="resBalanceEstado">Sin movimientos</div>
-            </div>
-            <div class="resumen-card">
-                <div class="resumen-icon">🎯</div>
-                <div class="resumen-label">Ahorro potencial</div>
-                <div class="resumen-valor" id="resAhorro" style="color:#fbbf24">$0</div>
-                <div class="resumen-sub">Si aplicas los consejos</div>
-            </div>
-        </div>
-
-        <!-- ANÁLISIS FINANCIERO -->
-        <div class="analisis-section">
-            <div class="analisis-titulo">
-                <i class="fas fa-chart-line" style="color:#a855f7;"></i>
-                Análisis de tu salud financiera
-            </div>
-            <div class="analisis-grid">
-                <div class="analisis-item">
-                    <div class="analisis-item-label">% Gastos / Ingresos</div>
-                    <div class="analisis-item-valor" id="pctGastos" style="color:#f472b6">0%</div>
-                    <div class="barra-track">
-                        <div class="barra-fill barra-rosa" id="barraPctGastos" style="width:0%"></div>
-                    </div>
-                    <div class="analisis-nota" id="notaPctGastos">Registra transacciones para ver tu análisis</div>
-                </div>
-                <div class="analisis-item">
-                    <div class="analisis-item-label">Progreso metas de ahorro</div>
-                    <div class="analisis-item-valor" id="pctMetas" style="color:#4ade80">0%</div>
-                    <div class="barra-track">
-                        <div class="barra-fill barra-verde" id="barraMetas" style="width:0%"></div>
-                    </div>
-                    <div class="analisis-nota" id="notaMetas">Sin metas creadas</div>
-                </div>
-                <div class="analisis-item">
-                    <div class="analisis-item-label">Capacidad de ahorro mensual</div>
-                    <div class="analisis-item-valor" id="capAhorro" style="color:#22d3ee">$0</div>
-                    <div class="barra-track">
-                        <div class="barra-fill barra-cyan" id="barraCapAhorro" style="width:0%"></div>
-                    </div>
-                    <div class="analisis-nota" id="notaCapAhorro">Basado en tu balance actual</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- REGLA 50/30/20 -->
-        <div class="regla-section" id="reglaSection" style="display:none;">
-            <div class="analisis-titulo">
-                <i class="fas fa-balance-scale" style="color:#22d3ee;"></i>
-                Distribución ideal — Regla 50/30/20
-                <span style="margin-left:auto;font-size:12px;color:var(--muted,#6b7280);font-weight:400;">Basado en tu ingreso mensual registrado</span>
-            </div>
-            <div class="regla-grid">
-                <div class="regla-item regla-50">
-                    <div class="regla-pct">50%</div>
-                    <div class="regla-nombre">Necesidades</div>
-                    <div class="regla-monto" id="regla50">$0</div>
-                    <div class="regla-desc">Arriendo, comida, transporte, salud, servicios.</div>
-                    <div class="regla-estado" id="estado50"></div>
-                </div>
-                <div class="regla-item regla-30">
-                    <div class="regla-pct">30%</div>
-                    <div class="regla-nombre">Deseos</div>
-                    <div class="regla-monto" id="regla30">$0</div>
-                    <div class="regla-desc">Entretenimiento, ropa, salidas, suscripciones.</div>
-                    <div class="regla-estado" id="estado30"></div>
-                </div>
-                <div class="regla-item regla-20">
-                    <div class="regla-pct">20%</div>
-                    <div class="regla-nombre">Ahorro e inversión</div>
-                    <div class="regla-monto" id="regla20">$0</div>
-                    <div class="regla-desc">Fondo de emergencia, CDT, pensión voluntaria.</div>
-                    <div class="regla-estado" id="estado20"></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- STATS BAR -->
-        <div class="stats-bar">
-            <div class="stat-bar-item">
-                <div class="stat-bar-num" id="statTotal">0</div>
-                <div class="stat-bar-lbl">Recomendaciones</div>
-            </div>
-            <div class="stat-bar-item">
-                <div class="stat-bar-num" id="statAlerta" style="color:#f87171">0</div>
-                <div class="stat-bar-lbl">⚡ Urgentes</div>
-            </div>
-            <div class="stat-bar-item">
-                <div class="stat-bar-num" id="statAdv" style="color:#fbbf24">0</div>
-                <div class="stat-bar-lbl">⚠️ Atención</div>
-            </div>
-            <div class="stat-bar-item">
-                <div class="stat-bar-num" id="statExito" style="color:#4ade80">0</div>
-                <div class="stat-bar-lbl">✅ Éxitos</div>
-            </div>
-        </div>
-
-        <!-- FILTROS -->
-        <div class="filtros-bar">
-            <span class="filtros-label"><i class="fas fa-filter"></i> Filtrar:</span>
-            <button class="filter-chip activo" onclick="setFiltro('todos',this)">
-                <i class="fas fa-th-large"></i> Todas
-            </button>
-            <button class="filter-chip chip-alerta" onclick="setFiltro('alerta',this)">
-                <i class="fas fa-exclamation-triangle"></i> Urgentes
-            </button>
-            <button class="filter-chip chip-advertencia" onclick="setFiltro('advertencia',this)">
-                <i class="fas fa-exclamation-circle"></i> Atención
-            </button>
-            <button class="filter-chip chip-exito" onclick="setFiltro('exito',this)">
-                <i class="fas fa-check-circle"></i> Éxitos
-            </button>
-            <button class="filter-chip chip-info" onclick="setFiltro('info',this)">
-                <i class="fas fa-info-circle"></i> Consejos
-            </button>
-        </div>
-
-        <!-- LISTA -->
-        <div id="listaRec">
-            <div class="estado-vacio">
-                <i class="fas fa-chart-line"></i>
-                <h3>Analizando tus finanzas...</h3>
-                <p>Generando recomendaciones personalizadas basadas en tus datos reales</p>
-            </div>
-        </div>
-
+    <!-- BANNER cuando todo está silenciado -->
+    <div class="banner-muted" id="bannerMuted">
+        <span style="font-size:20px;">🔕</span>
+        <span>Tienes todas las notificaciones de esta página silenciadas.
+            <a href="#" onclick="activarTodo(); return false;">Activar todas</a> o
+            <a href="perfil.html">ir a Configuración</a>.
+        </span>
     </div>
 
-    <script>
-        // ── TEMA ──────────────────────────────────────────
-        (function() {
-            const t = localStorage.getItem('finanbot_tema') || 'oscuro';
-            document.body.className = 'tema-' + t;
-        })();
+    <!-- MÉTRICAS -->
+    <div class="resumen-grid">
+        <div class="resumen-card">
+            <div class="resumen-icon">💰</div>
+            <div class="resumen-label">Ingresos totales</div>
+            <div class="resumen-valor" id="resIngresos" style="color:#4ade80">$0</div>
+            <div class="resumen-sub" id="resIngresosN">0 registros</div>
+        </div>
+        <div class="resumen-card">
+            <div class="resumen-icon">💸</div>
+            <div class="resumen-label">Gastos totales</div>
+            <div class="resumen-valor" id="resGastos" style="color:#f472b6">$0</div>
+            <div class="resumen-sub" id="resGastosN">0 registros</div>
+        </div>
+        <div class="resumen-card">
+            <div class="resumen-icon">📊</div>
+            <div class="resumen-label">Balance actual</div>
+            <div class="resumen-valor" id="resBalance" style="color:#22d3ee">$0</div>
+            <div class="resumen-sub" id="resBalanceEstado">Sin movimientos</div>
+        </div>
+        <div class="resumen-card">
+            <div class="resumen-icon">🎯</div>
+            <div class="resumen-label">Ahorro potencial</div>
+            <div class="resumen-valor" id="resAhorro" style="color:#fbbf24">$0</div>
+            <div class="resumen-sub">Si aplicas los consejos</div>
+        </div>
+    </div>
 
-        const token = localStorage.getItem('token');
-        let todasRec = [];
-        let filtroActual = 'todos';
-        let datosFinancieros = null;
+    <!-- ANÁLISIS VISUAL -->
+    <div class="analisis-section">
+        <div class="seccion-titulo">
+            <i class="fas fa-chart-line" style="color:#a855f7;"></i>
+            Salud financiera en tiempo real
+        </div>
+        <div class="analisis-grid">
+            <div class="analisis-item">
+                <div class="analisis-item-label">% Gastos / Ingresos</div>
+                <div class="analisis-item-valor" id="pctGastos" style="color:#f472b6">0%</div>
+                <div class="barra-track"><div class="barra-fill barra-rosa" id="barraPctGastos" style="width:0%"></div></div>
+                <div class="analisis-nota" id="notaPctGastos">Registra transacciones para ver tu análisis</div>
+            </div>
+            <div class="analisis-item">
+                <div class="analisis-item-label">Progreso metas de ahorro</div>
+                <div class="analisis-item-valor" id="pctMetas" style="color:#4ade80">0%</div>
+                <div class="barra-track"><div class="barra-fill barra-verde" id="barraMetas" style="width:0%"></div></div>
+                <div class="analisis-nota" id="notaMetas">Sin metas creadas</div>
+            </div>
+            <div class="analisis-item">
+                <div class="analisis-item-label">Capacidad de ahorro</div>
+                <div class="analisis-item-valor" id="capAhorro" style="color:#22d3ee">$0</div>
+                <div class="barra-track"><div class="barra-fill barra-cyan" id="barraCapAhorro" style="width:0%"></div></div>
+                <div class="analisis-nota" id="notaCapAhorro">Basado en tu balance actual</div>
+            </div>
+        </div>
+    </div>
 
-        function cerrarSesion() {
-            localStorage.removeItem('token');
-            localStorage.removeItem('usuario');
+    <!-- REGLA 50/30/20 -->
+    <div class="regla-section" id="reglaSection" style="display:none;">
+        <div class="seccion-titulo">
+            <i class="fas fa-balance-scale" style="color:#22d3ee;"></i>
+            Distribución ideal — Regla 50 / 30 / 20
+            <span style="margin-left:auto;font-size:11px;color:var(--muted);font-weight:400;">Basado en tu ingreso mensual</span>
+        </div>
+        <div class="regla-grid">
+            <div class="regla-item regla-50">
+                <div class="regla-pct">50%</div>
+                <div class="regla-nombre">Necesidades</div>
+                <div class="regla-monto" id="regla50">$0</div>
+                <div class="regla-desc">Arriendo, comida, transporte, salud, servicios básicos.</div>
+                <div class="regla-estado" id="estado50"></div>
+            </div>
+            <div class="regla-item regla-30">
+                <div class="regla-pct">30%</div>
+                <div class="regla-nombre">Deseos</div>
+                <div class="regla-monto" id="regla30">$0</div>
+                <div class="regla-desc">Entretenimiento, ropa, salidas, suscripciones.</div>
+                <div class="regla-estado" id="estado30"></div>
+            </div>
+            <div class="regla-item regla-20">
+                <div class="regla-pct">20%</div>
+                <div class="regla-nombre">Ahorro e inversión</div>
+                <div class="regla-monto" id="regla20">$0</div>
+                <div class="regla-desc">Fondo de emergencia, CDT, pensión voluntaria.</div>
+                <div class="regla-estado" id="estado20"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- STATS BAR -->
+    <div class="stats-bar">
+        <div class="stat-bar-item">
+            <div class="stat-bar-num" id="statTotal" style="color:#c4b5fd">0</div>
+            <div class="stat-bar-lbl">Total</div>
+        </div>
+        <div class="stat-bar-item">
+            <div class="stat-bar-num" id="statAlerta" style="color:#f87171">0</div>
+            <div class="stat-bar-lbl">🚨 Urgentes</div>
+        </div>
+        <div class="stat-bar-item">
+            <div class="stat-bar-num" id="statAdv" style="color:#fbbf24">0</div>
+            <div class="stat-bar-lbl">⚠️ Atención</div>
+        </div>
+        <div class="stat-bar-item">
+            <div class="stat-bar-num" id="statExito" style="color:#4ade80">0</div>
+            <div class="stat-bar-lbl">✅ Éxitos</div>
+        </div>
+    </div>
+
+    <!-- FILTROS -->
+    <div class="filtros-bar">
+        <span class="filtros-label"><i class="fas fa-filter"></i> Filtrar</span>
+        <button class="filter-chip activo"           onclick="setFiltro('todos',this)">
+            <i class="fas fa-th-large"></i> Todas
+        </button>
+        <button class="filter-chip chip-alerta"      onclick="setFiltro('alerta',this)">
+            <i class="fas fa-exclamation-triangle"></i> Urgentes
+        </button>
+        <button class="filter-chip chip-advertencia" onclick="setFiltro('advertencia',this)">
+            <i class="fas fa-exclamation-circle"></i> Atención
+        </button>
+        <button class="filter-chip chip-exito"       onclick="setFiltro('exito',this)">
+            <i class="fas fa-check-circle"></i> Éxitos
+        </button>
+        <button class="filter-chip chip-info"        onclick="setFiltro('info',this)">
+            <i class="fas fa-info-circle"></i> Consejos
+        </button>
+    </div>
+
+    <!-- LISTA -->
+    <div id="listaRec">
+        <div class="estado-vacio">
+            <div class="estado-vacio-icon">📊</div>
+            <h3>Analizando tus finanzas...</h3>
+            <p>Generando recomendaciones personalizadas basadas en tus datos</p>
+        </div>
+    </div>
+
+</div><!-- /main -->
+
+<script>
+    // ── TEMA ──────────────────────────────────────────────
+    (function() {
+        const t = localStorage.getItem('finanbot_tema') || 'oscuro';
+        document.body.className = 'tema-' + t;
+    })();
+
+    const token = localStorage.getItem('token');
+    let todasRec = [];
+    let filtroActual = 'todos';
+    let datosFinancieros = null;
+    let panelAbierto = false;
+
+    // ════════════════════════════════════════════════════
+    //  PREFERENCIAS DE NOTIFICACIONES EN RECOMENDACIONES
+    //  Clave: finanbot_notif_rec
+    //  { alerta: true, advertencia: true, exito: true, info: true }
+    // ════════════════════════════════════════════════════
+    const NOTIF_REC_KEY = 'finanbot_notif_rec';
+
+    function getNotifRec() {
+        const def = { alerta: true, advertencia: true, exito: true, info: true };
+        return Object.assign(def, JSON.parse(localStorage.getItem(NOTIF_REC_KEY) || '{}'));
+    }
+
+    function guardarNotifRec() {
+        const prefs = {
+            alerta:      document.getElementById('tnAlerta').checked,
+            advertencia: document.getElementById('tnAdvertencia').checked,
+            exito:       document.getElementById('tnExito').checked,
+            info:        document.getElementById('tnInfo').checked,
+        };
+        localStorage.setItem(NOTIF_REC_KEY, JSON.stringify(prefs));
+        actualizarDot();
+        aplicarFiltrosNotif();
+        const activos = Object.values(prefs).filter(Boolean).length;
+        toast(activos === 4 ? '🔔' : activos === 0 ? '🔕' : '🔔',
+              activos === 0 ? 'Todas las alertas silenciadas' :
+              activos === 4 ? 'Todas las alertas activas' :
+              `${activos} tipo${activos!==1?'s':''} de alerta visible${activos!==1?'s':''}`);
+    }
+
+    function aplicarPrefsNotifRec() {
+        const p = getNotifRec();
+        document.getElementById('tnAlerta').checked      = p.alerta;
+        document.getElementById('tnAdvertencia').checked = p.advertencia;
+        document.getElementById('tnExito').checked       = p.exito;
+        document.getElementById('tnInfo').checked        = p.info;
+        actualizarDot();
+    }
+
+    function actualizarDot() {
+        const p   = getNotifRec();
+        const dot = document.getElementById('notifDot');
+        const todos = Object.values(p).every(Boolean);
+        dot.className = 'notif-dot' + (todos ? '' : ' off');
+    }
+
+    // Aplica los toggles sobre las tarjetas ya renderizadas
+    function aplicarFiltrosNotif() {
+        const p = getNotifRec();
+        const ninguno = !p.alerta && !p.advertencia && !p.exito && !p.info;
+
+        document.getElementById('bannerMuted').classList.toggle('visible', ninguno);
+
+        // Mostrar/ocultar tarjetas según tipo
+        document.querySelectorAll('.rec-card').forEach(card => {
+            const tipo = [...card.classList].find(c => ['alerta','advertencia','exito','info'].includes(c));
+            if (!tipo) return;
+            const visible = p[tipo];
+            card.style.display = visible ? '' : 'none';
+        });
+
+        // Si el filtro actual está silenciado, mostrar mensaje dentro del grid
+        const grid = document.getElementById('listaRec');
+        const visibles = grid.querySelectorAll('.rec-card:not([style*="display: none"])').length;
+        const gridEl = grid.querySelector('.rec-grid');
+        if (gridEl && visibles === 0 && !ninguno) {
+            // Mostrar mensaje de "este tipo está silenciado"
+            let existing = grid.querySelector('.notif-silenciada-msg');
+            if (!existing) {
+                existing = document.createElement('div');
+                existing.className = 'estado-vacio notif-silenciada-msg';
+                existing.style.marginTop = '16px';
+                existing.innerHTML = `
+                    <div class="estado-vacio-icon">🔕</div>
+                    <h3>Alertas silenciadas</h3>
+                    <p>Tienes algunas categorías de alertas desactivadas.<br>Actívalas usando el botón <strong>Notificaciones</strong> arriba.</p>`;
+                grid.appendChild(existing);
+            }
+        } else {
+            grid.querySelector('.notif-silenciada-msg')?.remove();
         }
+    }
 
-        // ── CARGAR TODO ───────────────────────────────────
-        async function cargarTodo() {
-            if (!token) { window.location.href = 'login.html'; return; }
-            try {
-                const [rT, rM, rR, rP] = await Promise.all([
-                    fetch('http://127.0.0.1:5000/api/transacciones/', { headers: { 'Authorization': `Bearer ${token}` } }),
-                    fetch('http://127.0.0.1:5000/api/metas/', { headers: { 'Authorization': `Bearer ${token}` } }),
-                    fetch('http://127.0.0.1:5000/api/recomendaciones/', { headers: { 'Authorization': `Bearer ${token}` } }),
-                    fetch('http://127.0.0.1:5000/api/perfil/', { headers: { 'Authorization': `Bearer ${token}` } }),
-                ]);
+    function activarTodo() {
+        const p = { alerta: true, advertencia: true, exito: true, info: true };
+        localStorage.setItem(NOTIF_REC_KEY, JSON.stringify(p));
+        aplicarPrefsNotifRec();
+        aplicarFiltrosNotif();
+        toast('🔔', 'Todas las alertas activadas');
+    }
 
-                const trans  = rT.ok  ? await rT.json()  : [];
-                const metas  = rM.ok  ? await rM.json()  : [];
-                const perfil = rP.ok  ? await rP.json()  : {};
+    // ── PANEL TOGGLE ──────────────────────────────────────
+    function togglePanel() {
+        panelAbierto = !panelAbierto;
+        document.getElementById('notifPanel').classList.toggle('visible', panelAbierto);
+    }
+    document.addEventListener('click', e => {
+        if (!e.target.closest('[style*="position:relative"]') && panelAbierto) {
+            panelAbierto = false;
+            document.getElementById('notifPanel').classList.remove('visible');
+        }
+    });
 
-                // Calcular métricas
-                const ingresos = trans.filter(t => t.tipo === 'ingreso');
-                const gastos   = trans.filter(t => t.tipo === 'gasto');
-                const totIng   = ingresos.reduce((s,t) => s+t.monto, 0);
-                const totGas   = gastos.reduce((s,t) => s+t.monto, 0);
-                const balance  = totIng - totGas;
+    // ── TOAST ─────────────────────────────────────────────
+    let toastTimer;
+    function toast(icon, msg) {
+        const t = document.getElementById('toastGlobal');
+        document.getElementById('toastIcon').textContent = icon;
+        document.getElementById('toastMsg').textContent  = msg;
+        t.classList.remove('show'); void t.offsetWidth;
+        t.classList.add('show');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+    }
 
-                // Gastos por categoría
-                const catMap = {};
-                gastos.forEach(t => { catMap[t.categoria] = (catMap[t.categoria]||0) + t.monto; });
-                const catMayor = Object.entries(catMap).sort((a,b)=>b[1]-a[1])[0];
+    function cerrarSesion() { localStorage.removeItem('token'); localStorage.removeItem('usuario'); }
 
-                datosFinancieros = {
-                    totIng, totGas, balance, trans, metas,
-                    ingresos, gastos, catMap, catMayor,
-                    ingMensual: perfil.ingreso_mensual || 0,
-                    metaMensual: perfil.meta_ahorro || 0,
-                };
+    // ── CARGAR TODO ───────────────────────────────────────
+    async function cargarTodo() {
+        if (!token) { window.location.href = 'login.html'; return; }
+        try {
+            const [rT, rM, rR, rP] = await Promise.all([
+                fetch('http://127.0.0.1:5000/api/transacciones/',   { headers:{'Authorization':`Bearer ${token}`} }),
+                fetch('http://127.0.0.1:5000/api/metas/',            { headers:{'Authorization':`Bearer ${token}`} }),
+                fetch('http://127.0.0.1:5000/api/recomendaciones/',  { headers:{'Authorization':`Bearer ${token}`} }),
+                fetch('http://127.0.0.1:5000/api/perfil/',           { headers:{'Authorization':`Bearer ${token}`} }),
+            ]);
 
-                actualizarResumen();
-                actualizarAnalisis();
-                actualizarRegla();
+            const trans  = rT.ok ? await rT.json() : [];
+            const metas  = rM.ok ? await rM.json() : [];
+            const perfil = rP.ok ? await rP.json() : {};
 
-                // Generar recomendaciones locales avanzadas
+            const ingresos = trans.filter(t => t.tipo === 'ingreso');
+            const gastos   = trans.filter(t => t.tipo === 'gasto');
+            const totIng   = ingresos.reduce((s,t) => s+t.monto, 0);
+            const totGas   = gastos.reduce((s,t) => s+t.monto, 0);
+            const balance  = totIng - totGas;
+            const catMap   = {};
+            gastos.forEach(t => { catMap[t.categoria] = (catMap[t.categoria]||0) + t.monto; });
+            const catMayor = Object.entries(catMap).sort((a,b)=>b[1]-a[1])[0];
+
+            datosFinancieros = {
+                totIng, totGas, balance, trans, metas, ingresos, gastos,
+                catMap, catMayor,
+                ingMensual: perfil.ingreso_mensual || 0,
+                metaMensual: perfil.meta_ahorro    || 0,
+            };
+
+            actualizarResumen();
+            actualizarAnalisis();
+            actualizarRegla();
+
+            // Combinar recomendaciones del backend con las locales
+            todasRec = [];
+            if (rR.ok) {
+                const backRec = await rR.json();
+                if (backRec.length > 0) todasRec = backRec;
+            }
+            // Si el backend no devolvió nada, generar localmente
+            if (todasRec.length === 0) {
                 todasRec = generarRecomendaciones(datosFinancieros);
-
-                // Si el backend devuelve recomendaciones, combinarlas
-                if (rR.ok) {
-                    const backRec = await rR.json();
-                    if (backRec.length > 0) {
-                        // Agregar las del backend que no se dupliquen
-                        const titulosLocales = new Set(todasRec.map(r => r.titulo));
-                        backRec.forEach(r => {
-                            if (!titulosLocales.has(r.titulo)) todasRec.push(r);
-                        });
-                    }
-                }
-
-                actualizarStats();
-                renderRec(todasRec);
-
-            } catch (e) {
-                console.error(e);
-                document.getElementById('listaRec').innerHTML = `
-                    <div class="estado-vacio">
-                        <i class="fas fa-plug" style="color:#ef4444;opacity:0.5;"></i>
-                        <h3>Error de conexión</h3>
-                        <p>Verifica que Flask esté corriendo en el puerto 5000</p>
-                    </div>`;
             }
+
+            actualizarStats();
+            renderRec(todasRec);
+            // Aplicar preferencias de notificaciones sobre las tarjetas renderizadas
+            aplicarFiltrosNotif();
+
+        } catch(e) {
+            console.error(e);
+            document.getElementById('listaRec').innerHTML = `
+                <div class="estado-vacio">
+                    <div class="estado-vacio-icon" style="font-size:30px;">🔌</div>
+                    <h3>Error de conexión</h3>
+                    <p>Verifica que Flask esté corriendo en el puerto 5000</p>
+                </div>`;
+        }
+    }
+
+    // ── RESUMEN ───────────────────────────────────────────
+    function actualizarResumen() {
+        const { totIng, totGas, balance, ingresos, gastos } = datosFinancieros;
+        animarValor('resIngresos', totIng);
+        animarValor('resGastos',   totGas);
+        animarValor('resBalance',  Math.abs(balance));
+        document.getElementById('resIngresosN').textContent = ingresos.length + ' registro' + (ingresos.length !== 1 ? 's' : '');
+        document.getElementById('resGastosN').textContent   = gastos.length   + ' registro' + (gastos.length   !== 1 ? 's' : '');
+        const balEl = document.getElementById('resBalance');
+        balEl.style.color = balance >= 0 ? '#4ade80' : '#f472b6';
+        document.getElementById('resBalanceEstado').textContent =
+            balance > 0 ? '✅ Balance positivo' : balance < 0 ? '⚠️ Balance negativo' : 'Sin movimientos';
+        animarValor('resAhorro', Math.max(0, balance * 0.2));
+    }
+
+    // ── ANÁLISIS ──────────────────────────────────────────
+    function actualizarAnalisis() {
+        const { totIng, totGas, balance, metas } = datosFinancieros;
+        const pct = totIng > 0 ? Math.min(Math.round(totGas / totIng * 100), 100) : 0;
+        document.getElementById('pctGastos').textContent = pct + '%';
+        setTimeout(() => { document.getElementById('barraPctGastos').style.width = pct + '%'; }, 300);
+        const nota = pct === 0   ? 'Registra transacciones para ver tu análisis'
+                   : pct < 50   ? '✅ Excelente — Gastas muy poco de tus ingresos'
+                   : pct < 70   ? '✅ Bien — Tu gasto es controlado'
+                   : pct < 85   ? '⚠️ Cerca del límite recomendado del 80%'
+                   : pct < 100  ? '🚨 Estás gastando casi todo lo que ingresas'
+                   :              '🚨 Crítico — Gastos superan ingresos';
+        document.getElementById('notaPctGastos').textContent = nota;
+
+        if (metas.length > 0) {
+            const totObj = metas.reduce((s,m) => s+m.monto_objetivo, 0);
+            const totAct = metas.reduce((s,m) => s+m.monto_actual,   0);
+            const pctM   = totObj > 0 ? Math.min(Math.round(totAct/totObj*100), 100) : 0;
+            const comp   = metas.filter(m => m.completada).length;
+            document.getElementById('pctMetas').textContent = pctM + '%';
+            setTimeout(() => { document.getElementById('barraMetas').style.width = pctM + '%'; }, 400);
+            document.getElementById('notaMetas').textContent = `${metas.length} meta${metas.length!==1?'s':''} · ${comp} completada${comp!==1?'s':''}`;
+        } else {
+            document.getElementById('notaMetas').textContent = 'Sin metas — Créalas en Mi Perfil';
         }
 
-        // ── RESUMEN ───────────────────────────────────────
-        function actualizarResumen() {
-            const { totIng, totGas, balance, ingresos, gastos } = datosFinancieros;
+        const capAhorro = Math.max(0, balance);
+        const capPct    = totIng > 0 ? Math.min(Math.round(capAhorro / totIng * 100), 100) : 0;
+        animarValor('capAhorro', capAhorro, false);
+        setTimeout(() => { document.getElementById('barraCapAhorro').style.width = capPct + '%'; }, 500);
+        document.getElementById('notaCapAhorro').textContent =
+            capAhorro > 0 ? `${capPct}% de tus ingresos disponible para ahorrar` : 'Sin capacidad de ahorro aún';
+    }
 
-            animarValor('resIngresos', totIng);
-            animarValor('resGastos', totGas);
-            animarValor('resBalance', Math.abs(balance));
+    // ── REGLA 50/30/20 ────────────────────────────────────
+    function actualizarRegla() {
+        const { ingMensual, totGas } = datosFinancieros;
+        if (ingMensual <= 0) return;
+        document.getElementById('reglaSection').style.display = 'block';
+        const n50 = ingMensual * 0.5, n30 = ingMensual * 0.3, n20 = ingMensual * 0.2;
+        document.getElementById('regla50').textContent = '$' + n50.toLocaleString('es-CO');
+        document.getElementById('regla30').textContent = '$' + n30.toLocaleString('es-CO');
+        document.getElementById('regla20').textContent = '$' + n20.toLocaleString('es-CO');
+        const pct = ingMensual > 0 ? Math.round(totGas / ingMensual * 100) : 0;
+        const e50 = document.getElementById('estado50');
+        const e30 = document.getElementById('estado30');
+        const e20 = document.getElementById('estado20');
+        e50.textContent = pct <= 50 ? '✅ Dentro del límite' : `⚠️ Llevas ${pct}% en gastos`;
+        e50.style.color = pct <= 50 ? '#4ade80' : '#fbbf24';
+        e30.textContent = pct <= 80 ? '✅ OK' : '🚨 Excedido';
+        e30.style.color = pct <= 80 ? '#4ade80' : '#ef4444';
+        e20.textContent = pct <= 80 ? `Meta: $${n20.toLocaleString('es-CO')}` : '⚠️ Ajusta gastos primero';
+        e20.style.color = pct <= 80 ? '#4ade80' : '#fbbf24';
+    }
 
-            document.getElementById('resIngresosN').textContent = ingresos.length + ' registro' + (ingresos.length !== 1 ? 's' : '');
-            document.getElementById('resGastosN').textContent   = gastos.length + ' registro' + (gastos.length !== 1 ? 's' : '');
+    // ── STATS ─────────────────────────────────────────────
+    function actualizarStats() {
+        animarNum('statTotal',  todasRec.length);
+        animarNum('statAlerta', todasRec.filter(r=>r.tipo==='alerta').length);
+        animarNum('statAdv',    todasRec.filter(r=>r.tipo==='advertencia').length);
+        animarNum('statExito',  todasRec.filter(r=>r.tipo==='exito').length);
+    }
 
-            const balEl = document.getElementById('resBalance');
-            balEl.style.color = balance >= 0 ? '#4ade80' : '#f472b6';
-            document.getElementById('resBalanceEstado').textContent =
-                balance > 0 ? '✅ Balance positivo' : balance < 0 ? '⚠️ Balance negativo' : 'Sin movimientos';
+    // ── FILTROS ───────────────────────────────────────────
+    function setFiltro(f, btn) {
+        filtroActual = f;
+        document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('activo'));
+        btn.classList.add('activo');
+        const lista = f === 'todos' ? todasRec : todasRec.filter(r => r.tipo === f);
+        renderRec(lista);
+        // Volver a aplicar visibilidad por notif prefs
+        aplicarFiltrosNotif();
+    }
 
-            // Ahorro potencial: 20% del balance si es positivo
-            const ahorroPot = Math.max(0, balance * 0.2);
-            animarValor('resAhorro', ahorroPot);
+    // ── RENDER ────────────────────────────────────────────
+    function renderRec(lista) {
+        const div = document.getElementById('listaRec');
+        if (!lista.length) {
+            div.innerHTML = `
+                <div class="estado-vacio">
+                    <div class="estado-vacio-icon">${filtroActual === 'todos' ? '🎉' : '🔍'}</div>
+                    <h3>${filtroActual === 'todos' ? '¡Sin alertas pendientes!' : 'Sin resultados'}</h3>
+                    <p>${filtroActual === 'todos' ? 'Tus finanzas lucen bien. ¡Sigue así!' : 'No hay recomendaciones de este tipo por ahora.'}</p>
+                </div>`;
+            return;
         }
 
-        // ── ANÁLISIS ──────────────────────────────────────
-        function actualizarAnalisis() {
-            const { totIng, totGas, balance, metas } = datosFinancieros;
+        const TIPO_LABEL = { alerta:'Urgente', advertencia:'Atención', exito:'Éxito', info:'Consejo' };
+        const TIPO_ICON  = { alerta:'fa-exclamation-triangle', advertencia:'fa-exclamation-circle', exito:'fa-check-circle', info:'fa-info-circle' };
 
-            // % Gastos
-            const pct = totIng > 0 ? Math.min(Math.round(totGas / totIng * 100), 100) : 0;
-            document.getElementById('pctGastos').textContent = pct + '%';
+        div.innerHTML = `<div class="rec-grid">${lista.map((r,i) => `
+            <div class="rec-card ${r.tipo}" data-tipo="${r.tipo}" style="opacity:0;transform:translateY(16px);">
+                <div class="rec-top">
+                    <div class="rec-emoji">${r.icono || '💡'}</div>
+                    <div class="rec-badges">
+                        <span class="badge-tipo badge-${r.tipo}">
+                            <i class="fas ${TIPO_ICON[r.tipo]||'fa-info-circle'}"></i>
+                            ${TIPO_LABEL[r.tipo]||'Consejo'}
+                        </span>
+                        ${r.prioridad ? `<span class="badge-prio prio-${r.prioridad}">● ${r.prioridad}</span>` : ''}
+                    </div>
+                </div>
+
+                <div class="rec-titulo">${r.titulo}</div>
+                <div class="rec-descripcion">${r.descripcion}</div>
+
+                ${r.ahorro_potencial ? `
+                    <div class="ahorro-tag">
+                        <i class="fas fa-coins"></i>
+                        Impacto: <strong>$${r.ahorro_potencial.toLocaleString('es-CO')}</strong>
+                    </div>` : ''}
+
+                ${r.dato_clave ? `
+                    <div class="dato-clave">
+                        <i class="fas fa-lightbulb" style="color:#fbbf24;flex-shrink:0;margin-top:1px;"></i>
+                        <span>${r.dato_clave}</span>
+                    </div>` : ''}
+
+                ${r.beneficios && r.beneficios.length ? `
+                    <div class="rec-beneficios">
+                        ${r.beneficios.map(b => `
+                            <div class="beneficio">
+                                <i class="fas fa-check"></i>
+                                <span>${b}</span>
+                            </div>`).join('')}
+                    </div>` : ''}
+
+                ${r.progreso !== undefined ? `
+                    <div class="rec-progreso">
+                        <div class="progreso-hdr">
+                            <span>Progreso</span>
+                            <span>${r.progreso}%</span>
+                        </div>
+                        <div class="progreso-track">
+                            <div class="progreso-fill" style="width:${r.progreso}%"></div>
+                        </div>
+                    </div>` : ''}
+
+                <a href="${r.link || '#'}" class="rec-btn">
+                    <span>${r.accion || 'Ver más'}</span>
+                    <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>`).join('')}
+        </div>`;
+
+        // Animación escalonada
+        div.querySelectorAll('.rec-card').forEach((card, i) => {
             setTimeout(() => {
-                document.getElementById('barraPctGastos').style.width = pct + '%';
-            }, 300);
+                card.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+                card.style.opacity    = '1';
+                card.style.transform  = 'translateY(0)';
+            }, i * 60);
+        });
+    }
 
-            let notaGastos = '';
-            if (pct === 0) notaGastos = 'Registra transacciones para ver tu análisis';
-            else if (pct < 50) notaGastos = '✅ Excelente — Gastas muy poco de tus ingresos';
-            else if (pct < 70) notaGastos = '✅ Bien — Tu gasto es controlado';
-            else if (pct < 85) notaGastos = '⚠️ Atención — Estás cerca del límite recomendado (80%)';
-            else if (pct < 100) notaGastos = '🚨 Alerta — Estás gastando casi todo lo que ingresas';
-            else notaGastos = '🚨 Crítico — Tus gastos superan tus ingresos';
-            document.getElementById('notaPctGastos').textContent = notaGastos;
+    // ── GENERADOR LOCAL (backup si el backend no devuelve) ─
+    function generarRecomendaciones(d) {
+        const recs = [];
+        const { totIng, totGas, balance, trans, metas, catMap, catMayor, ingMensual, gastos, ingresos } = d;
+        const pct = totIng > 0 ? Math.round(totGas / totIng * 100) : 0;
 
-            // Metas
-            if (metas.length > 0) {
-                const totObj = metas.reduce((s,m) => s+m.monto_objetivo, 0);
-                const totAct = metas.reduce((s,m) => s+m.monto_actual, 0);
-                const pctM = totObj > 0 ? Math.min(Math.round(totAct/totObj*100), 100) : 0;
-                const completas = metas.filter(m => m.completada).length;
-                document.getElementById('pctMetas').textContent = pctM + '%';
-                setTimeout(() => { document.getElementById('barraMetas').style.width = pctM + '%'; }, 400);
-                document.getElementById('notaMetas').textContent =
-                    `${metas.length} meta${metas.length!==1?'s':''} · ${completas} completada${completas!==1?'s':''}`;
-            } else {
-                document.getElementById('notaMetas').textContent = 'Sin metas — Crea una en Mi Perfil';
-            }
-
-            // Capacidad ahorro
-            const capAhorro = Math.max(0, balance);
-            const capPct = totIng > 0 ? Math.min(Math.round(capAhorro / totIng * 100), 100) : 0;
-            animarValor('capAhorro', capAhorro, false);
-            setTimeout(() => { document.getElementById('barraCapAhorro').style.width = capPct + '%'; }, 500);
-            document.getElementById('notaCapAhorro').textContent =
-                capAhorro > 0 ? `${capPct}% de tus ingresos disponible para ahorrar` : 'Sin capacidad de ahorro aún';
-        }
-
-        // ── REGLA 50/30/20 ────────────────────────────────
-        function actualizarRegla() {
-            const { ingMensual, totGas } = datosFinancieros;
-            if (ingMensual <= 0) return;
-
-            document.getElementById('reglaSection').style.display = 'block';
-            const n50 = ingMensual * 0.5;
-            const n30 = ingMensual * 0.3;
-            const n20 = ingMensual * 0.2;
-
-            document.getElementById('regla50').textContent = '$' + n50.toLocaleString('es-CO');
-            document.getElementById('regla30').textContent = '$' + n30.toLocaleString('es-CO');
-            document.getElementById('regla20').textContent = '$' + n20.toLocaleString('es-CO');
-
-            // Estados vs gastos reales
-            const pct = ingMensual > 0 ? Math.round(totGas/ingMensual*100) : 0;
-            document.getElementById('estado50').textContent = pct <= 50 ? '✅ Dentro del límite' : `⚠️ Llevas ${pct}% en gastos`;
-            document.getElementById('estado50').style.color = pct <= 50 ? '#4ade80' : '#fbbf24';
-            document.getElementById('estado30').textContent = pct <= 80 ? '✅ OK' : '🚨 Excedido';
-            document.getElementById('estado30').style.color = pct <= 80 ? '#4ade80' : '#ef4444';
-            document.getElementById('estado20').textContent = pct <= 80 ? `Meta ahorro: $${n20.toLocaleString('es-CO')}` : '⚠️ Ajusta tus gastos primero';
-            document.getElementById('estado20').style.color = pct <= 80 ? '#4ade80' : '#fbbf24';
-        }
-
-        // ── GENERADOR DE RECOMENDACIONES AVANZADAS ────────
-        function generarRecomendaciones(d) {
-            const recs = [];
-            const { totIng, totGas, balance, trans, metas, catMap, catMayor, ingMensual, gastos, ingresos } = d;
-            const pct = totIng > 0 ? Math.round(totGas / totIng * 100) : 0;
-
-            // 1. BALANCE NEGATIVO — URGENTE
-            if (balance < 0) {
-                recs.push({
-                    tipo: 'alerta', prioridad: 'Alta',
-                    icono: '🚨', id: 'r1',
-                    titulo: 'Balance negativo: estás gastando más de lo que ingresas',
-                    descripcion: `Tu balance actual es -$${Math.abs(balance).toLocaleString('es-CO')}. Esto significa que estás endeudándote o usando ahorros previos. Es la situación más urgente a resolver.`,
-                    beneficios: [
-                        'Evitar deudas que crecen con intereses',
-                        'Recuperar estabilidad financiera en 1-3 meses',
-                        'Reducir el estrés financiero significativamente',
-                    ],
-                    dato_clave: `💡 Si reduces gastos en $${Math.abs(Math.round(balance/3)).toLocaleString('es-CO')} durante 3 meses, equilibras tu situación.`,
-                    ahorro_potencial: Math.abs(balance),
-                    accion: 'Revisar gastos ahora', link: 'finanzas.html',
-                });
-            }
-
-            // 2. GASTOS > 80% — ADVERTENCIA
-            if (pct >= 80 && pct < 100 && totIng > 0) {
-                recs.push({
-                    tipo: 'advertencia', prioridad: 'Alta',
-                    icono: '⚠️', id: 'r2',
-                    titulo: `Gastas el ${pct}% de tus ingresos — Zona de riesgo`,
-                    descripcion: `La regla financiera universal recomienda no superar el 80% de gastos sobre ingresos. Estás exactamente en ese límite. Cualquier imprevisto podría desequilibrar tus finanzas.`,
-                    beneficios: [
-                        `Reducir al 70% liberaría $${Math.round(totIng * 0.1).toLocaleString('es-CO')} al mes`,
-                        'Crear un colchón para emergencias',
-                        'Poder invertir sin comprometer necesidades básicas',
-                    ],
-                    dato_clave: `📊 Meta sugerida: reducir gastos a $${Math.round(totIng * 0.7).toLocaleString('es-CO')} mensuales.`,
-                    ahorro_potencial: Math.round(totIng * (pct/100 - 0.7)),
-                    progreso: Math.round((1 - pct/100) * 100 / 0.3),
-                    accion: 'Ver mis gastos', link: 'finanzas.html',
-                });
-            }
-
-            // 3. CATEGORÍA DOMINANTE
-            if (catMayor && totGas > 0) {
-                const [cat, monto] = catMayor;
-                const pctCat = Math.round(monto / totGas * 100);
-                if (pctCat > 35) {
-                    recs.push({
-                        tipo: 'advertencia', prioridad: 'Media',
-                        icono: '📊', id: 'r3',
-                        titulo: `El ${pctCat}% de tus gastos van a "${cat}"`,
-                        descripcion: `Tienes una fuerte concentración de gastos en una sola categoría. Diversificar y controlar este rubro puede darte un margen importante de ahorro mensual.`,
-                        beneficios: [
-                            `Reducir un 15% en ${cat} = $${Math.round(monto * 0.15).toLocaleString('es-CO')} al mes`,
-                            'Mejorar la distribución de tu presupuesto',
-                            'Mayor flexibilidad ante imprevistos',
-                        ],
-                        dato_clave: `💸 Llevas $${monto.toLocaleString('es-CO')} en ${cat}. Lo ideal es no superar el 30% en una sola categoría.`,
-                        ahorro_potencial: Math.round(monto * 0.15),
-                        progreso: Math.max(0, 100 - pctCat),
-                        accion: 'Desglosar gastos', link: 'finanzas.html',
-                    });
-                }
-            }
-
-            // 4. SIN METAS DE AHORRO
-            if (metas.length === 0 && totIng > 0) {
-                recs.push({
-                    tipo: 'advertencia', prioridad: 'Media',
-                    icono: '🎯', id: 'r4',
-                    titulo: 'No tienes metas de ahorro definidas',
-                    descripcion: 'Las personas con metas financieras claras ahorran en promedio 3 veces más que quienes no las tienen. Una meta da propósito a cada peso que guardas.',
-                    beneficios: [
-                        'Motivación concreta para reducir gastos',
-                        'Progreso visible semana a semana',
-                        'Alcanzar objetivos reales: viaje, tecnología, fondo de emergencia',
-                    ],
-                    dato_clave: `💡 Con tu balance actual, podrías alcanzar una meta de $${Math.round(balance * 6).toLocaleString('es-CO')} en 6 meses.`,
-                    ahorro_potencial: Math.round(balance * 6),
-                    accion: 'Crear mi primera meta', link: 'perfil.html',
-                });
-            }
-
-            // 5. METAS CON BUEN PROGRESO
-            const metasAvanzadas = metas.filter(m => m.porcentaje >= 70 && !m.completada);
-            if (metasAvanzadas.length > 0) {
-                const m = metasAvanzadas[0];
-                const faltante = m.monto_objetivo - m.monto_actual;
-                recs.push({
-                    tipo: 'exito', prioridad: 'Baja',
-                    icono: '🚀', id: 'r5',
-                    titulo: `¡Casi llegas! Tu meta "${m.nombre}" está al ${m.porcentaje}%`,
-                    descripcion: `Llevas $${m.monto_actual.toLocaleString('es-CO')} de $${m.monto_objetivo.toLocaleString('es-CO')}. Solo faltan $${faltante.toLocaleString('es-CO')} para completarla. ¡Estás muy cerca!`,
-                    beneficios: [
-                        'Motivación para mantener el hábito de ahorro',
-                        'Lograr el objetivo antes de lo planeado',
-                        'Liberar esa meta para empezar una nueva',
-                    ],
-                    dato_clave: `🏁 Faltan $${faltante.toLocaleString('es-CO')} para completar esta meta.`,
-                    progreso: m.porcentaje,
-                    accion: 'Ver mis metas', link: 'perfil.html',
-                });
-            }
-
-            // 6. METAS COMPLETADAS
-            const metasCompletas = metas.filter(m => m.completada);
-            if (metasCompletas.length > 0) {
-                recs.push({
-                    tipo: 'exito', prioridad: 'Baja',
-                    icono: '🏆', id: 'r6',
-                    titulo: `¡Felicitaciones! Completaste ${metasCompletas.length} meta${metasCompletas.length > 1 ? 's' : ''} de ahorro`,
-                    descripcion: `Completar metas financieras demuestra disciplina y constancia. Eso te pone en el top de personas que realmente gestionan bien su dinero.`,
-                    beneficios: [
-                        'Hábito de ahorro consolidado',
-                        'Confianza para metas más ambiciosas',
-                        'Historial financiero positivo',
-                    ],
-                    dato_clave: `🎯 Total ahorrado en metas: $${metasCompletas.reduce((s,m) => s+m.monto_objetivo, 0).toLocaleString('es-CO')}`,
-                    progreso: 100,
-                    accion: 'Crear nueva meta', link: 'perfil.html',
-                });
-            }
-
-            // 7. FONDO DE EMERGENCIA
-            if (totIng > 0 && balance < totIng * 3) {
-                const metaEmergencia = totIng * 3;
-                recs.push({
-                    tipo: 'info', prioridad: 'Media',
-                    icono: '🛡️', id: 'r7',
-                    titulo: 'Construye tu fondo de emergencia',
-                    descripcion: `Un fondo de emergencia de 3 meses de ingresos ($${metaEmergencia.toLocaleString('es-CO')}) es la base de toda estrategia financiera sólida. Sin él, cualquier imprevisto puede desestabilizarte.`,
-                    beneficios: [
-                        'Protección ante pérdida de empleo o enfermedad',
-                        'Evitar endeudarte en emergencias',
-                        'Paz mental y toma de decisiones sin presión',
-                    ],
-                    dato_clave: `🎯 Meta sugerida: $${metaEmergencia.toLocaleString('es-CO')} (3 meses de ingresos). Tu balance actual cubre ${Math.round(balance/totIng*100)}%.`,
-                    ahorro_potencial: metaEmergencia - Math.max(0, balance),
-                    accion: 'Crear meta de emergencia', link: 'perfil.html',
-                });
-            }
-
-            // 8. REGLA 50/30/20 SI HAY INGRESO MENSUAL
-            if (ingMensual > 0 && pct > 50) {
-                const ahorro20 = ingMensual * 0.2;
-                recs.push({
-                    tipo: 'info', prioridad: 'Media',
-                    icono: '📋', id: 'r8',
-                    titulo: 'Aplica la regla 50/30/20 a tu salario',
-                    descripcion: `Con tu ingreso mensual de $${ingMensual.toLocaleString('es-CO')}, puedes estructurar un presupuesto claro. Esta regla es usada por millones de personas para lograr libertad financiera.`,
-                    beneficios: [
-                        `50% necesidades: $${(ingMensual * 0.5).toLocaleString('es-CO')}`,
-                        `30% deseos: $${(ingMensual * 0.3).toLocaleString('es-CO')}`,
-                        `20% ahorro/inversión: $${(ingMensual * 0.2).toLocaleString('es-CO')}`,
-                    ],
-                    dato_clave: `💰 Si ahorras el 20% de tu salario, en 1 año tendrás $${(ahorro20 * 12).toLocaleString('es-CO')}.`,
-                    ahorro_potencial: ahorro20 * 12,
-                    accion: 'Simular inversión', link: 'simulador.html',
-                });
-            }
-
-            // 9. SIN TRANSACCIONES
-            if (trans.length === 0) {
-                recs.push({
-                    tipo: 'info', prioridad: 'Alta',
-                    icono: '📝', id: 'r9',
-                    titulo: 'Empieza registrando tus finanzas',
-                    descripcion: 'No tenemos datos suficientes para darte recomendaciones personalizadas. Registra al menos una semana de gastos e ingresos y FinanBot te dará un análisis completo.',
-                    beneficios: [
-                        'Visibilidad total de tu dinero',
-                        'Detección automática de gastos excesivos',
-                        'Recomendaciones precisas y personalizadas',
-                    ],
-                    dato_clave: '💡 Solo necesitas 5 minutos para registrar tus gastos de la última semana.',
-                    accion: 'Registrar primera transacción', link: 'finanzas.html',
-                });
-            }
-
-            // 10. INVERSIÓN — SI TIENE BUEN BALANCE
-            if (balance >= totIng * 0.3 && totIng > 0) {
-                const capital = Math.round(balance * 0.5);
-                const resultado = Math.round(capital * Math.pow(1 + 0.10/12, 12));
-                recs.push({
-                    tipo: 'exito', prioridad: 'Baja',
-                    icono: '📈', id: 'r10',
-                    titulo: '¡Tu balance te permite empezar a invertir!',
-                    descripcion: `Tienes un balance positivo sólido. Es el momento ideal para hacer trabajar tu dinero. Invertir incluso una parte pequeña puede generar rendimientos significativos.`,
-                    beneficios: [
-                        `CDT al 12% anual con $${capital.toLocaleString('es-CO')} → $${resultado.toLocaleString('es-CO')} en 1 año`,
-                        'Rendimientos superiores a la inflación',
-                        'Construir patrimonio de forma pasiva',
-                    ],
-                    dato_clave: `📊 Con el 50% de tu balance ($${capital.toLocaleString('es-CO')}) en un CDT al 10%, ganarías $${(resultado - capital).toLocaleString('es-CO')} en 12 meses.`,
-                    ahorro_potencial: resultado - capital,
-                    accion: 'Simular inversión', link: 'simulador.html',
-                });
-            }
-
-            // 11. MUCHOS GASTOS EN ENTRETENIMIENTO
-            const gastosEnt = catMap['Entretenimiento'] || 0;
-            if (gastosEnt > 0 && totGas > 0 && gastosEnt / totGas > 0.2) {
-                recs.push({
-                    tipo: 'advertencia', prioridad: 'Baja',
-                    icono: '🎬', id: 'r11',
-                    titulo: `Entretenimiento consume el ${Math.round(gastosEnt/totGas*100)}% de tus gastos`,
-                    descripcion: 'El entretenimiento es importante, pero debe estar dentro del presupuesto del 30% de deseos. Pequeños ajustes aquí pueden generar un ahorro mensual considerable.',
-                    beneficios: [
-                        'Redirigir parte de ese dinero a ahorro',
-                        'Buscar alternativas gratuitas o económicas',
-                        'Mantener el disfrute sin comprometer metas',
-                    ],
-                    dato_clave: `💡 Reducir un 20% en entretenimiento = $${Math.round(gastosEnt * 0.2).toLocaleString('es-CO')} al mes ahorrados.`,
-                    ahorro_potencial: Math.round(gastosEnt * 0.2),
-                    accion: 'Ver detalle', link: 'finanzas.html',
-                });
-            }
-
-            // 12. POCAS TRANSACCIONES — REGISTRO IRREGULAR
-            if (trans.length > 0 && trans.length < 5) {
-                recs.push({
-                    tipo: 'info', prioridad: 'Baja',
-                    icono: '📅', id: 'r12',
-                    titulo: 'Registra tus finanzas con más regularidad',
-                    descripcion: 'Solo tienes ' + trans.length + ' transacción(es). Para un análisis preciso, necesitamos al menos 2-3 semanas de datos. El registro diario o semanal hace la diferencia.',
-                    beneficios: [
-                        'Análisis más precisos y útiles',
-                        'Detección de patrones de gasto',
-                        'Mejores recomendaciones personalizadas',
-                    ],
-                    dato_clave: '📝 Tip: registra gastos e ingresos cada día o cada vez que ocurran.',
-                    accion: 'Registrar transacciones', link: 'finanzas.html',
-                });
-            }
-
+        if (trans.length === 0) {
+            recs.push({ tipo:'info', prioridad:'Alta', icono:'📝', titulo:'Empieza registrando tus finanzas',
+                descripcion:'No hay datos suficientes. Registra una semana de gastos e ingresos y FinanBot te dará un análisis completo.',
+                beneficios:['Visibilidad total de tu dinero','Recomendaciones precisas','Detección de gastos excesivos'],
+                dato_clave:'💡 Solo 5 minutos son suficientes para empezar.',
+                accion:'Registrar transacciones', link:'finanzas.html' });
             return recs;
         }
-
-        // ── STATS ─────────────────────────────────────────
-        function actualizarStats() {
-            animarNum('statTotal', todasRec.length);
-            animarNum('statAlerta', todasRec.filter(r => r.tipo === 'alerta').length);
-            animarNum('statAdv',    todasRec.filter(r => r.tipo === 'advertencia').length);
-            animarNum('statExito',  todasRec.filter(r => r.tipo === 'exito').length);
+        if (balance < 0) {
+            recs.push({ tipo:'alerta', prioridad:'Alta', icono:'🚨',
+                titulo:'Balance negativo: estás gastando más de lo que ingresas',
+                descripcion:`Tu balance es -$${Math.abs(balance).toLocaleString('es-CO')}. Es la situación más urgente a corregir.`,
+                beneficios:['Evitar deudas con intereses','Recuperar estabilidad en 1-3 meses','Reducir estrés financiero'],
+                dato_clave:`💡 Reduce gastos en $${Math.abs(Math.round(balance/3)).toLocaleString('es-CO')} durante 3 meses para equilibrar.`,
+                ahorro_potencial: Math.abs(balance), accion:'Revisar gastos', link:'finanzas.html' });
         }
-
-        // ── FILTROS ───────────────────────────────────────
-        function setFiltro(f, btn) {
-            filtroActual = f;
-            document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('activo'));
-            btn.classList.add('activo');
-            const lista = f === 'todos' ? todasRec : todasRec.filter(r => r.tipo === f);
-            renderRec(lista);
+        if (pct >= 80 && pct < 100 && totIng > 0) {
+            recs.push({ tipo:'advertencia', prioridad:'Alta', icono:'⚠️',
+                titulo:`Gastas el ${pct}% de tus ingresos — zona de riesgo`,
+                descripcion:'La regla financiera universal recomienda no superar el 80%. Estás en el límite.',
+                beneficios:[`Reducir al 70% libera $${Math.round(totIng*0.1).toLocaleString('es-CO')}/mes`,'Crear colchón para emergencias','Capacidad de invertir'],
+                ahorro_potencial: Math.round(totIng*(pct/100-0.7)), progreso: Math.round((1-pct/100)*100/0.3),
+                accion:'Ver mis gastos', link:'finanzas.html' });
         }
-
-        // ── RENDER ────────────────────────────────────────
-        function renderRec(lista) {
-            const div = document.getElementById('listaRec');
-
-            if (!lista.length) {
-                div.innerHTML = `
-                    <div class="estado-vacio">
-                        <i class="fas fa-search"></i>
-                        <h3>${filtroActual === 'todos' ? '¡Sin alertas pendientes!' : 'Sin resultados'}</h3>
-                        <p>${filtroActual === 'todos' ? 'Tus finanzas lucen bien. Sigue así.' : 'No hay recomendaciones de este tipo por ahora.'}</p>
-                    </div>`;
-                return;
+        if (catMayor) {
+            const [cat, monto] = catMayor; const pctCat = Math.round(monto/totGas*100);
+            if (pctCat > 35) {
+                recs.push({ tipo:'advertencia', prioridad:'Media', icono:'📊',
+                    titulo:`El ${pctCat}% de tus gastos van a "${cat}"`,
+                    descripcion:'Concentración alta en una categoría. Diversificar puede generar ahorro significativo.',
+                    beneficios:[`Reducir 15% en ${cat} = $${Math.round(monto*0.15).toLocaleString('es-CO')}/mes`],
+                    ahorro_potencial: Math.round(monto*0.15), progreso: Math.max(0,100-pctCat),
+                    accion:'Ver gastos', link:'finanzas.html' });
             }
-
-            const TIPO_LABEL = { alerta:'Urgente', advertencia:'Atención', exito:'Éxito', info:'Consejo' };
-            const TIPO_ICON  = { alerta:'fa-exclamation-triangle', advertencia:'fa-exclamation-circle', exito:'fa-check-circle', info:'fa-info-circle' };
-
-            div.innerHTML = `<div class="rec-grid">${lista.map((r,i) => `
-                <div class="rec-card ${r.tipo}" data-id="${r.id||i}" style="opacity:0;transform:translateY(16px);">
-
-                    <div class="rec-top">
-                        <div class="rec-emoji">${r.icono || '💡'}</div>
-                        <div class="rec-badges">
-                            <span class="badge-tipo badge-${r.tipo}">
-                                <i class="fas ${TIPO_ICON[r.tipo]||'fa-info-circle'}"></i>
-                                ${TIPO_LABEL[r.tipo]||'Consejo'}
-                            </span>
-                            ${r.prioridad ? `<span class="badge-prio prio-${r.prioridad}">● ${r.prioridad}</span>` : ''}
-                        </div>
-                    </div>
-
-                    <div class="rec-titulo">${r.titulo}</div>
-                    <div class="rec-descripcion">${r.descripcion}</div>
-
-                    ${r.ahorro_potencial ? `
-                        <div class="ahorro-tag">
-                            <i class="fas fa-coins"></i>
-                            Impacto: <strong>$${r.ahorro_potencial.toLocaleString('es-CO')}</strong>
-                        </div>` : ''}
-
-                    ${r.dato_clave ? `
-                        <div class="dato-clave">
-                            <i class="fas fa-lightbulb" style="color:#fbbf24;flex-shrink:0;"></i>
-                            <span>${r.dato_clave}</span>
-                        </div>` : ''}
-
-                    ${r.beneficios && r.beneficios.length ? `
-                        <div class="rec-beneficios">
-                            ${r.beneficios.map(b => `
-                                <div class="beneficio">
-                                    <i class="fas fa-check"></i>
-                                    <span>${b}</span>
-                                </div>`).join('')}
-                        </div>` : ''}
-
-                    ${r.progreso !== undefined ? `
-                        <div class="rec-progreso">
-                            <div class="progreso-hdr">
-                                <span>Progreso</span>
-                                <span>${r.progreso}%</span>
-                            </div>
-                            <div class="progreso-track">
-                                <div class="progreso-fill" style="width:${r.progreso}%"></div>
-                            </div>
-                        </div>` : ''}
-
-                    <a href="${r.link || '#'}" class="rec-btn">
-                        <span>${r.accion || 'Ver más'}</span>
-                        <i class="fas fa-arrow-right"></i>
-                    </a>
-                </div>`).join('')}
-            </div>`;
-
-            // Animación escalonada
-            div.querySelectorAll('.rec-card').forEach((card, i) => {
-                setTimeout(() => {
-                    card.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
-                    card.style.opacity = '1';
-                    card.style.transform = 'translateY(0)';
-                }, i * 65);
-            });
         }
-
-        // ── ANIMACIONES ───────────────────────────────────
-        function animarValor(id, fin, esDinero = true) {
-            const el = document.getElementById(id);
-            if (!el) return;
-            if (fin === 0) { el.textContent = esDinero ? '$0' : '0'; return; }
-            const pasos = 40, inc = fin / pasos;
-            let p = 0;
-            const iv = setInterval(() => {
-                p++;
-                const v = Math.round(inc * p);
-                el.textContent = esDinero ? '$' + v.toLocaleString('es-CO') : v;
-                if (p >= pasos) { clearInterval(iv); el.textContent = esDinero ? '$' + fin.toLocaleString('es-CO') : fin; }
-            }, 25);
+        if (metas.length === 0 && totIng > 0) {
+            recs.push({ tipo:'advertencia', prioridad:'Media', icono:'🎯',
+                titulo:'No tienes metas de ahorro definidas',
+                descripcion:'Las personas con metas ahorran 3x más. Una meta da propósito a tu dinero.',
+                beneficios:['Motivación concreta','Progreso visible','Objetivos reales'],
+                dato_clave:`💡 Con tu balance, podrías acumular $${Math.round(balance*6).toLocaleString('es-CO')} en 6 meses.`,
+                accion:'Crear meta', link:'perfil.html' });
         }
-
-        function animarNum(id, fin) {
-            const el = document.getElementById(id);
-            if (!el || fin === 0) { if(el) el.textContent = '0'; return; }
-            const pasos = 30, inc = fin / pasos;
-            let p = 0;
-            const iv = setInterval(() => {
-                p++; el.textContent = Math.round(inc * p);
-                if (p >= pasos) { clearInterval(iv); el.textContent = fin; }
-            }, 20);
+        if (totIng > 0 && balance < totIng * 3) {
+            recs.push({ tipo:'info', prioridad:'Media', icono:'🛡️',
+                titulo:'Construye tu fondo de emergencia',
+                descripcion:`Meta ideal: $${(totIng*3).toLocaleString('es-CO')} (3 meses de ingresos). La base de todo plan financiero sólido.`,
+                beneficios:['Protección ante imprevistos','Evitar deudas en emergencias','Paz mental'],
+                accion:'Crear meta de emergencia', link:'perfil.html' });
         }
-
-        function toast(msg) {
-            const el = document.createElement('div');
-            el.className = 'toast-notif exito';
-            el.innerHTML = msg;
-            document.body.appendChild(el);
-            setTimeout(() => { el.style.opacity='0'; el.style.transition='opacity 0.3s'; setTimeout(()=>el.remove(),300); }, 3000);
+        if (balance >= totIng * 0.3 && totIng > 0) {
+            const cap = Math.round(balance*0.5);
+            recs.push({ tipo:'exito', prioridad:'Baja', icono:'📈',
+                titulo:'¡Tu balance te permite empezar a invertir!',
+                descripcion:`CDT al 12% con $${cap.toLocaleString('es-CO')} → $${Math.round(cap*1.12).toLocaleString('es-CO')} en 1 año sin hacer nada.`,
+                beneficios:[`Rendimiento estimado: $${Math.round(cap*0.12).toLocaleString('es-CO')}`,`Supera la inflación del 9%`,'Ingreso pasivo'],
+                ahorro_potencial: Math.round(cap*0.12), accion:'Simular inversión', link:'simulador.html' });
         }
+        return recs;
+    }
 
-        cargarTodo();
-    </script>
+    // ── ANIMACIONES ───────────────────────────────────────
+    function animarValor(id, fin, esDinero = true) {
+        const el = document.getElementById(id); if (!el) return;
+        if (fin === 0) { el.textContent = esDinero ? '$0' : '0'; return; }
+        const pasos = 40, inc = fin / pasos; let p = 0;
+        const iv = setInterval(() => {
+            p++; const v = Math.round(inc * p);
+            el.textContent = esDinero ? '$' + v.toLocaleString('es-CO') : v;
+            if (p >= pasos) { clearInterval(iv); el.textContent = esDinero ? '$' + fin.toLocaleString('es-CO') : fin; }
+        }, 25);
+    }
+    function animarNum(id, fin) {
+        const el = document.getElementById(id); if (!el || fin === 0) { if(el) el.textContent='0'; return; }
+        const pasos = 30, inc = fin / pasos; let p = 0;
+        const iv = setInterval(() => {
+            p++; el.textContent = Math.round(inc * p);
+            if (p >= pasos) { clearInterval(iv); el.textContent = fin; }
+        }, 20);
+    }
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="tema.js"></script>
+    // ── INIT ──────────────────────────────────────────────
+    aplicarPrefsNotifRec();
+    cargarTodo();
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="tema.js"></script>
 </body>
 </html>

@@ -1,3 +1,4 @@
+Dashboard · HTML
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -9,39 +10,38 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-
+ 
         body {
             font-family: 'Segoe UI', sans-serif;
             min-height: 100vh;
             color: white;
             transition: background 0.4s, color 0.3s;
         }
-
-        /* ── TEMAS ── */
+ 
         body.tema-oscuro {
             background: radial-gradient(ellipse at top, #1a1a4e 0%, #0f0f2d 50%, #000010 100%);
-            --card-bg:   rgba(255,255,255,0.04);
-            --card-border: rgba(168,85,247,0.15);
-            --item-bg:   rgba(255,255,255,0.03);
-            --item-border: rgba(255,255,255,0.06);
-            --muted:     #6b7280;
-            --secondary: #9ca3af;
-            --sidebar-bg: rgba(255,255,255,0.03);
+            --card-bg:        rgba(255,255,255,0.04);
+            --card-border:    rgba(168,85,247,0.15);
+            --item-bg:        rgba(255,255,255,0.03);
+            --item-border:    rgba(255,255,255,0.06);
+            --muted:          #6b7280;
+            --secondary:      #9ca3af;
+            --sidebar-bg:     rgba(255,255,255,0.03);
             --sidebar-border: rgba(168,85,247,0.2);
         }
-
+ 
         body.tema-azul {
             background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #1e40af 100%);
-            --card-bg:   rgba(30,58,95,0.6);
-            --card-border: rgba(96,165,250,0.25);
-            --item-bg:   rgba(30,58,95,0.4);
-            --item-border: rgba(96,165,250,0.15);
-            --muted:     #60a5fa;
-            --secondary: #93c5fd;
-            --sidebar-bg: rgba(15,23,42,0.85);
+            --card-bg:        rgba(30,58,95,0.6);
+            --card-border:    rgba(96,165,250,0.25);
+            --item-bg:        rgba(30,58,95,0.4);
+            --item-border:    rgba(96,165,250,0.15);
+            --muted:          #60a5fa;
+            --secondary:      #93c5fd;
+            --sidebar-bg:     rgba(15,23,42,0.85);
             --sidebar-border: rgba(96,165,250,0.25);
         }
-
+ 
         /* SIDEBAR */
         .sidebar {
             position: fixed; top: 0; left: 0;
@@ -52,41 +52,33 @@
             display: flex; flex-direction: column; padding: 25px 0;
             transition: background 0.4s, border-color 0.4s;
         }
-
         .sidebar-logo {
             display: flex; align-items: center; gap: 12px;
             padding: 0 20px 25px;
             border-bottom: 1px solid rgba(168,85,247,0.15);
             margin-bottom: 20px;
         }
-
         .sidebar-logo img { width: 40px; height: 40px; border-radius: 50%; box-shadow: 0 0 15px rgba(168,85,247,0.5); }
-
         .sidebar-logo span {
             font-size: 20px; font-weight: 800;
             background: linear-gradient(90deg, #c026d3, #22d3ee);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         }
-
         .nav-item {
             display: flex; align-items: center; gap: 12px;
             padding: 12px 20px; color: var(--secondary, #9ca3af); text-decoration: none;
             font-size: 14px; font-weight: 500; transition: all 0.3s;
             border-left: 3px solid transparent; margin: 2px 0;
         }
-
         .nav-item:hover, .nav-item.active {
             color: white; background: rgba(168,85,247,0.08); border-left-color: #a855f7;
         }
-
         .nav-item i { width: 18px; text-align: center; font-size: 15px; }
         .nav-item.active i { color: #a855f7; }
-
         .sidebar-bottom {
             margin-top: auto; padding: 20px;
             border-top: 1px solid rgba(168,85,247,0.15);
         }
-
         .btn-cerrar {
             display: flex; align-items: center; gap: 10px;
             color: #ef4444; background: rgba(239,68,68,0.08);
@@ -94,23 +86,20 @@
             padding: 10px 15px; font-size: 13px; cursor: pointer;
             transition: all 0.3s; width: 100%; text-decoration: none;
         }
-
         .btn-cerrar:hover { background: rgba(239,68,68,0.15); color: #ef4444; }
-
+ 
         /* MAIN */
         .main { margin-left: 240px; padding: 30px; min-height: 100vh; }
-
+ 
         /* TOPBAR */
         .topbar {
             display: flex; justify-content: space-between; align-items: center;
             margin-bottom: 28px;
         }
-
         .topbar h1 { font-size: 24px; font-weight: 700; }
-        .topbar p { color: var(--secondary, #9ca3af); font-size: 14px; margin-top: 3px; }
-
+        .topbar p  { color: var(--secondary, #9ca3af); font-size: 14px; margin-top: 3px; }
         .topbar-right { display: flex; align-items: center; gap: 14px; }
-
+ 
         .btn-exportar {
             background: linear-gradient(135deg, #4ade80, #22d3ee);
             color: #0f0f2d; border: none; border-radius: 50px;
@@ -119,64 +108,55 @@
             box-shadow: 0 4px 15px rgba(74,222,128,0.3);
             display: flex; align-items: center; gap: 7px;
         }
-
         .btn-exportar:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(74,222,128,0.5); }
         .btn-exportar:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
-
+ 
         .user-badge {
             display: flex; align-items: center; gap: 10px;
             background: rgba(168,85,247,0.1);
             border: 1px solid rgba(168,85,247,0.2);
             border-radius: 50px; padding: 8px 15px;
         }
-
         .user-avatar {
             width: 32px; height: 32px; border-radius: 50%;
             background: linear-gradient(135deg, #c026d3, #22d3ee);
             display: flex; align-items: center; justify-content: center;
             font-weight: 700; font-size: 13px;
         }
-
         .user-name { font-size: 13px; color: #c4b5fd; }
-
+ 
         /* STATS */
         .cards-grid {
             display: grid; grid-template-columns: repeat(4,1fr);
             gap: 18px; margin-bottom: 24px;
         }
-
         .stat-card {
             background: var(--card-bg);
             border-radius: 18px; padding: 22px;
             border: 1px solid var(--card-border);
             transition: all 0.3s; position: relative; overflow: hidden;
         }
-
         .stat-card::before {
             content: ''; position: absolute;
             top: 0; left: 0; width: 100%; height: 3px;
         }
-
         .stat-card.ingresos::before { background: linear-gradient(90deg, #22d3ee, #38bdf8); }
         .stat-card.gastos::before   { background: linear-gradient(90deg, #c026d3, #a855f7); }
         .stat-card.balance::before  { background: linear-gradient(90deg, #4ade80, #22d3ee); }
         .stat-card.meta::before     { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
-
         .stat-card:hover { transform: translateY(-4px); border-color: rgba(168,85,247,0.3); }
-
-        .stat-icon { font-size: 28px; margin-bottom: 12px; }
+        .stat-icon  { font-size: 28px; margin-bottom: 12px; }
         .stat-label { font-size: 11px; color: var(--secondary, #9ca3af); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
         .stat-value { font-size: 22px; font-weight: 700; }
         .stat-value.positivo { color: #4ade80; }
         .stat-value.negativo { color: #f472b6; }
-        .stat-sub { font-size: 12px; color: var(--muted, #6b7280); margin-top: 5px; }
-
+        .stat-sub   { font-size: 12px; color: var(--muted, #6b7280); margin-top: 5px; }
+ 
         /* ACCESOS */
         .accesos-grid {
             display: grid; grid-template-columns: repeat(4,1fr);
             gap: 14px; margin-bottom: 24px;
         }
-
         .acceso-card {
             background: var(--card-bg);
             border: 1px solid var(--card-border);
@@ -184,34 +164,127 @@
             text-align: center; text-decoration: none;
             transition: all 0.3s; color: white;
         }
-
         .acceso-card:hover {
             background: rgba(168,85,247,0.1);
             transform: translateY(-4px);
             border-color: #a855f7; color: white;
         }
-
-        .acceso-icon { font-size: 30px; margin-bottom: 8px; }
+        .acceso-icon  { font-size: 30px; margin-bottom: 8px; }
         .acceso-texto { font-size: 13px; color: #c4b5fd; font-weight: 500; }
-
+ 
+        /* ══ BANNERS DE NOTIFICACIONES ══════════════════════ */
+ 
+        /* Alertas de metas */
+        .banner-metas {
+            display: none;
+            flex-direction: column; gap: 10px;
+            margin-bottom: 24px;
+        }
+        .banner-metas.visible { display: flex; }
+ 
+        .alerta-meta {
+            display: flex; align-items: center; gap: 14px;
+            padding: 14px 18px; border-radius: 14px;
+            border: 1px solid; animation: slideIn 0.4s ease;
+        }
+        .alerta-meta.pct75 {
+            background: rgba(251,191,36,0.08);
+            border-color: rgba(251,191,36,0.3);
+        }
+        .alerta-meta.pct100 {
+            background: rgba(74,222,128,0.08);
+            border-color: rgba(74,222,128,0.3);
+        }
+        .alerta-meta-icon { font-size: 24px; flex-shrink: 0; }
+        .alerta-meta-texto { flex: 1; }
+        .alerta-meta-texto strong { font-size: 14px; font-weight: 700; display: block; margin-bottom: 2px; }
+        .alerta-meta-texto span   { font-size: 12px; color: var(--secondary); }
+        .alerta-meta-cerrar {
+            background: none; border: none; color: var(--muted);
+            font-size: 16px; cursor: pointer; padding: 4px; line-height: 1;
+            transition: color 0.2s;
+        }
+        .alerta-meta-cerrar:hover { color: white; }
+ 
+        /* Resumen semanal */
+        .resumen-semanal {
+            display: none;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 18px; padding: 22px;
+            margin-bottom: 24px; position: relative; overflow: hidden;
+        }
+        .resumen-semanal.visible { display: block; }
+        .resumen-semanal::before {
+            content: ''; position: absolute; top: 0; left: 0;
+            width: 100%; height: 3px;
+            background: linear-gradient(90deg, #22d3ee, #4ade80, #a855f7);
+        }
+        .resumen-semanal-titulo {
+            font-size: 15px; font-weight: 700; color: white;
+            display: flex; align-items: center; gap: 8px; margin-bottom: 16px;
+        }
+        .resumen-semanal-grid {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+        }
+        .resumen-sem-item {
+            background: var(--item-bg);
+            border: 1px solid var(--item-border);
+            border-radius: 12px; padding: 14px; text-align: center;
+        }
+        .resumen-sem-icon  { font-size: 22px; margin-bottom: 6px; }
+        .resumen-sem-label { font-size: 11px; color: var(--secondary); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .resumen-sem-valor { font-size: 16px; font-weight: 700; }
+ 
+        /* Tips financieros */
+        .tip-card {
+            display: none;
+            background: var(--card-bg);
+            border: 1px solid rgba(168,85,247,0.25);
+            border-radius: 18px; padding: 20px 22px;
+            margin-bottom: 24px;
+            position: relative; overflow: hidden;
+        }
+        .tip-card.visible { display: flex; align-items: flex-start; gap: 16px; }
+        .tip-card::before {
+            content: ''; position: absolute; top: 0; left: 0;
+            width: 100%; height: 3px;
+            background: linear-gradient(90deg, #4ade80, #22d3ee);
+        }
+        .tip-icono { font-size: 32px; flex-shrink: 0; line-height: 1; }
+        .tip-contenido { flex: 1; }
+        .tip-label {
+            font-size: 11px; font-weight: 600; color: #4ade80;
+            text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;
+        }
+        .tip-texto {
+            font-size: 14px; color: white; font-weight: 500;
+            line-height: 1.6; margin-bottom: 6px;
+        }
+        .tip-sub { font-size: 12px; color: var(--secondary); }
+        .tip-cerrar {
+            background: none; border: none; color: var(--muted);
+            font-size: 16px; cursor: pointer; padding: 2px;
+            transition: color 0.2s; align-self: flex-start;
+        }
+        .tip-cerrar:hover { color: white; }
+ 
         /* GRÁFICAS */
         .bottom-grid {
             display: grid; grid-template-columns: 1fr 1fr;
             gap: 20px; margin-bottom: 24px;
         }
-
         .chart-card {
             background: var(--card-bg);
             border: 1px solid var(--card-border);
             border-radius: 18px; padding: 24px;
             transition: background 0.4s, border-color 0.4s;
         }
-
         .chart-title {
             font-size: 15px; font-weight: 600; color: #c4b5fd;
             margin-bottom: 18px; display: flex; align-items: center; gap: 8px;
         }
-
+ 
         /* TRANSACCIONES */
         .trans-card {
             background: var(--card-bg);
@@ -219,78 +292,71 @@
             border-radius: 18px; padding: 24px; margin-bottom: 24px;
             transition: background 0.4s, border-color 0.4s;
         }
-
         .section-header {
             display: flex; justify-content: space-between; align-items: center;
             margin-bottom: 16px;
         }
-
         .section-title {
             font-size: 15px; font-weight: 700; color: white;
             display: flex; align-items: center; gap: 8px;
         }
-
         .section-link {
             font-size: 13px; color: #a855f7; text-decoration: none;
             display: flex; align-items: center; gap: 5px; transition: color 0.3s;
         }
-
         .section-link:hover { color: #c4b5fd; }
-
         .trans-item {
             display: flex; align-items: center; justify-content: space-between;
             padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
         }
-
         .trans-item:last-child { border-bottom: none; }
-
         .trans-left { display: flex; align-items: center; gap: 12px; }
-
         .trans-icon {
             width: 42px; height: 42px; border-radius: 12px;
             display: flex; align-items: center; justify-content: center;
             font-size: 20px; flex-shrink: 0;
         }
-
         .trans-icon.gasto   { background: rgba(192,38,211,0.15); }
         .trans-icon.ingreso { background: rgba(34,211,238,0.15); }
-
         .trans-nombre { font-size: 14px; font-weight: 600; color: white; }
         .trans-desc   { font-size: 12px; color: var(--muted, #6b7280); margin-top: 2px; }
-
-        .trans-monto { font-size: 15px; font-weight: 700; }
+        .trans-monto  { font-size: 15px; font-weight: 700; }
         .trans-monto.gasto   { color: #f472b6; }
         .trans-monto.ingreso { color: #4ade80; }
-
         .trans-empty {
             text-align: center; color: var(--muted, #6b7280);
             padding: 28px; font-size: 14px;
         }
+ 
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
     </style>
 </head>
 <body class="tema-oscuro">
-
+ 
     <div class="sidebar">
         <div class="sidebar-logo">
             <img src="../../images/logo.png" alt="FinanBot" onerror="this.style.display='none'">
             <span>FinanBot</span>
         </div>
         <a href="dashboard.html" class="nav-item active"><i class="fas fa-home"></i> Dashboard</a>
-        <a href="chat.html" class="nav-item"><i class="fas fa-robot"></i> Chat FinanBot</a>
-        <a href="finanzas.html" class="nav-item"><i class="fas fa-wallet"></i> Mis Finanzas</a>
+        <a href="chat.html"      class="nav-item"><i class="fas fa-robot"></i> Chat FinanBot</a>
+        <a href="finanzas.html"  class="nav-item"><i class="fas fa-wallet"></i> Mis Finanzas</a>
         <a href="recomendaciones.html" class="nav-item"><i class="fas fa-lightbulb"></i> Recomendaciones</a>
         <a href="simulador.html" class="nav-item"><i class="fas fa-chart-line"></i> Simulador</a>
-        <a href="aprende.html" class="nav-item"><i class="fas fa-graduation-cap"></i> Aprende</a>
-        <a href="perfil.html" class="nav-item"><i class="fas fa-user-circle"></i> Mi Perfil</a>
+        <a href="aprende.html"   class="nav-item"><i class="fas fa-graduation-cap"></i> Aprende</a>
+        <a href="perfil.html"    class="nav-item"><i class="fas fa-user-circle"></i> Mi Perfil</a>
         <div class="sidebar-bottom">
             <a href="../index.html" class="btn-cerrar" onclick="cerrarSesion()">
                 <i class="fas fa-sign-out-alt"></i> Cerrar sesión
             </a>
         </div>
     </div>
-
+ 
     <div class="main">
-
+ 
         <!-- TOPBAR -->
         <div class="topbar">
             <div>
@@ -307,7 +373,51 @@
                 </div>
             </div>
         </div>
-
+ 
+        <!-- ① ALERTAS DE METAS (solo si notifMetas = true) -->
+        <div class="banner-metas" id="bannerMetas"></div>
+ 
+        <!-- ② RESUMEN SEMANAL (solo si resumenSemanal = true) -->
+        <div class="resumen-semanal" id="resumenSemanal">
+            <div class="resumen-semanal-titulo">
+                <i class="fas fa-calendar-week" style="color:#22d3ee"></i>
+                Resumen de los últimos 7 días
+            </div>
+            <div class="resumen-semanal-grid">
+                <div class="resumen-sem-item">
+                    <div class="resumen-sem-icon">💰</div>
+                    <div class="resumen-sem-label">Ingresos</div>
+                    <div class="resumen-sem-valor" id="semIngresos" style="color:#4ade80">$0</div>
+                </div>
+                <div class="resumen-sem-item">
+                    <div class="resumen-sem-icon">💸</div>
+                    <div class="resumen-sem-label">Gastos</div>
+                    <div class="resumen-sem-valor" id="semGastos" style="color:#f472b6">$0</div>
+                </div>
+                <div class="resumen-sem-item">
+                    <div class="resumen-sem-icon">📊</div>
+                    <div class="resumen-sem-label">Balance</div>
+                    <div class="resumen-sem-valor" id="semBalance" style="color:#22d3ee">$0</div>
+                </div>
+                <div class="resumen-sem-item">
+                    <div class="resumen-sem-icon">🎯</div>
+                    <div class="resumen-sem-label">Progreso metas</div>
+                    <div class="resumen-sem-valor" id="semMetas" style="color:#fbbf24">—</div>
+                </div>
+            </div>
+        </div>
+ 
+        <!-- ③ TIP FINANCIERO (solo si tipsFinancieros = true) -->
+        <div class="tip-card" id="tipCard">
+            <div class="tip-icono" id="tipIcono">💡</div>
+            <div class="tip-contenido">
+                <div class="tip-label">💡 Tip financiero del día</div>
+                <div class="tip-texto" id="tipTexto">Cargando tu tip personalizado...</div>
+                <div class="tip-sub"  id="tipSub"></div>
+            </div>
+            <button class="tip-cerrar" onclick="cerrarTip()" title="Cerrar">✕</button>
+        </div>
+ 
         <!-- STATS -->
         <div class="cards-grid">
             <div class="stat-card ingresos">
@@ -335,27 +445,15 @@
                 <div class="stat-sub" id="numMetas">Sin metas creadas</div>
             </div>
         </div>
-
+ 
         <!-- ACCESOS RÁPIDOS -->
         <div class="accesos-grid">
-            <a href="chat.html" class="acceso-card">
-                <div class="acceso-icon">🤖</div>
-                <div class="acceso-texto">Chat FinanBot</div>
-            </a>
-            <a href="finanzas.html" class="acceso-card">
-                <div class="acceso-icon">➕</div>
-                <div class="acceso-texto">Registrar gasto</div>
-            </a>
-            <a href="simulador.html" class="acceso-card">
-                <div class="acceso-icon">📈</div>
-                <div class="acceso-texto">Simular inversión</div>
-            </a>
-            <a href="perfil.html" class="acceso-card">
-                <div class="acceso-icon">🎯</div>
-                <div class="acceso-texto">Crear meta</div>
-            </a>
+            <a href="chat.html"      class="acceso-card"><div class="acceso-icon">🤖</div><div class="acceso-texto">Chat FinanBot</div></a>
+            <a href="finanzas.html"  class="acceso-card"><div class="acceso-icon">➕</div><div class="acceso-texto">Registrar gasto</div></a>
+            <a href="simulador.html" class="acceso-card"><div class="acceso-icon">📈</div><div class="acceso-texto">Simular inversión</div></a>
+            <a href="perfil.html"    class="acceso-card"><div class="acceso-icon">🎯</div><div class="acceso-texto">Crear meta</div></a>
         </div>
-
+ 
         <!-- GRÁFICAS -->
         <div class="bottom-grid">
             <div class="chart-card">
@@ -373,7 +471,7 @@
                 <canvas id="chartTorta" height="220"></canvas>
             </div>
         </div>
-
+ 
         <!-- TRANSACCIONES RECIENTES -->
         <div class="trans-card">
             <div class="section-header">
@@ -389,124 +487,296 @@
                 <div class="trans-empty">Cargando...</div>
             </div>
         </div>
-
-    </div>
-
+ 
+    </div><!-- /main -->
+ 
     <script>
         const token   = localStorage.getItem('token');
         const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
         let chartBar  = null;
         let chartPie  = null;
-
-        // ── TEMA ─────────────────────────────────────────────
+ 
+        // ── TEMA ──────────────────────────────────────────
         (function() {
             const t = localStorage.getItem('finanbot_tema') || 'oscuro';
             document.body.className = 'tema-' + t;
         })();
-
-        // ── FECHA ────────────────────────────────────────────
+ 
+        // ── PREFERENCIAS ──────────────────────────────────
+        function getPrefs() {
+            const def = { notifMetas: true, resumenSemanal: true, tipsFinancieros: true };
+            return Object.assign(def, JSON.parse(localStorage.getItem('finanbot_prefs') || '{}'));
+        }
+ 
+        // ── FECHA ─────────────────────────────────────────
         const DIAS  = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
         const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
         const hoy   = new Date();
         document.getElementById('fechaHoy').textContent =
             `${DIAS[hoy.getDay()]}, ${hoy.getDate()} de ${MESES[hoy.getMonth()]} de ${hoy.getFullYear()}`;
-
-        // ── USUARIO ───────────────────────────────────────────
+ 
+        // ── USUARIO ───────────────────────────────────────
         if (usuario.nombre) {
             document.getElementById('nombreUsuario').textContent = usuario.nombre;
             document.getElementById('correoUsuario').textContent = usuario.correo || '';
             document.getElementById('avatarLetra').textContent   = usuario.nombre.charAt(0).toUpperCase();
         }
-
-        // ── ICONOS POR CATEGORÍA (todos los de finanzas.html) ─
+ 
+        // ── ICONOS POR CATEGORÍA ──────────────────────────
         const ICONOS = {
-            // GASTOS
-            'Alimentación':     '🍔',
-            'Transporte':       '🚌',
-            'Arriendo':         '🏠',
-            'Salud':            '💊',
-            'Educación':        '📚',
-            'Entretenimiento':  '🎬',
-            'Ropa':             '👗',
-            'Servicios':        '⚡',
-            'Tecnología':       '💻',
-            'Otros gastos':     '📦',
-            // INGRESOS
-            'Salario':          '💼',
-            'Freelance':        '🧑‍💻',
-            'Inversión':        '📈',
-            'Negocio':          '🏪',
-            'Regalo':           '🎁',
-            'Otros ingresos':   '💵',
+            'Alimentación':    '🍔',
+            'Transporte':      '🚌',
+            'Arriendo':        '🏠',
+            'Salud':           '💊',
+            'Entretenimiento': '🎬',
+            'Educación':       '📚',
+            'Ropa':            '👗',
+            'Servicios':       '⚡',
+            'Mascotas':        '🐾',
+            'Regalos':         '🎁',
+            'Restaurantes':    '🍽️',
+            'Viajes':          '✈️',
+            'Salario':         '💼',
+            'Freelance':       '🧑‍💻',
+            'Inversión':       '📈',
+            'Negocio':         '🏪',
+            'Regalo':          '🎁',
+            'Otros ingresos':  '💵',
         };
-
-        function getIcono(categoria, tipo) {
-            return ICONOS[categoria] || (tipo === 'ingreso' ? '💰' : '💸');
+        function getIcono(cat, tipo) {
+            return ICONOS[cat] || (tipo === 'ingreso' ? '💰' : '💸');
         }
-
+ 
         function cerrarSesion() {
             localStorage.removeItem('token');
             localStorage.removeItem('usuario');
         }
-
-        // ── CARGAR DASHBOARD ─────────────────────────────────
+ 
+        // ════════════════════════════════════════════════
+        //  CARGAR DASHBOARD
+        // ════════════════════════════════════════════════
         async function cargarDashboard() {
             if (!token) return;
+            const prefs = getPrefs();
+ 
             try {
-                // Transacciones
+                // ── Transacciones ──
                 const resTrans = await fetch('http://127.0.0.1:5000/api/transacciones/', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
-
+ 
+                let todasTrans = [];
                 if (resTrans.ok) {
-                    const trans    = await resTrans.json();
-                    const ingresos = trans.filter(t => t.tipo === 'ingreso');
-                    const gastos   = trans.filter(t => t.tipo === 'gasto');
-                    const totIng   = ingresos.reduce((s, t) => s + t.monto, 0);
-                    const totGas   = gastos.reduce((s, t) => s + t.monto, 0);
+                    todasTrans = await resTrans.json();
+                    const ingresos = todasTrans.filter(t => t.tipo === 'ingreso');
+                    const gastos   = todasTrans.filter(t => t.tipo === 'gasto');
+                    const totIng   = ingresos.reduce((s,t) => s + t.monto, 0);
+                    const totGas   = gastos.reduce((s,t) => s + t.monto, 0);
                     const balance  = totIng - totGas;
-
+ 
                     document.getElementById('totalIngresos').textContent = '$' + totIng.toLocaleString('es-CO');
                     document.getElementById('totalGastos').textContent   = '$' + totGas.toLocaleString('es-CO');
                     document.getElementById('numIngresos').textContent   = ingresos.length + ' registro' + (ingresos.length !== 1 ? 's' : '');
-                    document.getElementById('numGastos').textContent     = gastos.length + ' registro' + (gastos.length !== 1 ? 's' : '');
-
+                    document.getElementById('numGastos').textContent     = gastos.length  + ' registro' + (gastos.length  !== 1 ? 's' : '');
+ 
                     const balEl = document.getElementById('balanceActual');
                     balEl.textContent = '$' + Math.abs(balance).toLocaleString('es-CO');
                     balEl.className   = 'stat-value ' + (balance >= 0 ? 'positivo' : 'negativo');
                     document.getElementById('estadoBalance').textContent =
                         balance > 0 ? '✅ Balance positivo' : balance < 0 ? '⚠️ Balance negativo' : 'Sin movimientos';
-
-                    renderTransacciones(trans.slice(0, 6));
-                    renderBarras(trans);
-                    renderTorta(trans);
+ 
+                    renderTransacciones(todasTrans.slice(0, 6));
+                    renderBarras(todasTrans);
+                    renderTorta(todasTrans);
+ 
+                    // ② RESUMEN SEMANAL
+                    if (prefs.resumenSemanal) {
+                        renderResumenSemanal(todasTrans);
+                    }
+ 
+                    // ③ TIP FINANCIERO
+                    if (prefs.tipsFinancieros) {
+                        renderTip(todasTrans);
+                    }
                 }
-
-                // Metas
+ 
+                // ── Metas ──
                 const resMetas = await fetch('http://127.0.0.1:5000/api/metas/', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
-
+ 
                 if (resMetas.ok) {
                     const metas = await resMetas.json();
                     if (metas.length > 0) {
-                        const totObj = metas.reduce((s, m) => s + m.monto_objetivo, 0);
-                        const totAct = metas.reduce((s, m) => s + m.monto_actual, 0);
+                        const totObj = metas.reduce((s,m) => s + m.monto_objetivo, 0);
+                        const totAct = metas.reduce((s,m) => s + m.monto_actual,   0);
                         const pct    = totObj > 0 ? Math.min(Math.round(totAct / totObj * 100), 100) : 0;
                         const comp   = metas.filter(m => m.completada).length;
                         document.getElementById('metaGlobal').textContent = pct + '%';
                         document.getElementById('numMetas').textContent =
                             metas.length + ' meta' + (metas.length !== 1 ? 's' : '') +
                             ' · ' + comp + ' completada' + (comp !== 1 ? 's' : '');
+ 
+                        // ① ALERTAS DE METAS
+                        if (prefs.notifMetas) {
+                            renderAlertasMetas(metas);
+                        }
+ 
+                        // progreso en resumen semanal
+                        if (prefs.resumenSemanal) {
+                            document.getElementById('semMetas').textContent = pct + '%';
+                        }
                     }
                 }
-
-            } catch (e) {
+ 
+            } catch(e) {
                 console.error('Error cargando dashboard:', e);
             }
         }
-
-        // ── TRANSACCIONES ─────────────────────────────────────
+ 
+        // ════════════════════════════════════════════════
+        //  ① ALERTAS DE METAS (75 % y 100 %)
+        // ════════════════════════════════════════════════
+        function renderAlertasMetas(metas) {
+            const dismissidas = JSON.parse(sessionStorage.getItem('metasDismiss') || '[]');
+            const alertas = metas
+                .filter(m => !dismissidas.includes(m.id))
+                .filter(m => {
+                    const pct = m.monto_objetivo > 0
+                        ? Math.round(m.monto_actual / m.monto_objetivo * 100)
+                        : 0;
+                    return pct >= 75;
+                })
+                .map(m => {
+                    const pct = Math.min(Math.round(m.monto_actual / m.monto_objetivo * 100), 100);
+                    const es100 = pct >= 100;
+                    return {
+                        id:    m.id,
+                        tipo:  es100 ? 'pct100' : 'pct75',
+                        icono: es100 ? '🎉' : '🔔',
+                        titulo: es100
+                            ? `¡Meta completada! — ${m.nombre}`
+                            : `¡Casi llegas! — ${m.nombre}`,
+                        subtxt: es100
+                            ? `Alcanzaste el 100% de tu objetivo de $${Math.round(m.monto_objetivo).toLocaleString('es-CO')} COP. ¡Felicitaciones!`
+                            : `Llevas el ${pct}% de tu meta de $${Math.round(m.monto_objetivo).toLocaleString('es-CO')} COP. ¡Sigue así!`,
+                    };
+                });
+ 
+            const banner = document.getElementById('bannerMetas');
+            if (!alertas.length) { banner.classList.remove('visible'); return; }
+ 
+            banner.innerHTML = alertas.map(a => `
+                <div class="alerta-meta ${a.tipo}" id="alertaMeta_${a.id}">
+                    <span class="alerta-meta-icon">${a.icono}</span>
+                    <div class="alerta-meta-texto">
+                        <strong>${a.titulo}</strong>
+                        <span>${a.subtxt}</span>
+                    </div>
+                    <button class="alerta-meta-cerrar"
+                            onclick="dismissAlerta(${a.id})" title="Cerrar">✕</button>
+                </div>`).join('');
+ 
+            banner.classList.add('visible');
+        }
+ 
+        function dismissAlerta(id) {
+            const d = JSON.parse(sessionStorage.getItem('metasDismiss') || '[]');
+            if (!d.includes(id)) d.push(id);
+            sessionStorage.setItem('metasDismiss', JSON.stringify(d));
+            const el = document.getElementById('alertaMeta_' + id);
+            if (el) el.remove();
+            const banner = document.getElementById('bannerMetas');
+            if (!banner.querySelector('.alerta-meta')) banner.classList.remove('visible');
+        }
+ 
+        // ════════════════════════════════════════════════
+        //  ② RESUMEN SEMANAL
+        // ════════════════════════════════════════════════
+        function renderResumenSemanal(trans) {
+            const hace7 = new Date();
+            hace7.setDate(hace7.getDate() - 7);
+ 
+            const semana = trans.filter(t => new Date(t.fecha) >= hace7);
+            const semIng = semana.filter(t => t.tipo === 'ingreso').reduce((s,t) => s + t.monto, 0);
+            const semGas = semana.filter(t => t.tipo === 'gasto').reduce((s,t) => s + t.monto, 0);
+            const semBal = semIng - semGas;
+ 
+            document.getElementById('semIngresos').textContent = '$' + semIng.toLocaleString('es-CO');
+            document.getElementById('semGastos').textContent   = '$' + semGas.toLocaleString('es-CO');
+ 
+            const balEl = document.getElementById('semBalance');
+            balEl.textContent  = '$' + Math.abs(semBal).toLocaleString('es-CO');
+            balEl.style.color  = semBal >= 0 ? '#4ade80' : '#f472b6';
+ 
+            document.getElementById('resumenSemanal').classList.add('visible');
+        }
+ 
+        // ════════════════════════════════════════════════
+        //  ③ TIP FINANCIERO PERSONALIZADO
+        // ════════════════════════════════════════════════
+        function renderTip(trans) {
+            const ingresos = trans.filter(t => t.tipo === 'ingreso').reduce((s,t) => s + t.monto, 0);
+            const gastos   = trans.filter(t => t.tipo === 'gasto').reduce((s,t) => s + t.monto, 0);
+            const balance  = ingresos - gastos;
+ 
+            // Frecuencia de categorías de gasto
+            const freqCat = {};
+            trans.filter(t => t.tipo === 'gasto').forEach(t => {
+                freqCat[t.categoria] = (freqCat[t.categoria] || 0) + t.monto;
+            });
+            const catTop = Object.entries(freqCat).sort((a,b) => b[1]-a[1])[0];
+ 
+            // Banco de tips según situación
+            let tips = [];
+ 
+            if (gastos === 0 && ingresos === 0) {
+                tips = [
+                    { icono:'🚀', texto:'¡Empieza a registrar tus finanzas!', sub:'Agrega tus ingresos y gastos para que FinanBot te dé consejos personalizados.' },
+                ];
+            } else if (balance < 0) {
+                tips = [
+                    { icono:'⚠️', texto:'Tus gastos superan tus ingresos registrados.', sub:'Revisa la sección Mis Finanzas e identifica dónde puedes reducir.' },
+                    { icono:'📉', texto:'Cada peso que ahorras hoy es libertad financiera mañana.', sub:'Intenta reducir al menos un 10% en tu categoría de mayor gasto.' },
+                ];
+            } else if (catTop && gastos > 0) {
+                const pct = Math.round(catTop[1] / gastos * 100);
+                if (pct > 40) {
+                    tips = [
+                        { icono:'🔍', texto:`El ${pct}% de tus gastos son en ${catTop[0]}.`, sub:'Considera si puedes optimizar ese rubro sin afectar tu calidad de vida.' },
+                    ];
+                }
+            }
+ 
+            // Tips generales de respaldo
+            const generales = [
+                { icono:'💡', texto:'Regla 50/30/20: dedica el 50% a necesidades, 30% a deseos y 20% a ahorro.', sub:'Configura tu ingreso mensual en Mi Perfil y calcula tu distribución ideal.' },
+                { icono:'🎯', texto:'Crear metas de ahorro aumenta en un 42% la probabilidad de alcanzarlas.', sub:'Ve a Mi Perfil → Metas y define tu próximo objetivo financiero.' },
+                { icono:'📅', texto:'Revisa tus finanzas cada semana: 15 minutos pueden cambiar tu año.', sub:'El resumen semanal te muestra cómo evolucionan tus hábitos.' },
+                { icono:'📊', texto:'Diversificar ingresos reduce el riesgo financiero.', sub:'Si dependes de un solo ingreso, explora opciones de Freelance o inversión.' },
+                { icono:'🏦', texto:'Un fondo de emergencia de 3 a 6 meses de gastos es esencial.', sub:'Crea una meta de ahorro exclusiva para tu fondo de emergencia.' },
+            ];
+ 
+            if (!tips.length) {
+                // Mostrar tip general rotativo por día
+                const idx = hoy.getDate() % generales.length;
+                tips = [generales[idx]];
+            }
+ 
+            const tip = tips[0];
+            document.getElementById('tipIcono').textContent = tip.icono;
+            document.getElementById('tipTexto').textContent = tip.texto;
+            document.getElementById('tipSub').textContent   = tip.sub;
+            document.getElementById('tipCard').classList.add('visible');
+        }
+ 
+        function cerrarTip() {
+            document.getElementById('tipCard').classList.remove('visible');
+        }
+ 
+        // ════════════════════════════════════════════════
+        //  TRANSACCIONES
+        // ════════════════════════════════════════════════
         function renderTransacciones(trans) {
             const lista = document.getElementById('listaRecientes');
             if (!trans.length) {
@@ -517,18 +787,13 @@
                     </div>`;
                 return;
             }
-
             lista.innerHTML = trans.map(t => `
                 <div class="trans-item">
                     <div class="trans-left">
-                        <div class="trans-icon ${t.tipo}">
-                            ${getIcono(t.categoria, t.tipo)}
-                        </div>
+                        <div class="trans-icon ${t.tipo}">${getIcono(t.categoria, t.tipo)}</div>
                         <div>
                             <div class="trans-nombre">${t.categoria}</div>
-                            <div class="trans-desc">
-                                ${t.descripcion ? t.descripcion + ' · ' : ''}${t.fecha}
-                            </div>
+                            <div class="trans-desc">${t.descripcion ? t.descripcion + ' · ' : ''}${t.fecha}</div>
                         </div>
                     </div>
                     <div class="trans-monto ${t.tipo}">
@@ -536,72 +801,55 @@
                     </div>
                 </div>`).join('');
         }
-
-        // ── GRÁFICA BARRAS ────────────────────────────────────
+ 
+        // ════════════════════════════════════════════════
+        //  GRÁFICAS
+        // ════════════════════════════════════════════════
         function renderBarras(trans) {
             const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-            const ing   = Array(12).fill(0);
-            const gas   = Array(12).fill(0);
-
+            const ing = Array(12).fill(0);
+            const gas = Array(12).fill(0);
             trans.forEach(t => {
                 const m = new Date(t.fecha).getMonth();
                 if (t.tipo === 'ingreso') ing[m] += t.monto;
                 else gas[m] += t.monto;
             });
-
             if (chartBar) chartBar.destroy();
             chartBar = new Chart(document.getElementById('chartBarras'), {
                 type: 'bar',
                 data: {
                     labels: meses,
                     datasets: [
-                        { label: 'Ingresos', data: ing, backgroundColor: 'rgba(34,211,238,0.75)', borderRadius: 6 },
-                        { label: 'Gastos',   data: gas, backgroundColor: 'rgba(192,38,211,0.75)', borderRadius: 6 }
+                        { label:'Ingresos', data:ing, backgroundColor:'rgba(34,211,238,0.75)', borderRadius:6 },
+                        { label:'Gastos',   data:gas, backgroundColor:'rgba(192,38,211,0.75)', borderRadius:6 }
                     ]
                 },
                 options: {
                     responsive: true,
                     plugins: {
-                        legend: { labels: { color: '#c4b5fd', font: { size: 11 } } },
-                        tooltip: { callbacks: { label: ctx => ` $${ctx.parsed.y.toLocaleString('es-CO')}` } }
+                        legend: { labels:{ color:'#c4b5fd', font:{size:11} } },
+                        tooltip: { callbacks:{ label: ctx => ` $${ctx.parsed.y.toLocaleString('es-CO')}` } }
                     },
                     scales: {
-                        x: { ticks: { color: '#9ca3af', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.04)' } },
-                        y: {
-                            ticks: { color: '#9ca3af', font: { size: 10 }, callback: v => '$' + (v/1000).toFixed(0) + 'k' },
-                            grid: { color: 'rgba(255,255,255,0.04)' }
-                        }
+                        x: { ticks:{color:'#9ca3af',font:{size:10}}, grid:{color:'rgba(255,255,255,0.04)'} },
+                        y: { ticks:{color:'#9ca3af',font:{size:10},callback:v=>'$'+(v/1000).toFixed(0)+'k'}, grid:{color:'rgba(255,255,255,0.04)'} }
                     }
                 }
             });
         }
-
-        // ── GRÁFICA TORTA ─────────────────────────────────────
+ 
         function renderTorta(trans) {
-            const catGas = {};
-            const catIng = {};
-
+            const catGas = {}, catIng = {};
             trans.forEach(t => {
-                if (t.tipo === 'gasto')   catGas[t.categoria] = (catGas[t.categoria] || 0) + t.monto;
-                else                       catIng[t.categoria] = (catIng[t.categoria] || 0) + t.monto;
+                if (t.tipo==='gasto') catGas[t.categoria]=(catGas[t.categoria]||0)+t.monto;
+                else                  catIng[t.categoria]=(catIng[t.categoria]||0)+t.monto;
             });
-
-            const labels = [
-                ...Object.keys(catGas).map(k => '💸 ' + k),
-                ...Object.keys(catIng).map(k => '💰 ' + k)
-            ];
-            const data = [
-                ...Object.values(catGas),
-                ...Object.values(catIng)
-            ];
-            const colG = ['rgba(192,38,211,0.85)','rgba(168,85,247,0.85)','rgba(236,72,153,0.85)','rgba(244,114,182,0.85)','rgba(139,92,246,0.85)','rgba(109,40,217,0.85)'];
-            const colI = ['rgba(34,211,238,0.85)','rgba(74,222,128,0.85)','rgba(56,189,248,0.85)','rgba(16,185,129,0.85)'];
-
-            const colores = [
-                ...Object.keys(catGas).map((_,i) => colG[i % colG.length]),
-                ...Object.keys(catIng).map((_,i) => colI[i % colI.length])
-            ];
-
+            const labels  = [...Object.keys(catGas).map(k=>'💸 '+k), ...Object.keys(catIng).map(k=>'💰 '+k)];
+            const data    = [...Object.values(catGas), ...Object.values(catIng)];
+            const colG    = ['rgba(192,38,211,0.85)','rgba(168,85,247,0.85)','rgba(236,72,153,0.85)','rgba(244,114,182,0.85)','rgba(139,92,246,0.85)','rgba(109,40,217,0.85)'];
+            const colI    = ['rgba(34,211,238,0.85)','rgba(74,222,128,0.85)','rgba(56,189,248,0.85)','rgba(16,185,129,0.85)'];
+            const colores = [...Object.keys(catGas).map((_,i)=>colG[i%colG.length]), ...Object.keys(catIng).map((_,i)=>colI[i%colI.length])];
+ 
             if (chartPie) chartPie.destroy();
             chartPie = new Chart(document.getElementById('chartTorta'), {
                 type: 'doughnut',
@@ -610,24 +858,22 @@
                     datasets: [{
                         data: data.length ? data : [1],
                         backgroundColor: data.length ? colores : ['rgba(168,85,247,0.2)'],
-                        borderWidth: 0, hoverOffset: 6
+                        borderWidth:0, hoverOffset:6
                     }]
                 },
                 options: {
-                    responsive: true,
-                    cutout: '60%',
+                    responsive:true, cutout:'60%',
                     plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: { color: '#c4b5fd', font: { size: 10 }, padding: 12, boxWidth: 12 }
-                        },
-                        tooltip: { callbacks: { label: ctx => ` $${ctx.parsed.toLocaleString('es-CO')}` } }
+                        legend:{ position:'bottom', labels:{color:'#c4b5fd',font:{size:10},padding:12,boxWidth:12} },
+                        tooltip:{ callbacks:{ label: ctx => ` $${ctx.parsed.toLocaleString('es-CO')}` } }
                     }
                 }
             });
         }
-
-        // ── EXPORTAR PDF ─────────────────────────────────────
+ 
+        // ════════════════════════════════════════════════
+        //  EXPORTAR PDF
+        // ════════════════════════════════════════════════
         async function exportarPDF(btn) {
             const orig = btn.innerHTML;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando...';
@@ -645,14 +891,14 @@
                     document.body.appendChild(a); a.click(); document.body.removeChild(a);
                     window.URL.revokeObjectURL(url);
                 } else alert('Error al generar el PDF.');
-            } catch (e) { alert('No se pudo conectar.'); }
+            } catch(e) { alert('No se pudo conectar.'); }
             btn.innerHTML = orig;
             btn.disabled  = false;
         }
-
+ 
         cargarDashboard();
     </script>
-
+ 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="tema.js"></script>
 </body>
