@@ -6,464 +6,507 @@
     <title>FinanBot - Bienvenido</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@700&display=swap" rel="stylesheet">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+        :root {
+            --purple: #a855f7;
+            --rose:   #c026d3;
+            --cyan:   #22d3ee;
+            --green:  #4ade80;
+            --red:    #f87171;
+            --warn:   #fbbf24;
+            --muted:  #6b7280;
+            --second: #9ca3af;
+        }
 
         body {
-            font-family: 'Segoe UI', sans-serif;
+            font-family: 'DM Sans', sans-serif;
             background: radial-gradient(ellipse at top, #1a1a4e 0%, #0f0f2d 50%, #000010 100%);
             min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            display: flex; align-items: flex-start; justify-content: center;
+            padding: 28px 15px; overflow-y: auto; overflow-x: hidden; position: relative;
         }
 
         body::before {
-            content: '';
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
+            content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
             background:
-                radial-gradient(circle at 20% 20%, rgba(168, 85, 247, 0.08) 0%, transparent 50%),
-                radial-gradient(circle at 80% 80%, rgba(34, 211, 238, 0.08) 0%, transparent 50%);
-            pointer-events: none;
+                radial-gradient(circle at 20% 20%, rgba(168,85,247,.09) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(34,211,238,.08) 0%, transparent 50%);
+        }
+        body::after {
+            content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
+            background-image: radial-gradient(rgba(168,85,247,.05) 1px, transparent 1px);
+            background-size: 28px 28px;
         }
 
-        .onboarding-card {
-            background: rgba(255,255,255,0.04);
-            border: 1px solid rgba(168, 85, 247, 0.25);
-            border-radius: 24px;
-            padding: 40px 35px;
-            width: 100%;
-            max-width: 520px;
-            backdrop-filter: blur(20px);
-            box-shadow: 0 25px 60px rgba(0,0,0,0.5);
-            position: relative;
-            z-index: 1;
+        /* Orbe animado */
+        .orb { position:fixed; border-radius:50%; filter:blur(80px); pointer-events:none; z-index:0; animation:drift 14s ease-in-out infinite; }
+        .orb-1 { width:480px; height:480px; top:-200px; left:-160px; background:radial-gradient(circle, rgba(192,38,211,.14) 0%, transparent 70%); }
+        .orb-2 { width:360px; height:360px; bottom:-140px; right:-110px; background:radial-gradient(circle, rgba(34,211,238,.10) 0%, transparent 70%); animation-delay:-6s; }
+        @keyframes drift { 0%,100%{transform:translate(0,0)} 50%{transform:translate(20px,-30px)} }
+
+        /* ── CARD ─────────────────────────────────────── */
+        .card-onboarding {
+            position:relative; z-index:1;
+            width:100%; max-width:520px; margin:0 auto;
+            background: rgba(255,255,255,.04);
+            border: 1px solid rgba(168,85,247,.25);
+            border-radius: 26px; padding: 42px 36px 36px;
+            backdrop-filter: blur(22px);
+            box-shadow: 0 28px 70px rgba(0,0,0,.55), 0 0 0 1px rgba(168,85,247,.06);
+        }
+        .card-onboarding::before {
+            content:''; position:absolute; top:0; left:0; right:0; height:2px;
+            background: linear-gradient(90deg, transparent, #c026d3, #a855f7, #22d3ee, transparent);
+            border-radius: 26px 26px 0 0;
         }
 
-        .onboarding-card::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 3px;
-            background: linear-gradient(90deg, #c026d3, #a855f7, #22d3ee);
-            border-radius: 24px 24px 0 0;
+        /* ── LOGO + HEADER ────────────────────────────── */
+        .header { text-align:center; margin-bottom:28px; }
+        .logo-img {
+            width:70px; height:70px; border-radius:50%; object-fit:cover;
+            border:2px solid rgba(168,85,247,.35);
+            box-shadow: 0 0 22px rgba(168,85,247,.45), 0 0 48px rgba(168,85,247,.12);
+            margin-bottom:14px;
         }
-
-        .logo-small {
-            width: 65px;
-            height: 65px;
-            border-radius: 50%;
-            margin: 0 auto 15px;
-            display: block;
-            box-shadow: 0 0 20px rgba(168, 85, 247, 0.5);
+        .logo-fallback {
+            width:70px; height:70px; border-radius:50%; margin:0 auto 14px;
+            background:linear-gradient(135deg, rgba(192,38,211,.25), rgba(168,85,247,.2));
+            border:2px solid rgba(168,85,247,.35);
+            display:flex; align-items:center; justify-content:center; font-size:30px;
+            box-shadow: 0 0 22px rgba(168,85,247,.35);
         }
-
         .titulo {
-            font-size: 24px;
-            font-weight: 800;
-            background: linear-gradient(90deg, #c026d3, #a855f7, #22d3ee);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-align: center;
-            margin-bottom: 5px;
+            font-family:'Segoe UI',sans-serif; font-size:26px; font-weight:800;
+            background:linear-gradient(90deg,#c026d3,#a855f7,#22d3ee);
+            -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+            margin-bottom:5px; letter-spacing:-.3px;
         }
+        .subtitulo { color:var(--second); font-size:13px; line-height:1.5; }
 
-        .subtitulo {
-            text-align: center;
-            color: #9ca3af;
-            font-size: 14px;
-            margin-bottom: 30px;
+        /* ── STEPPER ──────────────────────────────────── */
+        .stepper {
+            display:flex; align-items:center; margin-bottom:32px;
         }
-
-        /* PASOS */
-        .pasos {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin-bottom: 30px;
+        .st-item { display:flex; align-items:center; flex:1; }
+        .st-item:last-child { flex:none; }
+        .st-circle {
+            width:32px; height:32px; border-radius:50%; flex-shrink:0;
+            display:flex; align-items:center; justify-content:center;
+            font-size:12px; font-weight:700; transition:all .4s;
+            border:2px solid rgba(168,85,247,.2); color:var(--muted);
+            font-family:'Space Mono',monospace;
         }
+        .st-circle.activo { border-color:var(--purple); color:white; background:rgba(168,85,247,.14); box-shadow:0 0 14px rgba(168,85,247,.4); }
+        .st-circle.hecho  { border-color:var(--green);  color:var(--green);  background:rgba(74,222,128,.1); }
+        .st-line { flex:1; height:1px; background:rgba(168,85,247,.15); transition:background .4s; margin:0 5px; }
+        .st-line.activa { background:linear-gradient(90deg,var(--green),var(--purple)); }
 
-        .paso-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background: rgba(168, 85, 247, 0.3);
-            transition: all 0.3s;
-        }
+        /* ── PASO CONTENIDO ───────────────────────────── */
+        .paso { display:none; animation:fadeUp .35s ease; }
+        .paso.visible { display:block; }
+        @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
 
-        .paso-dot.activo {
-            background: #a855f7;
-            width: 30px;
-            border-radius: 5px;
-        }
+        .paso-icono  { font-size:48px; text-align:center; margin-bottom:12px; }
+        .paso-titulo { font-family:'Segoe UI',sans-serif; font-size:20px; font-weight:800; color:white; text-align:center; margin-bottom:6px; }
+        .paso-desc   { color:var(--second); font-size:13px; text-align:center; line-height:1.6; margin-bottom:24px; }
 
-        .paso-dot.completado { background: #4ade80; }
-
-        /* PASO CONTENIDO */
-        .paso-contenido { display: none; }
-        .paso-contenido.visible { display: block; }
-
-        .paso-icono {
-            font-size: 50px;
-            text-align: center;
-            margin-bottom: 15px;
-        }
-
-        .paso-titulo {
-            font-size: 20px;
-            font-weight: 700;
-            text-align: center;
-            margin-bottom: 8px;
-            color: white;
-        }
-
-        .paso-descripcion {
-            text-align: center;
-            color: #9ca3af;
-            font-size: 14px;
-            margin-bottom: 25px;
-            line-height: 1.6;
-        }
-
-        .form-label {
-            color: #c4b5fd;
-            font-size: 13px;
-            font-weight: 500;
-            margin-bottom: 6px;
-            display: block;
-        }
-
-        .form-control, .form-select {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(168, 85, 247, 0.3);
-            border-radius: 12px;
-            color: white;
-            padding: 12px 15px;
-            font-size: 14px;
-            width: 100%;
-            margin-bottom: 15px;
-            transition: all 0.3s;
-        }
-
-        .form-control:focus, .form-select:focus {
-            background: rgba(168, 85, 247, 0.08);
-            border-color: #a855f7;
-            outline: none;
-            color: white;
-        }
-
-        .form-control::placeholder { color: #6b7280; }
-        .form-select option { background: #1a1a4e; }
-
-        .opciones-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-
+        /* ── OPCIONES ─────────────────────────────────── */
+        .opciones-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:20px; }
         .opcion-btn {
-            background: rgba(255,255,255,0.04);
-            border: 2px solid rgba(168, 85, 247, 0.2);
-            border-radius: 12px;
-            padding: 15px 10px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s;
-            color: #9ca3af;
-            font-size: 13px;
+            background:rgba(255,255,255,.03); border:1.5px solid rgba(168,85,247,.18);
+            border-radius:14px; padding:16px 10px; text-align:center; cursor:pointer;
+            transition:all .25s; color:var(--second); font-size:13px; font-weight:500;
+            position:relative; overflow:hidden;
         }
-
-        .opcion-btn:hover, .opcion-btn.seleccionado {
-            background: rgba(168, 85, 247, 0.1);
-            border-color: #a855f7;
-            color: white;
+        .opcion-btn:hover { border-color:rgba(168,85,247,.45); color:white; transform:translateY(-2px); }
+        .opcion-btn.seleccionado {
+            background:rgba(168,85,247,.1); border-color:var(--purple);
+            color:white; transform:translateY(-2px);
+            box-shadow:0 8px 22px rgba(168,85,247,.2);
         }
+        .opcion-icono { font-size:30px; margin-bottom:8px; display:block; transition:transform .3s; }
+        .opcion-btn:hover .opcion-icono, .opcion-btn.seleccionado .opcion-icono { transform:scale(1.1); }
+        .opcion-label { font-size:12px; font-weight:700; }
+        .check-ico {
+            position:absolute; top:7px; right:8px; width:17px; height:17px;
+            border-radius:50%; background:var(--purple); color:white;
+            display:none; align-items:center; justify-content:center; font-size:9px;
+        }
+        .opcion-btn.seleccionado .check-ico { display:flex; }
 
-        .opcion-icono { font-size: 28px; margin-bottom: 8px; display: block; }
+        /* ── INPUTS ───────────────────────────────────── */
+        .campo { margin-bottom:16px; }
+        .campo-label {
+            display:block; font-size:11px; font-weight:700; color:#c4b5fd;
+            text-transform:uppercase; letter-spacing:.8px; margin-bottom:7px;
+        }
+        .campo-hint { font-size:11px; color:var(--muted); margin-top:5px; }
+        .campo-hint i { color:var(--purple); margin-right:4px; }
+        .campo-input-wrap { position:relative; }
+        .campo-prefix {
+            position:absolute; left:14px; top:50%; transform:translateY(-50%);
+            font-size:14px; font-weight:700; color:var(--purple);
+            font-family:'Space Mono',monospace; pointer-events:none;
+        }
+        .campo-input {
+            width:100%; background:rgba(255,255,255,.05);
+            border:1.5px solid rgba(168,85,247,.22); border-radius:12px;
+            color:white; padding:12px 15px; font-size:14px; outline:none;
+            transition:all .3s; font-family:'DM Sans',sans-serif;
+        }
+        .campo-input.con-prefix { padding-left:30px; }
+        .campo-input:focus { border-color:var(--purple); box-shadow:0 0 0 3px rgba(168,85,247,.1); background:rgba(168,85,247,.05); }
+        .campo-input::placeholder { color:var(--muted); }
+        .campo-select {
+            width:100%; background:rgba(255,255,255,.05);
+            border:1.5px solid rgba(168,85,247,.22); border-radius:12px;
+            color:white; padding:12px 15px; font-size:14px; outline:none;
+            transition:all .3s; font-family:'DM Sans',sans-serif; cursor:pointer;
+            appearance:none;
+            background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7' viewBox='0 0 10 7'%3E%3Cpath fill='%23a855f7' d='M1 1l4 4 4-4'/%3E%3C/svg%3E");
+            background-repeat:no-repeat; background-position:right 14px center;
+        }
+        .campo-select:focus { border-color:var(--purple); box-shadow:0 0 0 3px rgba(168,85,247,.1); }
+        .campo-select option { background:#1a0a3c; color:white; }
 
+        /* ── RESUMEN PASO 4 ───────────────────────────── */
+        .resumen-card {
+            background:rgba(74,222,128,.06); border:1px solid rgba(74,222,128,.18);
+            border-radius:16px; padding:20px; margin-bottom:20px;
+        }
+        .resumen-titulo {
+            font-size:11px; font-weight:700; color:var(--green);
+            text-transform:uppercase; letter-spacing:1px; margin-bottom:14px;
+            display:flex; align-items:center; gap:7px;
+        }
+        .resumen-fila {
+            display:flex; justify-content:space-between; align-items:center;
+            padding:7px 0; border-bottom:1px solid rgba(74,222,128,.08); font-size:13px;
+        }
+        .resumen-fila:last-child { border-bottom:none; }
+        .resumen-key { color:var(--second); }
+        .resumen-val { color:white; font-weight:600; font-family:'Space Mono',monospace; font-size:12px; }
+
+        /* ── BOTONES ──────────────────────────────────── */
         .btn-siguiente {
-            background: linear-gradient(135deg, #c026d3, #a855f7);
-            color: white;
-            border: none;
-            border-radius: 12px;
-            padding: 13px;
-            font-size: 16px;
-            font-weight: 600;
-            width: 100%;
-            cursor: pointer;
-            transition: all 0.3s;
-            box-shadow: 0 8px 25px rgba(192, 38, 211, 0.4);
-            margin-top: 10px;
+            width:100%; border:none; border-radius:12px; padding:14px;
+            font-size:15px; font-weight:700; color:white; cursor:pointer;
+            background:linear-gradient(135deg,#c026d3,#a855f7);
+            box-shadow:0 6px 24px rgba(192,38,211,.35);
+            transition:all .3s; display:flex; align-items:center;
+            justify-content:center; gap:9px; font-family:'DM Sans',sans-serif;
+            margin-bottom:10px;
         }
-
-        .btn-siguiente:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 35px rgba(192, 38, 211, 0.6);
-        }
+        .btn-siguiente:hover { transform:translateY(-2px); box-shadow:0 10px 32px rgba(192,38,211,.55); }
+        .btn-siguiente:disabled { opacity:.65; cursor:not-allowed; transform:none; }
+        .btn-siguiente .arr { transition:transform .3s; }
+        .btn-siguiente:hover .arr { transform:translateX(4px); }
 
         .btn-omitir {
-            background: transparent;
-            border: none;
-            color: #6b7280;
-            font-size: 13px;
-            cursor: pointer;
-            width: 100%;
-            margin-top: 10px;
-            padding: 8px;
-            transition: color 0.3s;
+            width:100%; background:transparent; border:none;
+            color:var(--muted); font-size:13px; cursor:pointer;
+            padding:8px; transition:color .3s; font-family:'DM Sans',sans-serif;
         }
+        .btn-omitir:hover { color:var(--second); }
 
-        .btn-omitir:hover { color: #9ca3af; }
+        .spinner { display:inline-block; width:16px; height:16px; border:2px solid rgba(255,255,255,.3); border-top-color:white; border-radius:50%; animation:spin .7s linear infinite; }
+        @keyframes spin { to{transform:rotate(360deg)} }
+
+        /* Confeti */
+        .confeti { position:absolute; border-radius:2px; animation:confetiFall linear forwards; pointer-events:none; }
+        @keyframes confetiFall { 0%{transform:translateY(-20px) rotate(0deg);opacity:1} 100%{transform:translateY(120vh) rotate(720deg);opacity:0} }
     </style>
 </head>
 <body>
 
-    <div class="onboarding-card">
-        <img src="../../images/logo.png" alt="FinanBot" class="logo-small"
-             onerror="this.style.display='none'">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
 
-        <h1 class="titulo">¡Bienvenido a FinanBot!</h1>
-        <p class="subtitulo">Cuéntanos un poco sobre ti para personalizar tu experiencia</p>
+    <div class="card-onboarding">
 
-        <!-- INDICADOR DE PASOS -->
-        <div class="pasos">
-            <div class="paso-dot activo" id="dot1"></div>
-            <div class="paso-dot" id="dot2"></div>
-            <div class="paso-dot" id="dot3"></div>
-            <div class="paso-dot" id="dot4"></div>
+        <!-- HEADER con logo -->
+        <div class="header">
+            <img src="../../images/logo.png" alt="FinanBot" class="logo-img"
+                 onerror="this.outerHTML='<div class=\'logo-fallback\'>🤖</div>'">
+            <div class="titulo">¡Bienvenido a FinanBot!</div>
+            <div class="subtitulo">Cuéntanos un poco sobre ti para personalizar tu experiencia</div>
         </div>
 
-        <!-- PASO 1: Perfil financiero -->
-        <div class="paso-contenido visible" id="paso1">
+        <!-- STEPPER -->
+        <div class="stepper">
+            <div class="st-item">
+                <div class="st-circle activo" id="sc1">1</div>
+                <div class="st-line" id="sl1"></div>
+            </div>
+            <div class="st-item">
+                <div class="st-circle" id="sc2">2</div>
+                <div class="st-line" id="sl2"></div>
+            </div>
+            <div class="st-item">
+                <div class="st-circle" id="sc3">3</div>
+                <div class="st-line" id="sl3"></div>
+            </div>
+            <div class="st-circle" id="sc4">4</div>
+        </div>
+
+        <!-- ── PASO 1: Perfil ── -->
+        <div class="paso visible" id="paso1">
             <div class="paso-icono">👤</div>
             <div class="paso-titulo">¿Cuál es tu situación financiera?</div>
-            <div class="paso-descripcion">Selecciona la opción que mejor te describe</div>
+            <div class="paso-desc">Selecciona la opción que mejor te describe</div>
 
             <div class="opciones-grid">
-                <div class="opcion-btn" onclick="seleccionarOpcion(this, 'perfil', 'estudiante')">
+                <div class="opcion-btn" onclick="selOpcion(this,'perfil','estudiante')">
+                    <div class="check-ico"><i class="fas fa-check" style="font-size:8px"></i></div>
                     <span class="opcion-icono">🎓</span>
-                    Estudiante
+                    <div class="opcion-label">Estudiante</div>
                 </div>
-                <div class="opcion-btn" onclick="seleccionarOpcion(this, 'perfil', 'empleado')">
+                <div class="opcion-btn" onclick="selOpcion(this,'perfil','empleado')">
+                    <div class="check-ico"><i class="fas fa-check" style="font-size:8px"></i></div>
                     <span class="opcion-icono">💼</span>
-                    Empleado
+                    <div class="opcion-label">Empleado</div>
                 </div>
-                <div class="opcion-btn" onclick="seleccionarOpcion(this, 'perfil', 'independiente')">
+                <div class="opcion-btn" onclick="selOpcion(this,'perfil','independiente')">
+                    <div class="check-ico"><i class="fas fa-check" style="font-size:8px"></i></div>
                     <span class="opcion-icono">🚀</span>
-                    Independiente
+                    <div class="opcion-label">Independiente</div>
                 </div>
-                <div class="opcion-btn" onclick="seleccionarOpcion(this, 'perfil', 'emprendedor')">
+                <div class="opcion-btn" onclick="selOpcion(this,'perfil','emprendedor')">
+                    <div class="check-ico"><i class="fas fa-check" style="font-size:8px"></i></div>
                     <span class="opcion-icono">💡</span>
-                    Emprendedor
+                    <div class="opcion-label">Emprendedor</div>
                 </div>
             </div>
 
-            <button class="btn-siguiente" onclick="siguientePaso(2)">
-                Continuar <i class="fas fa-arrow-right ms-2"></i>
+            <button class="btn-siguiente" onclick="ir(2)">
+                Continuar <span class="arr"><i class="fas fa-arrow-right"></i></span>
             </button>
             <button class="btn-omitir" onclick="omitir()">Omitir configuración</button>
         </div>
 
-        <!-- PASO 2: Ingreso mensual -->
-        <div class="paso-contenido" id="paso2">
+        <!-- ── PASO 2: Ingresos ── -->
+        <div class="paso" id="paso2">
             <div class="paso-icono">💰</div>
-            <div class="paso-titulo">¿Cuál es tu ingreso mensual?</div>
-            <div class="paso-descripcion">Esta información nos ayuda a darte recomendaciones más precisas. Solo tú puedes ver estos datos.</div>
+            <div class="paso-titulo">¿Cuánto ganas al mes?</div>
+            <div class="paso-desc">Esta información es privada y nos ayuda a darte recomendaciones más precisas.</div>
 
-            <label class="form-label">Ingreso mensual aproximado ($)</label>
-            <input type="number" class="form-control" id="ingresoMensual"
-                   placeholder="Ej: 2500000">
+            <div class="campo">
+                <label class="campo-label">Ingreso mensual aproximado</label>
+                <div class="campo-input-wrap">
+                    <span class="campo-prefix">$</span>
+                    <input type="number" class="campo-input con-prefix" id="ingresoMensual" placeholder="2.500.000">
+                </div>
+                <div class="campo-hint"><i class="fas fa-lock"></i>Solo tú puedes ver este dato</div>
+            </div>
 
-            <label class="form-label">¿Con qué frecuencia recibes ingresos?</label>
-            <select class="form-select" id="frecuenciaIngreso">
-                <option value="mensual">Mensual</option>
-                <option value="quincenal">Quincenal</option>
-                <option value="semanal">Semanal</option>
-                <option value="variable">Variable / Irregular</option>
-            </select>
+            <div class="campo">
+                <label class="campo-label">Frecuencia de ingresos</label>
+                <select class="campo-select" id="frecuenciaIngreso">
+                    <option value="mensual">Mensual (salario fijo)</option>
+                    <option value="quincenal">Quincenal</option>
+                    <option value="semanal">Semanal</option>
+                    <option value="variable">Variable / Irregular</option>
+                </select>
+            </div>
 
-            <button class="btn-siguiente" onclick="siguientePaso(3)">
-                Continuar <i class="fas fa-arrow-right ms-2"></i>
+            <button class="btn-siguiente" onclick="ir(3)">
+                Continuar <span class="arr"><i class="fas fa-arrow-right"></i></span>
             </button>
             <button class="btn-omitir" onclick="omitir()">Omitir este paso</button>
         </div>
 
-        <!-- PASO 3: Meta de ahorro -->
-        <div class="paso-contenido" id="paso3">
+        <!-- ── PASO 3: Meta ── -->
+        <div class="paso" id="paso3">
             <div class="paso-icono">🎯</div>
             <div class="paso-titulo">¿Cuánto quieres ahorrar al mes?</div>
-            <div class="paso-descripcion">Establece una meta de ahorro mensual. Te ayudaremos a alcanzarla con recomendaciones personalizadas.</div>
+            <div class="paso-desc">Establece una meta de ahorro mensual. Te ayudaremos a alcanzarla.</div>
 
-            <label class="form-label">Meta de ahorro mensual ($)</label>
-            <input type="number" class="form-control" id="metaAhorro"
-                   placeholder="Ej: 500000">
-
-            <label class="form-label">¿Cuál es tu objetivo financiero principal?</label>
-            <div class="opciones-grid">
-                <div class="opcion-btn" onclick="seleccionarOpcion(this, 'objetivo', 'emergencia')">
-                    <span class="opcion-icono">🚨</span>
-                    Fondo de emergencia
-                </div>
-                <div class="opcion-btn" onclick="seleccionarOpcion(this, 'objetivo', 'viaje')">
-                    <span class="opcion-icono">✈️</span>
-                    Viaje / Vacaciones
-                </div>
-                <div class="opcion-btn" onclick="seleccionarOpcion(this, 'objetivo', 'vivienda')">
-                    <span class="opcion-icono">🏠</span>
-                    Vivienda propia
-                </div>
-                <div class="opcion-btn" onclick="seleccionarOpcion(this, 'objetivo', 'inversion')">
-                    <span class="opcion-icono">📈</span>
-                    Invertir
+            <div class="campo">
+                <label class="campo-label">Meta de ahorro mensual</label>
+                <div class="campo-input-wrap">
+                    <span class="campo-prefix">$</span>
+                    <input type="number" class="campo-input con-prefix" id="metaAhorro" placeholder="500.000">
                 </div>
             </div>
 
-            <button class="btn-siguiente" onclick="siguientePaso(4)">
-                Continuar <i class="fas fa-arrow-right ms-2"></i>
+            <label class="campo-label" style="margin-bottom:10px">Objetivo financiero principal</label>
+            <div class="opciones-grid">
+                <div class="opcion-btn" onclick="selOpcion(this,'objetivo','emergencia')">
+                    <div class="check-ico"><i class="fas fa-check" style="font-size:8px"></i></div>
+                    <span class="opcion-icono">🚨</span>
+                    <div class="opcion-label">Fondo emergencia</div>
+                </div>
+                <div class="opcion-btn" onclick="selOpcion(this,'objetivo','viaje')">
+                    <div class="check-ico"><i class="fas fa-check" style="font-size:8px"></i></div>
+                    <span class="opcion-icono">✈️</span>
+                    <div class="opcion-label">Viaje / Vacaciones</div>
+                </div>
+                <div class="opcion-btn" onclick="selOpcion(this,'objetivo','vivienda')">
+                    <div class="check-ico"><i class="fas fa-check" style="font-size:8px"></i></div>
+                    <span class="opcion-icono">🏠</span>
+                    <div class="opcion-label">Vivienda propia</div>
+                </div>
+                <div class="opcion-btn" onclick="selOpcion(this,'objetivo','inversion')">
+                    <div class="check-ico"><i class="fas fa-check" style="font-size:8px"></i></div>
+                    <span class="opcion-icono">📈</span>
+                    <div class="opcion-label">Invertir</div>
+                </div>
+            </div>
+
+            <button class="btn-siguiente" onclick="ir(4)">
+                Continuar <span class="arr"><i class="fas fa-arrow-right"></i></span>
             </button>
             <button class="btn-omitir" onclick="omitir()">Omitir este paso</button>
         </div>
 
-        <!-- PASO 4: Listo -->
-        <div class="paso-contenido" id="paso4">
+        <!-- ── PASO 4: Resumen ── -->
+        <div class="paso" id="paso4">
             <div class="paso-icono">🎉</div>
-            <div class="paso-titulo">¡Todo listo!</div>
-            <div class="paso-descripcion">
-                Tu perfil financiero está configurado. FinanBot usará esta información para darte recomendaciones personalizadas y ayudarte a alcanzar tus metas.
+            <div class="paso-titulo" id="tituloFinal">¡Todo listo!</div>
+            <div class="paso-desc">Tu perfil está configurado. FinanBot usará esta información para darte recomendaciones personalizadas.</div>
+
+            <div class="resumen-card">
+                <div class="resumen-titulo"><i class="fas fa-check-circle"></i> Tu perfil incluye</div>
+                <div class="resumen-fila"><span class="resumen-key">👤 Perfil</span><span class="resumen-val" id="res-perfil">—</span></div>
+                <div class="resumen-fila"><span class="resumen-key">💰 Ingreso mensual</span><span class="resumen-val" id="res-ingreso">—</span></div>
+                <div class="resumen-fila"><span class="resumen-key">🎯 Meta de ahorro</span><span class="resumen-val" id="res-meta">—</span></div>
+                <div class="resumen-fila"><span class="resumen-key">🏆 Objetivo</span><span class="resumen-val" id="res-objetivo">—</span></div>
             </div>
 
-            <div style="background: rgba(74,222,128,0.08); border: 1px solid rgba(74,222,128,0.2); border-radius: 14px; padding: 20px; margin-bottom: 20px;">
-                <div style="font-size: 14px; color: #4ade80; font-weight: 600; margin-bottom: 10px;">✅ Tu perfil incluye:</div>
-                <div style="font-size: 13px; color: #9ca3af; line-height: 2;" id="resumenPerfil">
-                    Cargando...
-                </div>
-            </div>
-
-            <button class="btn-siguiente" onclick="finalizar()">
-                <i class="fas fa-rocket me-2"></i> Ir a mi Dashboard
+            <button class="btn-siguiente" id="btnFinalizar" onclick="finalizar()">
+                <i class="fas fa-rocket"></i> Ir a mi Dashboard
+                <span class="arr"><i class="fas fa-arrow-right"></i></span>
             </button>
         </div>
+
     </div>
 
     <script>
-        const token = localStorage.getItem('token');
+        // ── VALIDAR SESIÓN ────────────────────────────
+        const token   = localStorage.getItem('token');
         const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
-
         if (!token) window.location.href = 'login.html';
 
-        let datosOnboarding = {
-            perfil: '',
-            ingreso_mensual: 0,
-            meta_ahorro: 0,
-            objetivo: ''
-        };
+        // Personalizar paso 4 con el nombre
+        const nombre = (usuario.nombre || '').split(' ')[0];
+        if (nombre) document.getElementById('tituloFinal').textContent = `¡Listo, ${nombre}! 🎉`;
 
-        function seleccionarOpcion(elemento, tipo, valor) {
-            const grupo = elemento.parentElement.querySelectorAll('.opcion-btn');
-            grupo.forEach(btn => btn.classList.remove('seleccionado'));
-            elemento.classList.add('seleccionado');
-            datosOnboarding[tipo] = valor;
+        // ── ESTADO ────────────────────────────────────
+        let datos = { perfil:'', ingreso_mensual:0, meta_ahorro:0, objetivo:'' };
+        let pasoActual = 1;
+
+        const PERFILES  = { estudiante:'🎓 Estudiante', empleado:'💼 Empleado', independiente:'🚀 Independiente', emprendedor:'💡 Emprendedor' };
+        const OBJETIVOS = { emergencia:'🚨 Fondo de emergencia', viaje:'✈️ Viaje/Vacaciones', vivienda:'🏠 Vivienda propia', inversion:'📈 Invertir' };
+
+        // ── SELECCIONAR OPCIÓN ────────────────────────
+        function selOpcion(el, tipo, valor) {
+            el.closest('.opciones-grid').querySelectorAll('.opcion-btn')
+                .forEach(b => b.classList.remove('seleccionado'));
+            el.classList.add('seleccionado');
+            datos[tipo] = valor;
         }
 
-        function siguientePaso(paso) {
-            // Guardar datos del paso actual
-            if (paso === 3) {
-                datosOnboarding.ingreso_mensual = parseFloat(document.getElementById('ingresoMensual').value) || 0;
-            }
-            if (paso === 4) {
-                datosOnboarding.meta_ahorro = parseFloat(document.getElementById('metaAhorro').value) || 0;
-
-                // Mostrar resumen
-                const perfiles = { estudiante: '🎓 Estudiante', empleado: '💼 Empleado', independiente: '🚀 Independiente', emprendedor: '💡 Emprendedor' };
-                const objetivos = { emergencia: '🚨 Fondo de emergencia', viaje: '✈️ Viaje/Vacaciones', vivienda: '🏠 Vivienda propia', inversion: '📈 Invertir' };
-
-                document.getElementById('resumenPerfil').innerHTML = `
-                    👤 Perfil: <strong style="color:white">${perfiles[datosOnboarding.perfil] || 'No especificado'}</strong><br>
-                    💰 Ingreso mensual: <strong style="color:white">$${(datosOnboarding.ingreso_mensual || 0).toLocaleString('es-CO')}</strong><br>
-                    🎯 Meta de ahorro: <strong style="color:white">$${(datosOnboarding.meta_ahorro || 0).toLocaleString('es-CO')}/mes</strong><br>
-                    🏆 Objetivo: <strong style="color:white">${objetivos[datosOnboarding.objetivo] || 'No especificado'}</strong>
-                `;
-            }
-
-            // Actualizar dots
+        // ── ACTUALIZAR STEPPER ────────────────────────
+        function actualizarStepper(paso) {
             for (let i = 1; i <= 4; i++) {
-                const dot = document.getElementById(`dot${i}`);
-                dot.classList.remove('activo', 'completado');
-                if (i < paso) dot.classList.add('completado');
-                else if (i === paso) dot.classList.add('activo');
+                const c = document.getElementById('sc' + i);
+                c.classList.remove('activo','hecho');
+                if (i < paso)       { c.classList.add('hecho'); c.innerHTML = '<i class="fas fa-check" style="font-size:10px"></i>'; }
+                else if (i === paso) { c.classList.add('activo'); c.textContent = i; }
+                else                 { c.textContent = i; }
             }
-
-            // Mostrar paso
-            document.querySelectorAll('.paso-contenido').forEach(p => p.classList.remove('visible'));
-            document.getElementById(`paso${paso}`).classList.add('visible');
+            for (let i = 1; i <= 3; i++) {
+                document.getElementById('sl' + i).classList.toggle('activa', i < paso);
+            }
         }
 
+        // ── IR A PASO ─────────────────────────────────
+        function ir(paso) {
+            // Guardar datos del paso que termina
+            if (pasoActual === 2) datos.ingreso_mensual = parseFloat(document.getElementById('ingresoMensual').value) || 0;
+            if (pasoActual === 3) datos.meta_ahorro     = parseFloat(document.getElementById('metaAhorro').value)    || 0;
+
+            // Si llegamos al paso 4, armar resumen y confeti
+            if (paso === 4) {
+                document.getElementById('res-perfil').textContent   = PERFILES[datos.perfil]   || 'No especificado';
+                document.getElementById('res-ingreso').textContent  = datos.ingreso_mensual > 0 ? '$' + datos.ingreso_mensual.toLocaleString('es-CO') : 'No especificado';
+                document.getElementById('res-meta').textContent     = datos.meta_ahorro > 0    ? '$' + datos.meta_ahorro.toLocaleString('es-CO') + '/mes' : 'No especificado';
+                document.getElementById('res-objetivo').textContent = OBJETIVOS[datos.objetivo] || 'No especificado';
+                setTimeout(confeti, 300);
+            }
+
+            document.querySelectorAll('.paso').forEach(p => p.classList.remove('visible'));
+            document.getElementById('paso' + paso).classList.add('visible');
+            actualizarStepper(paso);
+            pasoActual = paso;
+
+            // Scroll suave al inicio de la card
+            document.querySelector('.card-onboarding').scrollIntoView({ behavior:'smooth', block:'start' });
+        }
+
+        // ── CONFETI ───────────────────────────────────
+        function confeti() {
+            const colors = ['#a855f7','#22d3ee','#4ade80','#fbbf24','#f472b6','#c026d3'];
+            const card   = document.querySelector('.card-onboarding');
+            for (let i = 0; i < 30; i++) {
+                const c = document.createElement('div');
+                c.className = 'confeti';
+                c.style.cssText = `
+                    left:${Math.random()*100}%;
+                    background:${colors[Math.floor(Math.random()*colors.length)]};
+                    animation-duration:${1.5+Math.random()*2}s;
+                    animation-delay:${Math.random()*.5}s;
+                    width:${5+Math.random()*7}px;
+                    height:${5+Math.random()*7}px;
+                    border-radius:${Math.random()>.5?'50%':'2px'};
+                `;
+                card.appendChild(c);
+                setTimeout(() => c.remove(), 3500);
+            }
+        }
+
+        // ── FINALIZAR ─────────────────────────────────
         async function finalizar() {
+            const btn = document.getElementById('btnFinalizar');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> Guardando...';
+
             try {
-                // Guardar perfil en MySQL
+                // Guardar ingreso y meta en el perfil
                 await fetch('http://127.0.0.1:5000/api/perfil/', {
                     method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({
-                        ingreso_mensual: datosOnboarding.ingreso_mensual,
-                        meta_ahorro: datosOnboarding.meta_ahorro
-                    })
+                    headers: { 'Content-Type':'application/json', 'Authorization':'Bearer '+token },
+                    body: JSON.stringify({ ingreso_mensual: datos.ingreso_mensual, meta_ahorro: datos.meta_ahorro })
                 });
-                // Marcar onboarding como completado en MySQL
-                await fetch('http://127.0.0.1:5000/api/perfil/', {
-                     method: 'PUT',
-                     headers: {
-                            'Content-Type': 'application/json',
-                             'Authorization': `Bearer ${token}`
-                     },
-                      body: JSON.stringify({ onboarding_completado: true })
-                });
-                localStorage.setItem('onboarding_completado', 'true');
-                 window.location.href = 'dashboard.html';
 
-                // Crear meta inicial si tiene objetivo
-                if (datosOnboarding.objetivo && datosOnboarding.meta_ahorro > 0) {
-                    const objetivos = {
-                        emergencia: '🚨 Fondo de emergencia',
-                        viaje: '✈️ Viaje / Vacaciones',
-                        vivienda: '🏠 Vivienda propia',
-                        inversion: '📈 Inversión inicial'
-                    };
-
+                // Crear meta inicial si eligió objetivo
+                if (datos.objetivo && datos.meta_ahorro > 0) {
                     await fetch('http://127.0.0.1:5000/api/metas/', {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${token}`
-                        },
+                        headers: { 'Content-Type':'application/json', 'Authorization':'Bearer '+token },
                         body: JSON.stringify({
-                            nombre: objetivos[datosOnboarding.objetivo],
-                            monto_objetivo: datosOnboarding.meta_ahorro * 6,
-                            monto_actual: 0
+                            nombre:         OBJETIVOS[datos.objetivo],
+                            monto_objetivo: datos.meta_ahorro * 6,
+                            monto_actual:   0
                         })
                     });
                 }
-            } catch (error) {
-                console.error('Error guardando onboarding:', error);
+            } catch (err) {
+                console.warn('No se pudo guardar en el servidor:', err);
             }
 
-            // Marcar onboarding como completado
             localStorage.setItem('onboarding_completado', 'true');
             window.location.href = 'dashboard.html';
         }
 
+        // ── OMITIR ────────────────────────────────────
         function omitir() {
             localStorage.setItem('onboarding_completado', 'true');
             window.location.href = 'dashboard.html';
         }
-
-        
     </script>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

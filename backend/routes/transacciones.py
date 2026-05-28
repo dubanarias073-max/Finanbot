@@ -7,6 +7,7 @@ from datetime import datetime
 
 transacciones_bp = Blueprint('transacciones', __name__)
 
+
 @transacciones_bp.route('/', methods=['GET'])
 @jwt_required()
 def obtener_transacciones():
@@ -18,13 +19,13 @@ def obtener_transacciones():
     resultado = []
     for t in transacciones:
         resultado.append({
-            'id': t.id,
-            'tipo': t.tipo,
-            'categoria': t.categoria.nombre if t.categoria else '',
-            'icono': t.categoria.icono if t.categoria else '💸',
-            'monto': float(t.monto),
+            'id':          t.id,
+            'tipo':        t.tipo,
+            'categoria':   t.categoria.nombre if t.categoria else '',
+            'icono':       t.categoria.icono  if t.categoria else '💸',
+            'monto':       float(t.monto),
             'descripcion': t.descripcion or '',
-            'fecha': str(t.fecha),
+            'fecha':       str(t.fecha),
         })
 
     return jsonify(resultado), 200
@@ -62,6 +63,70 @@ def crear_transaccion():
     db.session.commit()
 
     return jsonify({'mensaje': '✅ Transacción guardada!', 'id': nueva.id}), 201
+
+
+@transacciones_bp.route('/<int:id>', methods=['PUT'])
+@jwt_required()
+def editar_transaccion(id):
+    usuario_id = int(get_jwt_identity())
+
+    transaccion = Transaccion.query.filter_by(id=id, usuario_id=usuario_id).first()
+    if not transaccion:
+        return jsonify({'mensaje': 'Transacción no encontrada'}), 404
+
+    data = request.get_json()
+
+    # ── Actualizar tipo ───────────────────────────────
+    if 'tipo' in data:
+        transaccion.tipo = data['tipo']
+
+    # ── Actualizar categoría ──────────────────────────
+    if 'categoria' in data:
+        tipo_para_cat = data.get('tipo', transaccion.tipo)
+        categoria = Categoria.query.filter_by(nombre=data['categoria']).first()
+        if not categoria:
+            categoria = Categoria(
+                nombre=data['categoria'],
+                tipo=tipo_para_cat,
+                icono=data.get('icono', '💸')
+            )
+            db.session.add(categoria)
+            db.session.flush()
+        transaccion.categoria_id = categoria.id
+
+    # ── Actualizar monto ──────────────────────────────
+    if 'monto' in data:
+        try:
+            monto = float(data['monto'])
+            if monto <= 0:
+                return jsonify({'mensaje': 'El monto debe ser mayor a cero'}), 400
+            transaccion.monto = monto
+        except (ValueError, TypeError):
+            return jsonify({'mensaje': 'Monto inválido'}), 400
+
+    # ── Actualizar descripción ────────────────────────
+    if 'descripcion' in data:
+        transaccion.descripcion = data['descripcion']
+
+    # ── Actualizar fecha ──────────────────────────────
+    if 'fecha' in data:
+        try:
+            transaccion.fecha = datetime.strptime(data['fecha'], '%Y-%m-%d').date()
+        except ValueError:
+            return jsonify({'mensaje': 'Formato de fecha inválido. Usa YYYY-MM-DD'}), 400
+
+    db.session.commit()
+
+    return jsonify({
+        'mensaje':     '✅ Transacción actualizada!',
+        'id':          transaccion.id,
+        'tipo':        transaccion.tipo,
+        'categoria':   transaccion.categoria.nombre if transaccion.categoria else '',
+        'icono':       transaccion.categoria.icono  if transaccion.categoria else '💸',
+        'monto':       float(transaccion.monto),
+        'descripcion': transaccion.descripcion or '',
+        'fecha':       str(transaccion.fecha),
+    }), 200
 
 
 @transacciones_bp.route('/<int:id>', methods=['DELETE'])
