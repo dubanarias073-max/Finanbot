@@ -1,1319 +1,885 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>FinanBot • Onboarding</title>
-
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;700&family=Space+Mono:wght@700&display=swap" rel="stylesheet">
-
+<title>FinanBot • Bienvenido</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 
-/* =========================
-   RESET
-========================= */
-
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
+/* ═══════════════════════════════════════
+   TOKENS  (paleta del proyecto)
+═══════════════════════════════════════ */
+:root {
+  --purple:   #a855f7;
+  --purple2:  #c026d3;
+  --cyan:     #22d3ee;
+  --cyan2:    #06b6d4;
+  --bg-dark:  #0f0f2d;
+  --bg-deep:  #070714;
+  --card-bg:  rgba(255,255,255,0.04);
+  --border:   rgba(168,85,247,0.18);
+  --muted:    #6b7280;
+  --secondary:#9ca3af;
+  --text:     #f8fafc;
 }
 
-:root{
+* { margin:0; padding:0; box-sizing:border-box; }
 
-    --purple:#a855f7;
-    --pink:#ec4899;
-    --cyan:#22d3ee;
-    --green:#4ade80;
-
-    --bg:#070714;
-    --card:#111124;
-
-    --text:#f8fafc;
-    --muted:#94a3b8;
-
-    --glass:
-    linear-gradient(
-        180deg,
-        rgba(255,255,255,.08),
-        rgba(255,255,255,.03)
-    );
-
-    --grad:
-    linear-gradient(
-        135deg,
-        #ec4899,
-        #a855f7,
-        #22d3ee
-    );
+body {
+  font-family: 'Segoe UI', sans-serif;
+  min-height: 100vh;
+  background: radial-gradient(ellipse at top left, #1a1a4e 0%, #0f0f2d 50%, #000010 100%);
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px 16px;
+  overflow-x: hidden;
+  color: var(--text);
 }
 
-/* =========================
-   BODY
-========================= */
-
-body{
-
-    font-family:'Segoe UI',sans-serif;
-
-    min-height:100vh;
-
-    display:flex;
-    justify-content:center;
-    align-items:center;
-
-    padding:30px 15px;
-
-    overflow-x:hidden;
-
-    background:
-    radial-gradient(circle at top left,#1b1147 0%,#0b0b1b 40%,#05050d 100%);
-
-    color:white;
-
-    position:relative;
+/* ── Partículas flotantes ── */
+.particles { position:fixed; inset:0; pointer-events:none; z-index:0; overflow:hidden; }
+.particle {
+  position: absolute;
+  border-radius: 50%;
+  animation: drift var(--dur) ease-in-out var(--del) infinite alternate;
+}
+@keyframes drift {
+  from { transform: translateY(0) translateX(0) scale(1); opacity: var(--oa); }
+  to   { transform: translateY(var(--dy)) translateX(var(--dx)) scale(var(--sc)); opacity: var(--ob); }
 }
 
-body::before{
-
-    content:'';
-
-    position:fixed;
-    inset:0;
-
-    background:
-    radial-gradient(circle at 20% 20%,rgba(168,85,247,.15),transparent 40%),
-    radial-gradient(circle at 80% 80%,rgba(34,211,238,.10),transparent 40%);
-
-    pointer-events:none;
+/* ── Rejilla sutil ── */
+body::before {
+  content:''; position:fixed; inset:0; z-index:0; pointer-events:none;
+  background-image:
+    linear-gradient(rgba(168,85,247,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(168,85,247,0.04) 1px, transparent 1px);
+  background-size: 50px 50px;
 }
 
-/* =========================
+/* ═══════════════════════════════════════
+   CONTENEDOR
+═══════════════════════════════════════ */
+.wrap { position:relative; z-index:2; width:100%; max-width:560px; }
+
+/* ═══════════════════════════════════════
    CARD
-========================= */
-
-.card{
-
-    width:100%;
-    max-width:620px;
-
-    padding:45px 38px;
-
-    border-radius:34px;
-
-    background:var(--glass);
-
-    border:1px solid rgba(255,255,255,.08);
-
-    backdrop-filter:blur(24px);
-
-    box-shadow:
-    0 25px 80px rgba(0,0,0,.55);
-
-    position:relative;
-
-    overflow:hidden;
+═══════════════════════════════════════ */
+.card {
+  background: rgba(13,10,35,0.88);
+  border: 1px solid var(--border);
+  border-radius: 28px;
+  padding: 44px 40px;
+  backdrop-filter: blur(24px);
+  box-shadow:
+    0 0 0 1px rgba(168,85,247,0.08),
+    0 32px 80px rgba(0,0,0,0.6),
+    inset 0 1px 0 rgba(255,255,255,0.05);
+  position: relative; overflow: hidden;
 }
 
-.card::before{
-
-    content:'';
-
-    position:absolute;
-
-    top:0;
-    left:0;
-    right:0;
-
-    height:3px;
-
-    background:var(--grad);
+/* Línea top degradado */
+.card::before {
+  content:''; position:absolute; top:0;left:0;right:0;height:2px;
+  background: linear-gradient(90deg, #c026d3 0%, #a855f7 40%, #22d3ee 100%);
 }
 
-/* =========================
+/* Brillo ambiental de fondo */
+.card::after {
+  content:''; position:absolute;
+  width:400px; height:400px;
+  top:-200px; right:-100px;
+  border-radius:50%;
+  background: radial-gradient(circle, rgba(168,85,247,0.08) 0%, transparent 70%);
+  pointer-events:none;
+  animation: ambientPulse 5s ease-in-out infinite;
+}
+@keyframes ambientPulse { 0%,100%{opacity:.5;transform:scale(1)} 50%{opacity:1;transform:scale(1.2)} }
+
+/* ═══════════════════════════════════════
    HEADER
-========================= */
+═══════════════════════════════════════ */
+.header { text-align:center; margin-bottom:32px; }
 
-.header{
+.logo-wrap {
+  width:90px; height:90px; margin:0 auto 16px;
+  position:relative;
+}
+/* Anillo giratorio con colores del proyecto */
+.logo-ring-outer {
+  position:absolute; inset:-4px; border-radius:50%;
+  background: conic-gradient(#c026d3, #a855f7, #22d3ee, #c026d3);
+  animation: spinRing 3s linear infinite;
+  padding: 2px;
+}
+@keyframes spinRing { to { transform: rotate(360deg); } }
+.logo-ring-inner {
+  width:100%; height:100%; border-radius:50%;
+  background: #0a0818;
+}
+.logo-img {
+  position:absolute; inset:5px; border-radius:50%;
+  overflow:hidden; z-index:1;
+  background: radial-gradient(circle at 35% 35%, #1a0a3a, #050510);
+  display:flex; align-items:center; justify-content:center;
+}
+.logo-img img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
+.logo-img .fallback { font-size:38px; }
 
-    text-align:center;
+.logo-wrap { animation: floatLogo 4s ease-in-out infinite; }
+@keyframes floatLogo { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
 
-    margin-bottom:35px;
+.brand-name {
+  font-size:28px; font-weight:900; letter-spacing:-0.5px;
+  background: linear-gradient(90deg, #c026d3, #a855f7 50%, #22d3ee);
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+  margin-bottom:5px;
+}
+.brand-sub {
+  font-size:12px; font-weight:700; letter-spacing:3px;
+  text-transform:uppercase;
+  color: var(--muted);
 }
 
-.logo{
+/* ═══════════════════════════════════════
+   STEPPER
+═══════════════════════════════════════ */
+.stepper {
+  display:flex; align-items:center; justify-content:center;
+  margin-bottom:36px; gap:0;
+}
+.sdot {
+  width:38px; height:38px; border-radius:50%; position:relative; z-index:1;
+  display:flex; align-items:center; justify-content:center;
+  font-size:13px; font-weight:800;
+  border: 1.5px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.22);
+  background: rgba(255,255,255,0.03);
+  transition: all .4s cubic-bezier(.34,1.56,.64,1);
+  flex-shrink:0;
+}
+.sdot .slabel {
+  position:absolute; top:44px; left:50%; transform:translateX(-50%);
+  font-size:9px; font-weight:700; letter-spacing:1px; text-transform:uppercase;
+  white-space:nowrap; color:rgba(255,255,255,0.18); transition:color .3s;
+}
+.sdot.done {
+  background:rgba(34,211,238,0.1); border-color:var(--cyan2); color:#67e8f9;
+}
+.sdot.done .slabel { color:rgba(34,211,238,0.5); }
+.sdot.active {
+  background:linear-gradient(135deg,rgba(192,38,211,0.2),rgba(168,85,247,0.2));
+  border-color: var(--purple); color:white;
+  box-shadow: 0 0 20px rgba(168,85,247,0.4), 0 0 0 6px rgba(168,85,247,0.08);
+  transform: scale(1.15);
+}
+.sdot.active .slabel { color:rgba(167,139,250,0.8); }
+.sdot.active::after {
+  content:''; position:absolute; inset:-6px; border-radius:50%;
+  border:1px solid rgba(168,85,247,0.3);
+  animation:stepPing 1.8s ease-out infinite;
+}
+@keyframes stepPing { 0%{opacity:.6;transform:scale(1)}100%{opacity:0;transform:scale(1.8)} }
 
-    width:130px;
-    height:130px;
-
-    margin:0 auto 22px;
-
-    border-radius:50%;
-
-    overflow:hidden;
-
-    padding:5px;
-
-    background:var(--grad);
-
-    box-shadow:
-    0 15px 45px rgba(168,85,247,.35);
-
-    animation:float 4s ease-in-out infinite;
+.sline {
+  flex:1; max-width:56px; height:1.5px;
+  background:rgba(255,255,255,0.06); transition:background .5s;
+}
+.sline.filled {
+  background:linear-gradient(90deg,var(--cyan2),var(--purple));
 }
 
-.logo img{
-
-    width:100%;
-    height:100%;
-
-    object-fit:cover;
-
-    border-radius:50%;
-
-    background:#000;
+/* ═══════════════════════════════════════
+   PANELES
+═══════════════════════════════════════ */
+.panel { display:none; animation: panelIn .4s cubic-bezier(.34,1.56,.64,1); }
+.panel.active { display:block; }
+@keyframes panelIn {
+  from { opacity:0; transform:translateY(24px) scale(.98); }
+  to   { opacity:1; transform:translateY(0) scale(1); }
 }
 
-@keyframes float{
+/* Cabecera de paso */
+.step-eyebrow {
+  font-size:10px; font-weight:800; text-transform:uppercase;
+  letter-spacing:2.5px; color:var(--purple);
+  margin-bottom:8px; display:flex; align-items:center; gap:8px;
+}
+.sep { width:4px;height:4px;border-radius:50%;background:var(--purple);opacity:.4; }
 
-    0%{
-        transform:translateY(0px);
-    }
+.step-title {
+  font-size:26px; font-weight:900; letter-spacing:-0.5px;
+  line-height:1.2; color:white; margin-bottom:8px;
+}
+.step-title .hl {
+  background:linear-gradient(90deg,#c026d3,#22d3ee);
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+}
+.step-desc { font-size:14px; color:var(--secondary); line-height:1.65; margin-bottom:24px; }
 
-    50%{
-        transform:translateY(-10px);
-    }
+/* ═══════════════════════════════════════
+   OPCIONES / CARDS
+═══════════════════════════════════════ */
+.opts { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:22px; }
 
-    100%{
-        transform:translateY(0px);
-    }
+.opt {
+  background:rgba(255,255,255,0.03);
+  border:1.5px solid rgba(255,255,255,0.07);
+  border-radius:18px; padding:20px 16px;
+  cursor:pointer; text-align:left; color:white;
+  transition:all .3s cubic-bezier(.34,1.56,.64,1);
+  position:relative; overflow:hidden;
+}
+.opt::before {
+  content:''; position:absolute; inset:0; border-radius:18px;
+  background:linear-gradient(135deg,rgba(192,38,211,.1),rgba(34,211,238,.06));
+  opacity:0; transition:opacity .3s;
+}
+.opt:hover { transform:translateY(-4px); border-color:rgba(168,85,247,.4); }
+.opt:hover::before { opacity:1; }
+.opt.sel {
+  border-color:var(--purple);
+  background:rgba(168,85,247,0.08);
+  box-shadow:0 0 28px rgba(168,85,247,0.2), 0 8px 24px rgba(0,0,0,0.3);
+  transform:translateY(-4px) scale(1.02);
+}
+.opt.sel::before { opacity:1; }
+
+/* Check del opt */
+.opt-ck {
+  position:absolute; top:11px; right:11px;
+  width:20px; height:20px; border-radius:50%;
+  background:linear-gradient(135deg,#c026d3,#22d3ee);
+  display:flex; align-items:center; justify-content:center;
+  font-size:10px; font-weight:900;
+  opacity:0; transform:scale(0);
+  transition:all .3s cubic-bezier(.34,1.56,.64,1);
+}
+.opt.sel .opt-ck { opacity:1; transform:scale(1); }
+
+.opt-icon { font-size:30px; display:block; margin-bottom:10px; transition:transform .3s cubic-bezier(.34,1.56,.64,1); }
+.opt:hover .opt-icon { transform:scale(1.2) rotate(-6deg); }
+.opt.sel .opt-icon { transform:scale(1.12); }
+.opt-title { font-size:14px; font-weight:800; margin-bottom:3px; }
+.opt-sub { font-size:11px; color:rgba(255,255,255,0.3); line-height:1.4; }
+
+/* ═══════════════════════════════════════
+   ATAJOS DE MONTO
+═══════════════════════════════════════ */
+.quick-btns { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px; }
+.qbtn {
+  background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08);
+  border-radius:10px; color:var(--secondary); padding:8px 14px;
+  font-size:12px; font-weight:700; cursor:pointer; transition:all .25s;
+  font-family:'Segoe UI',sans-serif;
+}
+.qbtn:hover {
+  background:rgba(168,85,247,0.12); border-color:var(--purple);
+  color:white; transform:translateY(-2px);
 }
 
-.title{
-
-    font-size:42px;
-    font-weight:800;
-
-    font-family:'Segoe UI',sans-serif;
-
-    background:var(--grad);
-
-    -webkit-background-clip:text;
-    -webkit-text-fill-color:transparent;
-
-    margin-bottom:10px;
-}
-
-.subtitle{
-
-    color:var(--muted);
-
-    font-size:15px;
-
-    line-height:1.6;
-}
-
-/* =========================
-   PROGRESS
-========================= */
-
-.progress-area{
-
-    margin-bottom:35px;
-}
-
-.progress-bar{
-
-    width:100%;
-    height:10px;
-
-    background:rgba(255,255,255,.06);
-
-    border-radius:999px;
-
-    overflow:hidden;
-}
-
-.progress-fill{
-
-    width:0%;
-
-    height:100%;
-
-    border-radius:999px;
-
-    background:var(--grad);
-
-    transition:.35s ease;
-}
-
-.progress-text{
-
-    margin-top:10px;
-
-    text-align:right;
-
-    font-size:12px;
-
-    color:var(--muted);
-}
-
-/* =========================
-   STEP
-========================= */
-
-.step{
-
-    display:none;
-
-    animation:fade .35s ease;
-}
-
-.step.active{
-    display:block;
-}
-
-@keyframes fade{
-
-    from{
-        opacity:0;
-        transform:translateY(20px);
-    }
-
-    to{
-        opacity:1;
-        transform:translateY(0);
-    }
-}
-
-.step-icon{
-
-    width:85px;
-    height:85px;
-
-    margin:0 auto 22px;
-
-    border-radius:24px;
-
-    display:flex;
-    align-items:center;
-    justify-content:center;
-
-    font-size:38px;
-
-    background:
-    linear-gradient(
-        135deg,
-        rgba(236,72,153,.15),
-        rgba(168,85,247,.15)
-    );
-
-    border:1px solid rgba(255,255,255,.08);
-
-    box-shadow:
-    0 10px 35px rgba(168,85,247,.18);
-}
-
-.step-title{
-
-    text-align:center;
-
-    font-size:30px;
-    font-weight:800;
-
-    margin-bottom:10px;
-}
-
-.step-desc{
-
-    text-align:center;
-
-    color:var(--muted);
-
-    line-height:1.7;
-
-    margin-bottom:30px;
-}
-
-/* =========================
-   OPTIONS
-========================= */
-
-.options{
-
-    display:grid;
-
-    grid-template-columns:1fr 1fr;
-
-    gap:16px;
-
-    margin-bottom:25px;
-}
-
-.option{
-
-    border:none;
-
-    padding:22px 18px;
-
-    border-radius:22px;
-
-    background:rgba(255,255,255,.04);
-
-    border:1px solid rgba(255,255,255,.08);
-
-    color:white;
-
-    cursor:pointer;
-
-    transition:.25s;
-
-    position:relative;
-}
-
-.option:hover{
-
-    transform:translateY(-4px);
-
-    border-color:rgba(168,85,247,.45);
-
-    background:rgba(168,85,247,.10);
-
-    box-shadow:
-    0 10px 30px rgba(168,85,247,.18);
-}
-
-.option.active{
-
-    background:
-    linear-gradient(
-        135deg,
-        rgba(236,72,153,.18),
-        rgba(168,85,247,.18)
-    );
-
-    border-color:#c084fc;
-
-    transform:scale(1.02);
-}
-
-.option-icon{
-
-    font-size:36px;
-
-    margin-bottom:14px;
-}
-
-.option-title{
-
-    font-size:15px;
-    font-weight:700;
-}
-
-/* =========================
+/* ═══════════════════════════════════════
    INPUTS
-========================= */
-
-.field{
-
-    margin-bottom:22px;
+═══════════════════════════════════════ */
+.fg { margin-bottom:18px; }
+.flabel {
+  display:block; font-size:11px; font-weight:800;
+  text-transform:uppercase; letter-spacing:1.5px;
+  color:rgba(167,139,250,0.7); margin-bottom:8px;
 }
-
-.field label{
-
-    display:block;
-
-    margin-bottom:10px;
-
-    font-size:12px;
-    font-weight:700;
-
-    color:#d8b4fe;
-
-    text-transform:uppercase;
-
-    letter-spacing:.8px;
+.finput-wrap { position:relative; }
+.fpfx {
+  position:absolute; left:16px; top:50%; transform:translateY(-50%);
+  font-size:15px; font-weight:800; color:var(--purple);
 }
-
-.input-wrap{
-
-    position:relative;
+.finput {
+  width:100%; padding:14px 18px 14px 38px;
+  background:rgba(255,255,255,0.04);
+  border:1.5px solid rgba(168,85,247,0.2);
+  border-radius:14px; color:white;
+  font-family:'Segoe UI',sans-serif;
+  font-size:18px; font-weight:800;
+  outline:none; transition:all .3s;
 }
-
-.prefix{
-
-    position:absolute;
-
-    left:16px;
-    top:50%;
-
-    transform:translateY(-50%);
-
-    color:#c084fc;
-
-    font-weight:700;
+.finput::placeholder { color:rgba(255,255,255,0.15); font-size:15px; font-weight:500; }
+.finput:focus {
+  border-color:var(--purple);
+  background:rgba(168,85,247,0.06);
+  box-shadow:0 0 0 4px rgba(168,85,247,0.1);
 }
+.fhint { margin-top:7px; font-size:12px; color:rgba(255,255,255,0.25); padding-left:2px; }
 
-.input{
+/* ═══════════════════════════════════════
+   RESUMEN — PASO 4
+═══════════════════════════════════════ */
+.confetti-wrap { position:absolute; inset:0; overflow:hidden; pointer-events:none; z-index:10; border-radius:28px; }
 
-    width:100%;
-
-    padding:16px 18px 16px 35px;
-
-    border:none;
-    outline:none;
-
-    border-radius:18px;
-
-    background:rgba(255,255,255,.05);
-
-    border:1px solid rgba(255,255,255,.08);
-
-    color:white;
-
-    font-size:15px;
-
-    transition:.25s;
+.success-ico {
+  width:72px; height:72px; margin:0 auto 14px;
+  border-radius:50%;
+  background:linear-gradient(135deg,rgba(192,38,211,0.15),rgba(34,211,238,0.15));
+  border:1.5px solid rgba(168,85,247,0.3);
+  display:flex; align-items:center; justify-content:center;
+  font-size:32px;
+  animation:popIn .5s cubic-bezier(.34,1.56,.64,1);
+  box-shadow: 0 0 40px rgba(168,85,247,0.25);
 }
+@keyframes popIn { from{transform:scale(0) rotate(-20deg)}to{transform:scale(1) rotate(0)} }
 
-.input:focus{
-
-    border-color:#a855f7;
-
-    box-shadow:
-    0 0 0 4px rgba(168,85,247,.12);
+.sum-box {
+  background:rgba(255,255,255,0.025);
+  border:1px solid rgba(255,255,255,0.06);
+  border-radius:20px; overflow:hidden;
+  margin-bottom:22px;
 }
-
-.input::placeholder{
-    color:#64748b;
+.sum-row {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:14px 20px;
+  border-bottom:1px solid rgba(255,255,255,0.04);
+  transition:background .2s;
 }
-
-/* =========================
-   SUMMARY
-========================= */
-
-.summary{
-
-    background:
-    linear-gradient(
-        135deg,
-        rgba(74,222,128,.08),
-        rgba(34,211,238,.08)
-    );
-
-    border:1px solid rgba(255,255,255,.08);
-
-    border-radius:24px;
-
-    padding:25px;
-
-    margin-bottom:28px;
+.sum-row:last-child { border:none; }
+.sum-row:hover { background:rgba(255,255,255,0.025); }
+.sum-k {
+  display:flex; align-items:center; gap:10px;
+  font-size:12px; font-weight:700; text-transform:uppercase;
+  letter-spacing:1px; color:rgba(255,255,255,0.3);
 }
-
-.summary-row{
-
-    display:flex;
-    justify-content:space-between;
-
-    padding:14px 0;
-
-    border-bottom:1px solid rgba(255,255,255,.06);
+.sum-ico {
+  width:28px;height:28px; border-radius:8px;
+  display:flex; align-items:center; justify-content:center; font-size:13px;
 }
+.sum-v { font-size:14px; font-weight:800; color:white; }
+.sum-v.money { color:#67e8f9; font-size:16px; }
 
-.summary-row:last-child{
-    border:none;
+/* Dato clave 20% */
+.dato-clave {
+  background:linear-gradient(135deg,rgba(192,38,211,0.08),rgba(34,211,238,0.06));
+  border:1px solid rgba(168,85,247,0.2);
+  border-radius:16px; padding:16px 20px; margin-bottom:22px;
+  display:flex; align-items:center; gap:14px;
 }
-
-.summary-key{
-
-    color:var(--muted);
+.dato-num {
+  font-size:28px; font-weight:900;
+  background:linear-gradient(90deg,#c026d3,#22d3ee);
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+  white-space:nowrap;
 }
+.dato-txt { font-size:12px; color:var(--secondary); line-height:1.5; }
+.dato-txt strong { color:white; }
 
-.summary-value{
+/* ═══════════════════════════════════════
+   BOTONES
+═══════════════════════════════════════ */
+.btn-row { display:flex; gap:10px; margin-top:6px; }
 
-    font-weight:700;
-
-    font-family:'Space Mono',monospace;
+.btn {
+  border:none; border-radius:14px; cursor:pointer;
+  font-family:'Segoe UI',sans-serif;
+  font-weight:800; font-size:15px; padding:15px 22px;
+  transition:all .3s cubic-bezier(.34,1.56,.64,1);
+  display:flex; align-items:center; justify-content:center; gap:9px;
 }
-
-/* =========================
-   BUTTONS
-========================= */
-
-.actions{
-
-    display:flex;
-
-    gap:14px;
+.btn-next {
+  flex:1;
+  background:linear-gradient(135deg,#c026d3 0%,#a855f7 50%,#22d3ee 100%);
+  color:white; box-shadow:0 6px 28px rgba(168,85,247,0.35);
+  position:relative; overflow:hidden;
 }
-
-.btn{
-
-    flex:1;
-
-    border:none;
-
-    padding:16px;
-
-    border-radius:18px;
-
-    cursor:pointer;
-
-    font-weight:700;
-
-    transition:.25s;
+.btn-next::after {
+  content:''; position:absolute;
+  top:-50%; left:-60%; width:40%; height:200%;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,0.15),transparent);
+  transform:skewX(-20deg);
+  transition:left .6s ease;
 }
+.btn-next:hover::after { left:120%; }
+.btn-next:hover { transform:translateY(-3px); box-shadow:0 10px 36px rgba(168,85,247,0.5); }
+.btn-next:active { transform:translateY(0); }
 
-.btn-primary{
-
-    background:var(--grad);
-
-    color:white;
-
-    box-shadow:
-    0 10px 30px rgba(168,85,247,.25);
+.btn-back {
+  background:rgba(255,255,255,0.05);
+  border:1.5px solid rgba(255,255,255,0.08);
+  color:rgba(255,255,255,0.4); padding:15px 18px;
 }
+.btn-back:hover { background:rgba(255,255,255,0.08); color:white; border-color:rgba(255,255,255,0.15); }
 
-.btn-primary:hover{
-
-    transform:translateY(-3px);
+.btn-finish {
+  flex:1;
+  background:linear-gradient(135deg,#c026d3,#a855f7);
+  color:white; box-shadow:0 6px 28px rgba(168,85,247,0.35);
 }
+.btn-finish:hover { transform:translateY(-3px); box-shadow:0 10px 36px rgba(168,85,247,0.5); }
 
-.btn-secondary{
+.arrow { display:inline-block; transition:transform .3s; }
+.btn-next:hover .arrow { transform:translateX(4px); }
 
-    background:rgba(255,255,255,.05);
-
-    color:#cbd5e1;
-}
-
-.btn-secondary:hover{
-
-    background:rgba(255,255,255,.08);
-}
-
-/* =========================
+/* ═══════════════════════════════════════
    ERROR
-========================= */
-
-.error{
-
-    display:none;
-
-    margin-bottom:18px;
-
-    color:#fca5a5;
-
-    font-size:14px;
+═══════════════════════════════════════ */
+.err {
+  display:none; align-items:center; gap:8px;
+  background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.25);
+  border-radius:12px; padding:11px 14px;
+  font-size:13px; color:#fca5a5; margin-bottom:14px;
 }
+.err.show { display:flex; animation:shake .35s ease; }
+@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-5px)} 75%{transform:translateX(5px)} }
 
-.error.show{
-    display:block;
+/* Spinner */
+.sp { display:inline-block;width:17px;height:17px;border:2.5px solid rgba(255,255,255,.25);border-top-color:white;border-radius:50%;animation:spinr .7s linear infinite; }
+@keyframes spinr { to{transform:rotate(360deg)} }
+
+/* Responsive */
+@media(max-width:520px){
+  .card{padding:32px 20px;}
+  .opts{grid-template-columns:1fr;}
+  .step-title{font-size:22px;}
 }
-
-/* =========================
-   LOADER
-========================= */
-
-.loader{
-
-    width:16px;
-    height:16px;
-
-    border:2px solid rgba(255,255,255,.3);
-
-    border-top-color:white;
-
-    border-radius:50%;
-
-    display:inline-block;
-
-    animation:spin .7s linear infinite;
-}
-
-@keyframes spin{
-
-    to{
-        transform:rotate(360deg);
-    }
-}
-
-/* =========================
-   MOBILE
-========================= */
-
-@media(max-width:600px){
-
-    .card{
-
-        padding:30px 22px;
-    }
-
-    .title{
-
-        font-size:34px;
-    }
-
-    .options{
-
-        grid-template-columns:1fr;
-    }
-
-    .logo{
-
-        width:110px;
-        height:110px;
-    }
-}
-
 </style>
 </head>
 <body>
 
+<!-- Partículas del proyecto -->
+<div class="particles" id="particles"></div>
+
+<div class="wrap">
 <div class="card">
 
-    <!-- HEADER -->
+  <!-- Confetti -->
+  <div class="confetti-wrap" id="confettiWrap"></div>
 
-    <div class="header">
+  <!-- ── HEADER ── -->
+  <div class="header">
+    <div class="logo-wrap">
+      <div class="logo-ring-outer"><div class="logo-ring-inner"></div></div>
+      <div class="logo-img">
+        <img src="../../images/logo.png" alt="FinanBot"
+             onerror="this.style.display='none';this.parentNode.innerHTML='<span class=\'fallback\'>💚</span>'">
+      </div>
+    </div>
+    <div class="brand-name">FinanBot</div>
+    <div class="brand-sub">Tu asistente financiero inteligente</div>
+  </div>
 
-        <div class="logo">
-            <img src="/images/logo.png" alt="FinanBot">
-        </div>
+  <!-- ── STEPPER ── -->
+  <div class="stepper">
+    <div class="sdot active" id="d1">1<span class="slabel">Perfil</span></div>
+    <div class="sline" id="l1"></div>
+    <div class="sdot" id="d2">2<span class="slabel">Ingresos</span></div>
+    <div class="sline" id="l2"></div>
+    <div class="sdot" id="d3">3<span class="slabel">Meta</span></div>
+    <div class="sline" id="l3"></div>
+    <div class="sdot" id="d4">4<span class="slabel">¡Listo!</span></div>
+  </div>
 
-        <div class="title">
-            FinanBot
-        </div>
+  <!-- ═══════════════════════════════════
+       PASO 1 — PERFIL
+  ═══════════════════════════════════ -->
+  <div class="panel active" id="p1">
+    <div class="step-eyebrow">Paso 1 de 4 <span class="sep"></span> Cuéntanos sobre ti</div>
+    <div class="step-title">¿Cuál es tu <span class="hl">situación</span> hoy?</div>
+    <div class="step-desc">Elige el perfil que mejor describe tu relación con el dinero en este momento.</div>
 
-        <div class="subtitle">
-            Configura tu perfil inteligente y comienza a controlar tus finanzas con IA.
-        </div>
+    <div class="err" id="e1">⚠️ &nbsp;Selecciona un perfil para continuar.</div>
 
+    <div class="opts">
+      <button class="opt" data-type="perfil" data-value="estudiante">
+        <div class="opt-ck">✓</div>
+        <span class="opt-icon">🎓</span>
+        <div class="opt-title">Estudiante</div>
+        <div class="opt-sub">Manejando mis primeros ingresos</div>
+      </button>
+      <button class="opt" data-type="perfil" data-value="empleado">
+        <div class="opt-ck">✓</div>
+        <span class="opt-icon">💼</span>
+        <div class="opt-title">Empleado</div>
+        <div class="opt-sub">Salario fijo, quiero optimizar</div>
+      </button>
+      <button class="opt" data-type="perfil" data-value="independiente">
+        <div class="opt-ck">✓</div>
+        <span class="opt-icon">🚀</span>
+        <div class="opt-title">Independiente</div>
+        <div class="opt-sub">Ingresos variables, necesito planificar</div>
+      </button>
+      <button class="opt" data-type="perfil" data-value="emprendedor">
+        <div class="opt-ck">✓</div>
+        <span class="opt-icon">💡</span>
+        <div class="opt-title">Emprendedor</div>
+        <div class="opt-sub">Tengo un negocio, quiero crecer</div>
+      </button>
     </div>
 
-    <!-- PROGRESS -->
+    <div class="btn-row">
+      <button class="btn btn-next" onclick="ir(2)">
+        Continuar <span class="arrow">→</span>
+      </button>
+    </div>
+  </div>
 
-    <div class="progress-area">
+  <!-- ═══════════════════════════════════
+       PASO 2 — INGRESOS
+  ═══════════════════════════════════ -->
+  <div class="panel" id="p2">
+    <div class="step-eyebrow">Paso 2 de 4 <span class="sep"></span> Tu economía</div>
+    <div class="step-title">¿Cuánto <span class="hl">recibes</span> al mes?</div>
+    <div class="step-desc">Información privada. La usamos solo para personalizar tu experiencia — nunca la compartimos.</div>
 
-        <div class="progress-bar">
-            <div class="progress-fill" id="progressFill"></div>
-        </div>
+    <div class="err" id="e2">⚠️ &nbsp;Ingresa un monto válido (mínimo $10.000).</div>
 
-        <div class="progress-text">
-            Paso <span id="stepText">1</span> de 4
-        </div>
-
+    <div class="fg">
+      <label class="flabel">Ingreso mensual en pesos colombianos</label>
+      <div class="finput-wrap">
+        <span class="fpfx">$</span>
+        <input type="number" class="finput" id="income" placeholder="2.500.000" min="10000">
+      </div>
+      <div class="fhint" id="incomeHint">💡 Ingresa tu ingreso neto (después de descuentos de nómina)</div>
     </div>
 
-    <!-- STEP 1 -->
+    <div class="quick-btns">
+      <button class="qbtn" onclick="setIncome(1300000)">$1.300.000 <span style="opacity:.4;font-size:10px">SMMLV</span></button>
+      <button class="qbtn" onclick="setIncome(2000000)">$2.000.000</button>
+      <button class="qbtn" onclick="setIncome(3500000)">$3.500.000</button>
+      <button class="qbtn" onclick="setIncome(5000000)">$5.000.000</button>
+      <button class="qbtn" onclick="setIncome(8000000)">$8.000.000</button>
+    </div>
 
-    <section class="step active" id="step1">
+    <div class="btn-row">
+      <button class="btn btn-back" onclick="ir(1)">←</button>
+      <button class="btn btn-next" onclick="ir(3)">
+        Continuar <span class="arrow">→</span>
+      </button>
+    </div>
+  </div>
 
-        <div class="step-icon">👤</div>
+  <!-- ═══════════════════════════════════
+       PASO 3 — META
+  ═══════════════════════════════════ -->
+  <div class="panel" id="p3">
+    <div class="step-eyebrow">Paso 3 de 4 <span class="sep"></span> Tu objetivo</div>
+    <div class="step-title">¿Para qué quieres <span class="hl">ahorrar?</span></div>
+    <div class="step-desc">Define tu meta mensual de ahorro y el objetivo principal. FinanBot te ayudará a alcanzarlo.</div>
 
-        <div class="step-title">
-            Tu perfil financiero
+    <div class="err" id="e3">⚠️ &nbsp;Selecciona un objetivo para continuar.</div>
+
+    <div class="fg">
+      <label class="flabel">Meta de ahorro mensual</label>
+      <div class="finput-wrap">
+        <span class="fpfx">$</span>
+        <input type="number" class="finput" id="savingGoal" placeholder="500.000" min="0">
+      </div>
+      <div class="fhint" id="metaHint">Sugerido: 20% de tu ingreso — $0</div>
+    </div>
+
+    <div class="opts">
+      <button class="opt" data-type="objetivo" data-value="emergencia">
+        <div class="opt-ck">✓</div>
+        <span class="opt-icon">🛡️</span>
+        <div class="opt-title">Fondo emergencia</div>
+        <div class="opt-sub">3–6 meses de gastos guardados</div>
+      </button>
+      <button class="opt" data-type="objetivo" data-value="viajes">
+        <div class="opt-ck">✓</div>
+        <span class="opt-icon">✈️</span>
+        <div class="opt-title">Viajes</div>
+        <div class="opt-sub">Para ese destino que sueñas</div>
+      </button>
+      <button class="opt" data-type="objetivo" data-value="vivienda">
+        <div class="opt-ck">✓</div>
+        <span class="opt-icon">🏠</span>
+        <div class="opt-title">Vivienda propia</div>
+        <div class="opt-sub">Cuota inicial o arriendo propio</div>
+      </button>
+      <button class="opt" data-type="objetivo" data-value="inversion">
+        <div class="opt-ck">✓</div>
+        <span class="opt-icon">📈</span>
+        <div class="opt-title">Invertir</div>
+        <div class="opt-sub">CDT, fondos o bolsa de valores</div>
+      </button>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-back" onclick="ir(2)">←</button>
+      <button class="btn btn-next" onclick="ir(4)">
+        Ver resumen <span class="arrow">→</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════
+       PASO 4 — LISTO
+  ═══════════════════════════════════ -->
+  <div class="panel" id="p4">
+    <div style="text-align:center;margin-bottom:22px">
+      <div class="success-ico">🎉</div>
+      <div class="step-eyebrow" style="justify-content:center;margin-bottom:6px">Configuración lista</div>
+      <div class="step-title" style="text-align:center">¡Tu cuenta está <span class="hl">lista!</span></div>
+    </div>
+
+    <!-- Dato clave calculado -->
+    <div class="dato-clave">
+      <div class="dato-num" id="datoNum">$0</div>
+      <div class="dato-txt">
+        deberías ahorrar <strong>cada mes</strong> (regla del 20%)<br>
+        para alcanzar tu meta en <strong id="datoMeses">—</strong>
+      </div>
+    </div>
+
+    <div class="sum-box">
+      <div class="sum-row">
+        <div class="sum-k">
+          <div class="sum-ico" style="background:rgba(168,85,247,0.12)">👤</div>Perfil
         </div>
-
-        <div class="step-desc">
-            Elige el perfil que mejor te representa.
+        <div class="sum-v" id="sPerfil">—</div>
+      </div>
+      <div class="sum-row">
+        <div class="sum-k">
+          <div class="sum-ico" style="background:rgba(34,211,238,0.1)">💵</div>Ingreso
         </div>
-
-        <div class="options">
-
-            <button class="option" data-type="perfil" data-value="estudiante">
-                <div class="option-icon">🎓</div>
-                <div class="option-title">Estudiante</div>
-            </button>
-
-            <button class="option" data-type="perfil" data-value="empleado">
-                <div class="option-icon">💼</div>
-                <div class="option-title">Empleado</div>
-            </button>
-
-            <button class="option" data-type="perfil" data-value="independiente">
-                <div class="option-icon">🚀</div>
-                <div class="option-title">Independiente</div>
-            </button>
-
-            <button class="option" data-type="perfil" data-value="emprendedor">
-                <div class="option-icon">💡</div>
-                <div class="option-title">Emprendedor</div>
-            </button>
-
+        <div class="sum-v money" id="sIngreso">—</div>
+      </div>
+      <div class="sum-row">
+        <div class="sum-k">
+          <div class="sum-ico" style="background:rgba(74,222,128,0.1)">🎯</div>Meta mensual
         </div>
-
-        <div class="error" id="error1">
-            Selecciona una opción.
+        <div class="sum-v money" id="sMeta">—</div>
+      </div>
+      <div class="sum-row">
+        <div class="sum-k">
+          <div class="sum-ico" style="background:rgba(251,191,36,0.1)">🏁</div>Objetivo
         </div>
+        <div class="sum-v" id="sObj">—</div>
+      </div>
+    </div>
 
-        <div class="actions">
+    <div class="btn-row">
+      <button class="btn btn-back" onclick="ir(3)">←</button>
+      <button class="btn btn-finish" id="finBtn" onclick="finish()">
+        Entrar al Dashboard →
+      </button>
+    </div>
+  </div>
 
-            <button class="btn btn-primary" onclick="nextStep(2)">
-                Continuar
-            </button>
-
-        </div>
-
-    </section>
-
-    <!-- STEP 2 -->
-
-    <section class="step" id="step2">
-
-        <div class="step-icon">💰</div>
-
-        <div class="step-title">
-            Tus ingresos
-        </div>
-
-        <div class="step-desc">
-            Esta información es privada y se usa para personalizar tu experiencia.
-        </div>
-
-        <div class="field">
-
-            <label>Ingreso mensual</label>
-
-            <div class="input-wrap">
-
-                <span class="prefix">$</span>
-
-                <input
-                    type="number"
-                    class="input"
-                    id="income"
-                    placeholder="2500000"
-                >
-
-            </div>
-
-        </div>
-
-        <div class="error" id="error2">
-            Ingresa un valor válido.
-        </div>
-
-        <div class="actions">
-
-            <button class="btn btn-secondary" onclick="backStep(1)">
-                Atrás
-            </button>
-
-            <button class="btn btn-primary" onclick="nextStep(3)">
-                Continuar
-            </button>
-
-        </div>
-
-    </section>
-
-    <!-- STEP 3 -->
-
-    <section class="step" id="step3">
-
-        <div class="step-icon">🎯</div>
-
-        <div class="step-title">
-            Tu meta financiera
-        </div>
-
-        <div class="step-desc">
-            Define cuál es tu principal objetivo.
-        </div>
-
-        <div class="field">
-
-            <label>Meta mensual de ahorro</label>
-
-            <div class="input-wrap">
-
-                <span class="prefix">$</span>
-
-                <input
-                    type="number"
-                    class="input"
-                    id="savingGoal"
-                    placeholder="500000"
-                >
-
-            </div>
-
-        </div>
-
-        <div class="options">
-
-            <button class="option" data-type="objetivo" data-value="emergencia">
-                <div class="option-icon">🚨</div>
-                <div class="option-title">Emergencia</div>
-            </button>
-
-            <button class="option" data-type="objetivo" data-value="viajes">
-                <div class="option-icon">✈️</div>
-                <div class="option-title">Viajes</div>
-            </button>
-
-            <button class="option" data-type="objetivo" data-value="vivienda">
-                <div class="option-icon">🏠</div>
-                <div class="option-title">Vivienda</div>
-            </button>
-
-            <button class="option" data-type="objetivo" data-value="inversion">
-                <div class="option-icon">📈</div>
-                <div class="option-title">Invertir</div>
-            </button>
-
-        </div>
-
-        <div class="error" id="error3">
-            Selecciona un objetivo.
-        </div>
-
-        <div class="actions">
-
-            <button class="btn btn-secondary" onclick="backStep(2)">
-                Atrás
-            </button>
-
-            <button class="btn btn-primary" onclick="nextStep(4)">
-                Finalizar
-            </button>
-
-        </div>
-
-    </section>
-
-    <!-- STEP 4 -->
-
-    <section class="step" id="step4">
-
-        <div class="step-icon">🎉</div>
-
-        <div class="step-title">
-            ¡Todo listo!
-        </div>
-
-        <div class="step-desc">
-            Tu cuenta está preparada para comenzar.
-        </div>
-
-        <div class="summary">
-
-            <div class="summary-row">
-                <span class="summary-key">Perfil</span>
-                <span class="summary-value" id="sumPerfil"></span>
-            </div>
-
-            <div class="summary-row">
-                <span class="summary-key">Ingreso</span>
-                <span class="summary-value" id="sumIngreso"></span>
-            </div>
-
-            <div class="summary-row">
-                <span class="summary-key">Meta</span>
-                <span class="summary-value" id="sumMeta"></span>
-            </div>
-
-            <div class="summary-row">
-                <span class="summary-key">Objetivo</span>
-                <span class="summary-value" id="sumObjetivo"></span>
-            </div>
-
-        </div>
-
-        <div class="actions">
-
-            <button
-                class="btn btn-primary"
-                id="finishBtn"
-                onclick="finishOnboarding()"
-            >
-                Entrar al Dashboard
-            </button>
-
-        </div>
-
-    </section>
-
-</div>
+</div><!-- /card -->
+</div><!-- /wrap -->
 
 <script>
-
-/* =========================
-   CONFIG
-========================= */
-
-const API_URL =
-'http://127.0.0.1:5000/api';
-
-const token =
-localStorage.getItem('token');
-
-if(!token){
-
-    window.location.href =
-    'login.html';
-}
-
-/* =========================
-   STATE
-========================= */
-
-const state = {
-
-    perfil:'',
-    ingreso:0,
-    meta:0,
-    objetivo:''
-};
-
-const labels = {
-
-    estudiante:'🎓 Estudiante',
-    empleado:'💼 Empleado',
-    independiente:'🚀 Independiente',
-    emprendedor:'💡 Emprendedor',
-
-    emergencia:'🚨 Emergencia',
-    viajes:'✈️ Viajes',
-    vivienda:'🏠 Vivienda',
-    inversion:'📈 Inversión'
-};
-
-/* =========================
-   OPTIONS
-========================= */
-
-document
-.querySelectorAll('.option')
-.forEach(btn => {
-
-    btn.addEventListener('click',() => {
-
-        const type =
-        btn.dataset.type;
-
-        const value =
-        btn.dataset.value;
-
-        document
-        .querySelectorAll(
-            `.option[data-type="${type}"]`
-        )
-        .forEach(b => {
-
-            b.classList.remove('active');
-        });
-
-        btn.classList.add('active');
-
-        state[type] = value;
-    });
-});
-
-/* =========================
-   INPUTS
-========================= */
-
-document
-.getElementById('income')
-.addEventListener('input',e => {
-
-    state.ingreso =
-    Number(e.target.value);
-});
-
-document
-.getElementById('savingGoal')
-.addEventListener('input',e => {
-
-    state.meta =
-    Number(e.target.value);
-});
-
-/* =========================
-   ERRORS
-========================= */
-
-function hideErrors(){
-
-    document
-    .querySelectorAll('.error')
-    .forEach(el => {
-
-        el.classList.remove('show');
-    });
-}
-
-function showError(id){
-
-    document
-    .getElementById(id)
-    .classList.add('show');
-}
-
-/* =========================
-   PROGRESS
-========================= */
-
-function updateProgress(step){
-
-    const progress =
-    ((step - 1) / 3) * 100;
-
-    document
-    .getElementById('progressFill')
-    .style.width =
-    progress + '%';
-
-    document
-    .getElementById('stepText')
-    .textContent =
-    step;
-}
-
-/* =========================
-   NAVIGATION
-========================= */
-
-function nextStep(step){
-
-    hideErrors();
-
-    if(step === 2){
-
-        if(!state.perfil){
-
-            showError('error1');
-            return;
-        }
-    }
-
-    if(step === 3){
-
-        if(state.ingreso < 10000){
-
-            showError('error2');
-            return;
-        }
-    }
-
-    if(step === 4){
-
-        if(!state.objetivo){
-
-            showError('error3');
-            return;
-        }
-
-        renderSummary();
-    }
-
-    document
-    .querySelectorAll('.step')
-    .forEach(el => {
-
-        el.classList.remove('active');
-    });
-
-    document
-    .getElementById('step' + step)
-    .classList.add('active');
-
-    updateProgress(step);
-
-    window.scrollTo({
-        top:0,
-        behavior:'smooth'
-    });
-}
-
-function backStep(step){
-
-    document
-    .querySelectorAll('.step')
-    .forEach(el => {
-
-        el.classList.remove('active');
-    });
-
-    document
-    .getElementById('step' + step)
-    .classList.add('active');
-
-    updateProgress(step);
-}
-
-/* =========================
-   SUMMARY
-========================= */
-
-function renderSummary(){
-
-    document.getElementById('sumPerfil').textContent =
-    labels[state.perfil];
-
-    document.getElementById('sumIngreso').textContent =
-    '$' +
-    state.ingreso.toLocaleString('es-CO');
-
-    document.getElementById('sumMeta').textContent =
-    '$' +
-    state.meta.toLocaleString('es-CO');
-
-    document.getElementById('sumObjetivo').textContent =
-    labels[state.objetivo];
-}
-
-/* =========================
-   API
-========================= */
-
-async function api(url,method,data){
-
-    const res = await fetch(url,{
-
-        method,
-
-        headers:{
-            'Content-Type':'application/json',
-            'Authorization':'Bearer ' + token
-        },
-
-        body:JSON.stringify(data)
-    });
-
-    const response =
-    await res.json();
-
-    if(!res.ok){
-
-        throw new Error(
-            response.mensaje ||
-            'Error del servidor'
-        );
-    }
-
-    return response;
-}
-
-/* =========================
-   FINISH
-========================= */
-
-let sending = false;
-
-async function finishOnboarding(){
-
-    if(sending) return;
-
-    sending = true;
-
-    const btn =
-    document.getElementById('finishBtn');
-
-    btn.disabled = true;
-
-    btn.innerHTML = `
-        <span class="loader"></span>
-        Preparando dashboard...
+/* ── Partículas morado/cyan del proyecto ── */
+(function(){
+  const c=document.getElementById('particles');
+  const cols=['rgba(168,85,247,VAL)','rgba(34,211,238,VAL)','rgba(192,38,211,VAL)','rgba(6,182,212,VAL)'];
+  for(let i=0;i<18;i++){
+    const p=document.createElement('div');
+    p.className='particle';
+    const col=cols[i%cols.length].replace('VAL',(0.15+Math.random()*.25).toFixed(2));
+    const sz=4+Math.random()*14;
+    p.style.cssText=`
+      left:${Math.random()*100}%;
+      top:${Math.random()*100}%;
+      width:${sz}px; height:${sz}px;
+      background:${col};
+      border-radius:50%;
+      --dur:${5+Math.random()*8}s;
+      --del:${Math.random()*6}s;
+      --dy:${(Math.random()<.5?-1:1)*(20+Math.random()*60)}px;
+      --dx:${(Math.random()<.5?-1:1)*(10+Math.random()*40)}px;
+      --sc:${0.6+Math.random()*.8};
+      --oa:${0.3+Math.random()*.4};
+      --ob:${0.05+Math.random()*.2};
     `;
+    c.appendChild(p);
+  }
+})();
 
-    try{
+/* ── Estado ── */
+const API = 'http://127.0.0.1:5000/api';
+const token = localStorage.getItem('token');
+if(!token) window.location.href='login.html';
 
-        await api(
+const st = { perfil:'', ingreso:0, meta:0, objetivo:'' };
+const LABELS = {
+  estudiante:'🎓 Estudiante', empleado:'💼 Empleado',
+  independiente:'🚀 Independiente', emprendedor:'💡 Emprendedor',
+  emergencia:'🛡️ Fondo de emergencia', viajes:'✈️ Viajes',
+  vivienda:'🏠 Vivienda propia', inversion:'📈 Inversión'
+};
 
-            API_URL + '/perfil/',
-            'PUT',
+/* ── Opciones ── */
+document.querySelectorAll('.opt[data-type]').forEach(b=>{
+  b.addEventListener('click',()=>{
+    const t=b.dataset.type, v=b.dataset.value;
+    document.querySelectorAll(`.opt[data-type="${t}"]`).forEach(x=>x.classList.remove('sel'));
+    b.classList.add('sel');
+    st[t]=v;
+    if(navigator.vibrate) navigator.vibrate(20);
+  });
+});
 
-            {
-                ingreso_mensual:
-                state.ingreso,
-
-                meta_ahorro:
-                state.meta,
-
-                onboarding_completado:true
-            }
-        );
-
-        if(state.meta > 0){
-
-            await api(
-
-                API_URL + '/metas/',
-                'POST',
-
-                {
-                    nombre:
-                    labels[state.objetivo],
-
-                    monto_objetivo:
-                    state.meta * 6,
-
-                    monto_actual:0
-                }
-            );
-        }
-
-        window.location.href =
-        'dashboard.html';
-
-    }catch(err){
-
-        console.error(err);
-
-        sending = false;
-
-        btn.disabled = false;
-
-        btn.innerHTML =
-        'Intentar nuevamente';
-
-        alert(err.message);
-    }
+/* ── Income ── */
+function setIncome(v){
+  document.getElementById('income').value=v;
+  st.ingreso=v;
+  updateMetaHint();
+}
+document.getElementById('income').addEventListener('input',e=>{
+  st.ingreso=Number(e.target.value);
+  updateMetaHint();
+});
+document.getElementById('savingGoal').addEventListener('input',e=>{
+  st.meta=Number(e.target.value);
+});
+function updateMetaHint(){
+  const sug=Math.round(st.ingreso*.2);
+  document.getElementById('metaHint').textContent=
+    `Sugerido: 20% de tu ingreso — $${sug.toLocaleString('es-CO')}`;
+  if(!st.meta&&st.ingreso>0){
+    document.getElementById('savingGoal').value=sug;
+    st.meta=sug;
+  }
 }
 
-/* =========================
-   CHECK
-========================= */
-
-async function checkOnboarding(){
-
-    try{
-
-        const res = await fetch(
-
-            API_URL + '/perfil/',
-
-            {
-                headers:{
-                    'Authorization':
-                    'Bearer ' + token
-                }
-            }
-        );
-
-        const user =
-        await res.json();
-
-        if(user.onboarding_completado){
-
-            window.location.href =
-            'dashboard.html';
-        }
-
-    }catch(err){
-
-        console.error(err);
-    }
+/* ── Stepper ── */
+function updateStepper(n){
+  const labels=['Perfil','Ingresos','Meta','¡Listo!'];
+  for(let i=1;i<=4;i++){
+    const d=document.getElementById('d'+i);
+    d.className='sdot';
+    if(i<n){ d.className='sdot done'; d.innerHTML='✓<span class="slabel">'+labels[i-1]+'</span>'; }
+    else if(i===n){ d.className='sdot active'; d.innerHTML=i+'<span class="slabel">'+labels[i-1]+'</span>'; }
+    else { d.innerHTML=i+'<span class="slabel">'+labels[i-1]+'</span>'; }
+  }
+  for(let i=1;i<=3;i++){
+    document.getElementById('l'+i).classList.toggle('filled',i<n);
+  }
 }
 
-checkOnboarding();
+/* ── Navegación ── */
+let cur=1;
+function ir(n){
+  // Validar
+  if(n===2&&!st.perfil){ show('e1'); return; }
+  if(n===3&&st.ingreso<10000){ show('e2'); return; }
+  if(n===4&&!st.objetivo){ show('e3'); return; }
 
-updateProgress(1);
+  // Ocultar todo
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.err').forEach(e=>e.classList.remove('show'));
 
+  // Mostrar
+  document.getElementById('p'+n).classList.add('active');
+  updateStepper(n);
+  cur=n;
+  window.scrollTo({top:0,behavior:'smooth'});
+
+  if(n===4){ buildSummary(); launchConfetti(); }
+}
+function show(id){ document.getElementById(id).classList.add('show'); }
+
+/* ── Resumen ── */
+function buildSummary(){
+  const sug20=Math.round(st.ingreso*.2);
+  const meses=st.meta>0?Math.ceil(st.ingreso*6/st.meta):0;
+  const mesesTxt=meses>0?(meses>=12?Math.floor(meses/12)+' año'+(meses>=24?'s':''):meses+' meses'):'—';
+
+  document.getElementById('datoNum').textContent='$'+sug20.toLocaleString('es-CO');
+  document.getElementById('datoMeses').textContent=mesesTxt;
+
+  document.getElementById('sPerfil').textContent  = LABELS[st.perfil]||'—';
+  document.getElementById('sIngreso').textContent = '$'+st.ingreso.toLocaleString('es-CO');
+  document.getElementById('sMeta').textContent    = '$'+(st.meta||0).toLocaleString('es-CO');
+  document.getElementById('sObj').textContent     = LABELS[st.objetivo]||'—';
+}
+
+/* ── Confetti con colores morado/cyan del proyecto ── */
+function launchConfetti(){
+  const area=document.getElementById('confettiWrap');
+  area.innerHTML='';
+  const cols=['#a855f7','#c026d3','#22d3ee','#06b6d4','#e879f9','#67e8f9','#d946ef','#38bdf8'];
+
+  // Inyectar keyframe la primera vez
+  if(!window._ckInj){
+    window._ckInj=true;
+    const st2=document.createElement('style');
+    st2.textContent=`@keyframes cFall{
+      0%{opacity:1;transform:translate(0,0) rotate(0)}
+      100%{opacity:0;transform:translate(var(--cx),var(--cy)) rotate(var(--cr))}
+    }`;
+    document.head.appendChild(st2);
+  }
+
+  for(let i=0;i<55;i++){
+    const p=document.createElement('div');
+    const col=cols[i%cols.length];
+    const sz=5+Math.random()*7;
+    const x=15+Math.random()*70;
+    p.style.cssText=`
+      position:absolute; left:${x}%; top:-5%;
+      width:${sz}px; height:${sz}px;
+      background:${col};
+      border-radius:${Math.random()>.5?'50%':'2px'};
+      --cx:${(Math.random()-.5)*250}px;
+      --cy:${280+Math.random()*380}px;
+      --cr:${Math.random()*720}deg;
+      opacity:0;
+      animation:cFall ${1.2+Math.random()*.8}s ease-out ${Math.random()*.5}s forwards;
+    `;
+    area.appendChild(p);
+  }
+}
+
+/* ── Finalizar ── */
+let sending=false;
+async function finish(){
+  if(sending)return;
+  sending=true;
+  const btn=document.getElementById('finBtn');
+  btn.disabled=true;
+  btn.innerHTML='<span class="sp"></span> Configurando...';
+  try{
+    await req('/perfil/','PUT',{
+      ingreso_mensual:st.ingreso,
+      meta_ahorro:st.meta,
+      onboarding_completado:true
+    });
+    if(st.meta>0){
+      await req('/metas/','POST',{
+        nombre:LABELS[st.objetivo],
+        monto_objetivo:st.meta*6,
+        monto_actual:0
+      });
+    }
+    await new Promise(r=>setTimeout(r,500));
+    window.location.href='dashboard.html';
+  }catch(err){
+    console.error(err);
+    sending=false;
+    btn.disabled=false;
+    btn.innerHTML='Intentar nuevamente';
+    alert(err.message||'Error del servidor.');
+  }
+}
+
+async function req(path,method,data){
+  const r=await fetch(API+path,{
+    method,
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+    body:JSON.stringify(data)
+  });
+  const j=await r.json();
+  if(!r.ok)throw new Error(j.mensaje||'Error');
+  return j;
+}
+
+/* ── Check onboarding ── */
+(async()=>{
+  try{
+    const r=await fetch(API+'/perfil/',{headers:{'Authorization':'Bearer '+token}});
+    const u=await r.json();
+    if(u.onboarding_completado) window.location.href='dashboard.html';
+  }catch(e){ console.error(e); }
+})();
+
+updateStepper(1);
 </script>
-
 </body>
 </html>
