@@ -1,514 +1,1548 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FinanBot - Bienvenido</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@700&display=swap" rel="stylesheet">
-    <style>
-        *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-        :root {
-            --purple: #a855f7;
-            --rose:   #c026d3;
-            --cyan:   #22d3ee;
-            --green:  #4ade80;
-            --red:    #f87171;
-            --warn:   #fbbf24;
-            --muted:  #6b7280;
-            --second: #9ca3af;
-        }
+<title>FinanBot • Onboarding</title>
 
-        body {
-            font-family: 'DM Sans', sans-serif;
-            background: radial-gradient(ellipse at top, #1a1a4e 0%, #0f0f2d 50%, #000010 100%);
-            min-height: 100vh;
-            display: flex; align-items: flex-start; justify-content: center;
-            padding: 28px 15px; overflow-y: auto; overflow-x: hidden; position: relative;
-        }
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@700&display=swap" rel="stylesheet">
 
-        body::before {
-            content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
-            background:
-                radial-gradient(circle at 20% 20%, rgba(168,85,247,.09) 0%, transparent 50%),
-                radial-gradient(circle at 80% 80%, rgba(34,211,238,.08) 0%, transparent 50%);
-        }
-        body::after {
-            content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
-            background-image: radial-gradient(rgba(168,85,247,.05) 1px, transparent 1px);
-            background-size: 28px 28px;
-        }
+<style>
 
-        /* Orbe animado */
-        .orb { position:fixed; border-radius:50%; filter:blur(80px); pointer-events:none; z-index:0; animation:drift 14s ease-in-out infinite; }
-        .orb-1 { width:480px; height:480px; top:-200px; left:-160px; background:radial-gradient(circle, rgba(192,38,211,.14) 0%, transparent 70%); }
-        .orb-2 { width:360px; height:360px; bottom:-140px; right:-110px; background:radial-gradient(circle, rgba(34,211,238,.10) 0%, transparent 70%); animation-delay:-6s; }
-        @keyframes drift { 0%,100%{transform:translate(0,0)} 50%{transform:translate(20px,-30px)} }
+*,
+*::before,
+*::after{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
 
-        /* ── CARD ─────────────────────────────────────── */
-        .card-onboarding {
-            position:relative; z-index:1;
-            width:100%; max-width:520px; margin:0 auto;
-            background: rgba(255,255,255,.04);
-            border: 1px solid rgba(168,85,247,.25);
-            border-radius: 26px; padding: 42px 36px 36px;
-            backdrop-filter: blur(22px);
-            box-shadow: 0 28px 70px rgba(0,0,0,.55), 0 0 0 1px rgba(168,85,247,.06);
-        }
-        .card-onboarding::before {
-            content:''; position:absolute; top:0; left:0; right:0; height:2px;
-            background: linear-gradient(90deg, transparent, #c026d3, #a855f7, #22d3ee, transparent);
-            border-radius: 26px 26px 0 0;
-        }
+:root{
+    --purple:#a855f7;
+    --rose:#c026d3;
+    --cyan:#22d3ee;
+    --green:#4ade80;
+    --red:#f87171;
+    --warn:#fbbf24;
+    --muted:#6b7280;
+    --second:#9ca3af;
+}
 
-        /* ── LOGO + HEADER ────────────────────────────── */
-        .header { text-align:center; margin-bottom:28px; }
-        .logo-img {
-            width:70px; height:70px; border-radius:50%; object-fit:cover;
-            border:2px solid rgba(168,85,247,.35);
-            box-shadow: 0 0 22px rgba(168,85,247,.45), 0 0 48px rgba(168,85,247,.12);
-            margin-bottom:14px;
-        }
-        .logo-fallback {
-            width:70px; height:70px; border-radius:50%; margin:0 auto 14px;
-            background:linear-gradient(135deg, rgba(192,38,211,.25), rgba(168,85,247,.2));
-            border:2px solid rgba(168,85,247,.35);
-            display:flex; align-items:center; justify-content:center; font-size:30px;
-            box-shadow: 0 0 22px rgba(168,85,247,.35);
-        }
-        .titulo {
-            font-family:'Segoe UI',sans-serif; font-size:26px; font-weight:800;
-            background:linear-gradient(90deg,#c026d3,#a855f7,#22d3ee);
-            -webkit-background-clip:text; -webkit-text-fill-color:transparent;
-            margin-bottom:5px; letter-spacing:-.3px;
-        }
-        .subtitulo { color:var(--second); font-size:13px; line-height:1.5; }
+body{
+    font-family:'DM Sans',sans-serif;
 
-        /* ── STEPPER ──────────────────────────────────── */
-        .stepper {
-            display:flex; align-items:center; margin-bottom:32px;
-        }
-        .st-item { display:flex; align-items:center; flex:1; }
-        .st-item:last-child { flex:none; }
-        .st-circle {
-            width:32px; height:32px; border-radius:50%; flex-shrink:0;
-            display:flex; align-items:center; justify-content:center;
-            font-size:12px; font-weight:700; transition:all .4s;
-            border:2px solid rgba(168,85,247,.2); color:var(--muted);
-            font-family:'Space Mono',monospace;
-        }
-        .st-circle.activo { border-color:var(--purple); color:white; background:rgba(168,85,247,.14); box-shadow:0 0 14px rgba(168,85,247,.4); }
-        .st-circle.hecho  { border-color:var(--green);  color:var(--green);  background:rgba(74,222,128,.1); }
-        .st-line { flex:1; height:1px; background:rgba(168,85,247,.15); transition:background .4s; margin:0 5px; }
-        .st-line.activa { background:linear-gradient(90deg,var(--green),var(--purple)); }
+    background:
+    radial-gradient(ellipse at top,#1a1a4e 0%,#0f0f2d 50%,#000010 100%);
 
-        /* ── PASO CONTENIDO ───────────────────────────── */
-        .paso { display:none; animation:fadeUp .35s ease; }
-        .paso.visible { display:block; }
-        @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+    min-height:100vh;
 
-        .paso-icono  { font-size:48px; text-align:center; margin-bottom:12px; }
-        .paso-titulo { font-family:'Segoe UI',sans-serif; font-size:20px; font-weight:800; color:white; text-align:center; margin-bottom:6px; }
-        .paso-desc   { color:var(--second); font-size:13px; text-align:center; line-height:1.6; margin-bottom:24px; }
+    display:flex;
+    align-items:flex-start;
+    justify-content:center;
 
-        /* ── OPCIONES ─────────────────────────────────── */
-        .opciones-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:20px; }
-        .opcion-btn {
-            background:rgba(255,255,255,.03); border:1.5px solid rgba(168,85,247,.18);
-            border-radius:14px; padding:16px 10px; text-align:center; cursor:pointer;
-            transition:all .25s; color:var(--second); font-size:13px; font-weight:500;
-            position:relative; overflow:hidden;
-        }
-        .opcion-btn:hover { border-color:rgba(168,85,247,.45); color:white; transform:translateY(-2px); }
-        .opcion-btn.seleccionado {
-            background:rgba(168,85,247,.1); border-color:var(--purple);
-            color:white; transform:translateY(-2px);
-            box-shadow:0 8px 22px rgba(168,85,247,.2);
-        }
-        .opcion-icono { font-size:30px; margin-bottom:8px; display:block; transition:transform .3s; }
-        .opcion-btn:hover .opcion-icono, .opcion-btn.seleccionado .opcion-icono { transform:scale(1.1); }
-        .opcion-label { font-size:12px; font-weight:700; }
-        .check-ico {
-            position:absolute; top:7px; right:8px; width:17px; height:17px;
-            border-radius:50%; background:var(--purple); color:white;
-            display:none; align-items:center; justify-content:center; font-size:9px;
-        }
-        .opcion-btn.seleccionado .check-ico { display:flex; }
+    padding:28px 15px;
 
-        /* ── INPUTS ───────────────────────────────────── */
-        .campo { margin-bottom:16px; }
-        .campo-label {
-            display:block; font-size:11px; font-weight:700; color:#c4b5fd;
-            text-transform:uppercase; letter-spacing:.8px; margin-bottom:7px;
-        }
-        .campo-hint { font-size:11px; color:var(--muted); margin-top:5px; }
-        .campo-hint i { color:var(--purple); margin-right:4px; }
-        .campo-input-wrap { position:relative; }
-        .campo-prefix {
-            position:absolute; left:14px; top:50%; transform:translateY(-50%);
-            font-size:14px; font-weight:700; color:var(--purple);
-            font-family:'Space Mono',monospace; pointer-events:none;
-        }
-        .campo-input {
-            width:100%; background:rgba(255,255,255,.05);
-            border:1.5px solid rgba(168,85,247,.22); border-radius:12px;
-            color:white; padding:12px 15px; font-size:14px; outline:none;
-            transition:all .3s; font-family:'DM Sans',sans-serif;
-        }
-        .campo-input.con-prefix { padding-left:30px; }
-        .campo-input:focus { border-color:var(--purple); box-shadow:0 0 0 3px rgba(168,85,247,.1); background:rgba(168,85,247,.05); }
-        .campo-input::placeholder { color:var(--muted); }
-        .campo-select {
-            width:100%; background:rgba(255,255,255,.05);
-            border:1.5px solid rgba(168,85,247,.22); border-radius:12px;
-            color:white; padding:12px 15px; font-size:14px; outline:none;
-            transition:all .3s; font-family:'DM Sans',sans-serif; cursor:pointer;
-            appearance:none;
-            background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7' viewBox='0 0 10 7'%3E%3Cpath fill='%23a855f7' d='M1 1l4 4 4-4'/%3E%3C/svg%3E");
-            background-repeat:no-repeat; background-position:right 14px center;
-        }
-        .campo-select:focus { border-color:var(--purple); box-shadow:0 0 0 3px rgba(168,85,247,.1); }
-        .campo-select option { background:#1a0a3c; color:white; }
+    overflow-y:auto;
+    overflow-x:hidden;
 
-        /* ── RESUMEN PASO 4 ───────────────────────────── */
-        .resumen-card {
-            background:rgba(74,222,128,.06); border:1px solid rgba(74,222,128,.18);
-            border-radius:16px; padding:20px; margin-bottom:20px;
-        }
-        .resumen-titulo {
-            font-size:11px; font-weight:700; color:var(--green);
-            text-transform:uppercase; letter-spacing:1px; margin-bottom:14px;
-            display:flex; align-items:center; gap:7px;
-        }
-        .resumen-fila {
-            display:flex; justify-content:space-between; align-items:center;
-            padding:7px 0; border-bottom:1px solid rgba(74,222,128,.08); font-size:13px;
-        }
-        .resumen-fila:last-child { border-bottom:none; }
-        .resumen-key { color:var(--second); }
-        .resumen-val { color:white; font-weight:600; font-family:'Space Mono',monospace; font-size:12px; }
+    position:relative;
+}
 
-        /* ── BOTONES ──────────────────────────────────── */
-        .btn-siguiente {
-            width:100%; border:none; border-radius:12px; padding:14px;
-            font-size:15px; font-weight:700; color:white; cursor:pointer;
-            background:linear-gradient(135deg,#c026d3,#a855f7);
-            box-shadow:0 6px 24px rgba(192,38,211,.35);
-            transition:all .3s; display:flex; align-items:center;
-            justify-content:center; gap:9px; font-family:'DM Sans',sans-serif;
-            margin-bottom:10px;
-        }
-        .btn-siguiente:hover { transform:translateY(-2px); box-shadow:0 10px 32px rgba(192,38,211,.55); }
-        .btn-siguiente:disabled { opacity:.65; cursor:not-allowed; transform:none; }
-        .btn-siguiente .arr { transition:transform .3s; }
-        .btn-siguiente:hover .arr { transform:translateX(4px); }
+body::before{
+    content:'';
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+    z-index:0;
 
-        .btn-omitir {
-            width:100%; background:transparent; border:none;
-            color:var(--muted); font-size:13px; cursor:pointer;
-            padding:8px; transition:color .3s; font-family:'DM Sans',sans-serif;
-        }
-        .btn-omitir:hover { color:var(--second); }
+    background:
+    radial-gradient(circle at 20% 20%,rgba(168,85,247,.10) 0%,transparent 50%),
+    radial-gradient(circle at 80% 80%,rgba(34,211,238,.08) 0%,transparent 50%);
+}
 
-        .spinner { display:inline-block; width:16px; height:16px; border:2px solid rgba(255,255,255,.3); border-top-color:white; border-radius:50%; animation:spin .7s linear infinite; }
-        @keyframes spin { to{transform:rotate(360deg)} }
+body::after{
+    content:'';
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+    z-index:0;
 
-        /* Confeti */
-        .confeti { position:absolute; border-radius:2px; animation:confetiFall linear forwards; pointer-events:none; }
-        @keyframes confetiFall { 0%{transform:translateY(-20px) rotate(0deg);opacity:1} 100%{transform:translateY(120vh) rotate(720deg);opacity:0} }
-    </style>
+    background-image:
+    radial-gradient(rgba(168,85,247,.05) 1px,transparent 1px);
+
+    background-size:28px 28px;
+}
+
+/* ORBS */
+
+.orb{
+    position:fixed;
+    border-radius:50%;
+    filter:blur(80px);
+    pointer-events:none;
+    z-index:0;
+
+    animation:drift 14s ease-in-out infinite;
+}
+
+.orb-1{
+    width:480px;
+    height:480px;
+    top:-200px;
+    left:-160px;
+
+    background:
+    radial-gradient(circle,rgba(192,38,211,.16) 0%,transparent 70%);
+}
+
+.orb-2{
+    width:360px;
+    height:360px;
+    bottom:-140px;
+    right:-110px;
+
+    background:
+    radial-gradient(circle,rgba(34,211,238,.10) 0%,transparent 70%);
+
+    animation-delay:-6s;
+}
+
+@keyframes drift{
+    0%,100%{
+        transform:translate(0,0);
+    }
+
+    50%{
+        transform:translate(20px,-30px);
+    }
+}
+
+/* CARD */
+
+.card-onboarding{
+    position:relative;
+    z-index:1;
+
+    width:100%;
+    max-width:540px;
+
+    margin:0 auto;
+
+    background:
+    linear-gradient(
+        180deg,
+        rgba(255,255,255,.08),
+        rgba(255,255,255,.03)
+    );
+
+    border:1px solid rgba(168,85,247,.22);
+
+    border-radius:28px;
+
+    padding:42px 36px 36px;
+
+    backdrop-filter:blur(22px);
+
+    overflow:hidden;
+
+    box-shadow:
+    0 28px 70px rgba(0,0,0,.55),
+    0 0 0 1px rgba(168,85,247,.05);
+}
+
+.card-onboarding::before{
+    content:'';
+
+    position:absolute;
+    top:0;
+    left:0;
+    right:0;
+
+    height:2px;
+
+    background:
+    linear-gradient(
+        90deg,
+        transparent,
+        #c026d3,
+        #a855f7,
+        #22d3ee,
+        transparent
+    );
+}
+
+/* HEADER */
+
+.header{
+    text-align:center;
+    margin-bottom:28px;
+}
+
+.logo-img{
+    width:74px;
+    height:74px;
+
+    object-fit:cover;
+    border-radius:50%;
+
+    border:2px solid rgba(168,85,247,.35);
+
+    box-shadow:
+    0 0 24px rgba(168,85,247,.45),
+    0 0 50px rgba(168,85,247,.10);
+
+    margin-bottom:14px;
+}
+
+.logo-fallback{
+    width:74px;
+    height:74px;
+
+    border-radius:50%;
+
+    margin:0 auto 14px;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    font-size:30px;
+
+    background:
+    linear-gradient(
+        135deg,
+        rgba(192,38,211,.25),
+        rgba(168,85,247,.20)
+    );
+
+    border:2px solid rgba(168,85,247,.35);
+
+    box-shadow:
+    0 0 24px rgba(168,85,247,.35);
+}
+
+.titulo{
+    font-size:28px;
+    font-weight:800;
+
+    letter-spacing:-.4px;
+
+    background:
+    linear-gradient(
+        90deg,
+        #c026d3,
+        #a855f7,
+        #22d3ee
+    );
+
+    -webkit-background-clip:text;
+    -webkit-text-fill-color:transparent;
+
+    margin-bottom:5px;
+}
+
+.subtitulo{
+    color:var(--second);
+    font-size:13px;
+    line-height:1.6;
+}
+
+/* PROGRESS */
+
+.progress-wrap{
+    margin-bottom:34px;
+}
+
+.progress-bar-custom{
+    width:100%;
+    height:8px;
+
+    overflow:hidden;
+
+    border-radius:999px;
+
+    background:rgba(255,255,255,.05);
+
+    border:1px solid rgba(168,85,247,.10);
+}
+
+.progress-fill{
+    width:25%;
+    height:100%;
+
+    border-radius:999px;
+
+    background:
+    linear-gradient(
+        90deg,
+        #c026d3,
+        #a855f7,
+        #22d3ee
+    );
+
+    transition:width .45s ease;
+
+    box-shadow:
+    0 0 18px rgba(168,85,247,.45);
+}
+
+.progress-text{
+    margin-top:10px;
+
+    text-align:right;
+
+    color:var(--second);
+
+    font-size:12px;
+}
+
+/* PASOS */
+
+.paso{
+    display:none;
+    animation:fadeUp .45s ease;
+}
+
+.paso.visible{
+    display:block;
+}
+
+@keyframes fadeUp{
+
+    0%{
+        opacity:0;
+        transform:translateY(25px) scale(.98);
+        filter:blur(4px);
+    }
+
+    100%{
+        opacity:1;
+        transform:translateY(0) scale(1);
+        filter:blur(0);
+    }
+}
+
+.paso-icono{
+    text-align:center;
+    font-size:50px;
+    margin-bottom:14px;
+}
+
+.paso-titulo{
+    text-align:center;
+
+    color:white;
+
+    font-size:22px;
+    font-weight:800;
+
+    margin-bottom:6px;
+}
+
+.paso-desc{
+    text-align:center;
+
+    color:var(--second);
+
+    font-size:13px;
+    line-height:1.6;
+
+    margin-bottom:26px;
+}
+
+/* OPCIONES */
+
+.opciones-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+
+    margin-bottom:22px;
+}
+
+.opcion-btn{
+    position:relative;
+
+    overflow:hidden;
+
+    padding:18px 12px;
+
+    border-radius:16px;
+
+    cursor:pointer;
+
+    text-align:center;
+
+    background:rgba(255,255,255,.04);
+
+    border:1px solid rgba(255,255,255,.08);
+
+    color:var(--second);
+
+    transition:all .28s ease;
+}
+
+.opcion-btn:hover{
+    transform:translateY(-3px);
+
+    color:white;
+
+    border-color:rgba(168,85,247,.45);
+
+    background:rgba(168,85,247,.07);
+}
+
+.opcion-btn.seleccionado{
+    color:white;
+
+    transform:translateY(-3px);
+
+    background:rgba(168,85,247,.12);
+
+    border-color:var(--purple);
+
+    box-shadow:
+    0 8px 24px rgba(168,85,247,.22);
+}
+
+.opcion-icono{
+    display:block;
+    font-size:32px;
+    margin-bottom:10px;
+
+    transition:transform .3s;
+}
+
+.opcion-btn:hover .opcion-icono,
+.opcion-btn.seleccionado .opcion-icono{
+    transform:scale(1.1);
+}
+
+.opcion-label{
+    font-size:13px;
+    font-weight:700;
+}
+
+.check-ico{
+    position:absolute;
+    top:8px;
+    right:8px;
+
+    width:18px;
+    height:18px;
+
+    border-radius:50%;
+
+    display:none;
+    align-items:center;
+    justify-content:center;
+
+    background:var(--purple);
+    color:white;
+
+    font-size:8px;
+}
+
+.opcion-btn.seleccionado .check-ico{
+    display:flex;
+}
+
+/* CAMPOS */
+
+.campo{
+    margin-bottom:18px;
+}
+
+.campo-label{
+    display:block;
+
+    margin-bottom:8px;
+
+    color:#d8b4fe;
+
+    font-size:11px;
+    font-weight:700;
+
+    text-transform:uppercase;
+
+    letter-spacing:.8px;
+}
+
+.campo-input-wrap{
+    position:relative;
+}
+
+.campo-prefix{
+    position:absolute;
+
+    left:14px;
+    top:50%;
+
+    transform:translateY(-50%);
+
+    color:var(--purple);
+
+    font-size:14px;
+    font-weight:700;
+
+    pointer-events:none;
+}
+
+.campo-input,
+.campo-select{
+    width:100%;
+
+    padding:13px 15px;
+
+    border-radius:14px;
+
+    outline:none;
+
+    font-size:14px;
+
+    color:white;
+
+    backdrop-filter:blur(10px);
+
+    border:1px solid rgba(255,255,255,.08);
+
+    background:rgba(255,255,255,.04);
+
+    transition:all .3s;
+}
+
+.campo-input:hover,
+.campo-select:hover{
+    border-color:rgba(168,85,247,.35);
+}
+
+.campo-input:focus,
+.campo-select:focus{
+    border-color:var(--purple);
+
+    background:rgba(168,85,247,.06);
+
+    box-shadow:
+    0 0 0 3px rgba(168,85,247,.10);
+}
+
+.campo-input::placeholder{
+    color:var(--muted);
+}
+
+.con-prefix{
+    padding-left:30px;
+}
+
+.campo-select{
+    appearance:none;
+    cursor:pointer;
+
+    background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7' viewBox='0 0 10 7'%3E%3Cpath fill='%23a855f7' d='M1 1l4 4 4-4'/%3E%3C/svg%3E");
+
+    background-repeat:no-repeat;
+    background-position:right 14px center;
+}
+
+.campo-select option{
+    background:#18082f;
+}
+
+.campo-hint{
+    margin-top:6px;
+
+    color:var(--muted);
+
+    font-size:11px;
+}
+
+.campo-hint i{
+    margin-right:4px;
+    color:var(--purple);
+}
+
+/* ERROR */
+
+.error{
+    margin-top:10px;
+
+    color:#fca5a5;
+
+    font-size:12px;
+
+    display:none;
+}
+
+.error.visible{
+    display:block;
+}
+
+/* RESUMEN */
+
+.resumen-card{
+    padding:20px;
+
+    border-radius:18px;
+
+    margin-bottom:22px;
+
+    background:rgba(74,222,128,.06);
+
+    border:1px solid rgba(74,222,128,.18);
+}
+
+.resumen-titulo{
+    margin-bottom:14px;
+
+    color:var(--green);
+
+    font-size:11px;
+    font-weight:700;
+
+    text-transform:uppercase;
+
+    letter-spacing:1px;
+}
+
+.resumen-fila{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+
+    padding:8px 0;
+
+    border-bottom:1px solid rgba(74,222,128,.08);
+}
+
+.resumen-fila:last-child{
+    border-bottom:none;
+}
+
+.resumen-key{
+    color:var(--second);
+    font-size:13px;
+}
+
+.resumen-val{
+    color:white;
+
+    font-size:12px;
+    font-weight:700;
+
+    font-family:'Space Mono',monospace;
+}
+
+/* BOTONES */
+
+.btn-siguiente{
+    position:relative;
+
+    overflow:hidden;
+
+    width:100%;
+
+    border:none;
+    outline:none;
+
+    border-radius:14px;
+
+    padding:14px;
+
+    cursor:pointer;
+
+    color:white;
+
+    font-size:15px;
+    font-weight:700;
+
+    margin-bottom:10px;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:9px;
+
+    background:
+    linear-gradient(
+        135deg,
+        #c026d3,
+        #a855f7
+    );
+
+    transition:all .3s;
+
+    box-shadow:
+    0 8px 28px rgba(192,38,211,.35);
+}
+
+.btn-siguiente:hover{
+    transform:translateY(-2px);
+
+    box-shadow:
+    0 12px 36px rgba(192,38,211,.55);
+}
+
+.btn-siguiente::before{
+    content:'';
+
+    position:absolute;
+    top:0;
+    left:-100%;
+
+    width:100%;
+    height:100%;
+
+    background:
+    linear-gradient(
+        90deg,
+        transparent,
+        rgba(255,255,255,.22),
+        transparent
+    );
+
+    transition:left .7s;
+}
+
+.btn-siguiente:hover::before{
+    left:100%;
+}
+
+.btn-siguiente:disabled{
+    opacity:.7;
+    cursor:not-allowed;
+}
+
+.arr{
+    transition:transform .3s;
+}
+
+.btn-siguiente:hover .arr{
+    transform:translateX(4px);
+}
+
+.btn-omitir{
+    width:100%;
+
+    border:none;
+    background:transparent;
+
+    color:var(--muted);
+
+    padding:8px;
+
+    cursor:pointer;
+
+    font-size:13px;
+
+    transition:color .3s;
+}
+
+.btn-omitir:hover{
+    color:white;
+}
+
+/* SPINNER */
+
+.spinner{
+    width:16px;
+    height:16px;
+
+    border-radius:50%;
+
+    border:2px solid rgba(255,255,255,.25);
+    border-top-color:white;
+
+    animation:spin .7s linear infinite;
+}
+
+@keyframes spin{
+    to{
+        transform:rotate(360deg);
+    }
+}
+
+/* CONFETI */
+
+.confeti{
+    position:absolute;
+    border-radius:2px;
+    pointer-events:none;
+
+    animation:confetiFall linear forwards;
+}
+
+@keyframes confetiFall{
+
+    0%{
+        transform:translateY(-20px) rotate(0deg);
+        opacity:1;
+    }
+
+    100%{
+        transform:translateY(120vh) rotate(720deg);
+        opacity:0;
+    }
+}
+
+/* MOBILE */
+
+@media(max-width:576px){
+
+    body{
+        padding:15px 10px;
+    }
+
+    .card-onboarding{
+        padding:28px 20px;
+        border-radius:24px;
+    }
+
+    .titulo{
+        font-size:23px;
+    }
+
+    .paso-titulo{
+        font-size:19px;
+    }
+
+    .opciones-grid{
+        grid-template-columns:1fr;
+    }
+}
+
+</style>
 </head>
 <body>
 
-    <div class="orb orb-1"></div>
-    <div class="orb orb-2"></div>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
 
-    <div class="card-onboarding">
+<div class="card-onboarding">
 
-        <!-- HEADER con logo -->
-        <div class="header">
-            <img src="../../images/logo.png" alt="FinanBot" class="logo-img"
-                 onerror="this.outerHTML='<div class=\'logo-fallback\'>🤖</div>'">
-            <div class="titulo">¡Bienvenido a FinanBot!</div>
-            <div class="subtitulo">Cuéntanos un poco sobre ti para personalizar tu experiencia</div>
+    <!-- HEADER -->
+
+    <div class="header">
+
+        <img
+            src="../../images/logo.png"
+            class="logo-img"
+            alt="FinanBot"
+
+            onerror="this.outerHTML='<div class=\'logo-fallback\'>🤖</div>'"
+        >
+
+        <div class="titulo">
+            Bienvenido a FinanBot
         </div>
 
-        <!-- STEPPER -->
-        <div class="stepper">
-            <div class="st-item">
-                <div class="st-circle activo" id="sc1">1</div>
-                <div class="st-line" id="sl1"></div>
-            </div>
-            <div class="st-item">
-                <div class="st-circle" id="sc2">2</div>
-                <div class="st-line" id="sl2"></div>
-            </div>
-            <div class="st-item">
-                <div class="st-circle" id="sc3">3</div>
-                <div class="st-line" id="sl3"></div>
-            </div>
-            <div class="st-circle" id="sc4">4</div>
-        </div>
-
-        <!-- ── PASO 1: Perfil ── -->
-        <div class="paso visible" id="paso1">
-            <div class="paso-icono">👤</div>
-            <div class="paso-titulo">¿Cuál es tu situación financiera?</div>
-            <div class="paso-desc">Selecciona la opción que mejor te describe</div>
-
-            <div class="opciones-grid">
-                <div class="opcion-btn" onclick="selOpcion(this,'perfil','estudiante')">
-                    <div class="check-ico"><i class="fas fa-check" style="font-size:8px"></i></div>
-                    <span class="opcion-icono">🎓</span>
-                    <div class="opcion-label">Estudiante</div>
-                </div>
-                <div class="opcion-btn" onclick="selOpcion(this,'perfil','empleado')">
-                    <div class="check-ico"><i class="fas fa-check" style="font-size:8px"></i></div>
-                    <span class="opcion-icono">💼</span>
-                    <div class="opcion-label">Empleado</div>
-                </div>
-                <div class="opcion-btn" onclick="selOpcion(this,'perfil','independiente')">
-                    <div class="check-ico"><i class="fas fa-check" style="font-size:8px"></i></div>
-                    <span class="opcion-icono">🚀</span>
-                    <div class="opcion-label">Independiente</div>
-                </div>
-                <div class="opcion-btn" onclick="selOpcion(this,'perfil','emprendedor')">
-                    <div class="check-ico"><i class="fas fa-check" style="font-size:8px"></i></div>
-                    <span class="opcion-icono">💡</span>
-                    <div class="opcion-label">Emprendedor</div>
-                </div>
-            </div>
-
-            <button class="btn-siguiente" onclick="ir(2)">
-                Continuar <span class="arr"><i class="fas fa-arrow-right"></i></span>
-            </button>
-            <button class="btn-omitir" onclick="omitir()">Omitir configuración</button>
-        </div>
-
-        <!-- ── PASO 2: Ingresos ── -->
-        <div class="paso" id="paso2">
-            <div class="paso-icono">💰</div>
-            <div class="paso-titulo">¿Cuánto ganas al mes?</div>
-            <div class="paso-desc">Esta información es privada y nos ayuda a darte recomendaciones más precisas.</div>
-
-            <div class="campo">
-                <label class="campo-label">Ingreso mensual aproximado</label>
-                <div class="campo-input-wrap">
-                    <span class="campo-prefix">$</span>
-                    <input type="number" class="campo-input con-prefix" id="ingresoMensual" placeholder="2.500.000">
-                </div>
-                <div class="campo-hint"><i class="fas fa-lock"></i>Solo tú puedes ver este dato</div>
-            </div>
-
-            <div class="campo">
-                <label class="campo-label">Frecuencia de ingresos</label>
-                <select class="campo-select" id="frecuenciaIngreso">
-                    <option value="mensual">Mensual (salario fijo)</option>
-                    <option value="quincenal">Quincenal</option>
-                    <option value="semanal">Semanal</option>
-                    <option value="variable">Variable / Irregular</option>
-                </select>
-            </div>
-
-            <button class="btn-siguiente" onclick="ir(3)">
-                Continuar <span class="arr"><i class="fas fa-arrow-right"></i></span>
-            </button>
-            <button class="btn-omitir" onclick="omitir()">Omitir este paso</button>
-        </div>
-
-        <!-- ── PASO 3: Meta ── -->
-        <div class="paso" id="paso3">
-            <div class="paso-icono">🎯</div>
-            <div class="paso-titulo">¿Cuánto quieres ahorrar al mes?</div>
-            <div class="paso-desc">Establece una meta de ahorro mensual. Te ayudaremos a alcanzarla.</div>
-
-            <div class="campo">
-                <label class="campo-label">Meta de ahorro mensual</label>
-                <div class="campo-input-wrap">
-                    <span class="campo-prefix">$</span>
-                    <input type="number" class="campo-input con-prefix" id="metaAhorro" placeholder="500.000">
-                </div>
-            </div>
-
-            <label class="campo-label" style="margin-bottom:10px">Objetivo financiero principal</label>
-            <div class="opciones-grid">
-                <div class="opcion-btn" onclick="selOpcion(this,'objetivo','emergencia')">
-                    <div class="check-ico"><i class="fas fa-check" style="font-size:8px"></i></div>
-                    <span class="opcion-icono">🚨</span>
-                    <div class="opcion-label">Fondo emergencia</div>
-                </div>
-                <div class="opcion-btn" onclick="selOpcion(this,'objetivo','viaje')">
-                    <div class="check-ico"><i class="fas fa-check" style="font-size:8px"></i></div>
-                    <span class="opcion-icono">✈️</span>
-                    <div class="opcion-label">Viaje / Vacaciones</div>
-                </div>
-                <div class="opcion-btn" onclick="selOpcion(this,'objetivo','vivienda')">
-                    <div class="check-ico"><i class="fas fa-check" style="font-size:8px"></i></div>
-                    <span class="opcion-icono">🏠</span>
-                    <div class="opcion-label">Vivienda propia</div>
-                </div>
-                <div class="opcion-btn" onclick="selOpcion(this,'objetivo','inversion')">
-                    <div class="check-ico"><i class="fas fa-check" style="font-size:8px"></i></div>
-                    <span class="opcion-icono">📈</span>
-                    <div class="opcion-label">Invertir</div>
-                </div>
-            </div>
-
-            <button class="btn-siguiente" onclick="ir(4)">
-                Continuar <span class="arr"><i class="fas fa-arrow-right"></i></span>
-            </button>
-            <button class="btn-omitir" onclick="omitir()">Omitir este paso</button>
-        </div>
-
-        <!-- ── PASO 4: Resumen ── -->
-        <div class="paso" id="paso4">
-            <div class="paso-icono">🎉</div>
-            <div class="paso-titulo" id="tituloFinal">¡Todo listo!</div>
-            <div class="paso-desc">Tu perfil está configurado. FinanBot usará esta información para darte recomendaciones personalizadas.</div>
-
-            <div class="resumen-card">
-                <div class="resumen-titulo"><i class="fas fa-check-circle"></i> Tu perfil incluye</div>
-                <div class="resumen-fila"><span class="resumen-key">👤 Perfil</span><span class="resumen-val" id="res-perfil">—</span></div>
-                <div class="resumen-fila"><span class="resumen-key">💰 Ingreso mensual</span><span class="resumen-val" id="res-ingreso">—</span></div>
-                <div class="resumen-fila"><span class="resumen-key">🎯 Meta de ahorro</span><span class="resumen-val" id="res-meta">—</span></div>
-                <div class="resumen-fila"><span class="resumen-key">🏆 Objetivo</span><span class="resumen-val" id="res-objetivo">—</span></div>
-            </div>
-
-            <button class="btn-siguiente" id="btnFinalizar" onclick="finalizar()">
-                <i class="fas fa-rocket"></i> Ir a mi Dashboard
-                <span class="arr"><i class="fas fa-arrow-right"></i></span>
-            </button>
+        <div class="subtitulo">
+            Configura tu experiencia financiera personalizada
         </div>
 
     </div>
 
-    <script>
-        // ── VALIDAR SESIÓN ────────────────────────────
-        const token   = localStorage.getItem('token');
-        const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
-        if (!token) window.location.href = 'login.html';
+    <!-- PROGRESS -->
 
-        // Personalizar paso 4 con el nombre
-        const nombre = (usuario.nombre || '').split(' ')[0];
-        if (nombre) document.getElementById('tituloFinal').textContent = `¡Listo, ${nombre}! 🎉`;
+    <div class="progress-wrap">
 
-        // ── ESTADO ────────────────────────────────────
-        let datos = { perfil:'', ingreso_mensual:0, meta_ahorro:0, objetivo:'' };
-        let pasoActual = 1;
+        <div class="progress-bar-custom">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
 
-        const PERFILES  = { estudiante:'🎓 Estudiante', empleado:'💼 Empleado', independiente:'🚀 Independiente', emprendedor:'💡 Emprendedor' };
-        const OBJETIVOS = { emergencia:'🚨 Fondo de emergencia', viaje:'✈️ Viaje/Vacaciones', vivienda:'🏠 Vivienda propia', inversion:'📈 Invertir' };
+        <div class="progress-text">
+            Paso
+            <span id="pasoActualTxt">1</span>
+            de 4
+        </div>
 
-        // ── SELECCIONAR OPCIÓN ────────────────────────
-        function selOpcion(el, tipo, valor) {
-            el.closest('.opciones-grid').querySelectorAll('.opcion-btn')
-                .forEach(b => b.classList.remove('seleccionado'));
-            el.classList.add('seleccionado');
-            datos[tipo] = valor;
+    </div>
+
+    <!-- PASO 1 -->
+
+    <div class="paso visible" id="paso1">
+
+        <div class="paso-icono">👤</div>
+
+        <div class="paso-titulo">
+            ¿Cuál es tu situación financiera?
+        </div>
+
+        <div class="paso-desc">
+            Esto nos ayuda a darte recomendaciones mucho más precisas.
+        </div>
+
+        <div class="opciones-grid">
+
+            <div class="opcion-btn" onclick="selOpcion(this,'perfil','estudiante')">
+                <div class="check-ico">
+                    <i class="fas fa-check"></i>
+                </div>
+
+                <span class="opcion-icono">🎓</span>
+
+                <div class="opcion-label">
+                    Estudiante
+                </div>
+            </div>
+
+            <div class="opcion-btn" onclick="selOpcion(this,'perfil','empleado')">
+                <div class="check-ico">
+                    <i class="fas fa-check"></i>
+                </div>
+
+                <span class="opcion-icono">💼</span>
+
+                <div class="opcion-label">
+                    Empleado
+                </div>
+            </div>
+
+            <div class="opcion-btn" onclick="selOpcion(this,'perfil','independiente')">
+                <div class="check-ico">
+                    <i class="fas fa-check"></i>
+                </div>
+
+                <span class="opcion-icono">🚀</span>
+
+                <div class="opcion-label">
+                    Independiente
+                </div>
+            </div>
+
+            <div class="opcion-btn" onclick="selOpcion(this,'perfil','emprendedor')">
+                <div class="check-ico">
+                    <i class="fas fa-check"></i>
+                </div>
+
+                <span class="opcion-icono">💡</span>
+
+                <div class="opcion-label">
+                    Emprendedor
+                </div>
+            </div>
+
+        </div>
+
+        <div class="error" id="error1">
+            Selecciona una opción para continuar
+        </div>
+
+        <button class="btn-siguiente" onclick="ir(2)">
+            Continuar
+            <span class="arr">
+                <i class="fas fa-arrow-right"></i>
+            </span>
+        </button>
+
+        <button class="btn-omitir" onclick="omitir()">
+            Omitir configuración
+        </button>
+
+    </div>
+
+    <!-- PASO 2 -->
+
+    <div class="paso" id="paso2">
+
+        <div class="paso-icono">💰</div>
+
+        <div class="paso-titulo">
+            ¿Cuánto ganas al mes?
+        </div>
+
+        <div class="paso-desc">
+            Tu información es privada y segura.
+        </div>
+
+        <div class="campo">
+
+            <label class="campo-label">
+                Ingreso mensual aproximado
+            </label>
+
+            <div class="campo-input-wrap">
+
+                <span class="campo-prefix">$</span>
+
+                <input
+                    type="number"
+                    id="ingresoMensual"
+                    class="campo-input con-prefix"
+                    placeholder="2.500.000"
+                >
+
+            </div>
+
+            <div class="campo-hint">
+                <i class="fas fa-lock"></i>
+                Solo tú puedes ver este dato
+            </div>
+
+        </div>
+
+        <div class="campo">
+
+            <label class="campo-label">
+                Frecuencia de ingresos
+            </label>
+
+            <select class="campo-select" id="frecuenciaIngreso">
+
+                <option value="mensual">
+                    Mensual
+                </option>
+
+                <option value="quincenal">
+                    Quincenal
+                </option>
+
+                <option value="semanal">
+                    Semanal
+                </option>
+
+                <option value="variable">
+                    Variable
+                </option>
+
+            </select>
+
+        </div>
+
+        <div class="error" id="error2">
+            Ingresa un valor válido
+        </div>
+
+        <button class="btn-siguiente" onclick="ir(3)">
+            Continuar
+            <span class="arr">
+                <i class="fas fa-arrow-right"></i>
+            </span>
+        </button>
+
+        <button class="btn-omitir" onclick="omitir()">
+            Omitir paso
+        </button>
+
+    </div>
+
+    <!-- PASO 3 -->
+
+    <div class="paso" id="paso3">
+
+        <div class="paso-icono">🎯</div>
+
+        <div class="paso-titulo">
+            Define tu meta financiera
+        </div>
+
+        <div class="paso-desc">
+            FinanBot te ayudará a alcanzarla.
+        </div>
+
+        <div class="campo">
+
+            <label class="campo-label">
+                Meta de ahorro mensual
+            </label>
+
+            <div class="campo-input-wrap">
+
+                <span class="campo-prefix">$</span>
+
+                <input
+                    type="number"
+                    id="metaAhorro"
+                    class="campo-input con-prefix"
+                    placeholder="500.000"
+                >
+
+            </div>
+
+        </div>
+
+        <label class="campo-label" style="margin-bottom:10px">
+            Objetivo principal
+        </label>
+
+        <div class="opciones-grid">
+
+            <div class="opcion-btn" onclick="selOpcion(this,'objetivo','emergencia')">
+
+                <div class="check-ico">
+                    <i class="fas fa-check"></i>
+                </div>
+
+                <span class="opcion-icono">🚨</span>
+
+                <div class="opcion-label">
+                    Emergencia
+                </div>
+
+            </div>
+
+            <div class="opcion-btn" onclick="selOpcion(this,'objetivo','viaje')">
+
+                <div class="check-ico">
+                    <i class="fas fa-check"></i>
+                </div>
+
+                <span class="opcion-icono">✈️</span>
+
+                <div class="opcion-label">
+                    Viajes
+                </div>
+
+            </div>
+
+            <div class="opcion-btn" onclick="selOpcion(this,'objetivo','vivienda')">
+
+                <div class="check-ico">
+                    <i class="fas fa-check"></i>
+                </div>
+
+                <span class="opcion-icono">🏠</span>
+
+                <div class="opcion-label">
+                    Vivienda
+                </div>
+
+            </div>
+
+            <div class="opcion-btn" onclick="selOpcion(this,'objetivo','inversion')">
+
+                <div class="check-ico">
+                    <i class="fas fa-check"></i>
+                </div>
+
+                <span class="opcion-icono">📈</span>
+
+                <div class="opcion-label">
+                    Invertir
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="error" id="error3">
+            Selecciona un objetivo
+        </div>
+
+        <button class="btn-siguiente" onclick="ir(4)">
+            Finalizar
+            <span class="arr">
+                <i class="fas fa-arrow-right"></i>
+            </span>
+        </button>
+
+        <button class="btn-omitir" onclick="omitir()">
+            Omitir paso
+        </button>
+
+    </div>
+
+    <!-- PASO 4 -->
+
+    <div class="paso" id="paso4">
+
+        <div class="paso-icono">🎉</div>
+
+        <div class="paso-titulo" id="tituloFinal">
+            ¡Todo listo!
+        </div>
+
+        <div class="paso-desc">
+            Tu perfil financiero ha sido configurado correctamente.
+        </div>
+
+        <div class="resumen-card">
+
+            <div class="resumen-titulo">
+                <i class="fas fa-check-circle"></i>
+                Tu perfil incluye
+            </div>
+
+            <div class="resumen-fila">
+                <span class="resumen-key">👤 Perfil</span>
+                <span class="resumen-val" id="res-perfil">—</span>
+            </div>
+
+            <div class="resumen-fila">
+                <span class="resumen-key">💰 Ingreso</span>
+                <span class="resumen-val" id="res-ingreso">—</span>
+            </div>
+
+            <div class="resumen-fila">
+                <span class="resumen-key">🎯 Meta</span>
+                <span class="resumen-val" id="res-meta">—</span>
+            </div>
+
+            <div class="resumen-fila">
+                <span class="resumen-key">🏆 Objetivo</span>
+                <span class="resumen-val" id="res-objetivo">—</span>
+            </div>
+
+        </div>
+
+        <button class="btn-siguiente" id="btnFinalizar" onclick="finalizar()">
+
+            <i class="fas fa-rocket"></i>
+
+            Ir a mi Dashboard
+
+            <span class="arr">
+                <i class="fas fa-arrow-right"></i>
+            </span>
+
+        </button>
+
+    </div>
+
+</div>
+
+<script>
+
+/* SESION */
+
+const token = localStorage.getItem('token');
+
+const usuario = JSON.parse(
+    localStorage.getItem('usuario') || '{}'
+);
+
+if(!token){
+    window.location.href = 'login.html';
+}
+
+/* PERSONALIZAR */
+
+const nombre = (usuario.nombre || '').split(' ')[0];
+
+if(nombre){
+    document.getElementById('tituloFinal').textContent =
+    `¡Listo, ${nombre}! 🎉`;
+}
+
+/* ESTADO */
+
+let datos = {
+
+    perfil:'',
+    ingreso_mensual:0,
+    meta_ahorro:0,
+    objetivo:''
+
+};
+
+const draft = localStorage.getItem('finanbot_onboarding');
+
+if(draft){
+
+    datos = JSON.parse(draft);
+
+}
+
+let pasoActual = 1;
+
+const PERFILES = {
+
+    estudiante:'🎓 Estudiante',
+    empleado:'💼 Empleado',
+    independiente:'🚀 Independiente',
+    emprendedor:'💡 Emprendedor'
+
+};
+
+const OBJETIVOS = {
+
+    emergencia:'🚨 Emergencia',
+    viaje:'✈️ Viajes',
+    vivienda:'🏠 Vivienda',
+    inversion:'📈 Inversión'
+
+};
+
+/* AUTOGUARDADO */
+
+function guardarDraft(){
+
+    localStorage.setItem(
+        'finanbot_onboarding',
+        JSON.stringify(datos)
+    );
+}
+
+/* PROGRESS */
+
+function actualizarProgreso(paso){
+
+    const porcentaje = (paso / 4) * 100;
+
+    document.getElementById('progressFill').style.width =
+    porcentaje + '%';
+
+    document.getElementById('pasoActualTxt').textContent =
+    paso;
+}
+
+/* OPCIONES */
+
+function selOpcion(el,tipo,valor){
+
+    el.closest('.opciones-grid')
+    .querySelectorAll('.opcion-btn')
+    .forEach(btn => btn.classList.remove('seleccionado'));
+
+    el.classList.add('seleccionado');
+
+    datos[tipo] = valor;
+
+    guardarDraft();
+}
+
+/* ERROR */
+
+function mostrarError(id){
+
+    document.getElementById(id)
+    .classList.add('visible');
+}
+
+function ocultarErrores(){
+
+    document
+    .querySelectorAll('.error')
+    .forEach(e => e.classList.remove('visible'));
+}
+
+/* IR PASO */
+
+function ir(paso){
+
+    ocultarErrores();
+
+    /* VALIDACIONES */
+
+    if(paso === 2){
+
+        if(!datos.perfil){
+
+            mostrarError('error1');
+            return;
+        }
+    }
+
+    if(paso === 3){
+
+        const ingreso = parseFloat(
+            document.getElementById('ingresoMensual').value
+        );
+
+        if(!ingreso || ingreso <= 0){
+
+            mostrarError('error2');
+            return;
         }
 
-        // ── ACTUALIZAR STEPPER ────────────────────────
-        function actualizarStepper(paso) {
-            for (let i = 1; i <= 4; i++) {
-                const c = document.getElementById('sc' + i);
-                c.classList.remove('activo','hecho');
-                if (i < paso)       { c.classList.add('hecho'); c.innerHTML = '<i class="fas fa-check" style="font-size:10px"></i>'; }
-                else if (i === paso) { c.classList.add('activo'); c.textContent = i; }
-                else                 { c.textContent = i; }
-            }
-            for (let i = 1; i <= 3; i++) {
-                document.getElementById('sl' + i).classList.toggle('activa', i < paso);
-            }
+        datos.ingreso_mensual = ingreso;
+    }
+
+    if(paso === 4){
+
+        const meta = parseFloat(
+            document.getElementById('metaAhorro').value
+        ) || 0;
+
+        datos.meta_ahorro = meta;
+
+        if(!datos.objetivo){
+
+            mostrarError('error3');
+            return;
         }
 
-        // ── IR A PASO ─────────────────────────────────
-        function ir(paso) {
-            // Guardar datos del paso que termina
-            if (pasoActual === 2) datos.ingreso_mensual = parseFloat(document.getElementById('ingresoMensual').value) || 0;
-            if (pasoActual === 3) datos.meta_ahorro     = parseFloat(document.getElementById('metaAhorro').value)    || 0;
+        document.getElementById('res-perfil').textContent =
+        PERFILES[datos.perfil] || '—';
 
-            // Si llegamos al paso 4, armar resumen y confeti
-            if (paso === 4) {
-                document.getElementById('res-perfil').textContent   = PERFILES[datos.perfil]   || 'No especificado';
-                document.getElementById('res-ingreso').textContent  = datos.ingreso_mensual > 0 ? '$' + datos.ingreso_mensual.toLocaleString('es-CO') : 'No especificado';
-                document.getElementById('res-meta').textContent     = datos.meta_ahorro > 0    ? '$' + datos.meta_ahorro.toLocaleString('es-CO') + '/mes' : 'No especificado';
-                document.getElementById('res-objetivo').textContent = OBJETIVOS[datos.objetivo] || 'No especificado';
-                setTimeout(confeti, 300);
+        document.getElementById('res-ingreso').textContent =
+        '$' + datos.ingreso_mensual.toLocaleString('es-CO');
+
+        document.getElementById('res-meta').textContent =
+        '$' + datos.meta_ahorro.toLocaleString('es-CO');
+
+        document.getElementById('res-objetivo').textContent =
+        OBJETIVOS[datos.objetivo];
+
+        setTimeout(confeti,300);
+    }
+
+    document
+    .querySelectorAll('.paso')
+    .forEach(p => p.classList.remove('visible'));
+
+    document
+    .getElementById('paso' + paso)
+    .classList.add('visible');
+
+    pasoActual = paso;
+
+    actualizarProgreso(paso);
+
+    guardarDraft();
+
+    document
+    .querySelector('.card-onboarding')
+    .scrollIntoView({
+        behavior:'smooth',
+        block:'start'
+    });
+}
+
+/* CONFETI */
+
+function confeti(){
+
+    const colors = [
+
+        '#a855f7',
+        '#22d3ee',
+        '#4ade80',
+        '#fbbf24',
+        '#f472b6',
+        '#c026d3'
+
+    ];
+
+    const card = document.querySelector('.card-onboarding');
+
+    for(let i=0;i<30;i++){
+
+        const c = document.createElement('div');
+
+        c.className = 'confeti';
+
+        c.style.cssText = `
+
+            left:${Math.random()*100}%;
+
+            background:${colors[Math.floor(Math.random()*colors.length)]};
+
+            animation-duration:${1.5+Math.random()*2}s;
+
+            animation-delay:${Math.random()*.5}s;
+
+            width:${5+Math.random()*7}px;
+
+            height:${5+Math.random()*7}px;
+
+            border-radius:${Math.random()>.5?'50%':'2px'};
+
+        `;
+
+        card.appendChild(c);
+
+        setTimeout(() => c.remove(),3500);
+    }
+}
+
+/* FINALIZAR */
+
+async function finalizar(){
+
+    const btn = document.getElementById('btnFinalizar');
+
+    btn.disabled = true;
+
+    btn.innerHTML = `
+        <span class="spinner"></span>
+        Preparando tu dashboard...
+    `;
+
+    try{
+
+        await fetch(
+            'http://127.0.0.1:5000/api/perfil/',
+            {
+                method:'PUT',
+
+                headers:{
+                    'Content-Type':'application/json',
+                    'Authorization':'Bearer ' + token
+                },
+
+                body:JSON.stringify({
+
+                    ingreso_mensual:datos.ingreso_mensual,
+                    meta_ahorro:datos.meta_ahorro
+
+                })
             }
+        );
 
-            document.querySelectorAll('.paso').forEach(p => p.classList.remove('visible'));
-            document.getElementById('paso' + paso).classList.add('visible');
-            actualizarStepper(paso);
-            pasoActual = paso;
+        if(datos.objetivo && datos.meta_ahorro > 0){
 
-            // Scroll suave al inicio de la card
-            document.querySelector('.card-onboarding').scrollIntoView({ behavior:'smooth', block:'start' });
-        }
+            await fetch(
+                'http://127.0.0.1:5000/api/metas/',
+                {
+                    method:'POST',
 
-        // ── CONFETI ───────────────────────────────────
-        function confeti() {
-            const colors = ['#a855f7','#22d3ee','#4ade80','#fbbf24','#f472b6','#c026d3'];
-            const card   = document.querySelector('.card-onboarding');
-            for (let i = 0; i < 30; i++) {
-                const c = document.createElement('div');
-                c.className = 'confeti';
-                c.style.cssText = `
-                    left:${Math.random()*100}%;
-                    background:${colors[Math.floor(Math.random()*colors.length)]};
-                    animation-duration:${1.5+Math.random()*2}s;
-                    animation-delay:${Math.random()*.5}s;
-                    width:${5+Math.random()*7}px;
-                    height:${5+Math.random()*7}px;
-                    border-radius:${Math.random()>.5?'50%':'2px'};
-                `;
-                card.appendChild(c);
-                setTimeout(() => c.remove(), 3500);
-            }
-        }
+                    headers:{
+                        'Content-Type':'application/json',
+                        'Authorization':'Bearer ' + token
+                    },
 
-        // ── FINALIZAR ─────────────────────────────────
-        async function finalizar() {
-            const btn = document.getElementById('btnFinalizar');
-            btn.disabled = true;
-            btn.innerHTML = '<span class="spinner"></span> Guardando...';
+                    body:JSON.stringify({
 
-            try {
-                // Guardar ingreso y meta en el perfil
-                await fetch('http://127.0.0.1:5000/api/perfil/', {
-                    method: 'PUT',
-                    headers: { 'Content-Type':'application/json', 'Authorization':'Bearer '+token },
-                    body: JSON.stringify({ ingreso_mensual: datos.ingreso_mensual, meta_ahorro: datos.meta_ahorro })
-                });
+                        nombre:OBJETIVOS[datos.objetivo],
 
-                // Crear meta inicial si eligió objetivo
-                if (datos.objetivo && datos.meta_ahorro > 0) {
-                    await fetch('http://127.0.0.1:5000/api/metas/', {
-                        method: 'POST',
-                        headers: { 'Content-Type':'application/json', 'Authorization':'Bearer '+token },
-                        body: JSON.stringify({
-                            nombre:         OBJETIVOS[datos.objetivo],
-                            monto_objetivo: datos.meta_ahorro * 6,
-                            monto_actual:   0
-                        })
-                    });
+                        monto_objetivo:
+                        datos.meta_ahorro * 6,
+
+                        monto_actual:0
+
+                    })
                 }
-            } catch (err) {
-                console.warn('No se pudo guardar en el servidor:', err);
-            }
-
-            localStorage.setItem('onboarding_completado', 'true');
-            window.location.href = 'dashboard.html';
+            );
         }
 
-        // ── OMITIR ────────────────────────────────────
-        function omitir() {
-            localStorage.setItem('onboarding_completado', 'true');
-            window.location.href = 'dashboard.html';
-        }
-    </script>
+    }catch(err){
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+        console.warn(err);
+    }
+
+    localStorage.removeItem('finanbot_onboarding');
+
+    localStorage.setItem(
+        'onboarding_completado',
+        'true'
+    );
+
+    setTimeout(() => {
+
+        window.location.href = 'dashboard.html';
+
+    },1200);
+}
+
+/* OMITIR */
+
+function omitir(){
+
+    localStorage.setItem(
+        'onboarding_completado',
+        'true'
+    );
+
+    window.location.href = 'dashboard.html';
+}
+
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
 </body>
 </html>

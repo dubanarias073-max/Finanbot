@@ -6,10 +6,10 @@
     <title>FinanBot - Aprende</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
-        body{font-family:'Segoe UI',sans-serif;min-height:100vh;color:white;transition:background 0.4s;overflow-x:hidden}
+        body{font-family:'Segoe UI',sans-serif;min-height:100vh;color:white;transition:background .4s;overflow-x:hidden}
+
         body.tema-oscuro{
             background:radial-gradient(ellipse at 20% 0%,#1e0a3c 0%,#0f0f2d 40%,#000010 100%);
             --card-bg:rgba(255,255,255,0.04);--card-border:rgba(168,85,247,0.15);
@@ -24,74 +24,112 @@
             --input-bg:rgba(255,255,255,0.06);--input-border:rgba(96,165,250,0.35);
             --muted:#60a5fa;--secondary:#93c5fd;--sidebar-bg:rgba(8,15,30,0.95);
             --sidebar-brd:rgba(96,165,250,0.2);--accent:#60a5fa;--accent2:#34d399}
- 
-        /* SIDEBAR */
+
+        /* ── SIDEBAR ───────────────────────────────────── */
         .sidebar{position:fixed;top:0;left:0;width:240px;height:100vh;background:var(--sidebar-bg);border-right:1px solid var(--sidebar-brd);backdrop-filter:blur(24px);z-index:100;display:flex;flex-direction:column;padding:25px 0}
         .sidebar-logo{display:flex;align-items:center;gap:12px;padding:0 20px 25px;border-bottom:1px solid rgba(168,85,247,0.15);margin-bottom:20px}
         .sidebar-logo img{width:40px;height:40px;border-radius:50%;box-shadow:0 0 15px rgba(168,85,247,0.5)}
-        .sidebar-logo span{font-family:'Segoe UI',sans-serif;font-size:20px;font-weight:800;background:linear-gradient(90deg,#c026d3,#22d3ee);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+        .sidebar-logo span{font-size:20px;font-weight:800;background:linear-gradient(90deg,#c026d3,#22d3ee);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
         .nav-item{display:flex;align-items:center;gap:12px;padding:12px 20px;color:var(--secondary);text-decoration:none;font-size:14px;font-weight:500;transition:all .3s;border-left:3px solid transparent;margin:2px 0}
         .nav-item:hover,.nav-item.active{color:white;background:rgba(168,85,247,0.08);border-left-color:var(--accent)}
         .nav-item i{width:18px;text-align:center;font-size:15px}
         .nav-item.active i{color:var(--accent)}
         .sidebar-bottom{margin-top:auto;padding:20px;border-top:1px solid rgba(168,85,247,0.15)}
-        .btn-cerrar{display:flex;align-items:center;gap:10px;color:#ef4444;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:10px;padding:10px 15px;font-size:13px;cursor:pointer;transition:all .3s;width:100%;text-decoration:none}
-        .btn-cerrar:hover{background:rgba(239,68,68,0.15);color:#ef4444}
- 
-        /* MAIN */
+        .btn-cerrar-ses{display:flex;align-items:center;gap:10px;color:#ef4444;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:10px;padding:10px 15px;font-size:13px;cursor:pointer;transition:all .3s;width:100%;text-decoration:none}
+        .btn-cerrar-ses:hover{background:rgba(239,68,68,0.15);color:#ef4444}
+
+        /* ── MAIN ──────────────────────────────────────── */
         .main{margin-left:240px;padding:32px 36px;min-height:100vh}
- 
-        /* HERO */
-        .hero{margin-bottom:32px}
+
+        /* ── HERO ──────────────────────────────────────── */
+        .hero{margin-bottom:30px}
         .hero-tag{display:inline-flex;align-items:center;gap:7px;background:rgba(168,85,247,0.1);border:1px solid rgba(168,85,247,0.25);border-radius:50px;padding:5px 14px;font-size:11px;font-weight:700;color:#c4b5fd;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:14px}
-        .hero h1{font-family:'Segoe UI',sans-serif;font-size:34px;font-weight:800;letter-spacing:-1px;line-height:1.15;margin-bottom:10px}
+        .hero h1{font-size:34px;font-weight:800;letter-spacing:-1px;line-height:1.15;margin-bottom:10px}
         .hero h1 .grad{background:linear-gradient(90deg,#c026d3 0%,#a855f7 40%,#22d3ee 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
         .hero p{color:var(--secondary);font-size:15px;line-height:1.6;max-width:560px}
- 
-        /* BUSCADOR */
+
+        /* ── BUSCADOR TIPO GOOGLE ──────────────────────── */
         .buscador-wrap{background:var(--card-bg);border:1px solid var(--card-border);border-radius:22px;padding:26px 28px;margin-bottom:28px;position:relative;overflow:hidden}
         .buscador-wrap::before{content:'';position:absolute;top:0;left:0;width:100%;height:2px;background:linear-gradient(90deg,#c026d3,#a855f7,#22d3ee)}
         .buscador-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
         .buscador-label i{color:var(--accent)}
-        .buscador-input-row{display:flex;gap:10px;margin-bottom:14px}
+        .buscador-row{display:flex;gap:10px;margin-bottom:16px}
         .buscador-input-wrap{position:relative;flex:1}
-        .buscador-input-wrap i{position:absolute;left:18px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:14px;pointer-events:none}
-        .buscador-input{width:100%;background:var(--input-bg);border:1px solid var(--input-border);border-radius:14px;color:white;padding:14px 20px 14px 48px;font-size:15px;outline:none;transition:all .3s;font-family:'Segoe UI',sans-serif}
+        .buscador-input-wrap .ico{position:absolute;left:18px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:14px;pointer-events:none}
+        .buscador-input{width:100%;background:var(--input-bg);border:1.5px solid var(--input-border);border-radius:14px;color:white;padding:14px 20px 14px 48px;font-size:15px;outline:none;transition:all .3s;font-family:'Segoe UI',sans-serif}
         .buscador-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(168,85,247,0.12)}
         .buscador-input::placeholder{color:var(--muted)}
-        .btn-buscar{background:linear-gradient(135deg,#c026d3,#a855f7);border:none;border-radius:14px;color:white;padding:14px 24px;font-size:14px;font-weight:700;cursor:pointer;transition:all .3s;font-family:'Segoe UI',sans-serif;box-shadow:0 4px 20px rgba(192,38,211,0.3);display:flex;align-items:center;gap:8px;white-space:nowrap}
+        .btn-buscar{background:linear-gradient(135deg,#c026d3,#a855f7);border:none;border-radius:14px;color:white;padding:14px 24px;font-size:14px;font-weight:700;cursor:pointer;transition:all .3s;box-shadow:0 4px 20px rgba(192,38,211,0.3);display:flex;align-items:center;gap:8px;white-space:nowrap;font-family:'Segoe UI',sans-serif}
         .btn-buscar:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(192,38,211,0.5)}
         .sugs-label{font-size:11px;color:var(--muted);margin-bottom:8px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
         .sugerencias-rapidas{display:flex;flex-wrap:wrap;gap:7px}
         .sug-btn{background:var(--item-bg);border:1px solid var(--item-border);color:var(--secondary);border-radius:50px;padding:6px 14px;font-size:12px;font-weight:500;cursor:pointer;transition:all .25s}
         .sug-btn:hover{background:rgba(168,85,247,0.12);border-color:var(--accent);color:white;transform:translateY(-1px)}
- 
-        /* RESULTADO */
-        .resultado-busqueda{background:var(--card-bg);border:1px solid rgba(168,85,247,0.3);border-radius:20px;padding:26px;margin-bottom:28px;display:none;animation:fadeUp .3s ease}
-        .resultado-busqueda.visible{display:block}
+
+        /* ── PANEL RESULTADOS TIPO GOOGLE ──────────────── */
+        .panel-resultados{display:none;margin-bottom:28px;animation:fadeUp .3s ease}
+        .panel-resultados.visible{display:block}
         @keyframes fadeUp{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
-        .resultado-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px}
-        .resultado-pregunta{font-size:11px;color:var(--accent);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px}
-        .resultado-titulo{font-size:20px;font-weight:800;color:white;font-family:'Segoe UI',sans-serif}
-        .btn-cerrar-res{background:var(--item-bg);border:1px solid var(--item-border);color:var(--secondary);border-radius:10px;padding:7px 12px;font-size:12px;cursor:pointer;transition:all .3s;flex-shrink:0}
+
+        /* Artículo destacado (primer resultado) */
+        .res-featured{background:var(--card-bg);border:1px solid rgba(168,85,247,0.35);border-radius:22px;padding:0;overflow:hidden;margin-bottom:20px}
+        .res-featured-top{background:linear-gradient(135deg,rgba(168,85,247,0.12),rgba(192,38,211,0.06));padding:22px 26px 18px;border-bottom:1px solid rgba(168,85,247,0.15);display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+        .res-featured-meta{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+        .res-featured-emoji{font-size:28px}
+        .res-featured-cat{font-size:10px;color:var(--accent);font-weight:800;text-transform:uppercase;letter-spacing:1.5px}
+        .res-featured-nivel{border-radius:50px;padding:3px 10px;font-size:10px;font-weight:700;text-transform:uppercase}
+        .nivel-basico{background:rgba(74,222,128,0.12);color:#4ade80;border:1px solid rgba(74,222,128,0.2)}
+        .nivel-intermedio{background:rgba(251,191,36,0.12);color:#fbbf24;border:1px solid rgba(251,191,36,0.2)}
+        .nivel-avanzado{background:rgba(239,68,68,0.12);color:#f87171;border:1px solid rgba(239,68,68,0.2)}
+        .res-featured-titulo{font-size:22px;font-weight:800;color:white;line-height:1.25;margin-bottom:6px}
+        .res-featured-resumen{font-size:14px;color:var(--secondary);line-height:1.65}
+        .btn-ver-completo{background:linear-gradient(135deg,rgba(168,85,247,0.2),rgba(192,38,211,0.15));border:1px solid rgba(168,85,247,0.35);border-radius:12px;color:#c4b5fd;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;transition:all .3s;white-space:nowrap;flex-shrink:0;display:flex;align-items:center;gap:8px}
+        .btn-ver-completo:hover{background:rgba(168,85,247,0.3);color:white;transform:translateY(-2px)}
+
+        /* Secciones del artículo destacado (expandible) */
+        .res-featured-body{padding:22px 26px;font-size:14px;color:#b0b8d0;line-height:1.85;display:none}
+        .res-featured-body.visible{display:block}
+        .res-featured-body h4{color:var(--accent);font-size:12px;font-weight:800;margin:18px 0 8px;text-transform:uppercase;letter-spacing:.8px}
+        .res-featured-body p{margin-bottom:11px}
+        .res-hl{background:rgba(168,85,247,0.07);border-left:3px solid var(--accent);padding:12px 16px;border-radius:0 12px 12px 0;margin:14px 0;color:white;font-size:13px;line-height:1.6}
+        .res-ej{background:rgba(34,211,238,0.05);border:1px solid rgba(34,211,238,0.18);border-radius:14px;padding:14px 18px;margin:14px 0;color:#67e8f9;font-size:13px;line-height:1.75;white-space:pre-line}
+        .res-lista{padding-left:20px;margin-bottom:10px}
+        .res-lista li{margin-bottom:6px}
+
+        /* Otros artículos encontrados */
+        .res-otros-titulo{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+        .res-otros-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
+        .res-otro-card{background:var(--item-bg);border:1px solid var(--item-border);border-radius:16px;padding:16px;cursor:pointer;transition:all .3s;display:flex;align-items:center;gap:12px}
+        .res-otro-card:hover{background:rgba(168,85,247,0.08);border-color:rgba(168,85,247,0.3);transform:translateY(-2px)}
+        .res-otro-emoji{font-size:22px;flex-shrink:0}
+        .res-otro-titulo{font-size:13px;font-weight:700;color:white;margin-bottom:3px;line-height:1.3}
+        .res-otro-cat{font-size:11px;color:var(--muted)}
+
+        /* Glosario en resultados */
+        .res-glosario-titulo{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+        .res-glosario-chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}
+        .res-glosario-chip{background:rgba(34,211,238,0.05);border:1px solid rgba(34,211,238,0.2);border-radius:12px;padding:8px 14px;cursor:pointer;transition:all .25s}
+        .res-glosario-chip:hover{background:rgba(34,211,238,0.1);border-color:rgba(34,211,238,0.4)}
+        .res-glosario-chip .gch-nombre{font-size:13px;font-weight:700;color:#67e8f9;margin-bottom:3px}
+        .res-glosario-chip .gch-def{font-size:12px;color:var(--secondary);line-height:1.5}
+
+        /* Sugerencias de búsqueda */
+        .res-sugs-titulo{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+        .res-sugs-chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:8px}
+
+        /* Sin resultados */
+        .res-vacio{text-align:center;padding:40px;color:var(--muted)}
+        .res-vacio i{font-size:48px;opacity:.12;display:block;margin-bottom:16px}
+
+        /* Cerrar panel */
+        .res-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+        .res-query-label{font-size:13px;color:var(--secondary)}
+        .res-query-label strong{color:white}
+        .res-query-label .cnt{color:var(--accent)}
+        .btn-cerrar-res{background:var(--item-bg);border:1px solid var(--item-border);color:var(--secondary);border-radius:10px;padding:7px 14px;font-size:12px;cursor:pointer;transition:all .3s}
         .btn-cerrar-res:hover{background:rgba(239,68,68,0.1);color:#ef4444;border-color:rgba(239,68,68,0.3)}
-        .resultado-body{font-size:14px;color:var(--secondary);line-height:1.85}
-        .resultado-body h4{color:var(--accent);font-size:13px;font-weight:700;margin:16px 0 8px;text-transform:uppercase;letter-spacing:.5px}
-        .resultado-body p{margin-bottom:12px}
-        .resultado-body ul{padding-left:20px;margin-bottom:12px}
-        .resultado-body li{margin-bottom:5px}
-        .res-highlight{background:rgba(168,85,247,0.07);border-left:3px solid var(--accent);padding:12px 16px;border-radius:0 12px 12px 0;margin:14px 0;color:white;font-size:13px}
-        .res-ejemplo{background:rgba(34,211,238,0.06);border:1px solid rgba(34,211,238,0.18);border-radius:14px;padding:14px 18px;margin:14px 0;color:#67e8f9;font-size:13px;line-height:1.7;white-space:pre-line}
-        .res-tags{display:flex;flex-wrap:wrap;gap:7px;margin-top:16px}
-        .res-tag{background:rgba(168,85,247,0.08);border:1px solid rgba(168,85,247,0.18);color:#c4b5fd;border-radius:50px;padding:4px 13px;font-size:12px;cursor:pointer;transition:all .25s}
-        .res-tag:hover{background:rgba(168,85,247,0.2);border-color:var(--accent);color:white}
-        .arts-relacionados{margin-top:18px}
-        .arts-relacionados-titulo{font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px}
-        .arts-chips{display:flex;flex-wrap:wrap;gap:8px}
-        .art-chip{background:var(--item-bg);border:1px solid var(--item-border);border-radius:12px;padding:8px 14px;cursor:pointer;transition:all .25s;display:flex;align-items:center;gap:8px;font-size:13px;color:var(--secondary)}
-        .art-chip:hover{background:rgba(168,85,247,0.1);border-color:var(--accent);color:white}
- 
-        /* TABS */
+
+        /* ── TABS ──────────────────────────────────────── */
         .tabs-nav{display:flex;gap:3px;margin-bottom:28px;background:var(--item-bg);border:1px solid var(--item-border);border-radius:16px;padding:5px;width:fit-content}
         .tab-btn{background:none;border:none;border-radius:12px;color:var(--secondary);padding:10px 22px;font-size:13px;font-weight:600;cursor:pointer;transition:all .25s;display:flex;align-items:center;gap:8px;font-family:'Segoe UI',sans-serif}
         .tab-btn:hover{color:white;background:rgba(168,85,247,0.08)}
@@ -99,250 +137,315 @@
         .tab-btn.activo i{color:var(--accent)}
         .seccion{display:none}
         .seccion.visible{display:block;animation:fadeUp .3s ease}
- 
-        /* ARTÍCULOS */
+
+        /* ── ARTÍCULOS ─────────────────────────────────── */
+        .articulos-filtros{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}
+        .nivel-chip{background:var(--item-bg);border:1px solid var(--item-border);color:var(--secondary);border-radius:50px;padding:6px 16px;font-size:12px;font-weight:600;cursor:pointer;transition:all .25s}
+        .nivel-chip:hover,.nivel-chip.activo{background:rgba(168,85,247,0.15);border-color:var(--accent);color:white}
         .articulos-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:28px}
         .art-card{background:var(--card-bg);border:1px solid var(--card-border);border-radius:20px;padding:24px;cursor:pointer;transition:all .35s;position:relative;overflow:hidden;display:flex;flex-direction:column}
         .art-card::after{content:'';position:absolute;inset:0;border-radius:20px;background:radial-gradient(circle at 50% 0%,rgba(168,85,247,0.08),transparent 70%);opacity:0;transition:opacity .3s}
         .art-card:hover{transform:translateY(-6px);border-color:rgba(168,85,247,0.35);box-shadow:0 16px 48px rgba(0,0,0,0.35)}
         .art-card:hover::after{opacity:1}
         .art-card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px}
-        .art-emoji-wrap{width:54px;height:54px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:28px;background:rgba(168,85,247,0.1);transition:transform .35s cubic-bezier(0.34,1.56,0.64,1)}
+        .art-emoji-wrap{width:54px;height:54px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:28px;background:rgba(168,85,247,0.1);transition:transform .35s cubic-bezier(.34,1.56,.64,1)}
         .art-card:hover .art-emoji-wrap{transform:scale(1.15) rotate(-5deg)}
-        .art-nivel{border-radius:50px;padding:4px 12px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px}
-        .nivel-basico{background:rgba(74,222,128,0.12);color:#4ade80;border:1px solid rgba(74,222,128,0.2)}
-        .nivel-intermedio{background:rgba(251,191,36,0.12);color:#fbbf24;border:1px solid rgba(251,191,36,0.2)}
-        .nivel-avanzado{background:rgba(239,68,68,0.12);color:#f87171;border:1px solid rgba(239,68,68,0.2)}
         .art-cat{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--accent);font-weight:700;margin-bottom:7px}
-        .art-titulo{font-size:15px;font-weight:700;color:white;margin-bottom:9px;line-height:1.4;font-family:'Segoe UI',sans-serif;flex:1}
+        .art-titulo{font-size:15px;font-weight:700;color:white;margin-bottom:9px;line-height:1.4;flex:1}
         .art-desc{font-size:13px;color:var(--secondary);line-height:1.6;margin-bottom:16px}
         .art-footer{display:flex;align-items:center;justify-content:space-between}
         .art-meta{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:8px}
         .art-arrow{width:32px;height:32px;border-radius:50%;background:rgba(168,85,247,0.1);border:1px solid rgba(168,85,247,0.2);display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:12px;transition:all .3s}
         .art-card:hover .art-arrow{background:var(--accent);color:white;transform:translateX(3px)}
- 
-        /* MODAL */
+
+        /* ── MODAL ARTÍCULO ────────────────────────────── */
         .modal-art{position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:9999;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(8px)}
         .modal-art.visible{display:flex}
-        .modal-art-content{background:linear-gradient(145deg,#12103a,#0d0d2a);border:1px solid rgba(168,85,247,0.3);border-radius:26px;padding:38px;width:100%;max-width:740px;max-height:88vh;overflow-y:auto;position:relative;box-shadow:0 30px 80px rgba(0,0,0,0.7);animation:modalIn .35s cubic-bezier(0.34,1.56,0.64,1)}
-        body.tema-azul .modal-art-content{background:linear-gradient(145deg,#060e1e,#0a1628)}
-        @keyframes modalIn{from{opacity:0;transform:scale(0.9) translateY(20px)}to{opacity:1;transform:scale(1) translateY(0)}}
-        .modal-art-content::-webkit-scrollbar{width:4px}
-        .modal-art-content::-webkit-scrollbar-thumb{background:rgba(168,85,247,0.4);border-radius:4px}
-        .modal-close-btn{position:absolute;top:20px;right:22px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);color:var(--secondary);width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px;transition:all .3s}
-        .modal-close-btn:hover{background:rgba(239,68,68,0.2);color:#ef4444}
-        .modal-art-cat{font-size:11px;color:var(--accent);font-weight:700;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px}
-        .modal-art-emoji{font-size:48px;display:block;margin-bottom:10px}
-        .modal-art-titulo{font-size:24px;font-weight:800;color:white;line-height:1.25;font-family:'Segoe UI',sans-serif;margin-bottom:24px}
-        .modal-art-body{font-size:14px;color:#b0b8d0;line-height:1.85}
-        .modal-art-body h3{color:var(--accent);font-size:13px;font-weight:800;margin:22px 0 10px;text-transform:uppercase;letter-spacing:1px}
-        .modal-art-body p{margin-bottom:13px}
-        .modal-art-body ul{padding-left:20px;margin-bottom:12px}
-        .modal-art-body li{margin-bottom:8px;line-height:1.6}
-        .modal-art-body .hl{background:rgba(168,85,247,0.08);border-left:4px solid var(--accent);padding:14px 18px;border-radius:0 14px 14px 0;margin:16px 0;color:white;font-size:13px;line-height:1.6}
-        .modal-art-body .ej{background:rgba(34,211,238,0.06);border:1px solid rgba(34,211,238,0.18);border-radius:14px;padding:15px 18px;margin:16px 0;color:#67e8f9;font-size:13px;line-height:1.75;white-space:pre-line}
- 
-        /* CALCULADORAS */
+        .modal-content{background:linear-gradient(145deg,#12103a,#0d0d2a);border:1px solid rgba(168,85,247,0.3);border-radius:26px;padding:38px;width:100%;max-width:780px;max-height:88vh;overflow-y:auto;position:relative;box-shadow:0 30px 80px rgba(0,0,0,0.7);animation:modalIn .35s cubic-bezier(.34,1.56,.64,1)}
+        body.tema-azul .modal-content{background:linear-gradient(145deg,#060e1e,#0a1628)}
+        @keyframes modalIn{from{opacity:0;transform:scale(.9) translateY(20px)}to{opacity:1;transform:scale(1) translateY(0)}}
+        .modal-content::-webkit-scrollbar{width:4px}
+        .modal-content::-webkit-scrollbar-thumb{background:rgba(168,85,247,0.4);border-radius:4px}
+        .modal-content::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#c026d3,#a855f7,#22d3ee,transparent);border-radius:26px 26px 0 0}
+        .modal-close{position:absolute;top:20px;right:22px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);color:var(--secondary);width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px;transition:all .3s}
+        .modal-close:hover{background:rgba(239,68,68,0.2);color:#ef4444}
+        .modal-cat{font-size:11px;color:var(--accent);font-weight:700;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px}
+        .modal-emoji{font-size:48px;display:block;margin-bottom:10px}
+        .modal-titulo{font-size:24px;font-weight:800;color:white;line-height:1.25;margin-bottom:6px}
+        .modal-resumen{font-size:14px;color:var(--secondary);line-height:1.65;margin-bottom:24px;padding-bottom:24px;border-bottom:1px solid rgba(168,85,247,0.1)}
+        .modal-body{font-size:14px;color:#b0b8d0;line-height:1.85}
+        .modal-body h3{color:var(--accent);font-size:12px;font-weight:800;margin:22px 0 10px;text-transform:uppercase;letter-spacing:.8px;display:flex;align-items:center;gap:8px}
+        .modal-body h3::after{content:'';flex:1;height:1px;background:rgba(168,85,247,0.15)}
+        .modal-body p{margin-bottom:13px}
+        .modal-body ul{padding-left:20px;margin-bottom:12px}
+        .modal-body li{margin-bottom:8px;line-height:1.6}
+        .modal-hl{background:rgba(168,85,247,0.08);border-left:4px solid var(--accent);padding:14px 18px;border-radius:0 14px 14px 0;margin:16px 0;color:white;font-size:13px;line-height:1.6}
+        .modal-ej{background:rgba(34,211,238,0.05);border:1px solid rgba(34,211,238,0.18);border-radius:14px;padding:16px 20px;margin:16px 0}
+        .modal-ej-titulo{font-size:11px;font-weight:700;color:#22d3ee;text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+        .modal-ej-titulo i{font-size:12px}
+        .modal-ej-body{color:#67e8f9;font-size:13px;line-height:1.75;white-space:pre-line}
+        .modal-consejo{background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.2);border-radius:14px;padding:14px 18px;margin:16px 0;color:#86efac;font-size:13px;line-height:1.6}
+        .modal-relacionados{margin-top:28px;padding-top:22px;border-top:1px solid rgba(168,85,247,0.1)}
+        .modal-rel-titulo{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
+        .modal-rel-chips{display:flex;flex-wrap:wrap;gap:8px}
+        .modal-rel-chip{background:var(--item-bg);border:1px solid var(--item-border);border-radius:12px;padding:9px 14px;cursor:pointer;transition:all .25s;display:flex;align-items:center;gap:9px}
+        .modal-rel-chip:hover{background:rgba(168,85,247,0.1);border-color:var(--accent);transform:translateY(-2px)}
+        .modal-rel-chip-emoji{font-size:18px}
+        .modal-rel-chip-titulo{font-size:13px;font-weight:600;color:white;line-height:1.3}
+        .modal-rel-chip-cat{font-size:11px;color:var(--muted)}
+
+        /* ── CALCULADORAS ──────────────────────────────── */
         .calcs-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px}
         .calc-card{background:var(--card-bg);border:1px solid var(--card-border);border-radius:20px;padding:26px;position:relative;overflow:hidden;transition:border-color .3s}
         .calc-card::before{content:'';position:absolute;top:0;left:0;width:100%;height:2px;background:linear-gradient(90deg,#c026d3,#a855f7,#22d3ee);opacity:0;transition:opacity .3s}
-        .calc-card:focus-within{border-color:rgba(168,85,247,0.3)}
         .calc-card:focus-within::before{opacity:1}
-        .calc-titulo{font-size:15px;font-weight:700;color:white;margin-bottom:20px;display:flex;align-items:center;gap:10px;font-family:'Segoe UI',sans-serif}
+        .calc-card:focus-within{border-color:rgba(168,85,247,0.3)}
+        .calc-titulo{font-size:15px;font-weight:700;color:white;margin-bottom:20px;display:flex;align-items:center;gap:10px}
         .calc-titulo-icon{width:38px;height:38px;border-radius:12px;background:rgba(168,85,247,0.1);border:1px solid rgba(168,85,247,0.2);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
-        .form-group{margin-bottom:14px}
+        .cg{margin-bottom:14px}
         .calc-label{font-size:11px;color:var(--secondary);margin-bottom:6px;display:block;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
         .calc-input{background:var(--input-bg);border:1px solid var(--item-border);border-radius:12px;color:white;padding:11px 15px;font-size:14px;width:100%;outline:none;transition:all .3s;font-family:'Segoe UI',sans-serif}
         .calc-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(168,85,247,0.1)}
         .calc-input::placeholder{color:var(--muted)}
         .btn-calc{background:linear-gradient(135deg,#c026d3,#a855f7);color:white;border:none;border-radius:12px;padding:12px;font-size:14px;font-weight:700;width:100%;cursor:pointer;transition:all .3s;box-shadow:0 4px 20px rgba(192,38,211,0.25);display:flex;align-items:center;justify-content:center;gap:8px;font-family:'Segoe UI',sans-serif;margin-top:4px}
         .btn-calc:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(192,38,211,0.45)}
-        .calc-resultado{background:rgba(168,85,247,0.06);border:1px solid rgba(168,85,247,0.18);border-radius:14px;padding:18px;margin-top:16px;display:none;animation:fadeUp .3s ease}
-        .calc-res-principal{font-size:26px;font-weight:800;color:#4ade80;margin-bottom:3px;font-family:'Space Mono',monospace}
-        .calc-res-label{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px}
+        .calc-res{background:rgba(168,85,247,0.06);border:1px solid rgba(168,85,247,0.18);border-radius:14px;padding:18px;margin-top:16px;display:none;animation:fadeUp .3s ease}
+        .calc-res-big{font-size:26px;font-weight:800;color:#4ade80;margin-bottom:3px;font-family:'Courier New',monospace}
+        .calc-res-lbl{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px}
         .calc-res-fila{display:flex;justify-content:space-between;font-size:13px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.05)}
         .calc-res-fila:last-child{border-bottom:none}
         .calc-res-fila span:first-child{color:var(--secondary)}
-        .calc-res-fila strong{font-family:'Space Mono',monospace;font-size:12px}
- 
-        /* GLOSARIO */
-        .glosario-header{display:grid;grid-template-columns:1fr auto;gap:16px;align-items:start;margin-bottom:20px}
-        .glosario-busqueda{position:relative}
-        .glosario-busqueda i{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:14px}
-        .glosario-search{width:100%;background:var(--input-bg);border:1px solid var(--input-border);border-radius:14px;color:white;padding:12px 14px 12px 42px;font-size:14px;outline:none;transition:all .3s;font-family:'Segoe UI',sans-serif}
+        .calc-res-fila strong{font-family:'Courier New',monospace;font-size:12px}
+
+        /* ── GLOSARIO ──────────────────────────────────── */
+        .glosario-hdr{display:flex;gap:16px;align-items:start;margin-bottom:20px}
+        .glosario-search-wrap{position:relative;flex:1}
+        .glosario-search-wrap i{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:14px}
+        .glosario-search{width:100%;background:var(--input-bg);border:1.5px solid var(--input-border);border-radius:14px;color:white;padding:12px 14px 12px 44px;font-size:14px;outline:none;transition:all .3s;font-family:'Segoe UI',sans-serif}
         .glosario-search:focus{border-color:var(--accent)}
         .glosario-search::placeholder{color:var(--muted)}
-        .glosario-stats{display:flex;gap:14px;align-items:center;padding:12px 18px;background:var(--item-bg);border:1px solid var(--item-border);border-radius:14px;white-space:nowrap}
-        .glosario-stat-num{font-size:20px;font-weight:800;color:var(--accent);font-family:'Space Mono',monospace}
+        .glosario-stat{display:flex;flex-direction:column;align-items:center;padding:12px 22px;background:var(--item-bg);border:1px solid var(--item-border);border-radius:14px;white-space:nowrap}
+        .glosario-stat-num{font-size:22px;font-weight:800;color:var(--accent);font-family:'Courier New',monospace}
         .glosario-stat-lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
         .glosario-letras{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:22px}
-        .letra-btn{background:var(--item-bg);border:1px solid var(--item-border);color:var(--secondary);border-radius:9px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;cursor:pointer;transition:all .25s;font-family:'Space Mono',monospace}
+        .letra-btn{background:var(--item-bg);border:1px solid var(--item-border);color:var(--secondary);border-radius:9px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;cursor:pointer;transition:all .25s;font-family:'Courier New',monospace}
         .letra-btn:hover,.letra-btn.activo{background:rgba(168,85,247,0.15);border-color:var(--accent);color:white}
         .glosario-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
         .termino-card{background:var(--item-bg);border:1px solid var(--item-border);border-radius:16px;padding:18px;transition:all .3s}
         .termino-card:hover{background:rgba(168,85,247,0.06);border-color:rgba(168,85,247,0.28);transform:translateY(-2px)}
-        .termino-nombre{font-size:14px;font-weight:800;color:var(--accent);margin-bottom:7px;font-family:'Segoe UI',sans-serif}
+        .termino-nombre{font-size:14px;font-weight:800;color:var(--accent);margin-bottom:7px}
         .termino-def{font-size:13px;color:var(--secondary);line-height:1.6}
         .termino-cat{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-top:9px;font-weight:600}
+
+        /* Spinner */
+        .spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.25);border-top-color:white;border-radius:50%;animation:spin .7s linear infinite}
+        @keyframes spin{to{transform:rotate(360deg)}}
     </style>
 </head>
 <body class="tema-oscuro">
- 
+
+    <!-- MODAL ARTÍCULO COMPLETO -->
+    <div class="modal-art" id="modalArt">
+        <div class="modal-content">
+            <button class="modal-close" onclick="cerrarModal()">✕</button>
+            <div class="modal-cat" id="modalCat"></div>
+            <span class="modal-emoji" id="modalEmoji"></span>
+            <div class="modal-titulo" id="modalTitulo"></div>
+            <div class="modal-resumen" id="modalResumen"></div>
+            <div class="modal-body" id="modalBody"></div>
+        </div>
+    </div>
+
+    <!-- SIDEBAR -->
     <div class="sidebar">
         <div class="sidebar-logo">
             <img src="../../images/logo.png" alt="FinanBot" onerror="this.style.display='none'">
             <span>FinanBot</span>
         </div>
-        <a href="dashboard.html"       class="nav-item"><i class="fas fa-home"></i>         Dashboard</a>
-        <a href="chat.html"            class="nav-item"><i class="fas fa-robot"></i>         Chat FinanBot</a>
-        <a href="finanzas.html"        class="nav-item"><i class="fas fa-wallet"></i>        Mis Finanzas</a>
-        <a href="recomendaciones.html" class="nav-item"><i class="fas fa-lightbulb"></i>     Recomendaciones</a>
-        <a href="simulador.html"       class="nav-item"><i class="fas fa-chart-line"></i>    Simulador</a>
+        <a href="dashboard.html"       class="nav-item"><i class="fas fa-home"></i>            Dashboard</a>
+        <a href="chat.html"            class="nav-item"><i class="fas fa-robot"></i>            Chat FinanBot</a>
+        <a href="finanzas.html"        class="nav-item"><i class="fas fa-wallet"></i>           Mis Finanzas</a>
+        <a href="recomendaciones.html" class="nav-item"><i class="fas fa-lightbulb"></i>        Recomendaciones</a>
+        <a href="simulador.html"       class="nav-item"><i class="fas fa-chart-line"></i>       Simulador</a>
         <a href="aprende.html"         class="nav-item active"><i class="fas fa-graduation-cap"></i>Aprende</a>
-        <a href="perfil.html"          class="nav-item"><i class="fas fa-user-circle"></i>   Mi Perfil</a>
+        <a href="perfil.html"          class="nav-item"><i class="fas fa-user-circle"></i>      Mi Perfil</a>
         <div class="sidebar-bottom">
-            <a href="../index.html" class="btn-cerrar" onclick="cerrarSesion()">
+            <a href="../index.html" class="btn-cerrar-ses" onclick="cerrarSesion()">
                 <i class="fas fa-sign-out-alt"></i> Cerrar sesión
             </a>
         </div>
     </div>
- 
-    <!-- MODAL -->
-    <div class="modal-art" id="modalArt">
-        <div class="modal-art-content">
-            <button class="modal-close-btn" onclick="cerrarModal()">✕</button>
-            <div class="modal-art-cat" id="modalCat"></div>
-            <span class="modal-art-emoji" id="modalEmoji"></span>
-            <div class="modal-art-titulo" id="modalTitulo"></div>
-            <div class="modal-art-body" id="modalBody"></div>
-        </div>
-    </div>
- 
+
     <div class="main">
+
+        <!-- HERO -->
         <div class="hero">
-            <div class="hero-tag"><i class="fas fa-graduation-cap"></i> Centro de aprendizaje</div>
-            <h1>Aprende a manejar<br><span class="grad">tu dinero</span></h1>
-            <p>Artículos, calculadoras y glosario financiero para tomar mejores decisiones con tu plata.</p>
+            <div class="hero-tag"><i class="fas fa-book-open"></i> Enciclopedia financiera</div>
+            <h1>Aprende sobre<br><span class="grad">finanzas personales</span></h1>
+            <p>Busca cualquier concepto financiero. Resultados inmediatos, explicaciones claras y sin letra pequeña.</p>
         </div>
- 
+
+        <!-- BUSCADOR TIPO GOOGLE -->
         <div class="buscador-wrap">
-            <div class="buscador-label"><i class="fas fa-search"></i> Busca cualquier concepto financiero</div>
-            <div class="buscador-input-row">
+            <div class="buscador-label"><i class="fas fa-search"></i> ¿Qué quieres aprender hoy?</div>
+            <div class="buscador-row">
                 <div class="buscador-input-wrap">
-                    <i class="fas fa-search"></i>
+                    <i class="fas fa-search ico"></i>
                     <input type="text" class="buscador-input" id="busquedaInput"
-                           placeholder="Ej: ¿Qué es el CDT? ¿Cómo salir de deudas?..."
+                           placeholder="Ej: ¿Qué es el CDT?, interés compuesto, cómo salir de deudas..."
                            onkeydown="if(event.key==='Enter') buscar()">
                 </div>
-                <button class="btn-buscar" onclick="buscar()"><i class="fas fa-search"></i> Buscar</button>
+                <button class="btn-buscar" id="btnBuscar" onclick="buscar()">
+                    <i class="fas fa-search"></i> Buscar
+                </button>
             </div>
             <div class="sugs-label">Búsquedas frecuentes</div>
             <div class="sugerencias-rapidas">
-                <button class="sug-btn" onclick="buscarDirecto('cdt')">💰 ¿Qué es el CDT?</button>
-                <button class="sug-btn" onclick="buscarDirecto('regla 50/30/20')">📋 Regla 50/30/20</button>
-                <button class="sug-btn" onclick="buscarDirecto('salir de deudas')">💳 Salir de deudas</button>
-                <button class="sug-btn" onclick="buscarDirecto('fondo de emergencia')">🛡️ Fondo de emergencia</button>
-                <button class="sug-btn" onclick="buscarDirecto('interés compuesto')">📈 Interés compuesto</button>
-                <button class="sug-btn" onclick="buscarDirecto('pensión en colombia')">👴 Pensión Colombia</button>
-                <button class="sug-btn" onclick="buscarDirecto('inflación')">📉 Inflación</button>
+                <button class="sug-btn" onclick="buscarDirecto('cdt')">🏦 CDT</button>
+                <button class="sug-btn" onclick="buscarDirecto('ahorro')">💰 Cómo ahorrar</button>
+                <button class="sug-btn" onclick="buscarDirecto('presupuesto')">📋 Regla 50/30/20</button>
+                <button class="sug-btn" onclick="buscarDirecto('deudas')">💳 Salir de deudas</button>
+                <button class="sug-btn" onclick="buscarDirecto('fondo emergencia')">🛡️ Fondo emergencia</button>
+                <button class="sug-btn" onclick="buscarDirecto('interes compuesto')">📈 Interés compuesto</button>
+                <button class="sug-btn" onclick="buscarDirecto('pension')">👴 Pensión Colombia</button>
+                <button class="sug-btn" onclick="buscarDirecto('inflacion')">📉 Inflación</button>
+                <button class="sug-btn" onclick="buscarDirecto('inversion')">💹 Inversión</button>
                 <button class="sug-btn" onclick="buscarDirecto('criptomonedas')">₿ Criptomonedas</button>
             </div>
         </div>
- 
-        <div class="resultado-busqueda" id="resultadoBusqueda">
-            <div class="resultado-header">
-                <div>
-                    <div class="resultado-pregunta" id="resPregunta"></div>
-                    <div class="resultado-titulo" id="resTitulo"></div>
-                </div>
-                <button class="btn-cerrar-res" onclick="cerrarResultado()"><i class="fas fa-times"></i> Cerrar</button>
+
+        <!-- PANEL DE RESULTADOS (visible tras buscar) -->
+        <div class="panel-resultados" id="panelResultados">
+
+            <div class="res-header">
+                <div class="res-query-label" id="resQueryLabel"></div>
+                <button class="btn-cerrar-res" onclick="cerrarResultados()">
+                    <i class="fas fa-times"></i> Limpiar
+                </button>
             </div>
-            <div class="resultado-body" id="resCuerpo"></div>
-            <div class="res-tags" id="resTags"></div>
-            <div id="artsRelacionados" style="display:none">
-                <div class="arts-relacionados-titulo" style="margin-top:18px;font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">📚 Artículos relacionados</div>
-                <div class="arts-chips" id="artsChips"></div>
+
+            <!-- Artículo destacado (primer resultado) -->
+            <div id="resFeatured"></div>
+
+            <!-- Otros artículos encontrados -->
+            <div id="resOtros"></div>
+
+            <!-- Términos de glosario relacionados -->
+            <div id="resGlosario"></div>
+
+            <!-- Búsquedas sugeridas -->
+            <div id="resSugerencias"></div>
+
+            <!-- Sin resultados -->
+            <div id="resVacio" style="display:none">
+                <div class="res-vacio">
+                    <i class="fas fa-search"></i>
+                    <p style="font-size:16px;font-weight:700;color:white;margin-bottom:8px">Sin resultados</p>
+                    <p style="font-size:14px">No encontramos ese concepto. Prueba: CDT, ahorro, deudas, interés compuesto, pensión, inflación.</p>
+                    <p style="margin-top:12px;font-size:13px">También puedes preguntar al <a href="chat.html" style="color:var(--accent);text-decoration:none;font-weight:700">Chat FinanBot ↗</a></p>
+                </div>
             </div>
         </div>
- 
+
+        <!-- TABS -->
         <div class="tabs-nav">
             <button class="tab-btn activo" onclick="setTab('articulos',this)"><i class="fas fa-book-open"></i> Artículos</button>
             <button class="tab-btn" onclick="setTab('calculadoras',this)"><i class="fas fa-calculator"></i> Calculadoras</button>
             <button class="tab-btn" onclick="setTab('glosario',this)"><i class="fas fa-list-alt"></i> Glosario</button>
         </div>
- 
-        <!-- ARTÍCULOS -->
+
+        <!-- ─── ARTÍCULOS ─────────────────────────────── -->
         <div class="seccion visible" id="seccion-articulos">
-            <div class="articulos-grid" id="articulosGrid"></div>
+            <div class="articulos-filtros">
+                <button class="nivel-chip activo" onclick="filtrarNivel('',this)">Todos</button>
+                <button class="nivel-chip" onclick="filtrarNivel('basico',this)">🟢 Básico</button>
+                <button class="nivel-chip" onclick="filtrarNivel('intermedio',this)">🟡 Intermedio</button>
+                <button class="nivel-chip" onclick="filtrarNivel('avanzado',this)">🔴 Avanzado</button>
+            </div>
+            <div class="articulos-grid" id="articulosGrid">
+                <div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--muted)">
+                    <span class="spinner"></span>
+                </div>
+            </div>
         </div>
- 
-        <!-- CALCULADORAS -->
+
+        <!-- ─── CALCULADORAS ──────────────────────────── -->
         <div class="seccion" id="seccion-calculadoras">
             <div class="calcs-grid">
+
+                <!-- Interés Simple -->
                 <div class="calc-card">
                     <div class="calc-titulo"><div class="calc-titulo-icon">📊</div> Interés Simple</div>
-                    <div class="form-group"><label class="calc-label">Capital inicial ($)</label><input type="number" class="calc-input" id="is-k" placeholder="1.000.000"></div>
-                    <div class="form-group"><label class="calc-label">Tasa anual (%)</label><input type="number" class="calc-input" id="is-t" placeholder="8"></div>
-                    <div class="form-group"><label class="calc-label">Tiempo (meses)</label><input type="number" class="calc-input" id="is-m" placeholder="12"></div>
+                    <div class="cg"><label class="calc-label">Capital inicial ($)</label><input type="number" class="calc-input" id="is-k" placeholder="1.000.000"></div>
+                    <div class="cg"><label class="calc-label">Tasa anual (%)</label><input type="number" class="calc-input" id="is-t" placeholder="10"></div>
+                    <div class="cg"><label class="calc-label">Tiempo (meses)</label><input type="number" class="calc-input" id="is-m" placeholder="12"></div>
                     <button class="btn-calc" onclick="calc('is')"><i class="fas fa-equals"></i> Calcular</button>
-                    <div class="calc-resultado" id="res-is">
-                        <div class="calc-res-principal" id="is-p">$0</div><div class="calc-res-label">Interés generado</div>
+                    <div class="calc-res" id="res-is">
+                        <div class="calc-res-big" id="is-p">$0</div><div class="calc-res-lbl">Interés generado</div>
                         <div class="calc-res-fila"><span>Capital inicial</span><strong id="is-c">$0</strong></div>
                         <div class="calc-res-fila"><span>Interés total</span><strong id="is-i" style="color:#4ade80">$0</strong></div>
-                        <div class="calc-res-fila"><span>Total final</span><strong id="is-t2" style="color:#fbbf24">$0</strong></div>
+                        <div class="calc-res-fila"><span>Total final</span><strong id="is-tot" style="color:#fbbf24">$0</strong></div>
                         <div class="calc-res-fila"><span>Tasa mensual</span><strong id="is-tm" style="color:#22d3ee">0%</strong></div>
                     </div>
                 </div>
+
+                <!-- Interés Compuesto -->
                 <div class="calc-card">
                     <div class="calc-titulo"><div class="calc-titulo-icon">📈</div> Interés Compuesto</div>
-                    <div class="form-group"><label class="calc-label">Capital inicial ($)</label><input type="number" class="calc-input" id="ic-k" placeholder="1.000.000"></div>
-                    <div class="form-group"><label class="calc-label">Aporte mensual ($)</label><input type="number" class="calc-input" id="ic-a" placeholder="100.000" value="0"></div>
-                    <div class="form-group"><label class="calc-label">Tasa anual (%)</label><input type="number" class="calc-input" id="ic-t" placeholder="10"></div>
-                    <div class="form-group"><label class="calc-label">Tiempo (años)</label><input type="number" class="calc-input" id="ic-y" placeholder="5"></div>
+                    <div class="cg"><label class="calc-label">Capital inicial ($)</label><input type="number" class="calc-input" id="ic-k" placeholder="1.000.000"></div>
+                    <div class="cg"><label class="calc-label">Aporte mensual ($)</label><input type="number" class="calc-input" id="ic-a" placeholder="100.000" value="0"></div>
+                    <div class="cg"><label class="calc-label">Tasa anual (%)</label><input type="number" class="calc-input" id="ic-t" placeholder="10"></div>
+                    <div class="cg"><label class="calc-label">Tiempo (años)</label><input type="number" class="calc-input" id="ic-y" placeholder="5"></div>
                     <button class="btn-calc" onclick="calc('ic')"><i class="fas fa-equals"></i> Calcular</button>
-                    <div class="calc-resultado" id="res-ic">
-                        <div class="calc-res-principal" id="ic-p">$0</div><div class="calc-res-label">Ganancia con interés compuesto</div>
+                    <div class="calc-res" id="res-ic">
+                        <div class="calc-res-big" id="ic-p">$0</div><div class="calc-res-lbl">Ganancia por interés compuesto</div>
                         <div class="calc-res-fila"><span>Total invertido</span><strong id="ic-inv">$0</strong></div>
                         <div class="calc-res-fila"><span>Intereses ganados</span><strong id="ic-int" style="color:#4ade80">$0</strong></div>
                         <div class="calc-res-fila"><span>Total final</span><strong id="ic-tot" style="color:#fbbf24">$0</strong></div>
                         <div class="calc-res-fila"><span>Rentabilidad</span><strong id="ic-ren" style="color:#a855f7">0%</strong></div>
                     </div>
                 </div>
+
+                <!-- Regla 50/30/20 -->
                 <div class="calc-card">
                     <div class="calc-titulo"><div class="calc-titulo-icon">🎯</div> Regla 50/30/20</div>
-                    <div class="form-group"><label class="calc-label">Ingreso mensual ($)</label><input type="number" class="calc-input" id="rg-ing" placeholder="2.500.000"></div>
-                    <div class="form-group"><label class="calc-label">Gastos fijos actuales ($)</label><input type="number" class="calc-input" id="rg-fijos" placeholder="1.200.000" value="0"></div>
+                    <div class="cg"><label class="calc-label">Ingreso mensual ($)</label><input type="number" class="calc-input" id="rg-ing" placeholder="2.500.000"></div>
+                    <div class="cg"><label class="calc-label">Gastos fijos actuales ($)</label><input type="number" class="calc-input" id="rg-fijos" placeholder="Opcional" value="0"></div>
                     <button class="btn-calc" onclick="calc('rg')"><i class="fas fa-equals"></i> Calcular distribución</button>
-                    <div class="calc-resultado" id="res-rg">
+                    <div class="calc-res" id="res-rg">
                         <div class="calc-res-fila"><span>🟢 50% Necesidades</span><strong id="rg-nec" style="color:#4ade80">$0</strong></div>
                         <div class="calc-res-fila"><span>🟡 30% Deseos</span><strong id="rg-des" style="color:#fbbf24">$0</strong></div>
                         <div class="calc-res-fila"><span>🔵 20% Ahorro/Inversión</span><strong id="rg-aho" style="color:#22d3ee">$0</strong></div>
-                        <div class="calc-res-fila" id="rg-avw" style="display:none"><span>⚠️ Tus gastos fijos</span><strong id="rg-av" style="color:#f87171">$0</strong></div>
+                        <div class="calc-res-fila" id="rg-fijosrow" style="display:none"><span>⚠️ Tus gastos fijos</span><strong id="rg-fijosval" style="color:#f87171">$0</strong></div>
                         <div id="rg-msg" style="font-size:12px;margin-top:10px;color:var(--muted)"></div>
                     </div>
                 </div>
+
+                <!-- Meta de ahorro -->
                 <div class="calc-card">
                     <div class="calc-titulo"><div class="calc-titulo-icon">🏁</div> ¿Cuándo alcanzo mi meta?</div>
-                    <div class="form-group"><label class="calc-label">Monto de la meta ($)</label><input type="number" class="calc-input" id="mt-obj" placeholder="5.000.000"></div>
-                    <div class="form-group"><label class="calc-label">Ya tengo ahorrado ($)</label><input type="number" class="calc-input" id="mt-act" placeholder="500.000" value="0"></div>
-                    <div class="form-group"><label class="calc-label">Ahorro mensual ($)</label><input type="number" class="calc-input" id="mt-men" placeholder="300.000"></div>
-                    <div class="form-group"><label class="calc-label">Rendimiento mensual % (opcional)</label><input type="number" class="calc-input" id="mt-ren" placeholder="0.8" value="0" step="0.1"></div>
+                    <div class="cg"><label class="calc-label">Monto de la meta ($)</label><input type="number" class="calc-input" id="mt-obj" placeholder="5.000.000"></div>
+                    <div class="cg"><label class="calc-label">Ya tengo ahorrado ($)</label><input type="number" class="calc-input" id="mt-act" placeholder="500.000" value="0"></div>
+                    <div class="cg"><label class="calc-label">Ahorro mensual ($)</label><input type="number" class="calc-input" id="mt-men" placeholder="300.000"></div>
+                    <div class="cg"><label class="calc-label">Rendimiento mensual % (opcional)</label><input type="number" class="calc-input" id="mt-ren" placeholder="0.8" value="0" step="0.1"></div>
                     <button class="btn-calc" onclick="calc('mt')"><i class="fas fa-equals"></i> Calcular</button>
-                    <div class="calc-resultado" id="res-mt">
-                        <div class="calc-res-principal" id="mt-tpo">0 meses</div><div class="calc-res-label" id="mt-lbl">Para alcanzar tu meta</div>
+                    <div class="calc-res" id="res-mt">
+                        <div class="calc-res-big" id="mt-tpo">0 meses</div><div class="calc-res-lbl" id="mt-lbl">Para alcanzar tu meta</div>
                         <div class="calc-res-fila"><span>Faltante</span><strong id="mt-flt" style="color:#f472b6">$0</strong></div>
-                        <div class="calc-res-fila"><span>Total ahorros</span><strong id="mt-tot" style="color:#4ade80">$0</strong></div>
+                        <div class="calc-res-fila"><span>Total acumulado</span><strong id="mt-totv" style="color:#4ade80">$0</strong></div>
                         <div class="calc-res-fila"><span>Fecha estimada</span><strong id="mt-fch" style="color:#22d3ee">—</strong></div>
                     </div>
                 </div>
+
+                <!-- Retención en la fuente -->
                 <div class="calc-card">
                     <div class="calc-titulo"><div class="calc-titulo-icon">🧾</div> Retención en la Fuente</div>
-                    <div class="form-group"><label class="calc-label">Ingreso mensual bruto ($)</label><input type="number" class="calc-input" id="rf-ing" placeholder="3.500.000"></div>
-                    <div class="form-group"><label class="calc-label">Deducciones adicionales ($)</label><input type="number" class="calc-input" id="rf-ded" placeholder="280.000" value="0"></div>
-                    <div class="form-group"><label class="calc-label">Otros descuentos ($)</label><input type="number" class="calc-input" id="rf-ot" placeholder="0" value="0"></div>
+                    <div class="cg"><label class="calc-label">Ingreso mensual bruto ($)</label><input type="number" class="calc-input" id="rf-ing" placeholder="3.500.000"></div>
+                    <div class="cg"><label class="calc-label">Deducciones adicionales ($)</label><input type="number" class="calc-input" id="rf-ded" placeholder="0" value="0"></div>
+                    <div class="cg"><label class="calc-label">Otros descuentos ($)</label><input type="number" class="calc-input" id="rf-ot" placeholder="0" value="0"></div>
                     <button class="btn-calc" onclick="calc('rf')"><i class="fas fa-equals"></i> Calcular</button>
-                    <div class="calc-resultado" id="res-rf">
-                        <div class="calc-res-principal" id="rf-net">$0</div><div class="calc-res-label">Salario neto mensual</div>
+                    <div class="calc-res" id="res-rf">
+                        <div class="calc-res-big" id="rf-net">$0</div><div class="calc-res-lbl">Salario neto mensual</div>
                         <div class="calc-res-fila"><span>Ingreso bruto</span><strong id="rf-brt">$0</strong></div>
                         <div class="calc-res-fila"><span>Salud (4%)</span><strong id="rf-sal" style="color:#f472b6">$0</strong></div>
                         <div class="calc-res-fila"><span>Pensión (4%)</span><strong id="rf-pen" style="color:#f472b6">$0</strong></div>
@@ -350,301 +453,463 @@
                         <div class="calc-res-fila"><span>Neto final</span><strong id="rf-ne2" style="color:#4ade80">$0</strong></div>
                     </div>
                 </div>
+
+                <!-- Cuota de crédito -->
                 <div class="calc-card">
                     <div class="calc-titulo"><div class="calc-titulo-icon">💳</div> Cuota de Crédito</div>
-                    <div class="form-group"><label class="calc-label">Monto del crédito ($)</label><input type="number" class="calc-input" id="cr-mon" placeholder="5.000.000"></div>
-                    <div class="form-group"><label class="calc-label">Tasa anual (%)</label><input type="number" class="calc-input" id="cr-tas" placeholder="24"></div>
-                    <div class="form-group"><label class="calc-label">Plazo (meses)</label><input type="number" class="calc-input" id="cr-plz" placeholder="24"></div>
+                    <div class="cg"><label class="calc-label">Monto del crédito ($)</label><input type="number" class="calc-input" id="cr-mon" placeholder="5.000.000"></div>
+                    <div class="cg"><label class="calc-label">Tasa anual (%)</label><input type="number" class="calc-input" id="cr-tas" placeholder="24"></div>
+                    <div class="cg"><label class="calc-label">Plazo (meses)</label><input type="number" class="calc-input" id="cr-plz" placeholder="24"></div>
                     <button class="btn-calc" onclick="calc('cr')"><i class="fas fa-equals"></i> Calcular cuota</button>
-                    <div class="calc-resultado" id="res-cr">
-                        <div class="calc-res-principal" id="cr-cuo">$0/mes</div><div class="calc-res-label">Cuota mensual fija</div>
+                    <div class="calc-res" id="res-cr">
+                        <div class="calc-res-big" id="cr-cuo">$0/mes</div><div class="calc-res-lbl">Cuota mensual fija</div>
                         <div class="calc-res-fila"><span>Total a pagar</span><strong id="cr-tot" style="color:#f472b6">$0</strong></div>
                         <div class="calc-res-fila"><span>Total intereses</span><strong id="cr-int" style="color:#f87171">$0</strong></div>
                         <div class="calc-res-fila"><span>Costo del crédito</span><strong id="cr-cos" style="color:#fbbf24">0%</strong></div>
                     </div>
                 </div>
+
+                <!-- Inflación -->
                 <div class="calc-card">
                     <div class="calc-titulo"><div class="calc-titulo-icon">📉</div> Impacto de la Inflación</div>
-                    <div class="form-group"><label class="calc-label">Monto actual ($)</label><input type="number" class="calc-input" id="inf-mon" placeholder="1.000.000"></div>
-                    <div class="form-group"><label class="calc-label">Inflación anual (%)</label><input type="number" class="calc-input" id="inf-tas" placeholder="9.28" value="9.28"></div>
-                    <div class="form-group"><label class="calc-label">Años proyectados</label><input type="number" class="calc-input" id="inf-ano" placeholder="5"></div>
+                    <div class="cg"><label class="calc-label">Monto actual ($)</label><input type="number" class="calc-input" id="inf-mon" placeholder="1.000.000"></div>
+                    <div class="cg"><label class="calc-label">Inflación anual (%)</label><input type="number" class="calc-input" id="inf-tas" placeholder="9.28" value="9.28"></div>
+                    <div class="cg"><label class="calc-label">Años proyectados</label><input type="number" class="calc-input" id="inf-ano" placeholder="5"></div>
                     <button class="btn-calc" onclick="calc('inf')"><i class="fas fa-equals"></i> Calcular pérdida</button>
-                    <div class="calc-resultado" id="res-inf">
-                        <div class="calc-res-principal" id="inf-per" style="color:#f472b6">$0</div><div class="calc-res-label">Poder adquisitivo perdido</div>
+                    <div class="calc-res" id="res-inf">
+                        <div class="calc-res-big" id="inf-per" style="color:#f472b6">$0</div><div class="calc-res-lbl">Poder adquisitivo perdido</div>
                         <div class="calc-res-fila"><span>Valor hoy</span><strong id="inf-hoy">$0</strong></div>
                         <div class="calc-res-fila"><span>Valor real en X años</span><strong id="inf-fut" style="color:#f87171">$0</strong></div>
-                        <div class="calc-res-fila"><span>Pérdida total</span><strong id="inf-tot" style="color:#f472b6">$0</strong></div>
-                        <div class="calc-res-fila"><span>Necesitas superar</span><strong id="inf-nec" style="color:#4ade80">+9.28% anual</strong></div>
+                        <div class="calc-res-fila"><span>Debes superar</span><strong id="inf-nec" style="color:#4ade80">+9.28%</strong></div>
                     </div>
                 </div>
+
+                <!-- Pensión voluntaria -->
                 <div class="calc-card">
                     <div class="calc-titulo"><div class="calc-titulo-icon">👴</div> Pensión Voluntaria</div>
-                    <div class="form-group"><label class="calc-label">Ingreso mensual ($)</label><input type="number" class="calc-input" id="pv-ing" placeholder="3.000.000"></div>
-                    <div class="form-group"><label class="calc-label">Aporte mensual voluntario ($)</label><input type="number" class="calc-input" id="pv-apo" placeholder="300.000"></div>
-                    <div class="form-group"><label class="calc-label">Años de aporte</label><input type="number" class="calc-input" id="pv-ano" placeholder="20"></div>
-                    <div class="form-group"><label class="calc-label">Rendimiento anual esperado (%)</label><input type="number" class="calc-input" id="pv-ren" placeholder="8" value="8"></div>
+                    <div class="cg"><label class="calc-label">Ingreso mensual ($)</label><input type="number" class="calc-input" id="pv-ing" placeholder="3.000.000"></div>
+                    <div class="cg"><label class="calc-label">Aporte voluntario mensual ($)</label><input type="number" class="calc-input" id="pv-apo" placeholder="300.000"></div>
+                    <div class="cg"><label class="calc-label">Años de aporte</label><input type="number" class="calc-input" id="pv-ano" placeholder="20"></div>
+                    <div class="cg"><label class="calc-label">Rendimiento anual esperado (%)</label><input type="number" class="calc-input" id="pv-ren" placeholder="8" value="8"></div>
                     <button class="btn-calc" onclick="calc('pv')"><i class="fas fa-equals"></i> Calcular</button>
-                    <div class="calc-resultado" id="res-pv">
-                        <div class="calc-res-principal" id="pv-cap">$0</div><div class="calc-res-label">Capital pensional acumulado</div>
+                    <div class="calc-res" id="res-pv">
+                        <div class="calc-res-big" id="pv-cap">$0</div><div class="calc-res-lbl">Capital pensional acumulado</div>
                         <div class="calc-res-fila"><span>Total aportado</span><strong id="pv-tot">$0</strong></div>
                         <div class="calc-res-fila"><span>Rendimientos</span><strong id="pv-ren2" style="color:#4ade80">$0</strong></div>
-                        <div class="calc-res-fila"><span>Ahorro en impuestos/año</span><strong id="pv-imp" style="color:#22d3ee">$0</strong></div>
+                        <div class="calc-res-fila"><span>Ahorro impuestos/año</span><strong id="pv-imp" style="color:#22d3ee">$0</strong></div>
                     </div>
                 </div>
+
             </div>
         </div>
- 
-        <!-- GLOSARIO -->
+
+        <!-- ─── GLOSARIO ──────────────────────────────── -->
         <div class="seccion" id="seccion-glosario">
-            <div class="glosario-header">
-                <div class="glosario-busqueda">
+            <div class="glosario-hdr">
+                <div class="glosario-search-wrap">
                     <i class="fas fa-search"></i>
-                    <input type="text" class="glosario-search" id="glosarioSearch" placeholder="Buscar término financiero..." oninput="filtrarGlosario()">
+                    <input type="text" class="glosario-search" id="glosarioSearch"
+                           placeholder="Buscar término financiero..." oninput="filtrarGlosario()">
                 </div>
-                <div class="glosario-stats">
-                    <div>
-                        <div class="glosario-stat-num" id="glosarioCount">35</div>
-                        <div class="glosario-stat-lbl">términos</div>
-                    </div>
+                <div class="glosario-stat">
+                    <div class="glosario-stat-num" id="glosarioCount">—</div>
+                    <div class="glosario-stat-lbl">términos</div>
                 </div>
             </div>
             <div class="glosario-letras" id="glosarioLetras"></div>
-            <div class="glosario-grid" id="glosarioGrid"></div>
+            <div class="glosario-grid" id="glosarioGrid">
+                <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)">
+                    <span class="spinner"></span>
+                </div>
+            </div>
         </div>
-    </div>
- 
+
+    </div><!-- /main -->
+
     <script>
-    // ── TEMA ─────────────────────────────────────────────
-    (function(){ document.body.className = 'tema-' + (localStorage.getItem('finanbot_tema') || 'oscuro'); })();
+    // ── TEMA ──────────────────────────────────────────────
+    (function(){ document.body.className='tema-'+(localStorage.getItem('finanbot_tema')||'oscuro'); })();
     function cerrarSesion(){ localStorage.removeItem('token'); localStorage.removeItem('usuario'); }
- 
-    // ── TABS ─────────────────────────────────────────────
+
+    // ── TABS ──────────────────────────────────────────────
     function setTab(id, btn){
         document.querySelectorAll('.seccion').forEach(s=>s.classList.remove('visible'));
         document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('activo'));
         document.getElementById('seccion-'+id).classList.add('visible');
         btn.classList.add('activo');
     }
- 
-    const API = 'http://localhost:5000/api/aprende';
+
+    const API   = 'http://localhost:5000/api/aprende';
     const TOKEN = localStorage.getItem('token') || '';
- 
+
     async function apiFetch(path, opts={}){
         const r = await fetch(API+path, {
-            headers:{'Content-Type':'application/json', ...(TOKEN?{'Authorization':'Bearer '+TOKEN}:{})},
+            headers: {'Content-Type':'application/json', ...(TOKEN?{'Authorization':'Bearer '+TOKEN}:{})},
             ...opts
         });
-        if(!r.ok) throw new Error(r.status);
+        if (!r.ok) throw new Error(r.status);
         return r.json();
     }
- 
+
     // ══════════════════════════════════════════════════════
-    //  BASE DE CONOCIMIENTO LOCAL (fallback sin backend)
+    //  DATOS LOCALES — fallback sin backend
     // ══════════════════════════════════════════════════════
-    const BASE = {
-        'cdt':{titulo:'CDT — Certificado de Depósito a Término',cuerpo:'Producto de ahorro donde depositas dinero por un plazo fijo a cambio de una tasa de interés pactada desde el inicio.',puntos:['Tasa garantizada desde el inicio','Mínimo desde $100.000 en algunos bancos','Plazos: 30, 60, 90, 180, 360 días o más','Asegurado por Fogafín hasta $50M','Tasas 2024: corto plazo 8-10% EA, mediano 10-13% EA, largo 12-14% EA'],ejemplo:'$2.000.000 al 12% anual × 12 meses = $2.240.000 al vencer.\nGanaste $240.000 sin hacer nada.',consejo:'Ideal si tienes dinero que no necesitarás pronto. La tasa es predecible y el riesgo casi cero.',tags:['interés simple','ahorro','bancos','inversión segura']},
-        'regla 50/30/20':{titulo:'La Regla 50/30/20 para presupuestar tu dinero',cuerpo:'Divide tus ingresos en tres categorías. Popularizada por Elizabeth Warren.',puntos:['50% Necesidades: arriendo, comida, transporte, salud','30% Deseos: entretenimiento, ropa, salidas','20% Ahorro e inversión: CDT, metas, pensión voluntaria'],ejemplo:'Con $2.500.000:\nNecesidades (50%): $1.250.000\nDeseos (30%): $750.000\nAhorro (20%): $500.000',consejo:'Si tus necesidades superan el 50%, ajusta: 60/20/20. Lo importante es SIEMPRE guardar algo.',tags:['presupuesto','ahorro','planificación financiera']},
-        'interés compuesto':{titulo:'Interés Compuesto — El poder de hacer crecer el dinero',cuerpo:'Los intereses generan nuevos intereses. Einstein lo llamó "la octava maravilla del mundo".',puntos:['Fórmula: Capital Final = Capital × (1 + Tasa)^Tiempo','$1.000.000 al 10% por 10 años = $2.593.742','Vs interés simple a 10 años = $2.000.000','Diferencia: $593.742 extra gracias al efecto compuesto'],ejemplo:'$1.000.000 al 10% compuesto:\n10 años: $2.593.742\n20 años: $6.727.500\n30 años: $17.449.402',consejo:'La clave es el tiempo. Quien empieza a los 25 tiene enorme ventaja sobre quien empieza a los 35.',tags:['inversión','CDT','fondos','tiempo','rentabilidad']},
-        'fondo de emergencia':{titulo:'Fondo de Emergencia — Tu red de seguridad financiera',cuerpo:'Dinero reservado para imprevistos: pérdida de empleo, enfermedad, reparaciones urgentes.',puntos:['Empleado estable: 3 meses de gastos básicos','Empleado inestable: 6 meses','Independiente: 6-12 meses','Guardar en cuenta de ahorros o fondo de liquidez (Nequi, Daviplata)','NO en criptomonedas ni inversiones de largo plazo'],ejemplo:'Gastos básicos $1.500.000/mes:\nFondo mínimo: $4.500.000 · Fondo ideal: $9.000.000',consejo:'El fondo de emergencia va ANTES que cualquier inversión. Es tu primera prioridad financiera.',tags:['ahorro','seguridad financiera','emergencias','presupuesto']},
-        'salir de deudas':{titulo:'Cómo salir de deudas — Métodos probados',cuerpo:'Dos estrategias para eliminar deudas según tu motivación o eficiencia matemática.',puntos:['Bola de Nieve: paga primero la deuda más pequeña (motivación)','Avalancha: paga primero la de mayor tasa (eficiencia matemática)','En ambos: paga el mínimo en todas las demás','El dinero extra va siempre a la deuda prioritaria'],ejemplo:'Tarjeta 28% + Crédito 18% + Familiar 0%\nAvalancha: Tarjeta → Crédito → Familiar',consejo:'Evita los "gota a gota" — son ilegales y con tasas del 300%+ anual.',tags:['deudas','crédito','tarjeta de crédito']},
-        'inflación':{titulo:'Inflación — Cómo proteger tu poder adquisitivo',cuerpo:'Aumento generalizado de precios que reduce el poder adquisitivo. Referencia Colombia 2024: 9.28%.',puntos:['Si inflación = 10%, lo que hoy cuesta $100.000 mañana cuesta $110.000','CDT con tasa superior a la inflación: protege y crece','Fondos de inversión: mayor rentabilidad potencial','Finca raíz: valorización histórica en Colombia','Efectivo guardado: pierde valor automáticamente'],ejemplo:'$1.000.000 con inflación 10%:\nHoy compras 100 artículos · En 1 año solo 90\nPerdiste el 10% de tu poder de compra.',consejo:'Si inflación = 9% y tu CDT paga 12%, ganaste un 3% real de poder adquisitivo.',tags:['economía','inversión','poder adquisitivo']},
-        'pensión en colombia':{titulo:'Pensión en Colombia — Colpensiones vs Fondos Privados',cuerpo:'Colombia tiene dos regímenes: Prima Media (Colpensiones) y Ahorro Individual (AFP).',puntos:['Colpensiones: 1.300 semanas, 57 mujeres / 62 hombres','AFP: cuenta individual, aportes voluntarios deducibles de renta','$300.000/mes en pensión voluntaria ahorra ~$57.000/mes en impuestos','El 75% de colombianos NO se pensiona'],ejemplo:'AFP + $300.000/mes aportes voluntarios × 20 años al 8% = capital pensional adicional significativo.',consejo:'Complementa con ahorro e inversión personal desde hoy, sea cual sea tu régimen.',tags:['pensión','colpensiones','AFP','jubilación']},
-        'criptomonedas':{titulo:'Criptomonedas — Riesgos y realidades antes de invertir',cuerpo:'Monedas digitales con alta volatilidad y sin regulación estatal en Colombia.',puntos:['Bitcoin cayó 75% en 7 meses (nov 2021 - jun 2022)','Sin regulación: no hay entidad que te proteja','Si pierdes la clave privada, pierdes todo','Máximo 5% de tu portafolio si decides invertir','Solo en plataformas reconocidas: Binance, Coinbase'],ejemplo:'Bitcoin nov 2021: $68.000 USD → jun 2022: $17.000 USD\nCaída del 75% en 7 meses.',consejo:'🚨 Señales de estafa: rendimientos garantizados altos, presión para invertir rápido, influencers pagados.',tags:['criptomonedas','bitcoin','riesgo','inversión alternativa']},
-    };
- 
-    // ── BUSCADOR ─────────────────────────────────────────
+    const ARTS_LOCAL = [
+        {id:'ahorro',      emoji:'💰',nivel:'basico',    categoria:'Ahorro',               titulo:'Cómo empezar a ahorrar desde cero',         resumen:'Estrategias efectivas para ahorrar sin importar cuánto ganas.',              num_secciones:5},
+        {id:'presupuesto', emoji:'📋',nivel:'basico',    categoria:'Presupuesto',           titulo:'Presupuesto personal — Regla 50/30/20',      resumen:'Distribuye tu salario de forma inteligente con esta regla simple.',          num_secciones:4},
+        {id:'deudas',      emoji:'💳',nivel:'basico',    categoria:'Deudas y crédito',      titulo:'Cómo salir de deudas — Bola de nieve y avalancha', resumen:'Dos métodos probados para eliminar tus deudas de una vez.',           num_secciones:5},
+        {id:'cdt',         emoji:'🏦',nivel:'basico',    categoria:'Inversión',             titulo:'CDT — Certificado de Depósito a Término',   resumen:'El producto de ahorro más usado en Colombia. Tasa fija garantizada.',       num_secciones:5},
+        {id:'fondo_emergencia',emoji:'🛡️',nivel:'basico',categoria:'Seguridad financiera', titulo:'El fondo de emergencia: tu red de seguridad',resumen:'Cuánto necesitas, dónde guardarlo y cómo construirlo.',                    num_secciones:5},
+        {id:'interes_compuesto',emoji:'📈',nivel:'intermedio',categoria:'Conceptos',       titulo:'Interés compuesto — La octava maravilla del mundo',resumen:'Los intereses generan nuevos intereses. Efecto exponencial en el tiempo.',num_secciones:5},
+        {id:'pension',     emoji:'👴',nivel:'intermedio',categoria:'Pensión y jubilación',  titulo:'Colpensiones vs Fondos Privados (AFP)',      resumen:'Todo lo que debes saber sobre los dos regímenes pensionales de Colombia.',  num_secciones:5},
+        {id:'inflacion',   emoji:'📉',nivel:'intermedio',categoria:'Economía',              titulo:'Inflación — Cómo proteger tu poder adquisitivo', resumen:'La inflación reduce tu dinero silenciosamente. Aprende a protegerlo.',   num_secciones:5},
+        {id:'inversion',   emoji:'💹',nivel:'intermedio',categoria:'Inversión',             titulo:'Inversiones para principiantes en Colombia', resumen:'CDT, fondos, acciones: cuál elegir según tu perfil de riesgo y plazo.',    num_secciones:5},
+        {id:'habitos',     emoji:'🧠',nivel:'basico',    categoria:'Educación financiera',  titulo:'Los 7 hábitos que cambian tu vida financiera',resumen:'La riqueza no es de ingresos — es de hábitos. Los 7 que más impactan.',    num_secciones:5},
+        {id:'criptomonedas',emoji:'₿',nivel:'avanzado',  categoria:'Inversión alternativa', titulo:'Criptomonedas — Riesgos y realidades',       resumen:'Lo que debes saber antes de invertir. Volatilidad extrema y estafas.',     num_secciones:5},
+        {id:'finca_raiz',  emoji:'🏠',nivel:'avanzado',  categoria:'Inversión inmobiliaria',titulo:'Invertir en finca raíz en Colombia',         resumen:'Valorización, arriendo y alternativas si no tienes capital inicial alto.', num_secciones:4},
+        {id:'tarjeta_credito',emoji:'💳',nivel:'basico', categoria:'Crédito',               titulo:'Tarjeta de crédito — Cómo usarla a tu favor',resumen:'Puede trabajar para ti o en tu contra al 28% EA. Aprende a usarla bien.',  num_secciones:5},
+        {id:'impuestos',   emoji:'🧾',nivel:'intermedio',categoria:'Impuestos',             titulo:'Impuestos en Colombia — Lo que debes saber',resumen:'DIAN, renta, IVA, retención: guía clara para cumplir y optimizar.',          num_secciones:4},
+    ];
+
+    const GLOSARIO_LOCAL = [
+        {nombre:'Activo',definicion:'Bien o derecho con valor económico. Ejemplos: dinero, propiedades, inversiones.',categoria:'Conceptos básicos'},
+        {nombre:'AFP',definicion:'Administradora de Fondos de Pensiones. Entidad privada que gestiona ahorros pensionales en el régimen RAIS en Colombia.',categoria:'Pensión'},
+        {nombre:'Ahorro',definicion:'Parte del ingreso que no se gasta y se reserva para uso futuro. Base de toda salud financiera personal.',categoria:'Conceptos básicos'},
+        {nombre:'Amortización',definicion:'Pago gradual de una deuda mediante cuotas periódicas que incluyen capital e intereses.',categoria:'Crédito'},
+        {nombre:'Apalancamiento',definicion:'Uso de deuda para aumentar la capacidad de inversión. Multiplica ganancias pero también pérdidas.',categoria:'Inversión'},
+        {nombre:'Balance',definicion:'Diferencia entre ingresos y gastos. Balance positivo = ingresas más de lo que gastas.',categoria:'Conceptos básicos'},
+        {nombre:'BVC',definicion:'Bolsa de Valores de Colombia. Mercado donde se compran y venden acciones de empresas colombianas.',categoria:'Inversión'},
+        {nombre:'Capital',definicion:'Monto inicial de dinero que se invierte o presta. Base sobre la que se calculan los intereses.',categoria:'Conceptos básicos'},
+        {nombre:'CDT',definicion:'Certificado de Depósito a Término. Depositas dinero a plazo fijo a cambio de una tasa de interés pactada. Asegurado por Fogafín.',categoria:'Ahorro e inversión'},
+        {nombre:'Colpensiones',definicion:'Administradora estatal del régimen de prima media pensional. El Estado gestiona los aportes colectivamente.',categoria:'Pensión'},
+        {nombre:'DANE',definicion:'Departamento Administrativo Nacional de Estadística. Mide el IPC (inflación) en Colombia.',categoria:'Economía'},
+        {nombre:'DIAN',definicion:'Dirección de Impuestos y Aduanas Nacionales. Administra el recaudo de impuestos en Colombia.',categoria:'Impuestos'},
+        {nombre:'Diversificación',definicion:'"No pongas todos los huevos en una canasta." Invertir en múltiples activos reduce el riesgo total.',categoria:'Inversión'},
+        {nombre:'Dividendo',definicion:'Parte de las ganancias de una empresa distribuida entre sus accionistas.',categoria:'Inversión'},
+        {nombre:'DTF',definicion:'Depósito a Término Fijo. Tasa de referencia del mercado financiero colombiano para créditos.',categoria:'Economía'},
+        {nombre:'EA (Efectivo Anual)',definicion:'Tasa Efectiva Anual. Muestra el rendimiento o costo real considerando capitalización periódica.',categoria:'Tasas'},
+        {nombre:'Fogafín',definicion:'Fondo de Garantías de Instituciones Financieras. Asegura depósitos en bancos colombianos hasta $50 millones por persona.',categoria:'Seguridad financiera'},
+        {nombre:'Fondo de emergencia',definicion:'Dinero reservado para imprevistos. Mínimo 3-6 meses de gastos básicos en cuenta de fácil acceso.',categoria:'Ahorro e inversión'},
+        {nombre:'Inflación',definicion:'Aumento generalizado de precios que reduce el poder adquisitivo del dinero. Medida por el IPC en Colombia.',categoria:'Economía'},
+        {nombre:'Interés compuesto',definicion:'Los intereses se calculan sobre el capital inicial más los intereses acumulados. Genera crecimiento exponencial.',categoria:'Tasas'},
+        {nombre:'Interés simple',definicion:'Los intereses se calculan siempre sobre el capital inicial. No hay efecto compuesto.',categoria:'Tasas'},
+        {nombre:'IPC',definicion:'Índice de Precios al Consumidor. Mide la variación de precios de una canasta de bienes. Principal indicador de inflación.',categoria:'Economía'},
+        {nombre:'Liquidez',definicion:'Facilidad con la que un activo puede convertirse en efectivo sin perder valor.',categoria:'Conceptos básicos'},
+        {nombre:'Pasivo',definicion:'Deuda u obligación financiera. Ejemplos: créditos, hipotecas, tarjetas de crédito.',categoria:'Conceptos básicos'},
+        {nombre:'Patrimonio',definicion:'Diferencia entre activos y pasivos. Representa tu riqueza neta real. Patrimonio = Activos − Pasivos.',categoria:'Conceptos básicos'},
+        {nombre:'Pensión voluntaria',definicion:'Aportes adicionales a pensión más allá de lo obligatorio. Son deducibles de renta en Colombia (Art. 126-1 E.T.).',categoria:'Pensión'},
+        {nombre:'Presupuesto',definicion:'Plan financiero que organiza ingresos y gastos para un período determinado.',categoria:'Conceptos básicos'},
+        {nombre:'Rentabilidad',definicion:'Ganancia obtenida sobre una inversión, expresada como porcentaje del capital invertido.',categoria:'Inversión'},
+        {nombre:'Retención fuente',definicion:'Anticipo del impuesto de renta que descuenta el empleador directamente del salario mensual.',categoria:'Impuestos'},
+        {nombre:'SMMLV',definicion:'Salario Mínimo Mensual Legal Vigente en Colombia. Para 2024: $1.300.000.',categoria:'Economía'},
+        {nombre:'TES',definicion:'Títulos de Tesorería. Bonos del gobierno colombiano. Considerados de muy bajo riesgo.',categoria:'Inversión'},
+        {nombre:'TRM',definicion:'Tasa Representativa del Mercado. Valor oficial del dólar en pesos colombianos, fijada diariamente por el Banco de la República.',categoria:'Economía'},
+        {nombre:'UVT',definicion:'Unidad de Valor Tributario. Referencia para calcular impuestos en Colombia. Para 2024: $47.065.',categoria:'Impuestos'},
+        {nombre:'Yield',definicion:'Rendimiento de una inversión expresado como porcentaje anual. Usado principalmente en mercados de capitales.',categoria:'Inversión'},
+        {nombre:'4x1000',definicion:'Gravamen a los Movimientos Financieros. Impuesto del 4 por cada 1.000 pesos en transacciones bancarias.',categoria:'Impuestos'},
+    ];
+
+    // ══════════════════════════════════════════════════════
+    //  BUSCADOR TIPO GOOGLE
+    // ══════════════════════════════════════════════════════
     function buscarDirecto(q){ document.getElementById('busquedaInput').value=q; buscar(); }
- 
+
     async function buscar(){
-        const q = document.getElementById('busquedaInput').value.trim().toLowerCase();
-        if(!q || q.length<2) return;
- 
-        // Primero intentar con el backend
+        const q = document.getElementById('busquedaInput').value.trim();
+        if (!q || q.length < 2) return;
+
+        const btn = document.getElementById('btnBuscar');
+        btn.innerHTML = '<span class="spinner"></span> Buscando...';
+        btn.disabled = true;
+
         try {
-            const data = await apiFetch('/buscar?q='+encodeURIComponent(q));
-            renderResultadoAPI(q, data);
-            return;
-        } catch(_){}
- 
-        // Fallback: buscar en BASE local
-        let encontrado = null;
-        for(const [clave, val] of Object.entries(BASE)){
-            if(q.includes(clave) || clave.includes(q) ||
-               val.titulo.toLowerCase().includes(q) ||
-               (val.tags && val.tags.some(t=>t.includes(q)||q.includes(t)))){
-                encontrado = val; break;
-            }
+            const data = await apiFetch('/buscar?q=' + encodeURIComponent(q));
+            renderResultados(q, data);
+        } catch(_) {
+            renderResultadosLocal(q);
         }
-        renderResultadoLocal(q, encontrado);
+
+        btn.innerHTML = '<i class="fas fa-search"></i> Buscar';
+        btn.disabled = false;
     }
- 
-    function renderResultadoAPI(q, data){
-        const rc = data.resultado_conocimiento;
-        const arts = data.articulos_relacionados||[];
-        document.getElementById('resPregunta').textContent = '📖 Resultado para: "'+q+'"';
-        if(rc){
-            document.getElementById('resTitulo').textContent = rc.titulo;
-            let html = rc.cuerpo ? `<p>${rc.cuerpo}</p>` : '';
-            if(rc.puntos&&rc.puntos.length) html += '<ul>'+rc.puntos.map(p=>`<li>${p}</li>`).join('')+'</ul>';
-            if(rc.ejemplo) html += `<div class="res-ejemplo">${rc.ejemplo}</div>`;
-            if(rc.consejo) html += `<div class="res-highlight">💡 ${rc.consejo}</div>`;
-            document.getElementById('resCuerpo').innerHTML = html;
-            document.getElementById('resTags').innerHTML = (rc.tags||[]).map(t=>`<span class="res-tag" onclick="buscarDirecto('${t}')">${t}</span>`).join('');
+
+    // ── Render con datos del backend ──────────────────────
+    function renderResultados(q, data){
+        const panel    = document.getElementById('panelResultados');
+        const arts     = data.articulos || [];
+        const glos     = data.glosario  || [];
+        const sugs     = data.sugerencias || [];
+
+        // Label de resultados
+        const total = arts.length + glos.length;
+        document.getElementById('resQueryLabel').innerHTML =
+            `Resultados para <strong>"${q}"</strong> — <span class="cnt">${total} encontrado${total!==1?'s':''}</span>`;
+
+        // Sin resultados
+        document.getElementById('resVacio').style.display = (!arts.length && !glos.length) ? 'block' : 'none';
+
+        // Artículo destacado (primero y más relevante)
+        const featuredEl = document.getElementById('resFeatured');
+        if (arts.length > 0) {
+            const a = arts[0];
+            featuredEl.innerHTML = `
+                <div class="res-featured">
+                    <div class="res-featured-top">
+                        <div style="flex:1">
+                            <div class="res-featured-meta">
+                                <span class="res-featured-emoji">${a.emoji}</span>
+                                <span class="res-featured-cat">${a.categoria}</span>
+                                <span class="res-featured-nivel nivel-${a.nivel}">${a.nivel}</span>
+                            </div>
+                            <div class="res-featured-titulo">${a.titulo}</div>
+                            <div class="res-featured-resumen">${a.resumen}</div>
+                        </div>
+                        <button class="btn-ver-completo" onclick="abrirArticulo('${a.id}')">
+                            <i class="fas fa-book-open"></i> Leer completo
+                        </button>
+                    </div>
+                    <div id="featuredBody" class="res-featured-body">
+                        <div style="text-align:center;padding:20px;color:var(--muted)"><span class="spinner"></span></div>
+                    </div>
+                </div>`;
+            // Cargar secciones del artículo destacado
+            cargarSeccionesFeatured(a.id);
         } else {
-            renderNoEncontrado(q);
+            featuredEl.innerHTML = '';
         }
-        const artsWrap = document.getElementById('artsRelacionados');
-        const artsChips = document.getElementById('artsChips');
-        if(arts.length){
-            artsChips.innerHTML = arts.map(a=>`<div class="art-chip" onclick="abrirArticulo('${a.id}')">${a.emoji} ${a.titulo}</div>`).join('');
-            artsWrap.style.display='block';
-        } else { artsWrap.style.display='none'; }
-        mostrarResultado();
+
+        // Otros artículos (2 en adelante)
+        const otrosEl = document.getElementById('resOtros');
+        if (arts.length > 1) {
+            const otros = arts.slice(1);
+            otrosEl.innerHTML = `
+                <div class="res-otros-titulo"><i class="fas fa-layer-group" style="color:var(--accent)"></i> Artículos relacionados</div>
+                <div class="res-otros-grid">
+                    ${otros.map(a=>`
+                        <div class="res-otro-card" onclick="abrirArticulo('${a.id}')">
+                            <span class="res-otro-emoji">${a.emoji}</span>
+                            <div>
+                                <div class="res-otro-titulo">${a.titulo}</div>
+                                <div class="res-otro-cat">${a.categoria}</div>
+                            </div>
+                        </div>`).join('')}
+                </div>`;
+        } else { otrosEl.innerHTML = ''; }
+
+        // Glosario relacionado
+        const glosEl = document.getElementById('resGlosario');
+        if (glos.length) {
+            glosEl.innerHTML = `
+                <div class="res-glosario-titulo"><i class="fas fa-book" style="color:var(--accent2)"></i> Del glosario financiero</div>
+                <div class="res-glosario-chips">
+                    ${glos.map(t=>`
+                        <div class="res-glosario-chip" onclick="irGlosario('${t.nombre}')">
+                            <div class="gch-nombre">${t.nombre}</div>
+                            <div class="gch-def">${t.definicion.substring(0,90)}${t.definicion.length>90?'…':''}</div>
+                        </div>`).join('')}
+                </div>`;
+        } else { glosEl.innerHTML = ''; }
+
+        // Sugerencias
+        const sugsEl = document.getElementById('resSugerencias');
+        if (sugs.length) {
+            sugsEl.innerHTML = `
+                <div class="res-sugs-titulo"><i class="fas fa-lightbulb" style="color:#fbbf24"></i> También te puede interesar</div>
+                <div class="res-sugs-chips">
+                    ${sugs.map(s=>`<button class="sug-btn" onclick="abrirArticulo('${s.id}')">${s.emoji} ${s.titulo}</button>`).join('')}
+                </div>`;
+        } else { sugsEl.innerHTML = ''; }
+
+        panel.classList.add('visible');
+        panel.scrollIntoView({behavior:'smooth', block:'start'});
     }
- 
-    function renderResultadoLocal(q, encontrado){
-        document.getElementById('resPregunta').textContent = '📖 Resultado para: "'+q+'"';
-        if(encontrado){
-            document.getElementById('resTitulo').textContent = encontrado.titulo;
-            let html = encontrado.cuerpo ? `<p>${encontrado.cuerpo}</p>` : '';
-            if(encontrado.puntos&&encontrado.puntos.length) html += '<ul>'+encontrado.puntos.map(p=>`<li>${p}</li>`).join('')+'</ul>';
-            if(encontrado.ejemplo) html += `<div class="res-ejemplo">${encontrado.ejemplo}</div>`;
-            if(encontrado.consejo) html += `<div class="res-highlight">💡 ${encontrado.consejo}</div>`;
-            document.getElementById('resCuerpo').innerHTML = html;
-            document.getElementById('resTags').innerHTML = (encontrado.tags||[]).map(t=>`<span class="res-tag" onclick="buscarDirecto('${t}')">${t}</span>`).join('');
-        } else {
-            renderNoEncontrado(q);
+
+    async function cargarSeccionesFeatured(id){
+        const body = document.getElementById('featuredBody');
+        if (!body) return;
+        try {
+            const a = await apiFetch('/articulos/' + id);
+            body.innerHTML = renderModalBody(a);
+            body.classList.add('visible');
+        } catch(_) {
+            body.innerHTML = '';
         }
-        document.getElementById('artsRelacionados').style.display = 'none';
-        mostrarResultado();
     }
- 
-    function renderNoEncontrado(q){
-        document.getElementById('resTitulo').textContent = 'Concepto no encontrado';
-        document.getElementById('resCuerpo').innerHTML = `<p>No encontramos "<strong>${q}</strong>". Prueba: CDT, interés compuesto, regla 50/30/20, fondo de emergencia, inflación, deudas.</p><p>También puedes preguntar al <a href="chat.html" style="color:var(--accent);text-decoration:none;">Chat FinanBot</a>.</p>`;
-        document.getElementById('resTags').innerHTML = '';
+
+    // ── Render fallback sin backend ───────────────────────
+    function renderResultadosLocal(q){
+        const qn = q.toLowerCase();
+        const artsFiltrados = ARTS_LOCAL.filter(a =>
+            a.titulo.toLowerCase().includes(qn) ||
+            a.resumen.toLowerCase().includes(qn) ||
+            a.categoria.toLowerCase().includes(qn) ||
+            a.id.toLowerCase().includes(qn)
+        );
+        const glosFiltrados = GLOSARIO_LOCAL.filter(t =>
+            t.nombre.toLowerCase().includes(qn) ||
+            t.definicion.toLowerCase().includes(qn)
+        );
+        renderResultados(q, { articulos: artsFiltrados, glosario: glosFiltrados.slice(0,4), sugerencias: [] });
     }
- 
-    function mostrarResultado(){
-        document.getElementById('resultadoBusqueda').classList.add('visible');
-        document.getElementById('resultadoBusqueda').scrollIntoView({behavior:'smooth',block:'start'});
+
+    function cerrarResultados(){
+        document.getElementById('panelResultados').classList.remove('visible');
+        document.getElementById('busquedaInput').value = '';
     }
- 
-    function cerrarResultado(){
-        document.getElementById('resultadoBusqueda').classList.remove('visible');
-        document.getElementById('busquedaInput').value='';
+
+    function irGlosario(nombre){
+        setTab('glosario', document.querySelector('.tab-btn:nth-child(3)'));
+        setTimeout(() => {
+            document.getElementById('glosarioSearch').value = nombre;
+            filtrarGlosario();
+        }, 100);
     }
- 
+
     // ══════════════════════════════════════════════════════
     //  ARTÍCULOS
     // ══════════════════════════════════════════════════════
-    const ARTS_LOCAL = [
-        {id:'ahorro',     emoji:'💰',nivel:'basico',    categoria:'Ahorro',     titulo:'¿Cómo empezar a ahorrar desde cero?',        descripcion:'Estrategias efectivas para ahorrar sin importar cuánto ganas.',       tiempo_min:5},
-        {id:'presupuesto',emoji:'📋',nivel:'basico',    categoria:'Presupuesto',titulo:'La regla 50/30/20 explicada',                descripcion:'Distribuye tu salario de forma inteligente con esta regla simple.',     tiempo_min:4},
-        {id:'deudas',     emoji:'💳',nivel:'basico',    categoria:'Deudas',     titulo:'Salir de deudas: bola de nieve y avalancha', descripcion:'Dos métodos probados para eliminar tus deudas de una vez.',           tiempo_min:6},
-        {id:'inversion',  emoji:'📈',nivel:'intermedio',categoria:'Inversión',  titulo:'Inversiones para principiantes en Colombia', descripcion:'CDT, fondos de inversión, acciones: cuál elegir según tu perfil.',    tiempo_min:8},
-        {id:'emergencia', emoji:'🛡️',nivel:'basico',    categoria:'Seguridad',  titulo:'El fondo de emergencia: tu red de seguridad',descripcion:'Cuánto necesitas, dónde guardarlo y cómo construirlo.',               tiempo_min:5},
-        {id:'interes',    emoji:'🔢',nivel:'intermedio',categoria:'Conceptos',  titulo:'Interés simple vs interés compuesto',        descripcion:'Entiende la diferencia y cómo multiplicar tu dinero en el tiempo.',  tiempo_min:7},
-        {id:'pension',    emoji:'👴',nivel:'intermedio',categoria:'Pensión',    titulo:'Colpensiones vs fondos privados en Colombia', descripcion:'Todo lo que debes saber sobre los dos regímenes pensionales.',        tiempo_min:9},
-        {id:'inflacion',  emoji:'📉',nivel:'intermedio',categoria:'Economía',   titulo:'Cómo protegerte de la inflación',            descripcion:'La inflación reduce tu dinero. Aprende a protegerlo y hacerlo crecer.',tiempo_min:6},
-        {id:'cripto',     emoji:'₿', nivel:'avanzado',  categoria:'Criptos',    titulo:'Criptomonedas: riesgos y realidades',        descripcion:'Lo que debes saber antes de invertir en criptomonedas.',             tiempo_min:8},
-        {id:'diversifica',emoji:'🌱',nivel:'intermedio',categoria:'Estrategia', titulo:'Por qué diversificar tus ingresos',          descripcion:'Depender de un solo ingreso es el mayor riesgo.',                    tiempo_min:5},
-        {id:'habitos',    emoji:'🧠',nivel:'basico',    categoria:'Psicología', titulo:'Hábitos financieros que cambian tu vida',    descripcion:'Los 7 hábitos que separan a quienes logran riqueza de quienes no.',  tiempo_min:6},
-        {id:'finca',      emoji:'🏠',nivel:'avanzado',  categoria:'Inversión',  titulo:'Invertir en finca raíz en Colombia',         descripcion:'Vivienda, locales, lotes: cómo evaluar una inversión inmobiliaria.', tiempo_min:10},
-    ];
- 
-    const CONTENIDOS = {
-        ahorro:`<h3>Págate a ti primero</h3><p>Apenas recibas tu salario, transfiere un % fijo a una cuenta separada antes de gastar.</p><div class="hl">💡 Empieza con el 10%. Si ganas $1.500.000, separa $150.000 antes de cualquier gasto.</div><h3>Elimina gastos hormiga</h3><div class="ej">☕ Café diario: $3.000 × 30 = $90.000/mes\n🚕 Taxis: $15.000 × 8 = $120.000/mes\n📱 Apps sin usar: $25.000/mes\nTotal: $235.000/mes que podrías estar ahorrando</div><div class="hl">✅ Reto 30 días: anota cada gasto. Al final sabrás cuánto puedes ahorrar.</div>`,
-        presupuesto:`<h3>50% — Necesidades</h3><p>Arriendo, comida, transporte, servicios, salud, educación.</p><h3>30% — Deseos</h3><p>Entretenimiento, ropa, salidas, hobbies, suscripciones.</p><h3>20% — Ahorro e inversión</h3><p>Fondo de emergencia, CDT, metas, pensión voluntaria.</p><div class="ej"><strong>Con $2.000.000:</strong>\n🟢 Necesidades (50%): $1.000.000\n🟡 Deseos (30%): $600.000\n🔵 Ahorro (20%): $400.000</div><div class="hl">⚠️ Si tus necesidades superan el 50%, ajusta: 60/20/20. Lo importante es SIEMPRE guardar algo.</div>`,
-        deudas:`<h3>⛄ Bola de Nieve</h3><ul><li>Paga el mínimo en todas</li><li>Dinero extra → deuda más pequeña</li><li>Al eliminarla, ese dinero va a la siguiente</li></ul><h3>🌊 Avalancha</h3><div class="ej">Tarjeta 28% + Crédito 18% + Familiar 0%\nAvalancha: Tarjeta → Crédito → Familiar\n(Ahorras más en intereses)</div><div class="hl">🚨 Mientras pagas: NO adquieras nuevas deudas. Evita "gota a gota" — tasas del 300%+ anual.</div>`,
-        inversion:`<h3>Antes de invertir necesitas:</h3><ul><li>✅ Fondo de emergencia de 3 meses</li><li>✅ Deudas de alto interés pagadas</li><li>✅ Conocimiento del producto</li></ul><div class="ej"><strong>CDT:</strong> Riesgo muy bajo · 8-14% anual · Desde $100.000\n<strong>Fondos:</strong> Riesgo bajo-medio · Variable · Desde $50.000\n<strong>Acciones BVC:</strong> Riesgo alto · Variable · Largo plazo</div><div class="hl">💡 Usa el Simulador de FinanBot para ver cómo crecería tu dinero sin riesgo real.</div>`,
-        emergencia:`<h3>¿Para qué sirve?</h3><ul><li>Pérdida de empleo inesperada</li><li>Emergencia médica no cubierta</li><li>Reparación urgente del carro o casa</li></ul><div class="ej">Gastos de $1.500.000/mes:\nFondo mínimo: $4.500.000 · Fondo ideal: $9.000.000</div><h3>¿Dónde guardarlo?</h3><ul><li>✅ Cuenta de ahorros de fácil acceso</li><li>✅ Fondo de liquidez (Nequi, Daviplata)</li><li>✅ CDT a 30 días renovable</li><li>❌ NO en criptomonedas</li></ul><div class="hl">⚠️ El fondo de emergencia va ANTES que cualquier inversión.</div>`,
-        interes:`<h3>Interés Simple</h3><div class="ej">$1.000.000 al 10% anual × 3 años = $300.000 de interés\nTotal: $1.300.000</div><h3>Interés Compuesto</h3><div class="ej">$1.000.000 al 10% compuesto × 3 años:\nAño 1: $1.100.000 · Año 2: $1.210.000 · Año 3: $1.331.000\nTotal: $1.331.000 (vs $1.300.000 del simple)</div><h3>El poder del tiempo</h3><div class="ej">$1.000.000 al 10% compuesto:\n10 años: $2.593.742\n20 años: $6.727.500\n30 años: $17.449.402</div><div class="hl">💡 La clave es el tiempo. Quien empieza a los 25 tiene enorme ventaja sobre quien empieza a los 35.</div>`,
-        pension:`<h3>Colpensiones (Prima Media)</h3><ul><li>1.300 semanas cotizadas requeridas</li><li>57 años mujeres / 62 hombres</li><li>Pensión mínima garantizada: 1 SMMLV</li></ul><h3>AFP — Fondos Privados (RAIS)</h3><ul><li>Cuenta individual a tu nombre</li><li>Aportes voluntarios deducibles de renta</li><li>Mejor para ingresos altos e independientes</li></ul><div class="ej">$300.000/mes en pensión voluntaria\n= ~$57.000/mes menos en impuestos</div><div class="hl">⚠️ El 75% de colombianos NO se pensiona. Complementa siempre con ahorro e inversión personal.</div>`,
-        inflacion:`<div class="ej">$1.000.000 hoy con inflación del 10%:\nHoy: 100 artículos de $10.000\nEn 1 año: solo 90 artículos (cuestan $11.000)\nPerdiste el 10% de tu poder de compra.</div><h3>¿Cómo protegerse?</h3><ul><li>✅ CDT con tasas superiores a la inflación</li><li>✅ Fondos de inversión</li><li>✅ Finca raíz (valorización histórica)</li><li>❌ Efectivo guardado por meses</li></ul><div class="hl">💡 Si inflación = 9% y tu CDT paga 12%, ganaste un 3% real de poder adquisitivo.</div>`,
-        cripto:`<h3>Riesgos reales</h3><ul><li>Volatilidad extrema: Bitcoin cayó 75% en 7 meses</li><li>Sin regulación ni protección estatal</li><li>Estafas, rug pulls y pirámides frecuentes</li><li>Si pierdes la clave privada, pierdes todo</li></ul><div class="ej">Bitcoin nov 2021: $68.000 USD → jun 2022: $17.000 USD\nCaída del 75% en 7 meses</div><h3>Si decides invertir</h3><ul><li>Máximo 5% de tu portafolio</li><li>Solo dinero que puedes perder</li><li>Plataformas serias: Binance, Coinbase</li></ul><div class="hl">🚨 Señales de estafa: rendimientos garantizados altos, presión para invertir rápido.</div>`,
-        diversifica:`<h3>¿Por qué diversificar?</h3><p>Si tu único ingreso se corta, tu flujo de caja desaparece de inmediato.</p><h3>Opciones de segunda fuente</h3><ul><li>Freelance en tu área de expertise</li><li>Venta de productos digitales</li><li>Inversiones con dividendos o intereses</li></ul><div class="ej">Segunda fuente de $300.000/mes:\nEn 1 año extra: $3.600.000\nCambia completamente tu seguridad financiera.</div><div class="hl">💡 No necesitas reemplazar tu ingreso. Con un 20% adicional cambias tu estabilidad.</div>`,
-        habitos:`<h3>Los 7 hábitos financieros</h3><ul><li>1. Registra cada peso que gastas</li><li>2. Págate a ti primero (10-20%)</li><li>3. Vive por debajo de tus posibilidades</li><li>4. Aprende constantemente sobre dinero</li><li>5. Evita deudas de consumo</li><li>6. Invierte poco pero constante</li><li>7. Revisa y ajusta tu presupuesto mensual</li></ul><div class="ej">El hábito #1: quienes registran sus gastos ahorran en promedio 20% más.</div><div class="hl">🧠 Empieza con un solo hábito esta semana.</div>`,
-        finca:`<h3>¿Por qué finca raíz en Colombia?</h3><ul><li>Valorización histórica del 5-12% anual</li><li>Ingreso por arriendo (3-6% anual del valor)</li><li>Cobertura contra la inflación</li></ul><div class="ej">Inmueble: $200.000.000 · Arriendo: $1.000.000/mes\nRentabilidad anual: 6% + valorización ≈ 12% total</div><h3>Riesgos</h3><ul><li>Baja liquidez</li><li>Requiere capital inicial alto</li><li>Costos de mantenimiento</li></ul><div class="hl">💡 Sin capital: considera fiducias inmobiliarias en Colombia.</div>`,
-    };
- 
+    let todosLosArts = [];
+
     async function cargarArticulos(){
-        // Intentar del backend, si falla usar datos locales
         try {
             const data = await apiFetch('/articulos');
-            renderArticulos(data.articulos||[]);
-        } catch(_){
-            renderArticulos(ARTS_LOCAL);
+            todosLosArts = data.articulos || [];
+        } catch(_) {
+            todosLosArts = ARTS_LOCAL;
         }
+        renderArticulos(todosLosArts);
     }
- 
+
+    function filtrarNivel(nivel, btn){
+        document.querySelectorAll('.nivel-chip').forEach(c=>c.classList.remove('activo'));
+        btn.classList.add('activo');
+        renderArticulos(nivel ? todosLosArts.filter(a=>a.nivel===nivel) : todosLosArts);
+    }
+
     function renderArticulos(lista){
         document.getElementById('articulosGrid').innerHTML = lista.map((a,i)=>`
-            <div class="art-card" onclick="abrirArticulo('${a.id}')" style="animation-delay:${i*0.05}s">
+            <div class="art-card" onclick="abrirArticulo('${a.id}')" style="animation:fadeUp .3s ease ${i*0.04}s both">
                 <div class="art-card-top">
                     <div class="art-emoji-wrap">${a.emoji}</div>
-                    <span class="art-nivel nivel-${a.nivel}">${a.nivel.charAt(0).toUpperCase()+a.nivel.slice(1)}</span>
+                    <span class="res-featured-nivel nivel-${a.nivel}">${a.nivel}</span>
                 </div>
-                <div class="art-cat">${a.categoria||a.cat||''}</div>
+                <div class="art-cat">${a.categoria}</div>
                 <div class="art-titulo">${a.titulo}</div>
-                <div class="art-desc">${a.descripcion||a.desc||''}</div>
+                <div class="art-desc">${a.resumen}</div>
                 <div class="art-footer">
-                    <div class="art-meta"><i class="fas fa-clock"></i> ${a.tiempo_min||a.min||0} min</div>
+                    <div class="art-meta"><i class="fas fa-layer-group"></i> ${a.num_secciones||'—'} secciones</div>
                     <div class="art-arrow"><i class="fas fa-arrow-right"></i></div>
                 </div>
             </div>`).join('');
     }
- 
-    function construirContenidoAPI(bloques){
-        return bloques.map(b=>{
-            switch(b.tipo){
-                case 'subtitulo': return `<h3>${b.texto}</h3>`;
-                case 'parrafo':   return `<p>${b.texto}</p>`;
-                case 'highlight': return `<div class="hl">${b.texto}</div>`;
-                case 'ejemplo':   return `<div class="ej">${b.texto}</div>`;
-                case 'lista':     return `<ul>${(b.items||[]).map(i=>`<li>${i}</li>`).join('')}</ul>`;
-                default:          return '';
-            }
-        }).join('');
-    }
- 
-    async function abrirArticulo(id){
-        document.getElementById('modalArt').classList.add('visible');
-        // Intentar del backend
-        try {
-            const a = await apiFetch('/articulos/'+id);
-            document.getElementById('modalCat').textContent   = a.categoria||a.cat||'';
-            document.getElementById('modalEmoji').textContent = a.emoji;
-            document.getElementById('modalTitulo').textContent= a.titulo;
-            document.getElementById('modalBody').innerHTML    = construirContenidoAPI(a.contenido||[]);
-            return;
-        } catch(_){}
-        // Fallback local
-        const a = ARTS_LOCAL.find(x=>x.id===id);
-        if(!a) return;
-        document.getElementById('modalCat').textContent   = a.categoria||a.cat||'';
-        document.getElementById('modalEmoji').textContent = a.emoji;
-        document.getElementById('modalTitulo').textContent= a.titulo;
-        document.getElementById('modalBody').innerHTML    = CONTENIDOS[id]||'<p>Contenido en construcción.</p>';
-    }
- 
-    function cerrarModal(){ document.getElementById('modalArt').classList.remove('visible'); }
-    document.getElementById('modalArt').addEventListener('click',e=>{ if(e.target===document.getElementById('modalArt')) cerrarModal(); });
- 
+
     // ══════════════════════════════════════════════════════
-    //  CALCULADORAS — siempre locales (rápidas, sin red)
+    //  MODAL ARTÍCULO
+    // ══════════════════════════════════════════════════════
+    function renderModalBody(a){
+        let html = '';
+
+        // Secciones
+        (a.secciones || []).forEach(sec => {
+            html += `<h3>${sec.subtitulo}</h3><p>${sec.contenido}</p>`;
+        });
+
+        // Ejemplo
+        if (a.ejemplo && a.ejemplo.titulo) {
+            html += `
+                <div class="modal-ej">
+                    <div class="modal-ej-titulo"><i class="fas fa-chart-bar"></i> ${a.ejemplo.titulo}</div>
+                    <div class="modal-ej-body">${a.ejemplo.detalle||''}</div>
+                </div>`;
+        }
+
+        // Consejo
+        if (a.consejo) {
+            html += `<div class="modal-consejo">${a.consejo}</div>`;
+        }
+
+        // Relacionados
+        const rels = a.relacionados_detalle || [];
+        if (rels.length) {
+            html += `
+                <div class="modal-relacionados">
+                    <div class="modal-rel-titulo">📚 También te puede interesar</div>
+                    <div class="modal-rel-chips">
+                        ${rels.map(r=>`
+                            <div class="modal-rel-chip" onclick="abrirArticulo('${r.id}')">
+                                <span class="modal-rel-chip-emoji">${r.emoji}</span>
+                                <div>
+                                    <div class="modal-rel-chip-titulo">${r.titulo}</div>
+                                    <div class="modal-rel-chip-cat">${r.categoria}</div>
+                                </div>
+                            </div>`).join('')}
+                    </div>
+                </div>`;
+        }
+        return html;
+    }
+
+    async function abrirArticulo(id){
+        // Abrir modal con spinner
+        document.getElementById('modalCat').textContent    = '';
+        document.getElementById('modalEmoji').textContent  = '⏳';
+        document.getElementById('modalTitulo').textContent = 'Cargando...';
+        document.getElementById('modalResumen').textContent= '';
+        document.getElementById('modalBody').innerHTML     = '<div style="text-align:center;padding:40px;color:var(--muted)"><span class="spinner"></span></div>';
+        document.getElementById('modalArt').classList.add('visible');
+
+        try {
+            const a = await apiFetch('/articulos/' + id);
+            document.getElementById('modalCat').textContent    = a.categoria;
+            document.getElementById('modalEmoji').textContent  = a.emoji;
+            document.getElementById('modalTitulo').textContent = a.titulo;
+            document.getElementById('modalResumen').textContent= a.resumen;
+            document.getElementById('modalBody').innerHTML     = renderModalBody(a);
+        } catch(_){
+            // Fallback: datos locales
+            const a = ARTS_LOCAL.find(x=>x.id===id);
+            if (a) {
+                document.getElementById('modalCat').textContent    = a.categoria;
+                document.getElementById('modalEmoji').textContent  = a.emoji;
+                document.getElementById('modalTitulo').textContent = a.titulo;
+                document.getElementById('modalResumen').textContent= a.resumen;
+                document.getElementById('modalBody').innerHTML     =
+                    `<div style="text-align:center;padding:20px;color:var(--muted)">
+                        <i class="fas fa-wifi" style="font-size:32px;opacity:.2;display:block;margin-bottom:12px"></i>
+                        <p>Contenido completo disponible con el servidor activo.</p>
+                        <p style="margin-top:8px">También puedes preguntar al <a href="chat.html" style="color:var(--accent);text-decoration:none;font-weight:700">Chat FinanBot ↗</a></p>
+                     </div>`;
+            }
+        }
+    }
+
+    function cerrarModal(){ document.getElementById('modalArt').classList.remove('visible'); }
+    document.getElementById('modalArt').addEventListener('click', e=>{
+        if (e.target === document.getElementById('modalArt')) cerrarModal();
+    });
+
+    // ══════════════════════════════════════════════════════
+    //  CALCULADORAS — 100% locales (instantáneas)
     // ══════════════════════════════════════════════════════
     const fmt = v=>'$'+Math.round(v).toLocaleString('es-CO');
     const g   = id=>parseFloat(document.getElementById(id)?.value)||0;
-    const show = id=>{ document.getElementById('res-'+id).style.display='block'; };
- 
+    const s   = (id,v)=>{ const el=document.getElementById(id); if(el) el.textContent=v; };
+    const show= id=>{ document.getElementById('res-'+id).style.display='block'; };
+
+    function toast(msg){
+        const t=document.createElement('div');
+        t.style.cssText='position:fixed;bottom:24px;right:24px;background:#1a0a3a;border:1px solid rgba(168,85,247,0.3);border-radius:12px;padding:14px 20px;color:white;font-size:13px;z-index:99999;box-shadow:0 8px 24px rgba(0,0,0,0.4)';
+        t.innerHTML='<i class="fas fa-exclamation-circle" style="color:#f87171;margin-right:8px"></i>'+msg;
+        document.body.appendChild(t); setTimeout(()=>t.remove(),3000);
+    }
+
     function calc(id){
         switch(id){
             case 'is': {
                 const k=g('is-k'),t=g('is-t')/100,m=g('is-m');
                 if(!k||!t||!m){toast('Completa todos los campos.');return;}
                 const tm=t/12,int=k*tm*m;
-                s('is-p',fmt(int));s('is-c',fmt(k));s('is-i',fmt(int));s('is-t2',fmt(k+int));s('is-tm',(tm*100).toFixed(3)+'%');show('is');break;
+                s('is-p',fmt(int));s('is-c',fmt(k));s('is-i',fmt(int));s('is-tot',fmt(k+int));s('is-tm',(tm*100).toFixed(3)+'%');show('is');break;
             }
             case 'ic': {
                 const k=g('ic-k'),a=g('ic-a')||0,t=g('ic-t')/100,y=g('ic-y');
@@ -660,8 +925,8 @@
                 s('rg-nec',fmt(ing*.5));s('rg-des',fmt(ing*.3));s('rg-aho',fmt(ing*.2));
                 const pf=fijos/ing*100;
                 if(fijos>0){
-                    document.getElementById('rg-avw').style.display='flex';
-                    s('rg-av',fmt(fijos)+' ('+pf.toFixed(0)+'%)');
+                    document.getElementById('rg-fijosrow').style.display='flex';
+                    s('rg-fijosval',fmt(fijos)+' ('+pf.toFixed(0)+'%)');
                     s('rg-msg',pf>70?'⚠️ Zona crítica: gastos fijos al '+pf.toFixed(0)+'%':pf>50?'⚠️ Tus gastos fijos superan el 50% recomendado.':'✅ Gastos fijos en rango controlado.');
                 }
                 show('rg');break;
@@ -670,15 +935,15 @@
                 const obj=g('mt-obj'),act=g('mt-act')||0,men=g('mt-men'),ren=g('mt-ren')||0;
                 if(!obj||!men){toast('Completa los campos obligatorios.');return;}
                 const falt=Math.max(0,obj-act);
-                if(falt===0){s('mt-tpo','¡Ya la lograste! 🎉');s('mt-lbl','Felicitaciones');s('mt-flt','$0');s('mt-tot',fmt(act));s('mt-fch','Ahora mismo');show('mt');return;}
+                if(falt===0){s('mt-tpo','¡Ya la lograste! 🎉');s('mt-lbl','Felicitaciones');s('mt-flt','$0');s('mt-totv',fmt(act));s('mt-fch','Ahora mismo');show('mt');return;}
                 let meses=0,bal=act;
                 if(ren>0){const tm=ren/100;while(bal<obj&&meses<1200){bal=bal*(1+tm)+men;meses++;}}
                 else{meses=Math.ceil(falt/men);bal=act+men*meses;}
-                const a=Math.floor(meses/12),mr=meses%12;
+                const a2=Math.floor(meses/12),mr=meses%12;
                 let txt=meses+' mes'+(meses!==1?'es':'');
-                if(a>0)txt=a+' año'+(a>1?'s':'')+(mr>0?' y '+mr+' mes'+(mr>1?'es':''):'');
+                if(a2>0)txt=a2+' año'+(a2>1?'s':'')+(mr>0?' y '+mr+' mes'+(mr>1?'es':''):'');
                 const fecha=new Date();fecha.setMonth(fecha.getMonth()+meses);
-                s('mt-tpo',txt);s('mt-lbl','Para alcanzar '+fmt(obj));s('mt-flt',fmt(falt));s('mt-tot',fmt(bal));
+                s('mt-tpo',txt);s('mt-lbl','Para alcanzar '+fmt(obj));s('mt-flt',fmt(falt));s('mt-totv',fmt(bal));
                 s('mt-fch',fecha.toLocaleDateString('es-CO',{month:'long',year:'numeric'}));show('mt');break;
             }
             case 'rf': {
@@ -703,7 +968,7 @@
                 const mon=g('inf-mon'),tas=g('inf-tas')/100,ano=g('inf-ano');
                 if(!mon||!tas||!ano){toast('Completa todos los campos.');return;}
                 const fut=mon/Math.pow(1+tas,ano),per=mon-fut;
-                s('inf-per',fmt(per));s('inf-hoy',fmt(mon));s('inf-fut',fmt(fut));s('inf-tot',fmt(per));s('inf-nec','+'+(tas*100).toFixed(2)+'% anual mínimo');show('inf');break;
+                s('inf-per',fmt(per));s('inf-hoy',fmt(mon));s('inf-fut',fmt(fut));s('inf-nec','+'+(tas*100).toFixed(2)+'% anual mínimo');show('inf');break;
             }
             case 'pv': {
                 const ing=g('pv-ing'),apo=g('pv-apo'),ano=g('pv-ano'),ren=g('pv-ren')||8;
@@ -715,104 +980,66 @@
             }
         }
     }
- 
-    function s(id,val){ const el=document.getElementById(id); if(el) el.textContent=val; }
- 
-    function toast(msg){
-        const t=document.createElement('div');
-        t.style.cssText='position:fixed;bottom:24px;right:24px;background:#1e0a3c;border:1px solid rgba(168,85,247,0.3);border-radius:12px;padding:14px 20px;color:white;font-size:13px;z-index:99999;box-shadow:0 8px 24px rgba(0,0,0,0.4)';
-        t.innerHTML='<i class="fas fa-exclamation-circle" style="color:#f87171;margin-right:8px"></i>'+msg;
-        document.body.appendChild(t);setTimeout(()=>t.remove(),3000);
-    }
- 
+
     // ══════════════════════════════════════════════════════
     //  GLOSARIO
     // ══════════════════════════════════════════════════════
-    const GLOSARIO_LOCAL = [
-        {nombre:'Activo',definicion:'Bien o derecho con valor económico que pertenece a una persona. Ejemplos: dinero, propiedades, inversiones.',categoria:'Conceptos básicos'},
-        {nombre:'AFP',definicion:'Administradora de Fondos de Pensiones. Entidad privada que gestiona ahorros pensionales en el régimen RAIS.',categoria:'Pensión'},
-        {nombre:'Ahorro',definicion:'Parte del ingreso que no se gasta y se reserva para uso futuro. Base de toda salud financiera.',categoria:'Conceptos básicos'},
-        {nombre:'Amortización',definicion:'Proceso de pago gradual de una deuda mediante cuotas periódicas que incluyen capital e intereses.',categoria:'Crédito'},
-        {nombre:'Apalancamiento',definicion:'Uso de deuda para aumentar la capacidad de inversión. Puede multiplicar ganancias pero también pérdidas.',categoria:'Inversión'},
-        {nombre:'Balance',definicion:'Diferencia entre tus ingresos y gastos en un período. Balance positivo = ingresas más de lo que gastas.',categoria:'Conceptos básicos'},
-        {nombre:'BVC',definicion:'Bolsa de Valores de Colombia. Mercado donde se compran y venden acciones de empresas colombianas.',categoria:'Inversión'},
-        {nombre:'Capital',definicion:'Monto inicial de dinero que se invierte o presta. Base sobre la que se calculan los intereses.',categoria:'Conceptos básicos'},
-        {nombre:'CDT',definicion:'Certificado de Depósito a Término. Depositas dinero a plazo fijo a cambio de una tasa de interés pactada.',categoria:'Ahorro e inversión'},
-        {nombre:'Colpensiones',definicion:'Administradora estatal del régimen de prima media pensional en Colombia.',categoria:'Pensión'},
-        {nombre:'Crédito',definicion:'Préstamo de dinero que debes devolver con intereses en un plazo determinado.',categoria:'Crédito'},
-        {nombre:'Cuota fija',definicion:'Modalidad de pago donde la cuota mensual no varía durante todo el plazo. Sistema francés.',categoria:'Crédito'},
-        {nombre:'Diversificación',definicion:'"No pongas todos los huevos en una canasta." Invertir en múltiples activos para reducir el riesgo.',categoria:'Inversión'},
-        {nombre:'Dividendo',definicion:'Parte de las ganancias de una empresa distribuida entre sus accionistas. Fuente de ingreso pasivo.',categoria:'Inversión'},
-        {nombre:'DTF',definicion:'Depósito a Término Fijo. Tasa de referencia del mercado financiero colombiano usada como base para créditos.',categoria:'Economía'},
-        {nombre:'EA (Efectivo Anual)',definicion:'Tasa que muestra el rendimiento o costo real considerando la capitalización durante un año.',categoria:'Tasas'},
-        {nombre:'Fondo de emergencia',definicion:'Dinero reservado para imprevistos. Mínimo 3 meses de gastos básicos en cuenta de fácil acceso.',categoria:'Ahorro e inversión'},
-        {nombre:'Flujo de caja',definicion:'Movimiento de dinero que entra y sale de tu economía personal en un período determinado.',categoria:'Conceptos básicos'},
-        {nombre:'Inflación',definicion:'Aumento generalizado y sostenido de los precios. Reduce el poder adquisitivo del dinero.',categoria:'Economía'},
-        {nombre:'Interés compuesto',definicion:'Interés calculado sobre el capital inicial más los intereses acumulados. Los intereses generan nuevos intereses.',categoria:'Tasas'},
-        {nombre:'Interés simple',definicion:'Interés calculado siempre sobre el capital inicial únicamente. Los intereses no se reinvierten.',categoria:'Tasas'},
-        {nombre:'IPC',definicion:'Índice de Precios al Consumidor. Mide variación de precios de una canasta de bienes. Referencia de inflación.',categoria:'Economía'},
-        {nombre:'Inversión',definicion:'Destinar dinero con el objetivo de obtener una ganancia futura. Implica un nivel de riesgo.',categoria:'Ahorro e inversión'},
-        {nombre:'Liquidez',definicion:'Facilidad con la que un activo puede convertirse en efectivo sin perder valor.',categoria:'Conceptos básicos'},
-        {nombre:'Pasivo',definicion:'Deuda u obligación financiera que debes pagar en el futuro. Ejemplos: créditos, hipotecas, tarjetas.',categoria:'Conceptos básicos'},
-        {nombre:'Patrimonio',definicion:'Diferencia entre tus activos y pasivos. Representa tu riqueza neta real.',categoria:'Conceptos básicos'},
-        {nombre:'Pensión voluntaria',definicion:'Aportes adicionales a un fondo de pensión más allá de lo obligatorio. Son deducibles de renta.',categoria:'Pensión'},
-        {nombre:'Presupuesto',definicion:'Plan financiero que organiza tus ingresos y gastos para un período. Herramienta fundamental.',categoria:'Conceptos básicos'},
-        {nombre:'Rentabilidad',definicion:'Ganancia obtenida sobre una inversión expresada como porcentaje.',categoria:'Inversión'},
-        {nombre:'Retención en la fuente',definicion:'Anticipo del impuesto de renta que descuenta el empleador directamente del salario.',categoria:'Impuestos'},
-        {nombre:'SMMLV',definicion:'Salario Mínimo Mensual Legal Vigente en Colombia. Para 2024: $1.300.000.',categoria:'Economía'},
-        {nombre:'Tasa EA',definicion:'Tasa Efectiva Anual. Expresa el costo o rendimiento real de un producto financiero por año.',categoria:'Tasas'},
-        {nombre:'TRM',definicion:'Tasa Representativa del Mercado. Valor oficial del dólar en pesos colombianos, fijada diariamente.',categoria:'Economía'},
-        {nombre:'UVT',definicion:'Unidad de Valor Tributario. Referencia para calcular impuestos en Colombia. Para 2024: $47.065.',categoria:'Impuestos'},
-        {nombre:'Yield',definicion:'Rendimiento de una inversión expresado como porcentaje anual. Usado principalmente en mercados de capitales.',categoria:'Inversión'},
-    ];
- 
     let GLOSARIO = [];
- 
+
     async function cargarGlosario(){
         try {
             const data = await apiFetch('/glosario');
-            GLOSARIO = data.terminos||[];
-            renderLetras(data.letras_disponibles||[]);
+            GLOSARIO = data.terminos || [];
+            renderLetras(data.letras_disponibles || []);
         } catch(_){
             GLOSARIO = GLOSARIO_LOCAL;
-            const letras=[...new Set(GLOSARIO.map(t=>t.nombre[0].toUpperCase()))].sort();
+            const letras = [...new Set(GLOSARIO.map(t=>t.nombre[0].toUpperCase()))].sort();
             renderLetras(letras);
         }
         renderGlosario(GLOSARIO);
     }
- 
+
     function renderGlosario(lista){
-        document.getElementById('glosarioCount').textContent=lista.length;
-        document.getElementById('glosarioGrid').innerHTML=lista.length
-            ? lista.map(t=>`<div class="termino-card"><div class="termino-nombre">${t.nombre}</div><div class="termino-def">${t.definicion||t.def||''}</div><div class="termino-cat">${t.categoria||t.cat||''}</div></div>`).join('')
-            : `<div style="grid-column:1/-1;text-align:center;color:var(--muted);padding:40px">No se encontraron términos.</div>`;
+        document.getElementById('glosarioCount').textContent = lista.length;
+        document.getElementById('glosarioGrid').innerHTML = lista.length
+            ? lista.map(t=>`
+                <div class="termino-card">
+                    <div class="termino-nombre">${t.nombre}</div>
+                    <div class="termino-def">${t.definicion}</div>
+                    <div class="termino-cat">${t.categoria}</div>
+                </div>`).join('')
+            : `<div style="grid-column:1/-1;text-align:center;color:var(--muted);padding:40px">Sin términos que coincidan.</div>`;
     }
- 
+
     function filtrarGlosario(){
-        const q=document.getElementById('glosarioSearch').value.toLowerCase().trim();
-        renderGlosario(q ? GLOSARIO.filter(t=>(t.nombre||'').toLowerCase().includes(q)||(t.definicion||t.def||'').toLowerCase().includes(q)||(t.categoria||t.cat||'').toLowerCase().includes(q)) : GLOSARIO);
+        const q = document.getElementById('glosarioSearch').value.toLowerCase().trim();
         document.querySelectorAll('.letra-btn').forEach(b=>b.classList.remove('activo'));
-        document.querySelector('.letra-btn:first-child')?.classList.add('activo');
+        document.querySelector('.letra-btn')?.classList.add('activo');
+        renderGlosario(q ? GLOSARIO.filter(t=>
+            t.nombre.toLowerCase().includes(q) ||
+            t.definicion.toLowerCase().includes(q) ||
+            t.categoria.toLowerCase().includes(q)
+        ) : GLOSARIO);
     }
- 
+
     function renderLetras(letras){
-        document.getElementById('glosarioLetras').innerHTML=
-            `<button class="letra-btn activo" onclick="filtrarPorLetra('',this)">Todos</button>`+
+        document.getElementById('glosarioLetras').innerHTML =
+            `<button class="letra-btn activo" onclick="filtrarPorLetra('',this)">Todos</button>` +
             letras.map(l=>`<button class="letra-btn" onclick="filtrarPorLetra('${l}',this)">${l}</button>`).join('');
     }
- 
-    function filtrarPorLetra(letra,btn){
+
+    function filtrarPorLetra(letra, btn){
         document.querySelectorAll('.letra-btn').forEach(b=>b.classList.remove('activo'));
         btn.classList.add('activo');
-        document.getElementById('glosarioSearch').value='';
-        renderGlosario(letra ? GLOSARIO.filter(t=>(t.nombre||'')[0]?.toUpperCase()===letra) : GLOSARIO);
+        document.getElementById('glosarioSearch').value = '';
+        renderGlosario(letra ? GLOSARIO.filter(t=>t.nombre[0].toUpperCase()===letra) : GLOSARIO);
     }
- 
-    // ── INIT ─────────────────────────────────────────────
+
+    // ── INIT ──────────────────────────────────────────────
     cargarArticulos();
     cargarGlosario();
     </script>
- 
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="tema.js"></script>
 </body>

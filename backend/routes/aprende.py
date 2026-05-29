@@ -1,404 +1,787 @@
 # routes/aprende.py
+"""
+FinanBot — Enciclopedia Financiera
+Motor de búsqueda tipo Google para conceptos de finanzas personales en Colombia.
+Acceso público. No requiere autenticación.
+"""
+
 from flask import Blueprint, jsonify, request
-from flask_jwt_extended import jwt_required, get_jwt_identity, verify_jwt_in_request
-from models import Usuario
 import math
+import re
 
 aprende_bp = Blueprint('aprende', __name__)
 
 
-# ── DATOS ──────────────────────────────────────────────────
-# Todos los artículos con contenido completo
-ARTICULOS = [
-    {
+# ════════════════════════════════════════════════════════════════════════════
+#  ENCICLOPEDIA FINANCIERA
+#  Cada entrada es un artículo completo con:
+#  - titulo, resumen, cuerpo (secciones), ejemplo, consejo, tags, relacionados
+# ════════════════════════════════════════════════════════════════════════════
+
+ENCICLOPEDIA = {
+
+    # ── AHORRO ───────────────────────────────────────────────────────────────
+    "ahorro": {
         "id": "ahorro",
         "emoji": "💰",
-        "nivel": "basico",
         "categoria": "Ahorro",
-        "titulo": "¿Cómo empezar a ahorrar desde cero?",
-        "descripcion": "Estrategias efectivas para ahorrar sin importar cuánto ganas.",
-        "tiempo_min": 5,
-        "contenido": [
-            {"tipo": "subtitulo", "texto": "Págate a ti primero"},
-            {"tipo": "parrafo",   "texto": "Apenas recibas tu salario, transfiere un % fijo a una cuenta separada antes de gastar en cualquier cosa. No esperes 'ver qué sobra' porque casi nunca sobra."},
-            {"tipo": "highlight", "texto": "💡 Empieza con el 10%. Si ganas $1.500.000, separa $150.000 antes de cualquier gasto."},
-            {"tipo": "subtitulo", "texto": "Elimina gastos hormiga"},
-            {"tipo": "ejemplo",   "texto": "☕ Café diario: $3.000 × 30 = $90.000/mes\n🚕 Taxis innecesarios: $15.000 × 8 = $120.000/mes\n📱 Apps que no usas: $25.000/mes\nTotal: $235.000/mes que podrías estar ahorrando"},
-            {"tipo": "subtitulo", "texto": "Automatiza tu ahorro"},
-            {"tipo": "parrafo",   "texto": "Configura una transferencia automática el día que recibes tu pago. Lo que no ves, no lo gastas. La mayoría de bancos colombianos permiten automatizar transferencias."},
-            {"tipo": "highlight", "texto": "✅ Reto de 30 días: anota cada gasto durante un mes. Al final sabrás exactamente cuánto puedes ahorrar."},
-        ]
+        "nivel": "basico",
+        "titulo": "Ahorro personal",
+        "resumen": "El ahorro es la parte del ingreso que no se gasta y se reserva para uso futuro. Es la base de toda salud financiera.",
+        "secciones": [
+            {
+                "subtitulo": "¿Qué es el ahorro?",
+                "contenido": "Ahorrar es guardar una parte de lo que ganas antes de gastar. No es lo que queda al final del mes — es lo primero que separas. La regla universal es págate a ti primero: cuando recibas tu ingreso, transfiere un porcentaje fijo a una cuenta separada antes de cualquier otro gasto."
+            },
+            {
+                "subtitulo": "¿Cuánto debo ahorrar?",
+                "contenido": "La regla más usada es el 20% del ingreso mensual. Si ganas $2.000.000 → deberías ahorrar $400.000 mensualmente. Si eso es imposible ahora, empieza con el 5% o el 10% y auméntalo progresivamente. Lo importante es el hábito, no el monto inicial."
+            },
+            {
+                "subtitulo": "Los 'gastos hormiga': el enemigo silencioso",
+                "contenido": "Los gastos pequeños y frecuentes destruyen el ahorro sin que lo notes. Un café diario de $3.000 son $90.000 al mes. Dos domicilios a la semana a $15.000 son $120.000. Una suscripción olvidada son $25.000. Total: $235.000 mensuales que podrías estar ahorrando sin cambiar tu calidad de vida."
+            },
+            {
+                "subtitulo": "Cómo automatizar el ahorro",
+                "contenido": "Configura una transferencia automática el mismo día que recibes tu ingreso hacia una cuenta de ahorros separada. La mayoría de bancos colombianos (Bancolombia, Davivienda, BBVA, Nequi, Daviplata) permiten programar esto gratuitamente. Lo que no ves, no lo gastas."
+            },
+            {
+                "subtitulo": "Tipos de ahorro según el plazo",
+                "contenido": "Corto plazo (0-12 meses): cuenta de ahorros o Nequi para emergencias y metas inmediatas. Mediano plazo (1-3 años): CDT o fondos de liquidez con mejor rendimiento. Largo plazo (+3 años): fondos de inversión, pensión voluntaria o finca raíz."
+            }
+        ],
+        "ejemplo": {
+            "titulo": "Ejemplo real con $1.800.000 de ingreso mensual",
+            "detalle": "Regla del 20% → $360.000/mes en ahorro.\n\nMes 1: $360.000\nMes 6: $2.160.000\nMes 12: $4.320.000\nMes 36 (3 años): $12.960.000 + intereses del CDT ≈ $14.500.000\n\n¿Con qué? Con el dinero que antes 'se perdía' sin saber cómo."
+        },
+        "consejo": "💡 Reto de 30 días: anota CADA gasto durante un mes completo. Al final sabrás exactamente cuánto puedes ahorrar sin esfuerzo real.",
+        "tags": ["ahorro", "dinero", "ingreso", "presupuesto", "gastos", "pagarte a ti primero", "nequi", "daviplata"],
+        "relacionados": ["presupuesto", "fondo_emergencia", "cdt", "meta_ahorro"]
     },
-    {
+
+    # ── PRESUPUESTO / REGLA 50/30/20 ─────────────────────────────────────────
+    "presupuesto": {
         "id": "presupuesto",
         "emoji": "📋",
-        "nivel": "basico",
         "categoria": "Presupuesto",
-        "titulo": "La regla 50/30/20 explicada",
-        "descripcion": "Distribuye tu salario de forma inteligente con esta regla simple.",
-        "tiempo_min": 4,
-        "contenido": [
-            {"tipo": "subtitulo", "texto": "50% — Necesidades básicas"},
-            {"tipo": "parrafo",   "texto": "Arriendo, comida, transporte, servicios, salud, educación."},
-            {"tipo": "subtitulo", "texto": "30% — Deseos"},
-            {"tipo": "parrafo",   "texto": "Entretenimiento, ropa, salidas, hobbies, suscripciones."},
-            {"tipo": "subtitulo", "texto": "20% — Ahorro e inversión"},
-            {"tipo": "parrafo",   "texto": "Fondo de emergencia, CDT, metas de ahorro, pensión voluntaria."},
-            {"tipo": "ejemplo",   "texto": "Con $2.000.000:\n🟢 Necesidades (50%): $1.000.000\n🟡 Deseos (30%): $600.000\n🔵 Ahorro (20%): $400.000"},
-            {"tipo": "highlight", "texto": "⚠️ Si tus necesidades superan el 50%, ajusta: 60/20/20. Lo importante es SIEMPRE guardar algo."},
-        ]
+        "nivel": "basico",
+        "titulo": "Presupuesto personal — Regla 50/30/20",
+        "resumen": "Un presupuesto es el plan que define cómo vas a usar tu dinero cada mes. La regla 50/30/20 es el método más simple y efectivo para empezar.",
+        "secciones": [
+            {
+                "subtitulo": "¿Por qué necesitas un presupuesto?",
+                "contenido": "Sin presupuesto, el dinero 'desaparece' sin explicación. Con presupuesto, tomas decisiones conscientes sobre cada peso que entra y sale. El 86% de las personas que siguen un presupuesto logran ahorrar más que quienes no lo hacen."
+            },
+            {
+                "subtitulo": "La Regla 50/30/20 explicada",
+                "contenido": "50% Necesidades: todo lo que debes pagar para vivir (arriendo, comida, transporte, salud, servicios públicos, educación). 30% Deseos: lo que quieres pero no necesitas (restaurantes, entretenimiento, ropa nueva, suscripciones, hobbies). 20% Ahorro e inversión: CDT, fondo de emergencia, metas de ahorro, pensión voluntaria."
+            },
+            {
+                "subtitulo": "¿Qué pasa si mis necesidades superan el 50%?",
+                "contenido": "Es muy común en Colombia, especialmente en ciudades con alto costo de arriendo. En ese caso ajusta: usa 60/20/20 o incluso 70/15/15. Lo ÚNICO innegociable es que siempre haya un porcentaje para ahorro, así sea el 5%. El orden importa: primero paga necesidades, luego ahorra, con lo que queda disfruta."
+            },
+            {
+                "subtitulo": "Cómo hacer tu presupuesto en 4 pasos",
+                "contenido": "1. Calcula tu ingreso neto mensual real (lo que efectivamente recibes después de descuentos). 2. Lista todos tus gastos fijos del último mes. 3. Aplica la regla 50/30/20. 4. Revísalo y ajústalo cada mes — el primer presupuesto nunca es perfecto."
+            }
+        ],
+        "ejemplo": {
+            "titulo": "Ingreso mensual: $2.500.000",
+            "detalle": "50% Necesidades → $1.250.000\n   Arriendo: $800.000\n   Comida: $300.000\n   Transporte: $150.000\n\n30% Deseos → $750.000\n   Salidas/entretenimiento: $400.000\n   Ropa/otros: $350.000\n\n20% Ahorro → $500.000\n   Fondo de emergencia: $200.000\n   Meta vacaciones: $150.000\n   CDT/inversión: $150.000"
+        },
+        "consejo": "💡 Usa FinanBot para registrar tus gastos por categoría. Al final del mes verás automáticamente en qué categoría te excediste.",
+        "tags": ["presupuesto", "regla 50 30 20", "50/30/20", "necesidades", "deseos", "ahorro", "distribución ingreso", "planificación"],
+        "relacionados": ["ahorro", "gastos", "fondo_emergencia", "inversion"]
     },
-    {
+
+    # ── CDT ───────────────────────────────────────────────────────────────────
+    "cdt": {
+        "id": "cdt",
+        "emoji": "🏦",
+        "categoria": "Inversión",
+        "nivel": "basico",
+        "titulo": "CDT — Certificado de Depósito a Término",
+        "resumen": "El CDT es el producto de ahorro e inversión más conocido en Colombia. Depositas dinero por un plazo fijo y recibes una tasa de interés garantizada desde el inicio.",
+        "secciones": [
+            {
+                "subtitulo": "¿Qué es un CDT?",
+                "contenido": "Es un producto financiero ofrecido por bancos, cooperativas y corporaciones financieras en Colombia. Depositas un monto mínimo por un plazo determinado (30, 60, 90, 180 o 360 días) y al vencer recibes tu capital más los intereses pactados. La tasa no cambia durante el plazo — es fija desde el primer día."
+            },
+            {
+                "subtitulo": "Tasas de referencia 2024 en Colombia",
+                "contenido": "Corto plazo (30-90 días): 8% - 10% EA. Mediano plazo (180-360 días): 10% - 13% EA. Largo plazo (más de 1 año): 12% - 14% EA. Estas tasas varían según el banco, el monto y el plazo. Los bancos digitales y cooperativas suelen ofrecer mejores tasas que la banca tradicional."
+            },
+            {
+                "subtitulo": "¿Qué pasa si necesito el dinero antes del plazo?",
+                "contenido": "En la mayoría de casos puedes romper el CDT antes del vencimiento, pero con una penalidad que reduce o elimina los intereses ganados. Por eso es fundamental que el dinero que inviertas en CDT sea dinero que no vas a necesitar en el corto plazo. Para dinero de emergencia usa mejor una cuenta de ahorros o Nequi."
+            },
+            {
+                "subtitulo": "Seguridad y respaldo del CDT",
+                "contenido": "Los CDT en entidades vigiladas por la Superfinanciera están asegurados por Fogafín hasta $50 millones por persona por entidad. Esto significa que si el banco quiebra, el gobierno te devuelve hasta ese monto. Es uno de los instrumentos más seguros del mercado colombiano."
+            },
+            {
+                "subtitulo": "¿Dónde abrir un CDT en Colombia?",
+                "contenido": "Banca tradicional: Bancolombia, Davivienda, BBVA, Banco de Bogotá, Banco Popular. Banca digital con mejores tasas: Bancamía, JFK, cooperativas financieras. Plataformas de inversión: Tyba, Tributi, que concentran varias opciones. Siempre compara tasas antes de decidir."
+            }
+        ],
+        "ejemplo": {
+            "titulo": "CDT de $3.000.000 al 12% EA por 12 meses",
+            "detalle": "Capital inicial: $3.000.000\nTasa: 12% EA (efectiva anual)\nPlazo: 12 meses\n\nInterés ganado: $360.000\nTotal al vencer: $3.360.000\n\n¿Cuánto pagaste por este dinero extra? Nada.\n¿Qué riesgo tomaste? Casi ninguno.\n¿Puedes superar la inflación? Sí, si la inflación es menor al 12%."
+        },
+        "consejo": "💡 Asegúrate de que la tasa del CDT supere la inflación actual para que tu dinero realmente crezca en poder adquisitivo y no solo en pesos nominales.",
+        "tags": ["cdt", "certificado deposito termino", "inversión", "tasa fija", "fogafin", "banco", "plazo fijo", "rendimiento", "colombia"],
+        "relacionados": ["ahorro", "interes_compuesto", "inflacion", "inversion"]
+    },
+
+    # ── FONDO DE EMERGENCIA ───────────────────────────────────────────────────
+    "fondo_emergencia": {
+        "id": "fondo_emergencia",
+        "emoji": "🛡️",
+        "categoria": "Seguridad financiera",
+        "nivel": "basico",
+        "titulo": "Fondo de emergencia — Tu red de seguridad financiera",
+        "resumen": "El fondo de emergencia es dinero reservado exclusivamente para imprevistos graves. Es lo primero que debes construir antes de cualquier inversión.",
+        "secciones": [
+            {
+                "subtitulo": "¿Para qué sirve el fondo de emergencia?",
+                "contenido": "Para cubrir gastos urgentes e inesperados sin endeudarte: pérdida repentina de empleo, emergencia médica no cubierta por EPS, falla grave del carro o moto que necesitas para trabajar, reparación urgente del lugar donde vives, o cualquier crisis que interrumpa tu flujo de ingresos."
+            },
+            {
+                "subtitulo": "¿Cuánto dinero necesito?",
+                "contenido": "Empleado en empresa estable con buen historial: 3 meses de gastos básicos. Empleado en empresa inestable o sector variable: 4-6 meses. Trabajador independiente, freelance o emprendedor: 6-12 meses. Los gastos básicos incluyen: arriendo, comida, servicios, transporte, mínimo de deudas."
+            },
+            {
+                "subtitulo": "¿Dónde guardar el fondo de emergencia?",
+                "contenido": "Debe estar en un lugar de fácil acceso (puedes retirar en menos de 24 horas) y con algo de rendimiento. Opciones recomendadas: cuenta de ahorros tradicional, Nequi o Daviplata (rendimiento diario), fondos de liquidez (como Fiduciaria Bancolombia o Skandia), CDT a 30 días renovable. NO en criptomonedas, acciones o inversiones de largo plazo — podrían estar en baja justo cuando más los necesitas."
+            },
+            {
+                "subtitulo": "El fondo de emergencia va ANTES que invertir",
+                "contenido": "Este es el error más común: querer invertir antes de tener fondo de emergencia. Si inviertes $5.000.000 en acciones y de pronto necesitas $2.000.000 urgente, podrías vender en el peor momento (pérdida) o endeudarte. El fondo de emergencia te da la tranquilidad para invertir sin miedo al corto plazo."
+            },
+            {
+                "subtitulo": "Cómo construirlo paso a paso",
+                "contenido": "Paso 1: Calcula cuánto son 3 meses de tus gastos básicos. Paso 2: Abre una cuenta separada solo para emergencias (Nequi o cuenta de ahorros aparte). Paso 3: Transfiere mensualmente hasta completarlo (puede tomar 6-12 meses). Paso 4: No lo toques para gastos que no sean emergencias reales. ¿Ropa en oferta es emergencia? No. ¿Despido inesperado? Sí."
+            }
+        ],
+        "ejemplo": {
+            "titulo": "Gastos básicos mensuales: $1.600.000",
+            "detalle": "Arriendo: $800.000\nComida: $400.000\nTransporte: $150.000\nServicios: $150.000\nDeuda mínima: $100.000\nTotal básico: $1.600.000\n\nFondo mínimo (3 meses): $4.800.000\nFondo ideal (6 meses): $9.600.000\n\nSi ahorras $400.000/mes para el fondo → lo completas en 12 meses (3 meses) o 24 meses (6 meses)."
+        },
+        "consejo": "💡 Una vez completes tu fondo de emergencia, NUNCA lo uses para vacaciones, caprichos o inversiones. Existe solo para emergencias reales. Si lo usas, reconstrúyelo antes de invertir.",
+        "tags": ["fondo emergencia", "emergencia", "seguridad financiera", "ahorro emergencia", "imprevistos", "colchon", "nequi", "liquidez"],
+        "relacionados": ["ahorro", "presupuesto", "deudas", "inversion"]
+    },
+
+    # ── DEUDAS ────────────────────────────────────────────────────────────────
+    "deudas": {
         "id": "deudas",
         "emoji": "💳",
+        "categoria": "Deudas y crédito",
         "nivel": "basico",
-        "categoria": "Deudas",
-        "titulo": "Salir de deudas: bola de nieve y avalancha",
-        "descripcion": "Dos métodos probados para eliminar tus deudas de una vez.",
-        "tiempo_min": 6,
-        "contenido": [
-            {"tipo": "subtitulo", "texto": "Paso 1: Inventario completo"},
-            {"tipo": "parrafo",   "texto": "Anota todas tus deudas: nombre, monto total, cuota mensual y tasa de interés."},
-            {"tipo": "subtitulo", "texto": "⛄ Método Bola de Nieve"},
-            {"tipo": "lista",     "items": ["Paga el mínimo en todas", "Dinero extra → deuda más pequeña", "Al eliminarla, ese dinero va a la siguiente"]},
-            {"tipo": "subtitulo", "texto": "🌊 Método Avalancha"},
-            {"tipo": "ejemplo",   "texto": "Tarjeta 28% + Crédito 18% + Familiar 0%\nAvalancha: Tarjeta → Crédito → Familiar"},
-            {"tipo": "highlight", "texto": "🚨 Mientras pagas deudas: NO adquieras nuevas. Evita 'gota a gota' — tasas del 300%+ anual."},
-        ]
+        "titulo": "Cómo salir de deudas — Bola de nieve y avalancha",
+        "resumen": "Salir de deudas requiere un plan estructurado. Existen dos métodos probados: la Bola de Nieve (motivación) y la Avalancha (eficiencia matemática).",
+        "secciones": [
+            {
+                "subtitulo": "Paso 1: Inventario completo de deudas",
+                "contenido": "Antes de cualquier estrategia, lista todas tus deudas en papel o digital: nombre del acreedor, monto total, cuota mensual, y tasa de interés anual. Incluye tarjetas de crédito, créditos de libre inversión, préstamos familiares, crédito de vehículo, hipoteca. La mayoría de personas se sorprende del total real cuando lo ve todo junto."
+            },
+            {
+                "subtitulo": "Método Bola de Nieve (Dave Ramsey)",
+                "contenido": "Ordena tus deudas de menor a mayor monto total. Paga el mínimo en todas las demás. Enfoca todo el dinero extra en la deuda más pequeña. Cuando la elimines, pasa todo ese dinero (el mínimo que ya no pagas + el extra) a la siguiente. La ventaja: eliminar deudas pequeñas rápido genera victorias psicológicas que mantienen la motivación."
+            },
+            {
+                "subtitulo": "Método Avalancha (matemáticamente óptimo)",
+                "contenido": "Ordena tus deudas de mayor a menor tasa de interés. Paga el mínimo en todas las demás. Enfoca todo el dinero extra en la de mayor tasa. La ventaja: pagas menos intereses en total. La desventaja: si la deuda más cara es grande, puede tardar meses sin ver resultados visibles. Requiere más disciplina psicológica."
+            },
+            {
+                "subtitulo": "¿Cuál método elegir?",
+                "contenido": "Si eres una persona que necesita motivación constante para no rendirse → Bola de Nieve. Si eres analítico y te motiva la eficiencia matemática → Avalancha. Cualquiera es infinitamente mejor que no tener ningún plan. Lo más importante: no adquieras nuevas deudas mientras pagas las actuales."
+            },
+            {
+                "subtitulo": "Las deudas peligrosas en Colombia",
+                "contenido": "Gota a gota: ilegales, con tasas del 300% a 1.200% anual, usualmente vinculados a crimen organizado. Nunca. Tarjetas de crédito con tasa máxima: hasta 28% EA — si solo pagas el mínimo, la deuda nunca se extingue. Créditos informales: muy altos y sin regulación. Préstamos día a día en apps: tasas efectivas enormes disfrazadas de 'comisiones'."
+            }
+        ],
+        "ejemplo": {
+            "titulo": "Ejemplo: 3 deudas usando Avalancha",
+            "detalle": "Deuda A: Tarjeta de crédito → $1.500.000 / Tasa 28% EA\nDeuda B: Crédito libre inversión → $5.000.000 / Tasa 18% EA\nDeuda C: Préstamo familiar → $2.000.000 / Tasa 0%\n\nOrden Avalancha: A → B → C\nDinero extra disponible: $300.000/mes\n\nTodo el extra va a A hasta liquidarla.\nLuego todo (mínimo de A + extra) va a B.\nPor último C (sin interés, puede esperar).\n\nResultado: ahorras entre $400.000 y $800.000 en intereses vs. pagar aleatoriamente."
+        },
+        "consejo": "🚨 Si tienes deudas con 'gota a gota' o prestamistas informales, busca asesoría urgente. Son ilegales y peligrosos. Puedes denunciar ante la Policía Nacional o la Superintendencia Financiera.",
+        "tags": ["deudas", "salir de deudas", "bola de nieve", "avalancha", "tarjeta crédito", "crédito", "intereses", "gota a gota", "endeudamiento"],
+        "relacionados": ["tarjeta_credito", "interes_compuesto", "presupuesto", "fondo_emergencia"]
     },
-    {
-        "id": "inversion",
+
+    # ── INTERÉS COMPUESTO ─────────────────────────────────────────────────────
+    "interes_compuesto": {
+        "id": "interes_compuesto",
         "emoji": "📈",
+        "categoria": "Conceptos financieros",
         "nivel": "intermedio",
-        "categoria": "Inversión",
-        "titulo": "Inversiones para principiantes en Colombia",
-        "descripcion": "CDT, fondos de inversión, acciones: cuál elegir según tu perfil.",
-        "tiempo_min": 8,
-        "contenido": [
-            {"tipo": "subtitulo", "texto": "Antes de invertir necesitas:"},
-            {"tipo": "lista",     "items": ["✅ Fondo de emergencia de 3 meses", "✅ Deudas de alto interés pagadas", "✅ Conocimiento del producto"]},
-            {"tipo": "ejemplo",   "texto": "CDT: Riesgo muy bajo · 8-14% anual · Desde $100.000\nFondos: Riesgo bajo-medio · Variable · Desde $50.000\nAcciones BVC: Riesgo alto · Variable · Largo plazo"},
-            {"tipo": "subtitulo", "texto": "Reglas de oro"},
-            {"tipo": "lista",     "items": ["Nunca inviertas dinero que necesites pronto", "Diversifica: no pongas todo en un solo lugar", "Invierte a largo plazo para maximizar", "Desconfía de rendimientos 'garantizados' muy altos"]},
-            {"tipo": "highlight", "texto": "💡 Usa el Simulador de FinanBot para ver cómo crecería tu dinero sin riesgo real."},
-        ]
+        "titulo": "Interés compuesto — La octava maravilla del mundo",
+        "resumen": "El interés compuesto es el proceso por el cual los intereses generan nuevos intereses, creando un efecto de crecimiento exponencial. Einstein lo llamó 'la octava maravilla del mundo'.",
+        "secciones": [
+            {
+                "subtitulo": "Interés simple vs interés compuesto",
+                "contenido": "Interés simple: los intereses se calculan siempre sobre el capital original. Si inviertes $1.000.000 al 10% simple por 3 años, cada año ganas $100.000 en intereses → total $1.300.000. Interés compuesto: los intereses del período anterior se suman al capital para el siguiente cálculo. Los intereses generan intereses."
+            },
+            {
+                "subtitulo": "La fórmula del interés compuesto",
+                "contenido": "Capital Final = Capital × (1 + Tasa)^Tiempo\n\nDonde: Capital = monto inicial, Tasa = tasa de interés por período, Tiempo = número de períodos. Para tasas anuales aplicadas mensualmente: Tasa mensual = (1 + Tasa anual)^(1/12) - 1."
+            },
+            {
+                "subtitulo": "El tiempo es tu mayor aliado",
+                "contenido": "La variable más poderosa del interés compuesto no es la tasa ni el monto inicial — es el tiempo. Quien empieza a los 25 años tiene enorme ventaja sobre quien empieza a los 35 años, aunque este último invierta el doble mensualmente. Por eso el mejor momento para invertir es hoy. El segundo mejor momento es mañana."
+            },
+            {
+                "subtitulo": "La regla del 72: cuándo se duplica tu dinero",
+                "contenido": "Divide 72 entre la tasa de interés anual y obtendrás los años que tarda en duplicarse tu inversión. Con CDT al 12%: 72/12 = 6 años para duplicar tu capital. Con el 8%: 72/8 = 9 años. Con el 4% (cuenta de ahorros): 72/4 = 18 años. Esta regla te ayuda a comparar opciones de inversión rápidamente."
+            },
+            {
+                "subtitulo": "El interés compuesto en tu contra: las deudas",
+                "contenido": "Exactamente el mismo efecto funciona en tu contra con deudas de alta tasa. Una tarjeta de crédito al 28% EA con deuda de $2.000.000 a la que solo pagas el mínimo: en 3 años habrás pagado $1.800.000 en intereses y todavía deberás más del capital original. El interés compuesto de las deudas destruye el patrimonio."
+            }
+        ],
+        "ejemplo": {
+            "titulo": "$1.000.000 al 10% anual compuesto",
+            "detalle": "Año 1:  $1.100.000\nAño 2:  $1.210.000\nAño 3:  $1.331.000\nAño 5:  $1.610.510\nAño 10: $2.593.742\nAño 20: $6.727.500\nAño 30: $17.449.402\n\nVs interés simple a 30 años:\nCapital + intereses = $1.000.000 + (100.000 × 30) = $4.000.000\n\nDiferencia: $13.449.402 extra gracias al efecto compuesto."
+        },
+        "consejo": "💡 Aunque sea pequeño, empieza a invertir HOY. $100.000 mensuales durante 30 años al 10% compuesto = más de $21.000.000. El tiempo hace el trabajo por ti.",
+        "tags": ["interés compuesto", "interés simple", "inversión", "rendimiento", "tiempo", "crecimiento exponencial", "regla del 72", "warren buffett"],
+        "relacionados": ["cdt", "inversion", "ahorro", "pension_voluntaria"]
     },
-    {
-        "id": "emergencia",
-        "emoji": "🛡️",
-        "nivel": "basico",
-        "categoria": "Seguridad",
-        "titulo": "El fondo de emergencia: tu red de seguridad",
-        "descripcion": "Cuánto necesitas, dónde guardarlo y cómo construirlo.",
-        "tiempo_min": 5,
-        "contenido": [
-            {"tipo": "subtitulo", "texto": "¿Para qué sirve?"},
-            {"tipo": "lista",     "items": ["Pérdida de empleo inesperada", "Emergencia médica no cubierta", "Reparación urgente del carro o casa"]},
-            {"tipo": "ejemplo",   "texto": "Gastos de $1.500.000/mes:\nFondo mínimo: $4.500.000 (3 meses)\nFondo ideal: $9.000.000 (6 meses)"},
-            {"tipo": "subtitulo", "texto": "¿Dónde guardarlo?"},
-            {"tipo": "lista",     "items": ["✅ Cuenta de ahorros de fácil acceso", "✅ Fondo de liquidez (Nequi, Daviplata)", "✅ CDT a 30 días renovable", "❌ NO en criptomonedas"]},
-            {"tipo": "highlight", "texto": "⚠️ El fondo de emergencia va ANTES que cualquier inversión. Es tu primera prioridad."},
-        ]
-    },
-    {
-        "id": "interes",
-        "emoji": "🔢",
-        "nivel": "intermedio",
-        "categoria": "Conceptos",
-        "titulo": "Interés simple vs interés compuesto",
-        "descripcion": "Entiende la diferencia y cómo multiplicar tu dinero en el tiempo.",
-        "tiempo_min": 7,
-        "contenido": [
-            {"tipo": "subtitulo", "texto": "Interés Simple"},
-            {"tipo": "ejemplo",   "texto": "$1.000.000 al 10% anual × 3 años = $300.000 en intereses. Total: $1.300.000"},
-            {"tipo": "subtitulo", "texto": "Interés Compuesto"},
-            {"tipo": "ejemplo",   "texto": "$1.000.000 al 10% compuesto × 3 años:\nAño 1: $1.100.000 · Año 2: $1.210.000 · Año 3: $1.331.000\nTotal: $1.331.000 (vs $1.300.000 del simple)"},
-            {"tipo": "subtitulo", "texto": "El poder del tiempo"},
-            {"tipo": "ejemplo",   "texto": "$1.000.000 al 10% compuesto:\n10 años: $2.593.742\n20 años: $6.727.500\n30 años: $17.449.402"},
-            {"tipo": "highlight", "texto": "💡 La clave es el tiempo. Quien empieza a los 25 tiene enorme ventaja sobre quien empieza a los 35."},
-        ]
-    },
-    {
-        "id": "pension",
-        "emoji": "👴",
-        "nivel": "intermedio",
-        "categoria": "Pensión",
-        "titulo": "Colpensiones vs fondos privados en Colombia",
-        "descripcion": "Todo lo que debes saber sobre los dos regímenes pensionales.",
-        "tiempo_min": 9,
-        "contenido": [
-            {"tipo": "subtitulo", "texto": "Colpensiones (Prima Media)"},
-            {"tipo": "lista",     "items": ["1.300 semanas cotizadas requeridas", "57 años mujeres / 62 hombres", "Pensión mínima garantizada: 1 SMMLV"]},
-            {"tipo": "subtitulo", "texto": "AFP — Fondos Privados (RAIS)"},
-            {"tipo": "lista",     "items": ["Cuenta individual a tu nombre", "Aportes voluntarios deducibles de renta", "Mejor para ingresos altos e independientes"]},
-            {"tipo": "ejemplo",   "texto": "Aportes voluntarios deducibles de renta (Art. 126-1 E.T.)\n$300.000/mes en pensión voluntaria → ~$57.000/mes menos en impuestos"},
-            {"tipo": "highlight", "texto": "⚠️ El 75% de colombianos NO se pensiona. Complementa siempre con ahorro e inversión personal."},
-        ]
-    },
-    {
+
+    # ── INFLACIÓN ─────────────────────────────────────────────────────────────
+    "inflacion": {
         "id": "inflacion",
         "emoji": "📉",
-        "nivel": "intermedio",
         "categoria": "Economía",
-        "titulo": "Cómo protegerte de la inflación",
-        "descripcion": "La inflación reduce tu dinero. Aprende a protegerlo y hacerlo crecer.",
-        "tiempo_min": 6,
-        "contenido": [
-            {"tipo": "ejemplo",   "texto": "$1.000.000 hoy con inflación del 10%:\nHoy: 100 artículos de $10.000\nEn 1 año: solo 90 artículos (cuestan $11.000)\nPerdiste el 10% de tu poder de compra."},
-            {"tipo": "subtitulo", "texto": "¿Cómo protegerse?"},
-            {"tipo": "lista",     "items": ["✅ CDT con tasas superiores a la inflación", "✅ Fondos de inversión en renta variable", "✅ Finca raíz (valorización histórica)", "❌ Efectivo guardado por meses"]},
-            {"tipo": "highlight", "texto": "💡 Si inflación = 9% y tu CDT paga 12%, ganaste un 3% real de poder adquisitivo."},
-        ]
-    },
-    {
-        "id": "cripto",
-        "emoji": "₿",
-        "nivel": "avanzado",
-        "categoria": "Criptos",
-        "titulo": "Criptomonedas: riesgos y realidades",
-        "descripcion": "Lo que debes saber antes de invertir en criptomonedas.",
-        "tiempo_min": 8,
-        "contenido": [
-            {"tipo": "subtitulo", "texto": "Riesgos reales"},
-            {"tipo": "lista",     "items": ["Volatilidad extrema: Bitcoin cayó 75% en 7 meses (2021-2022)", "Sin regulación ni protección estatal", "Estafas, rug pulls y pirámides frecuentes", "Si pierdes la clave privada, pierdes todo"]},
-            {"tipo": "ejemplo",   "texto": "Bitcoin nov 2021: $68.000 USD → jun 2022: $17.000 USD\nCaída del 75% en 7 meses"},
-            {"tipo": "subtitulo", "texto": "Si decides invertir"},
-            {"tipo": "lista",     "items": ["Máximo 5% de tu portafolio", "Solo dinero que puedes perder", "Plataformas serias: Binance, Coinbase", "Nunca sigas grupos de Telegram/WhatsApp"]},
-            {"tipo": "highlight", "texto": "🚨 Señales de estafa: rendimientos garantizados altos, presión para invertir rápido, influencers pagados."},
-        ]
-    },
-    {
-        "id": "diversifica",
-        "emoji": "🌱",
         "nivel": "intermedio",
-        "categoria": "Estrategia",
-        "titulo": "Por qué diversificar tus ingresos",
-        "descripcion": "Depender de un solo ingreso es el mayor riesgo. Aprende cómo diversificar.",
-        "tiempo_min": 5,
-        "contenido": [
-            {"tipo": "parrafo",   "texto": "Depender de un solo ingreso es el mayor riesgo financiero personal. Si se corta (despido, enfermedad), tu flujo de caja desaparece de inmediato."},
-            {"tipo": "subtitulo", "texto": "Opciones de segunda fuente"},
-            {"tipo": "lista",     "items": ["Freelance en tu área de expertise", "Venta de productos digitales (cursos, ebooks)", "Inversiones con dividendos o intereses", "Emprendimiento de bajo capital inicial"]},
-            {"tipo": "ejemplo",   "texto": "Segunda fuente de $300.000/mes:\nEn 1 año extra: $3.600.000\nEn 5 años (invertidos): mucho más\nCambia completamente tu seguridad financiera."},
-            {"tipo": "highlight", "texto": "💡 No necesitas reemplazar tu ingreso. Con un 20% adicional cambias tu estabilidad."},
-        ]
+        "titulo": "Inflación — Cómo proteger tu poder adquisitivo",
+        "resumen": "La inflación es el aumento generalizado y sostenido de los precios. Reduce silenciosamente el valor de tu dinero cada año sin que lo notes.",
+        "secciones": [
+            {
+                "subtitulo": "¿Qué es la inflación?",
+                "contenido": "Si la inflación es del 9%, lo que hoy cuesta $100.000 el próximo año costará $109.000. Tu $100.000 puede comprar menos cosas que antes — eso es pérdida de poder adquisitivo. Colombia ha tenido inflaciones históricas entre 3% y 13% en los últimos 10 años. El DANE publica el IPC mensualmente."
+            },
+            {
+                "subtitulo": "Inflación 2024 en Colombia",
+                "contenido": "La inflación en Colombia cerró 2023 en 9.28% anual, después de un pico de 13.1% en 2022. Para 2024, el Banco de la República proyecta una reducción progresiva hacia el 5-6%. Esto significa que si tu dinero no crece al menos al ritmo de la inflación, estás perdiendo poder adquisitivo aunque el número en tu cuenta aumente."
+            },
+            {
+                "subtitulo": "El efectivo es el peor enemigo en épocas de inflación",
+                "contenido": "Dinero guardado en efectivo o en una cuenta de ahorros con 2-3% de rendimiento cuando la inflación es del 9%, implica una pérdida real del 6-7% anual. $10.000.000 guardados en una caja un año = poder comprar lo que antes costaba $9.072.000. Perdiste $928.000 en poder adquisitivo sin gastar nada."
+            },
+            {
+                "subtitulo": "Cómo protegerte de la inflación",
+                "contenido": "CDT con tasa superior a la inflación: si el CDT paga 12% y la inflación es 9%, tu ganancia real es del 3%. Fondos de inversión en renta variable: históricamente superan la inflación en el largo plazo. Finca raíz: valorización histórica en Colombia supera la inflación en ciudades principales. Dólares o activos en moneda extranjera: diversifica el riesgo cambiario."
+            },
+            {
+                "subtitulo": "La tasa de interés real: lo que realmente ganas",
+                "contenido": "Tasa real = Tasa nominal − Inflación (aproximación). Si tu CDT paga 12% y la inflación es 9% → tasa real ≈ 3%. Eso significa que tu dinero creció un 3% en poder adquisitivo real. Si el CDT paga 7% y la inflación es 9% → tasa real ≈ -2%. Perdiste poder adquisitivo aunque ganaste pesos."
+            }
+        ],
+        "ejemplo": {
+            "titulo": "$5.000.000 con inflación del 9% anual",
+            "detalle": "Año 0: Puedes comprar 100 artículos de $50.000\nAño 1: Esos artículos cuestan $54.500 → solo compras 91\nAño 2: Cuestan $59.405 → solo compras 84\nAño 3: Cuestan $64.751 → solo compras 77\n\nEn 3 años perdiste el 23% de tu poder adquisitivo guardando el dinero.\n\nSolución: CDT al 12% → en 3 años tienes $7.049.280 y la inflación acumulada fue del 29.5% → poder adquisitivo neto +2%."
+        },
+        "consejo": "💡 Regla práctica: si tu inversión rinde menos que la inflación del año, estás perdiendo dinero aunque el número en tu cuenta sea mayor. Siempre compara tasas contra la inflación real.",
+        "tags": ["inflación", "IPC", "poder adquisitivo", "precios", "Banco de la República", "Colombia", "tasa real", "devaluación"],
+        "relacionados": ["cdt", "inversion", "ahorro", "interes_compuesto"]
     },
-    {
+
+    # ── PENSIÓN COLOMBIA ──────────────────────────────────────────────────────
+    "pension": {
+        "id": "pension",
+        "emoji": "👴",
+        "categoria": "Pensión y jubilación",
+        "nivel": "intermedio",
+        "titulo": "Pensión en Colombia — Colpensiones vs Fondos Privados (AFP)",
+        "resumen": "Colombia tiene dos regímenes pensionales: Prima Media (Colpensiones) y Ahorro Individual (AFP). Elegir mal puede costar millones de pesos en el largo plazo.",
+        "secciones": [
+            {
+                "subtitulo": "Colpensiones — Régimen de Prima Media (RPM)",
+                "contenido": "El Estado administra los aportes de todos los afiliados en un fondo común. Para pensionarse necesitas: 1.300 semanas cotizadas (25 años), y tener 57 años si eres mujer o 62 si eres hombre. La pensión mínima garantizada es 1 SMMLV (para 2024: $1.300.000). Si cotizaste bien, puedes recibir hasta el 80% del salario base de liquidación."
+            },
+            {
+                "subtitulo": "AFP — Régimen de Ahorro Individual (RAIS)",
+                "contenido": "Cada afiliado tiene una cuenta individual a su nombre. Los aportes se invierten y generan rendimientos. Para pensionarse: capital suficiente en la cuenta, o 1.150 semanas + 57/62 años con garantía de pensión mínima. Las AFP en Colombia: Colfondos, Porvenir, Protección, Old Mutual (Skandia). Puedes elegir el nivel de riesgo del portafolio."
+            },
+            {
+                "subtitulo": "¿Cuál es mejor para ti?",
+                "contenido": "Colpensiones conviene a: mujeres (menor edad de pensión), personas con ingresos bajos o variables, quienes han cotizado muchos años al mismo salario. AFP conviene a: hombres con ingresos altos y estables, independientes con ingresos fluctuantes, quienes quieren herencia (el saldo de la cuenta es heritable). La decisión es compleja — considera asesoría especializada."
+            },
+            {
+                "subtitulo": "Aportes voluntarios: tu mejor aliado tributario",
+                "contenido": "Independientemente del régimen, puedes hacer aportes voluntarios a pensión (Artículo 126-1 del Estatuto Tributario). Estos aportes son deducibles de renta hasta el 30% del ingreso, con un máximo de 3.800 UVT anuales. En términos prácticos: $300.000/mes en aportes voluntarios pueden ahorrarte cerca de $57.000/mes en impuestos si eres contribuyente de renta."
+            },
+            {
+                "subtitulo": "La cruda realidad pensional en Colombia",
+                "contenido": "El 75% de los colombianos NO se pensiona. Las razones principales: cotización discontinua por informalidad laboral, cambios de trabajo frecuentes sin continuidad, bajos salarios históricos. Si eres independiente o tienes ingresos variables, planifica tu pensión desde hoy con ahorro adicional. No depender solo del sistema pensional obligatorio es fundamental."
+            }
+        ],
+        "ejemplo": {
+            "titulo": "Aportes voluntarios: $300.000/mes durante 20 años al 8% anual",
+            "detalle": "Total aportado: $72.000.000\nRendimientos al 8% anual compuesto: $106.000.000 aprox.\nCapital pensional adicional: ~$178.000.000\n\nAhorro en impuestos anual (tasa 19%): $570.000/año\nAhorro total en 20 años solo en impuestos: $11.400.000\n\nConclusión: Es una de las mejores inversiones disponibles para quien tributa renta."
+        },
+        "consejo": "💡 No importa en qué régimen estés: complementa SIEMPRE con ahorro e inversión personal. El sistema pensional colombiano no garantiza bienestar financiero en la vejez por sí solo.",
+        "tags": ["pensión", "colpensiones", "AFP", "RAIS", "RPM", "jubilación", "retiro", "aportes voluntarios", "Colombia", "vejez"],
+        "relacionados": ["interes_compuesto", "inversion", "ahorro", "impuestos"]
+    },
+
+    # ── INVERSIÓN ─────────────────────────────────────────────────────────────
+    "inversion": {
+        "id": "inversion",
+        "emoji": "💹",
+        "categoria": "Inversión",
+        "nivel": "intermedio",
+        "titulo": "Inversiones para principiantes en Colombia",
+        "resumen": "Invertir es hacer que tu dinero trabaje para ti. Conoce los vehículos de inversión disponibles en Colombia según tu perfil de riesgo y plazo.",
+        "secciones": [
+            {
+                "subtitulo": "Antes de invertir: los 3 requisitos",
+                "contenido": "1. Fondo de emergencia completo (3-6 meses de gastos). Si no lo tienes, construyelo primero. 2. Deudas de alto interés pagadas. No tiene sentido invertir al 12% teniendo deudas al 28%. Primero paga la tarjeta. 3. Conocimiento del instrumento. Nunca inviertas en algo que no entiendes completamente. La ignorancia financiera es el mayor riesgo."
+            },
+            {
+                "subtitulo": "Perfil de riesgo: ¿quién eres como inversor?",
+                "contenido": "Conservador: prioriza no perder capital sobre ganar rendimiento alto. Instrumentos: CDT, cuentas de ahorro, fondos conservadores. Moderado: acepta algo de fluctuación por mejor rendimiento a mediano plazo. Instrumentos: fondos balanceados, títulos de deuda pública (TES). Agresivo: acepta volatilidad importante por mayor potencial de retorno. Instrumentos: acciones BVC, ETFs, fondos de renta variable."
+            },
+            {
+                "subtitulo": "Opciones de inversión en Colombia por riesgo",
+                "contenido": "Riesgo muy bajo: CDT (8-14% EA), cuentas de ahorro (2-5%), Fogafín garantizados. Riesgo bajo-medio: Fondos de inversión colectiva conservadores y moderados, TES (títulos del gobierno). Riesgo medio-alto: acciones en la BVC (Bancolombia, Ecopetrol, Grupo Sura), fondos de renta variable. Riesgo alto: criptomonedas, startups, materias primas. Riesgo muy alto: derivados, divisas (Forex), apalancamiento."
+            },
+            {
+                "subtitulo": "La diversificación: no pongas todos los huevos en una canasta",
+                "contenido": "Un portafolio diversificado distribuye el riesgo entre diferentes tipos de activos, sectores y geografías. Si una inversión baja, las demás pueden compensar. Ejemplo conservador: 60% CDT + 30% fondo moderado + 10% acciones. Ejemplo moderado: 30% CDT + 40% fondo balanceado + 20% acciones Colombia + 10% ETF internacional."
+            },
+            {
+                "subtitulo": "El error más costoso: tratar de 'ganarle al mercado'",
+                "contenido": "El 90% de los inversores individuales que intentan elegir acciones ganan menos que un simple índice de mercado. En vez de tratar de predecir cuál acción subirá, considera invertir en ETFs o fondos indexados que replican el mercado completo. Warren Buffett recomienda esto para la mayoría de inversores no profesionales."
+            }
+        ],
+        "ejemplo": {
+            "titulo": "Portafolio conservador con $5.000.000",
+            "detalle": "CDT 6 meses al 12% EA: $3.000.000\nFondo de inversión moderado: $1.500.000\nAcción Bancolombia (largo plazo): $500.000\n\nRendimiento estimado anual:\nCDT: $360.000\nFondo: $150.000-$300.000\nAcción: variable (-10% a +25%)\n\nTotal estimado: $5.600.000 a $6.000.000 en 12 meses\n(Escenario moderado — no garantizado)"
+        },
+        "consejo": "💡 Desconfía de cualquier inversión que prometa rendimientos garantizados muy altos (más del 3-4% mensual). En Colombia, las pirámides y esquemas Ponzi son frecuentes. Si suena demasiado bueno, es una estafa.",
+        "tags": ["inversión", "invertir", "portafolio", "riesgo", "CDT", "acciones", "BVC", "fondos", "ETF", "diversificación", "Colombia"],
+        "relacionados": ["cdt", "interes_compuesto", "inflacion", "fondo_emergencia"]
+    },
+
+    # ── CRIPTOMONEDAS ─────────────────────────────────────────────────────────
+    "criptomonedas": {
+        "id": "criptomonedas",
+        "emoji": "₿",
+        "categoria": "Inversión alternativa",
+        "nivel": "avanzado",
+        "titulo": "Criptomonedas — Riesgos y realidades antes de invertir",
+        "resumen": "Las criptomonedas son activos digitales descentralizados con alta volatilidad y sin respaldo estatal. Invertir en ellas requiere conocimiento y tolerancia al riesgo extremo.",
+        "secciones": [
+            {
+                "subtitulo": "¿Qué son las criptomonedas?",
+                "contenido": "Son activos digitales que funcionan en redes descentralizadas (blockchain) sin control de ningún gobierno o banco central. Las principales: Bitcoin (BTC) como reserva de valor, Ethereum (ETH) como plataforma de contratos inteligentes, y miles de altcoins con diferentes propósitos (o sin ninguno real)."
+            },
+            {
+                "subtitulo": "El riesgo real que debes entender",
+                "contenido": "Volatilidad extrema: Bitcoin cayó un 75% entre noviembre 2021 y junio 2022 (de $68.000 a $17.000 USD). Sin regulación: en Colombia las criptomonedas no tienen protección estatal. Si una exchange quiebra o te hackean, pierdes todo. Sin garantía: si pierdes tu clave privada (seed phrase), pierdes el acceso permanentemente. No hay banco que te ayude."
+            },
+            {
+                "subtitulo": "El ecosistema de estafas en Colombia",
+                "contenido": "Las estafas de criptomonedas son masivas en Colombia. Señales de alerta: rendimientos garantizados muy altos ('te garantizamos 10% mensual'), presión para invertir rápido ('esta oferta vence mañana'), referidos con comisión (estructura piramidal), influencers pagados sin disclaimers, plataformas sin regulación ni sede física conocida."
+            },
+            {
+                "subtitulo": "Si decides invertir: reglas de oro",
+                "contenido": "Máximo 5-10% de tu portafolio total. Solo dinero que puedes perder completamente sin afectar tu vida. Plataformas reconocidas: Binance, Coinbase, Kraken, Bitso (disponible en Colombia). Guarda tus criptos en wallet propia si el monto es importante (no en exchanges). Nunca inviertas siguiendo consejos de grupos de WhatsApp o Telegram."
+            },
+            {
+                "subtitulo": "Las criptomonedas y los impuestos en Colombia",
+                "contenido": "La DIAN considera las criptomonedas como activos sujetos a declaración de renta. Las ganancias son gravables como ganancia ocasional al 10%. Si tienes montos significativos, debes declararlos en tu patrimonio. El incumplimiento puede generar sanciones. Consulta con un contador antes de invertir montos importantes."
+            }
+        ],
+        "ejemplo": {
+            "titulo": "Bitcoin: volatilidad histórica",
+            "detalle": "Nov 2021: $68.000 USD (máximo histórico)\nJun 2022: $17.000 USD (caída del 75%)\nDic 2022: $16.500 USD (otro mínimo)\nDic 2023: $44.000 USD (recuperación)\nMar 2024: $73.000 USD (nuevo máximo histórico)\n\nConclusion: quien compró en el máximo y vendió en el mínimo, perdió el 75% de su inversión. Quien aguantó y vendió en 2024, ganó el 7%. El timing es imposible de predecir."
+        },
+        "consejo": "🚨 Regla de oro: si no entiendes cómo funciona técnicamente el activo en el que vas a invertir, no inviertas. En criptomonedas, la ignorancia se paga con pérdidas reales.",
+        "tags": ["criptomonedas", "bitcoin", "ethereum", "blockchain", "crypto", "BTC", "estafa", "volatilidad", "Binance", "DIAN", "Colombia"],
+        "relacionados": ["inversion", "inflacion", "interes_compuesto"]
+    },
+
+    # ── TARJETA DE CRÉDITO ────────────────────────────────────────────────────
+    "tarjeta_credito": {
+        "id": "tarjeta_credito",
+        "emoji": "💳",
+        "categoria": "Crédito",
+        "nivel": "basico",
+        "titulo": "Tarjeta de crédito — Cómo usarla a tu favor",
+        "resumen": "La tarjeta de crédito es una herramienta financiera poderosa que puede trabajar para ti (cashback, millas, diferido sin intereses) o en tu contra (28% EA de intereses, deuda perpetua).",
+        "secciones": [
+            {
+                "subtitulo": "¿Cómo funciona la tarjeta de crédito?",
+                "contenido": "El banco te presta dinero para compras con un límite de crédito. Tienes un período de gracia (generalmente 15-45 días) para pagar sin intereses. Si pagas el total del extracto antes de la fecha límite: no pagas intereses. Si pagas solo el mínimo o cualquier monto parcial: pagas intereses sobre el saldo pendiente."
+            },
+            {
+                "subtitulo": "La tasa de interés: el número que debes conocer",
+                "contenido": "En Colombia, la tasa máxima para tarjetas de crédito es del 28-30% EA (efectiva anual), una de las más altas de Latinoamérica. Esto significa que $1.000.000 de deuda al 28% anual genera $280.000 en intereses en un año. Si solo pagas el mínimo (5-10% del saldo), la deuda puede tardar 10+ años en pagarse."
+            },
+            {
+                "subtitulo": "El truco del pago mínimo",
+                "contenido": "El pago mínimo está diseñado por el banco para maximizar sus intereses, no para beneficiarte. Ejemplo: $3.000.000 de deuda al 28% EA, pagando el mínimo mensual del 5% ($150.000): tardarás 7-8 años en pagar la deuda y habrás pagado más de $2.000.000 adicionales solo en intereses."
+            },
+            {
+                "subtitulo": "Cómo usar la tarjeta a tu favor",
+                "contenido": "SIEMPRE paga el total del extracto antes de la fecha de pago. Usa la tarjeta para gastos que ya tenías planeados — no la uses para gastar de más. Aprovecha beneficios: cashback (devolución de dinero), millas para viajes, seguros incluidos, compras en cuotas sin intereses en establecimientos aliados. La tarjeta de crédito bien usada es un préstamo gratuito por 30-45 días."
+            },
+            {
+                "subtitulo": "Señales de que tienes problemas con la tarjeta",
+                "contenido": "Señales de alerta: usas la tarjeta para pagar servicios básicos que antes pagabas en efectivo, llegas al límite antes de mitad de mes, pagas el mínimo regularmente, tienes más de una tarjeta con saldo pendiente, usas una tarjeta para pagar otra. Solución: congela las tarjetas (literalmente), haz un plan de pago agresivo y no uses tarjeta hasta saldar."
+            }
+        ],
+        "ejemplo": {
+            "titulo": "Misma deuda, dos estrategias — $2.000.000 al 28% EA",
+            "detalle": "Estrategia A — Solo mínimo (5%):\nPago mensual inicial: $100.000\nTiempo para saldar: ~9 años\nIntereses totales: ~$2.400.000\nTotal pagado: ~$4.400.000\n\nEstrategia B — Pago fijo de $300.000/mes:\nTiempo para saldar: 8 meses\nIntereses totales: ~$200.000\nTotal pagado: ~$2.200.000\n\nDiferencia: $2.200.000 ahorrados y 8 años de vida sin esa deuda."
+        },
+        "consejo": "💡 Si tienes saldo en tarjeta de crédito al 28%, prioritiza pagarlo antes de cualquier inversión. No hay inversión conservadora en Colombia que rinda más del 28%. Pagar la deuda ES la mejor inversión.",
+        "tags": ["tarjeta crédito", "tasa máxima", "pago mínimo", "crédito", "deuda", "cuotas", "intereses", "extracto"],
+        "relacionados": ["deudas", "presupuesto", "interes_compuesto"]
+    },
+
+    # ── FINCA RAÍZ ────────────────────────────────────────────────────────────
+    "finca_raiz": {
+        "id": "finca_raiz",
+        "emoji": "🏠",
+        "categoria": "Inversión inmobiliaria",
+        "nivel": "avanzado",
+        "titulo": "Invertir en finca raíz en Colombia",
+        "resumen": "La inversión en finca raíz ha sido históricamente una de las mejores opciones en Colombia, ofreciendo valorización y arriendo como fuentes de retorno.",
+        "secciones": [
+            {
+                "subtitulo": "¿Por qué finca raíz en Colombia?",
+                "contenido": "Valorización histórica: en ciudades principales (Bogotá, Medellín, Cali, Cartagena) los inmuebles han valorizado entre 5-12% anual en los últimos 20 años, superando la inflación. Ingreso por arriendo: 3-6% anual del valor del inmueble (canon mensual). Cobertura inflacionaria: los cánones de arriendo se actualizan anualmente según el IPC. Activo tangible con valor intrínseco."
+            },
+            {
+                "subtitulo": "Los números reales de un arriendo",
+                "contenido": "Inmueble de $200.000.000 con canon de $900.000/mes → $10.800.000/año → rendimiento por arriendo del 5.4%. Si el inmueble valorizó un 7% → ganancia de valorización $14.000.000. Retorno total anual: $24.800.000 / 12.4% sobre el capital. Descontando administración, predial, mant.: retorno neto ≈ 9-10%."
+            },
+            {
+                "subtitulo": "Los riesgos que nadie menciona",
+                "contenido": "Baja liquidez: no puedes vender rápidamente si necesitas el dinero (puede tardar meses o años). Capital inicial alto: en Colombia se requieren mínimo $150-300 millones para propiedades rentables. Costos ocultos: predial, administración, mantenimiento, seguros, periodos sin arrendatario, derechos notariales al comprar/vender. Inquilinos problemáticos: el proceso judicial de desalojo en Colombia puede tardar 1-2 años."
+            },
+            {
+                "subtitulo": "Sin capital para comprar: opciones alternativas",
+                "contenido": "Fiducias inmobiliarias: inviertes en proyectos inmobiliarios desde $5-10 millones. Fondos de inversión inmobiliaria (FIIs): inviertes en portafolios de propiedades desde montos bajos. Crowdfunding inmobiliario: plataformas que permiten co-invertir en propiedades. Leasing habitacional: opción para adquirir vivienda con requisitos diferentes al crédito hipotecario."
+            }
+        ],
+        "ejemplo": {
+            "titulo": "Comparación: CDT vs Finca Raíz con $200.000.000",
+            "detalle": "CDT al 12% por 5 años:\nTotal: $352.470.000\nGanancia: $152.470.000\nRiesgo: Casi cero\nLiquidez: Alta\n\nFinca raíz 5 años:\nValorización 8%: $293.878.000\nArriendo acumulado (5%): $50.000.000\nTotal bruto: $343.878.000\nMenos costos: $343.878.000 - $20.000.000 = $323.878.000\n\nCDT gana en este escenario + tiene menos riesgo + más liquidez.\nFinca raíz gana en escenarios de alta valorización y en el largo plazo (10-20 años)."
+        },
+        "consejo": "💡 En Colombia, la finca raíz es mejor inversión en horizontes de 10+ años. Para plazos menores a 5 años, generalmente el CDT o fondos de inversión ofrecen mejor relación riesgo-retorno.",
+        "tags": ["finca raíz", "inmobiliario", "arriendo", "vivienda", "valorización", "predial", "hipoteca", "leasing", "fiducia"],
+        "relacionados": ["inversion", "inflacion", "cdt", "interes_compuesto"]
+    },
+
+    # ── IMPUESTOS ─────────────────────────────────────────────────────────────
+    "impuestos": {
+        "id": "impuestos",
+        "emoji": "🧾",
+        "categoria": "Impuestos",
+        "nivel": "intermedio",
+        "titulo": "Impuestos en Colombia — Lo que todo ciudadano debe saber",
+        "resumen": "Conocer el sistema tributario colombiano te permite optimizar legalmente tu carga impositiva y evitar sanciones de la DIAN.",
+        "secciones": [
+            {
+                "subtitulo": "¿Quién debe declarar renta en Colombia?",
+                "contenido": "Para 2024 (vigencia 2023), debes declarar si: tus ingresos brutos superaron $59.377.000, tienes patrimonio bruto superior a $190.854.000, eres responsable de IVA, tienes consumos en tarjeta que superen $59.377.000, o eres empleado con más de un empleador. Los umbrales se actualizan anualmente. La declaración se hace entre abril y octubre del año siguiente."
+            },
+            {
+                "subtitulo": "Retención en la fuente: el impuesto 'invisible'",
+                "contenido": "Tu empleador descuenta mensualmente un porcentaje de tu salario como anticipo del impuesto de renta. La tabla de retención 2024 aplica diferentes tasas según el ingreso mensual en UVT (para 2024: $47.065 por UVT). Si te retienen más de lo que debes, la DIAN te devuelve el saldo a favor. Si retienen menos, debes pagar al declarar."
+            },
+            {
+                "subtitulo": "Deducciones que puedes usar legalmente",
+                "contenido": "Intereses de crédito hipotecario o leasing habitacional (hasta $21.629.000 anuales). Aportes voluntarios a pensión (hasta el 30% del ingreso). Aportes a AFC (Ahorro para el Fomento de la Construcción). Medicina prepagada. 4x1000 certificado. Dependientes económicos. Estas deducciones reducen la base gravable sobre la que calculas el impuesto."
+            },
+            {
+                "subtitulo": "IVA en Colombia",
+                "contenido": "La tasa general del IVA es 19%. Existen bienes y servicios exentos (0%) como la canasta básica alimentaria, medicamentos, libros y servicios de salud. Bienes excluidos: no causan IVA. Algunos sectores tienen tarifas diferenciales: 5% para ciertos bienes agropecuarios, turismo, etc. Desde 2022 existe el IVA diferido para compras con tarjeta débito en días especiales."
+            }
+        ],
+        "ejemplo": {
+            "titulo": "Cálculo simplificado de renta 2024",
+            "detalle": "Salario mensual bruto: $4.000.000\nAnual bruto: $48.000.000\n\nDeducciones:\nSalud empleado (4%): $1.920.000\nPensión empleado (4%): $1.920.000\nAporte voluntario pensión: $3.600.000\n\nBase gravable: $48.000.000 - $7.440.000 = $40.560.000\nEn UVT 2024 ($47.065): 861 UVT\n\nImpuesto según tabla: aprox $400.000 anuales\n(La retención mensual debería ser ~$33.000)"
+        },
+        "consejo": "💡 Los aportes voluntarios a pensión son la deducción más accesible y poderosa para empleados. Si tributa renta, cada $100.000 aportados voluntariamente te ahorra entre $19.000 y $39.000 en impuestos.",
+        "tags": ["impuestos", "DIAN", "renta", "IVA", "retención fuente", "declaración", "deducciones", "UVT", "Colombia"],
+        "relacionados": ["pension", "inversion", "ahorro"]
+    },
+
+    # ── HABITOS FINANCIEROS ───────────────────────────────────────────────────
+    "habitos": {
         "id": "habitos",
         "emoji": "🧠",
+        "categoria": "Educación financiera",
         "nivel": "basico",
-        "categoria": "Psicología",
-        "titulo": "Hábitos financieros que cambian tu vida",
-        "descripcion": "Los 7 hábitos que separan a quienes logran riqueza de quienes no.",
-        "tiempo_min": 6,
-        "contenido": [
-            {"tipo": "subtitulo", "texto": "Los 7 hábitos financieros"},
-            {"tipo": "lista",     "items": ["1. Registra cada peso que gastas", "2. Págate a ti primero (10-20%)", "3. Vive por debajo de tus posibilidades", "4. Aprende constantemente sobre dinero", "5. Evita deudas de consumo (tarjetas mal usadas)", "6. Invierte poco pero constante", "7. Revisa y ajusta tu presupuesto mensual"]},
-            {"tipo": "ejemplo",   "texto": "El hábito #1 es el más poderoso: quienes registran sus gastos ahorran en promedio un 20% más que quienes no lo hacen."},
-            {"tipo": "highlight", "texto": "🧠 Los hábitos financieros no se forman en un día. Empieza con uno solo esta semana."},
-        ]
+        "titulo": "Los 7 hábitos que cambian tu vida financiera",
+        "resumen": "La riqueza no es solo cuestión de ingresos — es cuestión de hábitos. Estas 7 prácticas separan a quienes logran libertad financiera de quienes siempre están ajustados.",
+        "secciones": [
+            {
+                "subtitulo": "Hábito 1: Registra cada peso que gastas",
+                "contenido": "La mayoría de personas no sabe realmente en qué gasta su dinero. Registrar cada gasto durante 30 días es el ejercicio más revelador que existe. Quienes registran sus gastos ahorran en promedio un 20% más que quienes no lo hacen. La conciencia es el primer paso al cambio."
+            },
+            {
+                "subtitulo": "Hábito 2: Págate a ti primero",
+                "contenido": "Cuando recibes tu ingreso, lo primero que haces es transferir tu ahorro programado a una cuenta separada — ANTES de pagar cualquier otra cosa. No el ahorro de 'lo que sobra' (que nunca sobra) sino el ahorro planificado del porcentaje que decidiste."
+            },
+            {
+                "subtitulo": "Hábito 3: Vive por debajo de tus posibilidades",
+                "contenido": "La trampa del consumo: cuando aumenta el ingreso, aumentan los gastos de forma proporcional — el 'nivel de vida' sube y no se ahorra más. El secreto de quienes construyen riqueza: mantienen gastos estables aunque el ingreso suba, y destinan el incremental al ahorro e inversión."
+            },
+            {
+                "subtitulo": "Hábito 4: Aprende continuamente sobre dinero",
+                "contenido": "La educación financiera no se enseña en el colegio ni en la universidad tradicional. Debes buscarla activamente. Lee libros como 'Padre Rico Padre Pobre', 'El hombre más rico de Babilonia', 'La psicología del dinero'. Escucha podcasts. Úsate FinanBot para entender conceptos. La ignorancia financiera cuesta millones."
+            },
+            {
+                "subtitulo": "Hábitos 5-7: Evitar deudas de consumo, invertir constante, revisar mensualmente",
+                "contenido": "Hábito 5 — Evita deudas de consumo: nunca financiar ropa, electrodomésticos, vacaciones o tecnología a largo plazo con intereses. Si no tienes el dinero, espera y ahorra. Hábito 6 — Invierte poco pero constante: $100.000 mensuales consistentes durante años superan $1.000.000 invertidos una sola vez. La constancia gana. Hábito 7 — Revisa mensualmente: dedica 30 minutos al mes a revisar tus finanzas, ajustar el presupuesto y evaluar el progreso de tus metas."
+            }
+        ],
+        "ejemplo": {
+            "titulo": "El costo de no tener hábitos financieros",
+            "detalle": "Persona A: Sin hábitos — gana $3.000.000/mes durante 30 años\nIngreso total: $1.080.000.000\nAhorro/patrimonio final: ≈ $10.000.000\n\nPersona B: Con hábitos — gana $3.000.000/mes durante 30 años\nAhorra 20% ($600.000/mes) e invierte al 10%\nPatrimonio final: ≈ $1.350.000.000\n\nDiferencia: $1.340.000.000\nMismo ingreso. Diferente resultado. Solo por hábitos."
+        },
+        "consejo": "💡 No intentes implementar los 7 hábitos a la vez. Elige uno solo, practícalo durante 3 meses hasta que sea automático, y luego añade el siguiente. La consistencia en poco supera el esfuerzo en mucho.",
+        "tags": ["hábitos financieros", "educación financiera", "disciplina", "presupuesto", "ahorro", "riqueza", "libertad financiera", "psicología del dinero"],
+        "relacionados": ["presupuesto", "ahorro", "inversion", "fondo_emergencia"]
     },
-    {
-        "id": "finca",
-        "emoji": "🏠",
-        "nivel": "avanzado",
-        "categoria": "Inversión",
-        "titulo": "Invertir en finca raíz en Colombia",
-        "descripcion": "Vivienda, locales, lotes: cómo evaluar una inversión inmobiliaria.",
-        "tiempo_min": 10,
-        "contenido": [
-            {"tipo": "subtitulo", "texto": "¿Por qué finca raíz en Colombia?"},
-            {"tipo": "lista",     "items": ["Valorización histórica del 5-12% anual en ciudades principales", "Ingreso por arriendo (3-6% anual del valor del inmueble)", "Cobertura contra la inflación", "Activo tangible con valor intrínseco"]},
-            {"tipo": "ejemplo",   "texto": "Inmueble: $200.000.000\nArriendo: $1.000.000/mes\nRentabilidad anual: 6% + valorización ≈ 12% total"},
-            {"tipo": "subtitulo", "texto": "Riesgos"},
-            {"tipo": "lista",     "items": ["Baja liquidez (no puedes vender rápido)", "Requiere capital inicial alto", "Costos de mantenimiento y administración", "Riesgo de inquilinos problemáticos"]},
-            {"tipo": "highlight", "texto": "💡 Sin capital para comprar: considera fondos de finca raíz (fiducias inmobiliarias en Colombia)."},
-        ]
-    },
-]
 
-# Base de conocimiento para búsqueda
-BASE_CONOCIMIENTO = {
-    "cdt": {
-        "titulo": "CDT — Certificado de Depósito a Término",
-        "cuerpo": "Es un producto de ahorro donde depositas dinero por un plazo fijo a cambio de una tasa de interés pactada desde el inicio. Ofrecido por bancos y cooperativas colombianas.",
-        "puntos": [
-            "Tasa garantizada desde el inicio (no varía durante el plazo)",
-            "Monto mínimo desde $100.000 en algunos bancos",
-            "Plazos: 30, 60, 90, 180, 360 días o más",
-            "Asegurado por Fogafín hasta $50 millones",
-            "Tasas referencia 2024: corto plazo 8-10% EA, mediano 10-13% EA, largo 12-14% EA",
-        ],
-        "ejemplo": "Inviertes $2.000.000 al 12% anual por 12 meses → $2.240.000 al vencer. Ganaste $240.000 sin hacer nada.",
-        "consejo": "Ideal si tienes dinero que no necesitarás en el corto plazo. La tasa es predecible y el riesgo casi cero.",
-        "tags": ["interés simple", "ahorro", "bancos", "inversión segura"]
-    },
-    "regla 50/30/20": {
-        "titulo": "La Regla 50/30/20 para presupuestar tu dinero",
-        "cuerpo": "Divide tus ingresos en tres categorías. Popularizada por Elizabeth Warren, aplica a cualquier nivel de ingresos.",
-        "puntos": [
-            "50% Necesidades: arriendo, comida, transporte, salud",
-            "30% Deseos: entretenimiento, ropa, salidas, suscripciones",
-            "20% Ahorro e inversión: CDT, metas, pensión voluntaria",
-        ],
-        "ejemplo": "Con $2.500.000: Necesidades $1.250.000 · Deseos $750.000 · Ahorro $500.000",
-        "consejo": "Si tus necesidades superan el 50%, ajusta: 60/20/20. Lo más importante es siempre destinar algo al ahorro.",
-        "tags": ["presupuesto", "ahorro", "planificación financiera"]
-    },
-    "interés compuesto": {
-        "titulo": "Interés Compuesto — El poder de hacer crecer el dinero",
-        "cuerpo": "Los intereses generan nuevos intereses. Einstein lo llamó 'la octava maravilla del mundo'.",
-        "puntos": [
-            "Fórmula: Capital Final = Capital × (1 + Tasa)^Tiempo",
-            "$1.000.000 al 10% por 10 años = $2.593.742",
-            "Vs interés simple a 10 años = $2.000.000",
-            "La diferencia es $593.742 extra gracias al efecto compuesto",
-        ],
-        "ejemplo": "$1.000.000 al 10% compuesto:\n10 años: $2.593.742\n20 años: $6.727.500\n30 años: $17.449.402",
-        "consejo": "La clave es el tiempo. Quien empieza a los 25 tiene enorme ventaja sobre quien empieza a los 35.",
-        "tags": ["inversión", "CDT", "fondos", "tiempo", "rentabilidad"]
-    },
-    "fondo de emergencia": {
-        "titulo": "Fondo de Emergencia — Tu red de seguridad financiera",
-        "cuerpo": "Dinero reservado para imprevistos: pérdida de empleo, enfermedad, daño urgente.",
-        "puntos": [
-            "Empleado estable: 3 meses de gastos básicos",
-            "Empleado en empresa inestable: 6 meses",
-            "Independiente o freelance: 6-12 meses",
-            "Guardarlo en cuenta de ahorros o fondo de liquidez (Nequi, Daviplata)",
-            "NO en criptomonedas ni inversiones de largo plazo",
-        ],
-        "ejemplo": "Gastos básicos $1.500.000/mes:\nFondo mínimo: $4.500.000 · Fondo ideal: $9.000.000",
-        "consejo": "El fondo de emergencia va ANTES que cualquier inversión. Es tu primera prioridad financiera.",
-        "tags": ["ahorro", "seguridad financiera", "emergencias", "presupuesto"]
-    },
-    "salir de deudas": {
-        "titulo": "Cómo salir de deudas — Métodos Bola de Nieve y Avalancha",
-        "cuerpo": "Dos estrategias probadas para eliminar deudas según tu motivación o eficiencia matemática.",
-        "puntos": [
-            "Método Bola de Nieve: paga primero la deuda más pequeña (motivación)",
-            "Método Avalancha: paga primero la de mayor tasa (eficiencia matemática)",
-            "En ambos: paga el mínimo en todas las demás",
-            "El dinero extra siempre va a la deuda prioritaria",
-            "Evita adquirir nuevas deudas mientras pagas las actuales",
-        ],
-        "ejemplo": "Tarjeta 28% + Crédito 18% + Familiar 0%\nAvalancha: Tarjeta → Crédito → Familiar",
-        "consejo": "Evita los 'gota a gota' — son ilegales y con tasas del 300%+ anual.",
-        "tags": ["deudas", "crédito", "tarjeta de crédito", "finanzas personales"]
-    },
-    "inflación": {
-        "titulo": "Inflación — Cómo proteger tu poder adquisitivo",
-        "cuerpo": "Aumento generalizado de precios que reduce el poder adquisitivo del dinero. Referencia Colombia 2024: 9.28% anual.",
-        "puntos": [
-            "Si la inflación es 10%, lo que hoy cuesta $100.000 el próximo año cuesta $110.000",
-            "CDT con tasa superior a la inflación: protege y crece",
-            "Fondos de inversión en renta variable: mayor rentabilidad potencial",
-            "Finca raíz: valorización histórica superior a inflación en Colombia",
-            "Efectivo guardado por meses: pierde valor automáticamente",
-        ],
-        "ejemplo": "$1.000.000 con inflación 10%: pierdes $100.000 de poder de compra en 1 año sin hacer nada.",
-        "consejo": "Si inflación = 9% y tu CDT paga 12%, ganaste un 3% real. Tu dinero creció en poder adquisitivo.",
-        "tags": ["economía", "inversión", "poder adquisitivo", "CDT"]
-    },
-    "pensión en colombia": {
-        "titulo": "Pensión en Colombia — Colpensiones vs Fondos Privados",
-        "cuerpo": "Colombia tiene dos regímenes pensionales: Prima Media (Colpensiones) y Ahorro Individual (AFP).",
-        "puntos": [
-            "Colpensiones: 1.300 semanas cotizadas, 57 mujeres / 62 hombres",
-            "AFP: cuenta individual, aportes voluntarios deducibles de renta",
-            "Aportes voluntarios: Art. 126-1 E.T. Colombia — deducibles hasta 30% del ingreso",
-            "$300.000/mes en pensión voluntaria ahorra ~$57.000/mes en impuestos",
-            "El 75% de colombianos NO se pensiona — complementa con ahorro personal",
-        ],
-        "ejemplo": "AFP + $300.000/mes aportes voluntarios × 20 años al 8% anual = capital pensional significativo adicional.",
-        "consejo": "Sea cual sea tu régimen, complementa con ahorro e inversión personal desde hoy.",
-        "tags": ["pensión", "colpensiones", "AFP", "jubilación", "Colombia"]
-    },
-    "criptomonedas": {
-        "titulo": "Criptomonedas — Riesgos y realidades antes de invertir",
-        "cuerpo": "Monedas digitales descentralizadas con alta volatilidad y sin regulación estatal en Colombia.",
-        "puntos": [
-            "Bitcoin cayó 75% en 7 meses (nov 2021 a jun 2022)",
-            "Sin regulación: no hay entidad que te proteja si pierdes",
-            "Si pierdes tu clave privada, pierdes todo el capital",
-            "Máximo 5% de tu portafolio si decides invertir",
-            "Solo en plataformas reconocidas: Binance, Coinbase",
-        ],
-        "ejemplo": "Bitcoin nov 2021: $68.000 USD → jun 2022: $17.000 USD. Caída del 75% en 7 meses.",
-        "consejo": "🚨 Señales de estafa: rendimientos garantizados altos, presión para invertir rápido, influencers pagados.",
-        "tags": ["criptomonedas", "bitcoin", "riesgo", "inversión alternativa"]
-    },
 }
 
-# Glosario completo
+# ════════════════════════════════════════════════════════════════════════════
+#  GLOSARIO COMPLETO (35 términos)
+# ════════════════════════════════════════════════════════════════════════════
+
 GLOSARIO = [
-    {"nombre": "Activo",             "definicion": "Bien o derecho con valor económico que pertenece a una persona. Ejemplos: dinero, propiedades, inversiones.",                              "categoria": "Conceptos básicos"},
-    {"nombre": "AFP",                "definicion": "Administradora de Fondos de Pensiones. Entidad privada que gestiona ahorros pensionales en el régimen RAIS (Ahorro Individual).",          "categoria": "Pensión"},
-    {"nombre": "Ahorro",             "definicion": "Parte del ingreso que no se gasta y se reserva para uso futuro. Base de toda salud financiera personal.",                                  "categoria": "Conceptos básicos"},
-    {"nombre": "Amortización",       "definicion": "Proceso de pago gradual de una deuda mediante cuotas periódicas que incluyen capital e intereses.",                                         "categoria": "Crédito"},
-    {"nombre": "Apalancamiento",     "definicion": "Uso de deuda para aumentar la capacidad de inversión. Puede multiplicar ganancias pero también pérdidas.",                                   "categoria": "Inversión"},
-    {"nombre": "Balance",            "definicion": "Diferencia entre tus ingresos y gastos en un período. Balance positivo significa que ingresas más de lo que gastas.",                       "categoria": "Conceptos básicos"},
-    {"nombre": "BVC",                "definicion": "Bolsa de Valores de Colombia. Mercado organizado donde se compran y venden acciones de empresas colombianas.",                              "categoria": "Inversión"},
-    {"nombre": "Capital",            "definicion": "Monto inicial de dinero que se invierte o presta. Base sobre la que se calculan los intereses.",                                            "categoria": "Conceptos básicos"},
-    {"nombre": "CDT",                "definicion": "Certificado de Depósito a Término. Depositas dinero a un plazo fijo a cambio de una tasa de interés pactada desde el inicio.",             "categoria": "Ahorro e inversión"},
-    {"nombre": "Colpensiones",       "definicion": "Administradora estatal del régimen de prima media pensional en Colombia. Gestiona los aportes de quienes no están en fondos privados.",    "categoria": "Pensión"},
-    {"nombre": "Crédito",            "definicion": "Préstamo de dinero que debes devolver con intereses en un plazo determinado. Costo expresado como tasa de interés.",                       "categoria": "Crédito"},
-    {"nombre": "Cuota fija",         "definicion": "Modalidad de pago de crédito donde la cuota mensual no varía. Se calcula con el sistema francés incluyendo capital e intereses.",           "categoria": "Crédito"},
-    {"nombre": "Diversificación",    "definicion": "Estrategia de invertir en múltiples activos para reducir el riesgo total. 'No pongas todos los huevos en la misma canasta'.",             "categoria": "Inversión"},
-    {"nombre": "Dividendo",          "definicion": "Parte de las ganancias de una empresa distribuida entre sus accionistas. Fuente de ingreso pasivo en acciones.",                           "categoria": "Inversión"},
-    {"nombre": "DTF",                "definicion": "Depósito a Término Fijo. Tasa de referencia del mercado financiero colombiano, usada como base para créditos de libre inversión.",          "categoria": "Economía"},
-    {"nombre": "EA (Efectivo Anual)","definicion": "Tasa que muestra el rendimiento o costo real de una inversión o crédito durante un año, considerando la capitalización periódica.",         "categoria": "Tasas"},
-    {"nombre": "Fondo de emergencia","definicion": "Dinero reservado para imprevistos. Mínimo 3 meses de gastos básicos guardados en cuenta de fácil acceso inmediato.",                       "categoria": "Ahorro e inversión"},
-    {"nombre": "Flujo de caja",      "definicion": "Movimiento de dinero que entra y sale de tu economía personal en un período determinado. Positivo si ingresas más de lo que gastas.",      "categoria": "Conceptos básicos"},
-    {"nombre": "Inflación",          "definicion": "Aumento generalizado y sostenido de los precios. Reduce el poder adquisitivo del dinero con el tiempo. Referencia Colombia 2024: 9.28%.",  "categoria": "Economía"},
-    {"nombre": "Interés compuesto",  "definicion": "Interés calculado sobre el capital inicial más los intereses ya acumulados. Los intereses generan nuevos intereses en cada período.",      "categoria": "Tasas"},
-    {"nombre": "Interés simple",     "definicion": "Interés calculado siempre sobre el capital inicial únicamente. Los intereses generados no se reinvierten.",                                 "categoria": "Tasas"},
-    {"nombre": "IPC",                "definicion": "Índice de Precios al Consumidor. Mide la variación de precios de una canasta de bienes y servicios. Principal medida de inflación.",       "categoria": "Economía"},
-    {"nombre": "Inversión",          "definicion": "Destinar dinero con el objetivo de obtener una ganancia futura. Implica un nivel de riesgo proporcional al retorno esperado.",             "categoria": "Ahorro e inversión"},
-    {"nombre": "Liquidez",           "definicion": "Facilidad con la que un activo puede convertirse en efectivo sin perder valor. El efectivo es el activo más líquido.",                     "categoria": "Conceptos básicos"},
-    {"nombre": "Pasivo",             "definicion": "Deuda u obligación financiera que debes pagar en el futuro. Ejemplos: créditos, hipotecas, tarjetas de crédito.",                          "categoria": "Conceptos básicos"},
-    {"nombre": "Patrimonio",         "definicion": "Diferencia entre tus activos y pasivos. Representa tu riqueza neta real en un momento determinado.",                                        "categoria": "Conceptos básicos"},
-    {"nombre": "Pensión voluntaria", "definicion": "Aportes adicionales a un fondo de pensión más allá de lo obligatorio. Son deducibles de renta en Colombia según Art. 126-1 E.T.",          "categoria": "Pensión"},
-    {"nombre": "Presupuesto",        "definicion": "Plan financiero que organiza tus ingresos y gastos para un período. Herramienta fundamental para controlar el dinero.",                     "categoria": "Conceptos básicos"},
-    {"nombre": "Rentabilidad",       "definicion": "Ganancia obtenida sobre una inversión expresada como porcentaje del capital invertido.",                                                    "categoria": "Inversión"},
-    {"nombre": "Retención en la fuente","definicion": "Anticipo del impuesto de renta que descuenta directamente el empleador del salario del trabajador.",                                    "categoria": "Impuestos"},
-    {"nombre": "SMMLV",              "definicion": "Salario Mínimo Mensual Legal Vigente en Colombia. Para 2024: $1.300.000. Referencia para calcular pensiones y deducciones.",              "categoria": "Economía"},
-    {"nombre": "Tasa EA",            "definicion": "Tasa Efectiva Anual. Expresa el costo o rendimiento real de un producto financiero por año, considerando capitalización.",                 "categoria": "Tasas"},
-    {"nombre": "TRM",                "definicion": "Tasa Representativa del Mercado. Valor oficial del dólar en pesos colombianos, fijada diariamente por el Banco de la República.",          "categoria": "Economía"},
-    {"nombre": "UVT",                "definicion": "Unidad de Valor Tributario. Valor de referencia para calcular impuestos en Colombia. Para 2024: $47.065.",                                 "categoria": "Impuestos"},
-    {"nombre": "Yield",              "definicion": "Rendimiento de una inversión expresado como porcentaje anual. Similar a la rentabilidad pero usado principalmente en mercados de capitales.", "categoria": "Inversión"},
+    {"nombre": "Activo",              "definicion": "Bien o derecho con valor económico que pertenece a una persona. Ejemplos: dinero, propiedades, inversiones, cuentas por cobrar.",                                "categoria": "Conceptos básicos"},
+    {"nombre": "AFP",                 "definicion": "Administradora de Fondos de Pensiones. Entidad privada que gestiona ahorros pensionales en el régimen de Ahorro Individual (RAIS). Las AFP en Colombia: Colfondos, Porvenir, Protección, Old Mutual.", "categoria": "Pensión"},
+    {"nombre": "Ahorro",              "definicion": "Parte del ingreso que no se gasta y se reserva para uso futuro. Base de toda salud financiera personal.",                                                        "categoria": "Conceptos básicos"},
+    {"nombre": "Amortización",        "definicion": "Proceso de pago gradual de una deuda mediante cuotas periódicas que incluyen capital e intereses. En Colombia el sistema más común es el francés (cuota fija).", "categoria": "Crédito"},
+    {"nombre": "Apalancamiento",      "definicion": "Uso de deuda para aumentar la capacidad de inversión. Puede multiplicar ganancias pero también pérdidas. Ejemplo: comprar finca raíz con crédito hipotecario.",   "categoria": "Inversión"},
+    {"nombre": "AFC",                 "definicion": "Ahorro para el Fomento de la Construcción. Cuenta de ahorro que permite deducción tributaria destinada a la adquisición de vivienda en Colombia.",               "categoria": "Ahorro e inversión"},
+    {"nombre": "Balance",             "definicion": "Diferencia entre ingresos y gastos en un período. Balance positivo: ingresas más de lo que gastas. Balance negativo: gastas más de lo que ingresas.",            "categoria": "Conceptos básicos"},
+    {"nombre": "BVC",                 "definicion": "Bolsa de Valores de Colombia. Mercado organizado donde se compran y venden acciones de empresas colombianas como Bancolombia, Ecopetrol, Grupo Sura.",             "categoria": "Inversión"},
+    {"nombre": "Capital",             "definicion": "Monto inicial de dinero que se invierte o presta. Base sobre la que se calculan los intereses.",                                                                    "categoria": "Conceptos básicos"},
+    {"nombre": "CDT",                 "definicion": "Certificado de Depósito a Término. Depositas dinero por un plazo fijo a cambio de una tasa de interés pactada desde el inicio. Asegurado por Fogafín hasta $50M.",  "categoria": "Ahorro e inversión"},
+    {"nombre": "Colpensiones",        "definicion": "Administradora estatal del régimen de Prima Media pensional en Colombia. El Estado gestiona los aportes colectivamente y garantiza pensión mínima.",               "categoria": "Pensión"},
+    {"nombre": "Crédito",             "definicion": "Préstamo de dinero que debes devolver con intereses en un plazo determinado. El costo se expresa como tasa de interés anual (EA).",                                "categoria": "Crédito"},
+    {"nombre": "Cuota fija",          "definicion": "Sistema de amortización (francés) donde la cuota mensual no varía durante todo el plazo. Incluye capital e intereses que se redistribuyen cada mes.",               "categoria": "Crédito"},
+    {"nombre": "DANE",                "definicion": "Departamento Administrativo Nacional de Estadística. Entidad que mide la inflación (IPC) y otras variables económicas en Colombia.",                               "categoria": "Economía"},
+    {"nombre": "DIAN",                "definicion": "Dirección de Impuestos y Aduanas Nacionales. Entidad que administra el recaudo de impuestos en Colombia (renta, IVA, retención en la fuente).",                   "categoria": "Impuestos"},
+    {"nombre": "Diversificación",     "definicion": "Estrategia de invertir en múltiples activos para reducir el riesgo total. 'No pongas todos los huevos en una canasta'. Reduce la exposición a pérdidas.",          "categoria": "Inversión"},
+    {"nombre": "Dividendo",           "definicion": "Parte de las ganancias de una empresa distribuida entre sus accionistas. Fuente de ingreso pasivo en inversión en acciones.",                                      "categoria": "Inversión"},
+    {"nombre": "DTF",                 "definicion": "Depósito a Término Fijo. Tasa de referencia del mercado financiero colombiano, usada como base para créditos de libre inversión y comerciales.",                   "categoria": "Economía"},
+    {"nombre": "EA (Efectivo Anual)", "definicion": "Tasa Efectiva Anual. Muestra el rendimiento o costo real de un producto financiero durante un año, considerando la capitalización periódica. Es la tasa comparable.",  "categoria": "Tasas"},
+    {"nombre": "Fogafín",             "definicion": "Fondo de Garantías de Instituciones Financieras. Asegura los depósitos en bancos colombianos vigilados hasta $50 millones por persona por entidad.",              "categoria": "Seguridad financiera"},
+    {"nombre": "Fondo de emergencia", "definicion": "Dinero reservado exclusivamente para imprevistos graves. Recomendado: 3-6 meses de gastos básicos en cuenta de fácil acceso. Primera prioridad financiera.",        "categoria": "Ahorro e inversión"},
+    {"nombre": "Inflación",           "definicion": "Aumento generalizado y sostenido de los precios que reduce el poder adquisitivo del dinero. Medida en Colombia por el IPC que publica el DANE.",                   "categoria": "Economía"},
+    {"nombre": "Interés compuesto",   "definicion": "Interés calculado sobre el capital inicial más los intereses acumulados. Los intereses generan nuevos intereses, creando crecimiento exponencial.",                "categoria": "Tasas"},
+    {"nombre": "Interés simple",      "definicion": "Interés calculado siempre sobre el capital inicial únicamente. Los intereses no se reinvierten. Menos poderoso que el compuesto en el largo plazo.",               "categoria": "Tasas"},
+    {"nombre": "IPC",                 "definicion": "Índice de Precios al Consumidor. Mide la variación de precios de una canasta de bienes y servicios. Principal indicador de inflación en Colombia.",                 "categoria": "Economía"},
+    {"nombre": "Liquidez",            "definicion": "Facilidad con la que un activo puede convertirse en efectivo sin perder valor. El efectivo es el activo más líquido. La finca raíz tiene baja liquidez.",           "categoria": "Conceptos básicos"},
+    {"nombre": "Pasivo",              "definicion": "Deuda u obligación financiera que debes pagar en el futuro. Ejemplos: créditos hipotecarios, tarjetas de crédito, leasing, préstamos.",                           "categoria": "Conceptos básicos"},
+    {"nombre": "Patrimonio",          "definicion": "Diferencia entre tus activos y pasivos. Representa tu riqueza neta real. Patrimonio = Activos − Pasivos.",                                                          "categoria": "Conceptos básicos"},
+    {"nombre": "Retención fuente",    "definicion": "Anticipo del impuesto de renta que descuenta el empleador directamente del salario cada mes. Se cruza con el impuesto definitivo al declarar renta.",               "categoria": "Impuestos"},
+    {"nombre": "SMMLV",               "definicion": "Salario Mínimo Mensual Legal Vigente en Colombia. Para 2024: $1.300.000. Referencia para cálculo de pensiones, multas y aportes parafiscales.",                  "categoria": "Economía"},
+    {"nombre": "TES",                 "definicion": "Títulos de Tesorería. Bonos del gobierno colombiano. Considerados de muy bajo riesgo. Disponibles en el mercado secundario o a través de fondos.",                  "categoria": "Inversión"},
+    {"nombre": "TRM",                 "definicion": "Tasa Representativa del Mercado. Valor oficial del dólar en pesos colombianos, fijada diariamente por el Banco de la República.",                                  "categoria": "Economía"},
+    {"nombre": "UVT",                 "definicion": "Unidad de Valor Tributario. Valor de referencia para calcular impuestos, sanciones y obligaciones tributarias en Colombia. Para 2024: $47.065.",                    "categoria": "Impuestos"},
+    {"nombre": "Yield",               "definicion": "Rendimiento de una inversión expresado como porcentaje anual. Similar a la rentabilidad pero usado principalmente en mercados de capitales y bonos.",              "categoria": "Inversión"},
+    {"nombre": "4x1000",              "definicion": "Gravamen a los Movimientos Financieros (GMF). Impuesto del 4 por cada 1.000 pesos en transacciones bancarias. Algunas cuentas tienen exención parcial.",          "categoria": "Impuestos"},
 ]
 
+# ════════════════════════════════════════════════════════════════════════════
+#  MOTOR DE BÚSQUEDA TIPO GOOGLE
+# ════════════════════════════════════════════════════════════════════════════
 
-# ════════════════════════════════════════════════════════════
+def normalizar(texto):
+    """Normaliza texto para búsqueda: minúsculas, sin tildes."""
+    import unicodedata
+    texto = texto.lower().strip()
+    texto = ''.join(
+        c for c in unicodedata.normalize('NFD', texto)
+        if unicodedata.category(c) != 'Mn'
+    )
+    return texto
+
+
+def calcular_relevancia(query_norm, articulo):
+    """
+    Calcula un score de relevancia (0-100) para un artículo dado una query.
+    Más alto = más relevante.
+    """
+    score = 0
+    q = query_norm
+
+    # Coincidencia exacta en título
+    titulo_norm = normalizar(articulo['titulo'])
+    if q in titulo_norm:
+        score += 50
+    elif any(palabra in titulo_norm for palabra in q.split() if len(palabra) > 3):
+        score += 25
+
+    # Coincidencia en resumen
+    resumen_norm = normalizar(articulo['resumen'])
+    if q in resumen_norm:
+        score += 20
+    elif any(palabra in resumen_norm for palabra in q.split() if len(palabra) > 3):
+        score += 10
+
+    # Coincidencia en tags
+    for tag in articulo.get('tags', []):
+        tag_norm = normalizar(tag)
+        if q in tag_norm or tag_norm in q:
+            score += 15
+            break
+        elif any(palabra in tag_norm for palabra in q.split() if len(palabra) > 3):
+            score += 8
+
+    # Coincidencia en categoría
+    cat_norm = normalizar(articulo['categoria'])
+    if q in cat_norm or any(p in cat_norm for p in q.split() if len(p) > 3):
+        score += 10
+
+    # Coincidencia en contenido de secciones
+    for seccion in articulo.get('secciones', []):
+        contenido_norm = normalizar(seccion.get('contenido', ''))
+        if q in contenido_norm:
+            score += 12
+            break
+        elif any(palabra in contenido_norm for palabra in q.split() if len(palabra) > 4):
+            score += 6
+            break
+
+    # Coincidencia en id del artículo
+    if q in articulo['id'] or articulo['id'] in q:
+        score += 30
+
+    return score
+
+
+def buscar_en_enciclopedia(query):
+    """Motor principal de búsqueda — devuelve resultados ordenados por relevancia."""
+    query_norm = normalizar(query)
+
+    resultados = []
+    for clave, articulo in ENCICLOPEDIA.items():
+        score = calcular_relevancia(query_norm, articulo)
+        if score > 0:
+            resultados.append({
+                'score': score,
+                'id': articulo['id'],
+                'emoji': articulo['emoji'],
+                'categoria': articulo['categoria'],
+                'nivel': articulo['nivel'],
+                'titulo': articulo['titulo'],
+                'resumen': articulo['resumen'],
+            })
+
+    resultados.sort(key=lambda x: x['score'], reverse=True)
+    return resultados
+
+
+def buscar_en_glosario(query):
+    """Busca términos en el glosario."""
+    query_norm = normalizar(query)
+    resultados = []
+    for termino in GLOSARIO:
+        nombre_norm = normalizar(termino['nombre'])
+        def_norm    = normalizar(termino['definicion'])
+        cat_norm    = normalizar(termino['categoria'])
+        if (query_norm in nombre_norm or nombre_norm in query_norm or
+                query_norm in def_norm or query_norm in cat_norm or
+                any(p in nombre_norm for p in query_norm.split() if len(p) > 2)):
+            resultados.append(termino)
+    return resultados
+
+
+# ════════════════════════════════════════════════════════════════════════════
 #  ENDPOINTS
-# ════════════════════════════════════════════════════════════
+# ════════════════════════════════════════════════════════════════════════════
 
-# ── GET /api/aprende/articulos ────────────────────────────
+# ── GET /api/aprende/buscar?q=... ─────────────────────────────────────────
+@aprende_bp.route('/buscar', methods=['GET'])
+def buscar():
+    """
+    Motor de búsqueda tipo Google para la enciclopedia financiera.
+    Devuelve artículos ordenados por relevancia + términos de glosario relacionados.
+
+    Parámetro: ?q=texto (mínimo 2 caracteres)
+
+    Respuesta:
+    {
+        "query": "...",
+        "total_articulos": N,
+        "total_glosario": M,
+        "articulos": [...],        ← ordenados por relevancia
+        "glosario": [...],         ← términos relacionados
+        "sugerencias": [...]       ← otras búsquedas recomendadas
+    }
+    """
+    q = request.args.get('q', '').strip()
+    if not q or len(q) < 2:
+        return jsonify({'error': 'El parámetro q debe tener al menos 2 caracteres.'}), 400
+
+    articulos   = buscar_en_enciclopedia(q)
+    glosario    = buscar_en_glosario(q)
+
+    # Sugerencias: artículos relacionados del primer resultado
+    sugerencias = []
+    if articulos:
+        primer_id  = articulos[0]['id']
+        relacionados = ENCICLOPEDIA.get(primer_id, {}).get('relacionados', [])
+        for rel_id in relacionados[:4]:
+            rel = ENCICLOPEDIA.get(rel_id)
+            if rel:
+                sugerencias.append({
+                    'id': rel['id'],
+                    'emoji': rel['emoji'],
+                    'titulo': rel['titulo'],
+                    'categoria': rel['categoria'],
+                })
+
+    return jsonify({
+        'query':            q,
+        'total_articulos':  len(articulos),
+        'total_glosario':   len(glosario),
+        'articulos':        articulos,
+        'glosario':         glosario[:5],   # máximo 5 del glosario en búsqueda
+        'sugerencias':      sugerencias,
+    }), 200
+
+
+# ── GET /api/aprende/articulos ────────────────────────────────────────────
 @aprende_bp.route('/articulos', methods=['GET'])
 def listar_articulos():
     """
-    Lista todos los artículos con metadata (sin contenido completo).
+    Lista todos los artículos de la enciclopedia (sin contenido completo).
     Filtros opcionales: ?nivel=basico&categoria=Ahorro
-    Acceso público.
     """
     nivel     = request.args.get('nivel', '').strip().lower()
     categoria = request.args.get('categoria', '').strip()
 
     resultado = []
-    for a in ARTICULOS:
-        if nivel and a['nivel'] != nivel:
+    for art in ENCICLOPEDIA.values():
+        if nivel and art['nivel'] != nivel:
             continue
-        if categoria and a['categoria'].lower() != categoria.lower():
+        if categoria and normalizar(art['categoria']) != normalizar(categoria):
             continue
         resultado.append({
-            'id':          a['id'],
-            'emoji':       a['emoji'],
-            'nivel':       a['nivel'],
-            'categoria':   a['categoria'],
-            'titulo':      a['titulo'],
-            'descripcion': a['descripcion'],
-            'tiempo_min':  a['tiempo_min'],
+            'id':        art['id'],
+            'emoji':     art['emoji'],
+            'categoria': art['categoria'],
+            'nivel':     art['nivel'],
+            'titulo':    art['titulo'],
+            'resumen':   art['resumen'],
+            'num_secciones': len(art.get('secciones', [])),
         })
 
     return jsonify({
@@ -407,151 +790,125 @@ def listar_articulos():
     }), 200
 
 
-# ── GET /api/aprende/articulos/<id> ───────────────────────
+# ── GET /api/aprende/articulos/<id> ───────────────────────────────────────
 @aprende_bp.route('/articulos/<string:articulo_id>', methods=['GET'])
 def obtener_articulo(articulo_id):
     """
-    Devuelve un artículo completo con contenido.
-    Acceso público.
+    Devuelve el artículo completo de la enciclopedia por su ID.
+    Incluye secciones, ejemplo, consejo, tags y artículos relacionados.
     """
-    articulo = next((a for a in ARTICULOS if a['id'] == articulo_id), None)
-    if not articulo:
-        return jsonify({'mensaje': f"Artículo '{articulo_id}' no encontrado."}), 404
+    art = ENCICLOPEDIA.get(articulo_id)
+    if not art:
+        return jsonify({'error': f"Artículo '{articulo_id}' no encontrado."}), 404
 
-    return jsonify(articulo), 200
-
-
-# ── GET /api/aprende/buscar?q=... ─────────────────────────
-@aprende_bp.route('/buscar', methods=['GET'])
-def buscar():
-    """
-    Busca en la base de conocimiento financiero.
-    También busca en artículos por título y descripción.
-    Acceso público.
-    Parámetro: ?q=texto
-    """
-    q = request.args.get('q', '').strip().lower()
-    if not q or len(q) < 2:
-        return jsonify({'mensaje': 'El parámetro q debe tener al menos 2 caracteres.'}), 400
-
-    # Buscar en base de conocimiento
-    encontrado = None
-    for clave, contenido in BASE_CONOCIMIENTO.items():
-        if (q in clave or clave in q
-                or q in contenido['titulo'].lower()
-                or any(q in tag.lower() for tag in contenido.get('tags', []))):
-            encontrado = {'fuente': 'conocimiento', 'clave': clave, **contenido}
-            break
-
-    # Buscar también en artículos
-    articulos_relacionados = [
-        {
-            'id':          a['id'],
-            'emoji':       a['emoji'],
-            'titulo':      a['titulo'],
-            'descripcion': a['descripcion'],
-            'nivel':       a['nivel'],
-        }
-        for a in ARTICULOS
-        if q in a['titulo'].lower()
-        or q in a['descripcion'].lower()
-        or q in a['categoria'].lower()
-    ]
+    # Añadir datos de artículos relacionados
+    relacionados_full = []
+    for rel_id in art.get('relacionados', []):
+        rel = ENCICLOPEDIA.get(rel_id)
+        if rel:
+            relacionados_full.append({
+                'id':        rel['id'],
+                'emoji':     rel['emoji'],
+                'titulo':    rel['titulo'],
+                'categoria': rel['categoria'],
+                'nivel':     rel['nivel'],
+            })
 
     return jsonify({
-        'query':                  q,
-        'resultado_conocimiento': encontrado,
-        'articulos_relacionados': articulos_relacionados,
-        'total_articulos':        len(articulos_relacionados),
+        **art,
+        'relacionados_detalle': relacionados_full,
     }), 200
 
 
-# ── GET /api/aprende/glosario ─────────────────────────────
+# ── GET /api/aprende/glosario ─────────────────────────────────────────────
 @aprende_bp.route('/glosario', methods=['GET'])
 def listar_glosario():
     """
-    Devuelve el glosario completo de términos financieros.
-    Filtros opcionales: ?letra=A&categoria=Inversión&q=texto
-    Acceso público.
+    Devuelve el glosario financiero completo.
+    Filtros: ?letra=A&categoria=Inversión&q=texto
     """
     letra     = request.args.get('letra', '').strip().upper()
     categoria = request.args.get('categoria', '').strip()
-    q         = request.args.get('q', '').strip().lower()
+    q         = request.args.get('q', '').strip()
 
-    resultado = GLOSARIO.copy()
+    resultado = list(GLOSARIO)
 
     if letra:
-        resultado = [t for t in resultado if t['nombre'].upper().startswith(letra)]
+        resultado = [t for t in resultado if t['nombre'][0].upper() == letra]
     if categoria:
-        resultado = [t for t in resultado if t['categoria'].lower() == categoria.lower()]
+        resultado = [t for t in resultado if normalizar(t['categoria']) == normalizar(categoria)]
     if q:
-        resultado = [
-            t for t in resultado
-            if q in t['nombre'].lower()
-            or q in t['definicion'].lower()
-            or q in t['categoria'].lower()
-        ]
+        resultado = buscar_en_glosario(q)
 
-    # Letras disponibles para filtro
-    letras_disponibles = sorted(set(t['nombre'][0].upper() for t in GLOSARIO))
-
-    # Categorías disponibles
-    categorias_disponibles = sorted(set(t['categoria'] for t in GLOSARIO))
+    letras_disponibles    = sorted({t['nombre'][0].upper() for t in GLOSARIO})
+    categorias_disponibles = sorted({t['categoria'] for t in GLOSARIO})
 
     return jsonify({
-        'total':                  len(resultado),
-        'terminos':               resultado,
-        'letras_disponibles':     letras_disponibles,
-        'categorias_disponibles': categorias_disponibles,
+        'total':                   len(resultado),
+        'terminos':                resultado,
+        'letras_disponibles':      letras_disponibles,
+        'categorias_disponibles':  categorias_disponibles,
     }), 200
 
 
-# ── POST /api/aprende/calcular ────────────────────────────
+# ── GET /api/aprende/categorias ───────────────────────────────────────────
+@aprende_bp.route('/categorias', methods=['GET'])
+def listar_categorias():
+    """Metadatos de la enciclopedia: categorías, niveles y totales."""
+    categorias = sorted({a['categoria'] for a in ENCICLOPEDIA.values()})
+    niveles    = ['basico', 'intermedio', 'avanzado']
+
+    por_nivel = {
+        n: sum(1 for a in ENCICLOPEDIA.values() if a['nivel'] == n)
+        for n in niveles
+    }
+
+    return jsonify({
+        'total_articulos':          len(ENCICLOPEDIA),
+        'total_terminos_glosario':  len(GLOSARIO),
+        'categorias':               categorias,
+        'niveles':                  niveles,
+        'articulos_por_nivel':      por_nivel,
+    }), 200
+
+
+# ── POST /api/aprende/calcular ────────────────────────────────────────────
 @aprende_bp.route('/calcular', methods=['POST'])
 def calcular():
     """
-    Motor de cálculos financieros del backend.
-    Mueve la lógica de las calculadoras del frontend al servidor.
-    Body: { "tipo": "interes_compuesto", "datos": {...} }
+    Motor de cálculos financieros. Mueve la lógica al servidor.
+    Body: { "tipo": "nombre_calculadora", "datos": {...} }
 
-    Tipos soportados:
-      - interes_simple
-      - interes_compuesto
-      - regla_50_30_20
-      - meta_ahorro
-      - retencion_fuente
-      - cuota_credito
-      - inflacion
-      - pension_voluntaria
+    Tipos disponibles:
+      interes_simple | interes_compuesto | regla_50_30_20
+      meta_ahorro | retencion_fuente | cuota_credito
+      inflacion | pension_voluntaria
     """
     data = request.get_json(silent=True) or {}
     tipo = data.get('tipo', '').strip()
     d    = data.get('datos', {})
 
     if not tipo:
-        return jsonify({'mensaje': 'El campo tipo es requerido.'}), 400
+        return jsonify({'error': 'El campo tipo es requerido.'}), 400
 
     try:
-        resultado = _calcular(tipo, d)
+        resultado = _ejecutar_calculo(tipo, d)
         return jsonify({'tipo': tipo, 'resultado': resultado}), 200
     except (KeyError, TypeError, ValueError, ZeroDivisionError) as e:
-        return jsonify({'mensaje': f'Error en los datos: {str(e)}'}), 400
+        return jsonify({'error': f'Error en los datos: {str(e)}'}), 400
 
 
-def _calcular(tipo, d):
-    """Ejecuta el cálculo según el tipo solicitado."""
+def _ejecutar_calculo(tipo, d):
+    """Ejecuta el cálculo financiero según el tipo."""
 
     if tipo == 'interes_simple':
-        k      = float(d['capital'])
-        tasa   = float(d['tasa_anual']) / 100
-        meses  = float(d['meses'])
-        tm     = tasa / 12
+        k, tasa, meses = float(d['capital']), float(d['tasa_anual']) / 100, float(d['meses'])
+        tm = tasa / 12
         interes = round(k * tm * meses, 2)
-        total   = round(k + interes, 2)
         return {
             'capital_inicial':  k,
             'interes_generado': interes,
-            'total_final':      total,
+            'total_final':      round(k + interes, 2),
             'tasa_mensual_pct': round(tm * 100, 4),
         }
 
@@ -570,10 +927,10 @@ def _calcular(tipo, d):
         intereses = round(bal - invertido, 2)
         renta     = round((bal / k - 1) * 100, 2) if k > 0 else 0
         return {
-            'total_invertido':  invertido,
+            'total_invertido':   invertido,
             'intereses_ganados': intereses,
-            'total_final':      bal,
-            'rentabilidad_pct': renta,
+            'total_final':       bal,
+            'rentabilidad_pct':  renta,
         }
 
     elif tipo == 'regla_50_30_20':
@@ -582,12 +939,9 @@ def _calcular(tipo, d):
         pf    = round(fijos / ing * 100, 1) if ing > 0 else 0
         aviso = ''
         if fijos > 0:
-            if pf > 70:
-                aviso = f'⚠️ Zona crítica: tus gastos fijos representan el {pf}% de tus ingresos.'
-            elif pf > 50:
-                aviso = '⚠️ Tus gastos fijos superan el 50% recomendado. Considera reducirlos.'
-            else:
-                aviso = '✅ Tus gastos fijos están en rango controlado.'
+            if pf > 70:   aviso = f'⚠️ Zona crítica: {pf}% de tus ingresos son gastos fijos.'
+            elif pf > 50: aviso = '⚠️ Tus gastos fijos superan el 50% recomendado.'
+            else:         aviso = '✅ Tus gastos fijos están en rango controlado.'
         return {
             'necesidades_50': round(ing * 0.5, 2),
             'deseos_30':      round(ing * 0.3, 2),
@@ -598,33 +952,31 @@ def _calcular(tipo, d):
         }
 
     elif tipo == 'meta_ahorro':
-        obj   = float(d['monto_objetivo'])
-        act   = float(d.get('monto_actual', 0))
-        men   = float(d['ahorro_mensual'])
-        ren   = float(d.get('rendimiento_mensual_pct', 0)) / 100
+        obj = float(d['monto_objetivo'])
+        act = float(d.get('monto_actual', 0))
+        men = float(d['ahorro_mensual'])
+        ren = float(d.get('rendimiento_mensual_pct', 0)) / 100
         faltante = max(0, obj - act)
         if faltante == 0:
             return {'ya_alcanzada': True, 'monto_actual': act}
         if ren > 0:
-            meses = 0
-            bal   = act
+            meses, bal = 0, act
             while bal < obj and meses < 1200:
                 bal = bal * (1 + ren) + men
                 meses += 1
         else:
             meses = math.ceil(faltante / men) if men > 0 else 99999
             bal   = round(act + men * meses, 2)
-        anos  = meses // 12
-        mr    = meses % 12
+        anos, mr = meses // 12, meses % 12
         if anos > 0:
-            tiempo_txt = f"{anos} año{'s' if anos>1 else ''}" + (f" y {mr} mes{'es' if mr>1 else ''}" if mr else '')
+            txt = f"{anos} año{'s' if anos > 1 else ''}" + (f" y {mr} mes{'es' if mr > 1 else ''}" if mr else '')
         else:
-            tiempo_txt = f"{meses} mes{'es' if meses>1 else ''}"
+            txt = f"{meses} mes{'es' if meses > 1 else ''}"
         return {
             'ya_alcanzada':  False,
             'faltante':      round(faltante, 2),
             'meses':         meses,
-            'tiempo_texto':  tiempo_txt,
+            'tiempo_texto':  txt,
             'total_acumulado': round(bal, 2),
         }
 
@@ -647,31 +999,22 @@ def _calcular(tipo, d):
         ret  = round(max(0, ret), 2)
         neto = round(bruto - salud - pension - ret - otros, 2)
         return {
-            'ingreso_bruto':  bruto,
-            'salud':          salud,
-            'pension':        pension,
-            'retencion':      ret,
-            'otros':          otros,
-            'salario_neto':   neto,
+            'ingreso_bruto': bruto, 'salud': salud, 'pension': pension,
+            'retencion': ret, 'otros': otros, 'salario_neto': neto,
         }
 
     elif tipo == 'cuota_credito':
         P = float(d['monto'])
         r = float(d['tasa_anual']) / 100 / 12
         n = int(d['plazo_meses'])
-        if r == 0:
-            cuota = P / n
-        else:
-            cuota = P * r * (1 + r)**n / ((1 + r)**n - 1)
+        cuota = P / n if r == 0 else P * r * (1 + r)**n / ((1 + r)**n - 1)
         cuota    = round(cuota, 2)
         total    = round(cuota * n, 2)
         intereses = round(total - P, 2)
         costo_pct = round(intereses / P * 100, 2) if P > 0 else 0
         return {
-            'cuota_mensual':   cuota,
-            'total_a_pagar':   total,
-            'total_intereses': intereses,
-            'costo_credito_pct': costo_pct,
+            'cuota_mensual': cuota, 'total_a_pagar': total,
+            'total_intereses': intereses, 'costo_credito_pct': costo_pct,
         }
 
     elif tipo == 'inflacion':
@@ -681,10 +1024,8 @@ def _calcular(tipo, d):
         futuro  = round(monto / (1 + tasa) ** anos, 2)
         perdida = round(monto - futuro, 2)
         return {
-            'valor_hoy':         monto,
-            'valor_real_futuro': futuro,
-            'perdida_poder':     perdida,
-            'tasa_minima_pct':   round(tasa * 100, 2),
+            'valor_hoy': monto, 'valor_real_futuro': futuro,
+            'perdida_poder': perdida, 'tasa_minima_pct': round(tasa * 100, 2),
         }
 
     elif tipo == 'pension_voluntaria':
@@ -710,21 +1051,3 @@ def _calcular(tipo, d):
 
     else:
         raise ValueError(f"Tipo de cálculo '{tipo}' no reconocido.")
-
-
-# ── GET /api/aprende/categorias ───────────────────────────
-@aprende_bp.route('/categorias', methods=['GET'])
-def listar_categorias():
-    """
-    Devuelve las categorías de artículos y niveles disponibles.
-    Útil para construir filtros en el frontend.
-    """
-    categorias = sorted(set(a['categoria'] for a in ARTICULOS))
-    niveles    = ['basico', 'intermedio', 'avanzado']
-    return jsonify({
-        'categorias': categorias,
-        'niveles':    niveles,
-        'total_articulos': len(ARTICULOS),
-        'total_terminos_glosario': len(GLOSARIO),
-        'total_temas_busqueda': len(BASE_CONOCIMIENTO),
-    }), 200
