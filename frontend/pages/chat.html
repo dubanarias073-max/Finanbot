@@ -460,8 +460,8 @@
 
         <div class="banner-invitado" id="bannerInvitado">
             <i class="fas fa-info-circle me-2"></i>
-            Modo invitado · <strong>5 mensajes gratis</strong> ·
-            <a href="registro.html" style="color:#fbbf24;font-weight:600;text-decoration:none;">
+            <span id="bannerInvitadoInfo">Modo invitado · <strong>20 mensajes gratis</strong> · Te quedan <strong>20</strong> mensajes</span>
+            <a href="registro.html" style="color:#fbbf24;font-weight:600;text-decoration:none; margin-left: 12px;">
                 Regístrate gratis para acceso ilimitado →
             </a>
         </div>
@@ -540,8 +540,13 @@
 
         let convActualId     = null;
         let enviando         = false;
-        const LIMITE_INVITADO = 5;
-        let mensajesInvitado  = 0;
+        const LIMITE_INVITADO = 20;
+        const COOLDOWN_MS      = 2 * 60 * 60 * 1000;
+        const INVITADO_MENSAJES_KEY = 'finanbot_invitado_mensajes';
+        const INVITADO_COOLDOWN_KEY = 'finanbot_invitado_cooldown_expires';
+        let mensajesInvitado  = Number(localStorage.getItem(INVITADO_MENSAJES_KEY) || 0);
+        let cooldownExpires   = Number(localStorage.getItem(INVITADO_COOLDOWN_KEY) || 0);
+        let cooldownInterval  = null;
         let modoInvitado      = false;
 
         if (esInvitado) document.getElementById('bannerInvitado').style.display = 'block';
@@ -567,6 +572,96 @@
         function scrollAbajo() {
             const box = document.getElementById('chatBox');
             setTimeout(() => box.scrollTo({ top: box.scrollHeight, behavior: 'smooth' }), 50);
+        }
+
+        function guardarEstadoInvitado() {
+            localStorage.setItem(INVITADO_MENSAJES_KEY, String(mensajesInvitado));
+            if (cooldownExpires > 0) {
+                localStorage.setItem(INVITADO_COOLDOWN_KEY, String(cooldownExpires));
+            } else {
+                localStorage.removeItem(INVITADO_COOLDOWN_KEY);
+            }
+        }
+
+        function estaEnCooldown() {
+            return cooldownExpires > Date.now();
+        }
+
+        function tiempoRestante() {
+            return Math.max(0, cooldownExpires - Date.now());
+        }
+
+        function formatoTiempo(ms) {
+            const totalSeg = Math.floor(ms / 1000);
+            const h = Math.floor(totalSeg / 3600);
+            const m = Math.floor((totalSeg % 3600) / 60);
+            const s = totalSeg % 60;
+            return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        }
+
+        function deshabilitarInputInvitado(disabled) {
+            const input = document.getElementById('inputMensaje');
+            const btn = document.getElementById('btnEnviar');
+            if (input) input.disabled = disabled;
+            if (btn) btn.disabled = disabled || enviando;
+        }
+
+        function actualizarBannerInvitado() {
+            const info = document.getElementById('bannerInvitadoInfo');
+            if (!info) return;
+
+            if (estaEnCooldown()) {
+                const tiempo = formatoTiempo(tiempoRestante());
+                info.innerHTML = `Modo invitado · <strong>${LIMITE_INVITADO} mensajes gratis</strong> · Tiempo de espera: <strong id="timerInvitado">${tiempo}</strong>`;
+                deshabilitarInputInvitado(true);
+                if (!cooldownInterval) iniciarCooldown();
+                return;
+            }
+
+            if (mensajesInvitado >= LIMITE_INVITADO) {
+                cooldownExpires = Date.now() + COOLDOWN_MS;
+                guardarEstadoInvitado();
+                actualizarBannerInvitado();
+                return;
+            }
+
+            info.innerHTML = `Modo invitado · <strong>${LIMITE_INVITADO} mensajes gratis</strong> · Te quedan <strong>${LIMITE_INVITADO - mensajesInvitado}</strong> mensajes`;
+            deshabilitarInputInvitado(false);
+            if (cooldownInterval) {
+                clearInterval(cooldownInterval);
+                cooldownInterval = null;
+            }
+        }
+
+        function iniciarCooldown() {
+            if (cooldownInterval) clearInterval(cooldownInterval);
+            cooldownInterval = setInterval(() => {
+                if (!estaEnCooldown()) {
+                    clearInterval(cooldownInterval);
+                    cooldownInterval = null;
+                    cooldownExpires = 0;
+                    mensajesInvitado = 0;
+                    guardarEstadoInvitado();
+                    actualizarBannerInvitado();
+                    agregarMensaje('✅ El tiempo de espera terminó. Ahora puedes volver a usar tus 20 mensajes gratuitos.', 'bot');
+                    return;
+                }
+
+                const timer = document.getElementById('timerInvitado');
+                if (timer) timer.textContent = formatoTiempo(tiempoRestante());
+            }, 1000);
+        }
+
+        function iniciarInvitadoEstado() {
+            if (estaEnCooldown()) {
+                actualizarBannerInvitado();
+                return;
+            }
+            if (mensajesInvitado >= LIMITE_INVITADO) {
+                mensajesInvitado = 0;
+                guardarEstadoInvitado();
+            }
+            actualizarBannerInvitado();
         }
 
         // ── RENDERIZADO ───────────────────────────────────
@@ -763,12 +858,21 @@
             const mensaje = input.value.trim();
             if (!mensaje || enviando) return;
 
-            if (modoInvitado && mensajesInvitado >= LIMITE_INVITADO) {
+            if (modoInvitado && estaEnCooldown()) {
                 agregarMensaje(
-                    `⚠️ **Límite de mensajes alcanzado**\n\nHas usado tus **${LIMITE_INVITADO} mensajes gratuitos** como invitado.\n\n`+
-                    `**Regístrate gratis** para obtener:\n• ✅ Chats ilimitados\n• ✅ Historial guardado\n• ✅ Todas las funciones\n\n¡Es completamente gratis!`,
-                    'bot',
-                    [{ texto:'🚀 Registrarse gratis', link:'registro.html' }]
+                    `⚠️ **Has alcanzado el límite de invitado**\n\nDebes esperar **${formatoTiempo(tiempoRestante())}** para volver a usar tus **${LIMITE_INVITADO} mensajes** gratuitos.`,
+                    'bot'
+                );
+                return;
+            }
+
+            if (modoInvitado && mensajesInvitado >= LIMITE_INVITADO) {
+                cooldownExpires = Date.now() + COOLDOWN_MS;
+                guardarEstadoInvitado();
+                actualizarBannerInvitado();
+                agregarMensaje(
+                    `⌛ Has alcanzado tus **${LIMITE_INVITADO} mensajes gratuitos**. Debes esperar **${formatoTiempo(tiempoRestante())}** para volver a escribir.`,
+                    'bot'
                 );
                 return;
             }
@@ -785,7 +889,6 @@
 
             agregarMensaje(mensaje, 'usuario');
             mostrarTyping();
-            if (modoInvitado) mensajesInvitado++;
 
             try {
                 const headers = { 'Content-Type':'application/json' };
@@ -797,6 +900,11 @@
                 quitarTyping();
 
                 if (res.ok) {
+                    if (modoInvitado) {
+                        mensajesInvitado++;
+                        guardarEstadoInvitado();
+                        actualizarBannerInvitado();
+                    }
                     agregarMensaje(data.respuesta, 'bot', data.acciones || []);
                     if (token && convActualId) {
                         await fetch(`http://127.0.0.1:5000/api/chat-historial/mensajes/${convActualId}`,{
@@ -806,7 +914,12 @@
                         });
                         await cargarConversaciones();
                     }
-                    if (modoInvitado && (LIMITE_INVITADO - mensajesInvitado) === 2) {
+                    if (modoInvitado && mensajesInvitado === LIMITE_INVITADO) {
+                        cooldownExpires = Date.now() + COOLDOWN_MS;
+                        guardarEstadoInvitado();
+                        actualizarBannerInvitado();
+                        agregarMensaje(`⌛ Has alcanzado tus **${LIMITE_INVITADO} mensajes gratuitos**. Inicia un temporizador de **2 horas** y vuelve cuando termine.`, 'bot');
+                    } else if (modoInvitado && (LIMITE_INVITADO - mensajesInvitado) === 2) {
                         setTimeout(() => agregarMensaje(
                             `💡 Te quedan **2 mensajes gratuitos**. ¡Regístrate para seguir sin límites!`,
                             'bot', [{ texto:'🚀 Registrarse', link:'registro.html' }]
@@ -821,7 +934,7 @@
             }
 
             enviando = false;
-            document.getElementById('btnEnviar').disabled = false;
+            document.getElementById('btnEnviar').disabled = estaEnCooldown();
             input.focus();
         }
 
@@ -831,7 +944,8 @@
         }
 
         function seleccionarModoInvitado() {
-            modoInvitado = true; mensajesInvitado = 0;
+            modoInvitado = true;
+            iniciarInvitadoEstado();
             document.getElementById('sinChat').style.display = 'none';
             document.getElementById('chatActivo').style.display = 'flex';
             document.getElementById('chatActivo').style.flexDirection = 'column';
