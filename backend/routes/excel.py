@@ -1,4 +1,4 @@
-# routes/excel.py — FinanBot SENA Ficha 3407184
+# routes/excel.py 
 # Fix principal: categoria es string directo, NO objeto con .nombre
 from flask import Blueprint, send_file, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
@@ -6,10 +6,12 @@ from models import Usuario, Transaccion, MetaAhorro, Simulacion
 from datetime import datetime
 from collections import defaultdict
 import io
-from openpyxl.styles import Alignment
 
-def al(horizontal_align, wrap_text=False):
-    return Alignment(horizontal=horizontal_align, wrapText=wrap_text)
+# ── IMPORTS DE OPENPYXL OPTIMIZADOS AL INICIO ─────────────────
+import openpyxl
+from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
+from openpyxl.chart import BarChart, PieChart, LineChart, Reference
+from openpyxl.utils import get_column_letter
 
 excel_bp = Blueprint('excel', __name__)
  

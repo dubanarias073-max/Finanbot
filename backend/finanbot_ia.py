@@ -1,1181 +1,1905 @@
-# finanbot_ia.py - Motor de Inteligencia Financiera de FinanBot
-import re
-import random
-import math
+# finanbot_ia.py
+
 from datetime import datetime
+from collections import deque
+import random
+import re
+
+# ══════════════════════════════════════════════════════════════════
+#  RUTAS REALES DEL PROYECTO  (usadas en los botones de acción)
+# ══════════════════════════════════════════════════════════════════
+RUTAS = {
+    'dashboard':      'dashboard.html',
+    'finanzas':       'finanzas.html',
+    'metas':          'finanzas.html#metas',
+    'simulador':      'simulador.html',
+    'recomendaciones':'recomendaciones.html',
+    'aprende':        'aprende.html',
+    'perfil':         'perfil.html',
+    'chat':           'chat.html',
+    'exportar_pdf':   'exportar.html',
+    'exportar_excel': 'exportar.html',
+}
+
+# ══════════════════════════════════════════════════════════════════
+#  PERSONALIDAD  ─  frases de variedad para respuestas
+# ══════════════════════════════════════════════════════════════════
+_OK   = ["¡Listo!", "¡Hecho!", "¡Perfecto!", "¡Excelente!", "Ahí está.", "¡Sin problema!"]
+_TIPS = ["💡 Tip:", "💡 Dato útil:", "📌 Consejo:", "💡 Recuerda:"]
+
+def _ok():  return random.choice(_OK)
+def _tip(): return random.choice(_TIPS)
+
+# ══════════════════════════════════════════════════════════════════
+#  BASE DE CONOCIMIENTO FINANCIERO
+#  Organizada por intención.  Motor usa coincidencia de palabras.
+# ══════════════════════════════════════════════════════════════════
+BASE = {
+
+# ─── AHORRO ──────────────────────────────────────────────────────
+"ahorro|ahorrar|cómo ahorrar|como ahorrar|tips ahorro|consejos ahorro|guardar dinero|economizar": {
+    "titulo": "💰 Ahorro personal — Cómo hacerlo bien",
+    "cuerpo": """**Ahorrar** es reservar parte de tus ingresos antes de gastar, no después. La gente que ahorra bien aplica una sola regla: *págate a ti primero*.
+
+**Los 5 principios que funcionan:**
+1. **Págate primero** — Apenas llegue tu ingreso, transfiere un % fijo a una cuenta separada. Si esperas "lo que sobre", nunca sobra nada.
+2. **Regla 50/30/20** — 50% necesidades, 30% gustos, 20% ahorro mínimo.
+3. **Automatiza** — Programa la transferencia el mismo día que recibes el pago. Lo que no ves, no lo gastas.
+4. **Elimina gastos hormiga** — Café diario $3.000 × 30 = $90.000/mes. Domicilios frecuentes $15.000 × 8 = $120.000/mes. Se acumula rápido.
+5. **Regla de las 48h** — Antes de comprar algo no planeado, espera 2 días. El 80% de las veces ya no lo quieres.
+
+**¿Cuánto ahorrar si ganas $2.000.000?**
+→ Meta ideal: $400.000/mes (20%)
+→ Mínimo recomendado: $200.000/mes (10%)
+
+💡 *Nequi y Daviplata generan rendimiento diario. Son perfectos para el fondo de ahorro separado.*""",
+    "sug": "¿Quieres crear una meta de ahorro? Dime el monto y el objetivo.",
+    "btns": [("🎯 Crear meta de ahorro", RUTAS['finanzas']),
+             ("📊 Ver mi balance", RUTAS['dashboard']),
+             ("📚 Aprende más", RUTAS['aprende'])]
+},
+
+# ─── CDT ─────────────────────────────────────────────────────────
+"cdt|certificado de depósito|certificado de deposito|qué es cdt|que es cdt|cómo funciona cdt|como funciona cdt|invertir cdt|plazo fijo": {
+    "titulo": "🏦 CDT — Certificado de Depósito a Término",
+    "cuerpo": """Un **CDT** es el producto de inversión más popular de Colombia. Depositas dinero en un banco por un plazo fijo y recibes una tasa de interés garantizada desde el primer día.
+
+**Cómo funciona paso a paso:**
+1. Vas al banco (o plataforma digital) y depositas un monto mínimo
+2. Acuerdas la tasa y el plazo antes de firmar — esa tasa no cambia
+3. Al vencimiento recibes tu capital + intereses
+4. Está asegurado por **Fogafín hasta $50 millones** si el banco quiebra
+
+**Plazos disponibles:** 30 · 60 · 90 · 180 · 360 días o más
+
+**Tasas de referencia 2024 en Colombia:**
+| Plazo | Tasa EA |
+|---|---|
+| 30-90 días | 8-10% |
+| 180 días | 10-13% |
+| 360+ días | 12-15% |
+
+**Ejemplo práctico:**
+$2.000.000 al 12% anual por 12 meses = **$2.240.000** al vencer.
+Ganaste $240.000 sin hacer absolutamente nada.
+
+⚠️ Si necesitas el dinero antes del plazo, generalmente puedes romperlo pero con penalidad.""",
+    "sug": "¿Quieres simular cuánto ganarías en un CDT? Dime el monto, la tasa y el plazo.",
+    "btns": [("📈 Ir al simulador", RUTAS['simulador']),
+             ("📚 Aprende sobre inversión", RUTAS['aprende'])]
+},
+
+# ─── INVERSIÓN ───────────────────────────────────────────────────
+"invertir|inversión|inversion|cómo invertir|como invertir|dónde invertir|donde invertir|mejores inversiones|quiero invertir|opciones de inversión": {
+    "titulo": "📈 Cómo invertir en Colombia — Guía para principiantes",
+    "cuerpo": """Invertir es hacer que tu dinero trabaje para ti en lugar de quedarse quieto perdiendo valor por la inflación.
+
+**Antes de invertir necesitas (en este orden):**
+1. ✅ Fondo de emergencia de 3-6 meses de gastos
+2. ✅ Deudas de alto interés pagadas (tarjetas, gota a gota)
+3. ✅ Entender el producto antes de poner un peso
+
+**Opciones en Colombia ordenadas por riesgo:**
+
+🟢 **Muy bajo riesgo:**
+• CDT: 8-15% EA, capital garantizado, Fogafín lo protege
+• Cuentas de ahorro Nequi/Daviplata: rendimiento diario ~7%
+
+🟡 **Riesgo medio:**
+• Fondos de inversión conservadores o moderados: 6-12% anual
+• TES (bonos del gobierno colombiano)
+• Finca raíz: valorización + arriendo, requiere capital
+
+🔴 **Alto riesgo:**
+• Acciones BVC (Bancolombia, Ecopetrol, Grupo Sura)
+• Criptomonedas (solo dinero que puedas perder completamente)
+
+**Regla de oro:** no inviertas en algo que no entiendes.
+**Señal de estafa:** cualquier inversión que prometa rentabilidades garantizadas del 5-10% mensual.""",
+    "sug": "¿Cuánto tienes disponible para invertir? Te ayudo a simular opciones.",
+    "btns": [("📈 Usar simulador", RUTAS['simulador']),
+             ("💡 Recomendaciones", RUTAS['recomendaciones']),
+             ("📚 Aprende más", RUTAS['aprende'])]
+},
+
+# ─── PRESUPUESTO / REGLA 50/30/20 ────────────────────────────────
+"presupuesto|regla 50|50/30/20|50 30 20|distribuir salario|organizar dinero|organizar gastos|cómo organizar|como organizar": {
+    "titulo": "📋 Presupuesto personal — La regla 50/30/20",
+    "cuerpo": """La **regla 50/30/20** es el método más simple y efectivo para organizar tu dinero mensualmente.
+
+**La distribución:**
+
+| Categoría | % | Qué incluye |
+|---|---|---|
+| 🏠 Necesidades | 50% | Arriendo, comida, transporte, servicios, salud, educación |
+| 🎬 Deseos | 30% | Entretenimiento, ropa, salidas, hobbies, suscripciones |
+| 💰 Ahorro | 20% | Fondo emergencia, CDT, metas, pensión voluntaria |
+
+**Ejemplo con $3.000.000:**
+• Necesidades: $1.500.000
+• Deseos: $900.000
+• Ahorro: $600.000
+
+**¿Qué pasa si tus necesidades superan el 50%?**
+→ Es normal en ciudades como Bogotá o Medellín. Empieza con 60/20/20.
+→ Lo único innegociable: siempre debe haber un % para ahorro, así sea el 5%.
+
+**Cómo aplicarla:**
+1. Calcula tu ingreso neto mensual real
+2. Multiplica por 0.5, 0.3 y 0.2
+3. Abre una cuenta separada para el ahorro
+4. Revisa el avance cada semana""",
+    "sug": "Dime cuánto ganas y te calculo exactamente los montos de cada categoría.",
+    "btns": [("💸 Registrar mis gastos", RUTAS['finanzas']),
+             ("📊 Ver mi balance", RUTAS['dashboard'])]
+},
+
+# ─── DEUDAS ──────────────────────────────────────────────────────
+"deuda|deudas|salir de deudas|pagar deudas|bola de nieve|avalancha|endeudado|crédito|credito|préstamo|prestamo": {
+    "titulo": "💳 Salir de deudas — Métodos probados",
+    "cuerpo": """Estar endeudado no es el fin. Con el método correcto puedes salir, y más rápido de lo que crees.
+
+**Paso 1 — Haz el inventario completo:**
+Anota TODAS tus deudas: nombre, monto total, cuota mensual y tasa de interés anual.
+
+**Método ⛄ Bola de Nieve (David Ramsey — para motivación):**
+1. Ordena deudas de menor a mayor monto
+2. Paga el mínimo en todas
+3. Todo el dinero extra → a la deuda más pequeña
+4. Al pagarla, ese dinero pasa a la siguiente
+✅ *Ventaja:* ves resultados rápidos, te mantiene motivado
+
+**Método 🌊 Avalancha (matemáticamente óptimo):**
+1. Ordena deudas de mayor a menor tasa de interés
+2. Paga el mínimo en todas
+3. Todo el extra → a la de mayor tasa
+✅ *Ventaja:* pagas menos intereses en total
+
+**Ejemplo:**
+Tarjeta 28% + Crédito 18% + Familiar 0%
+→ Avalancha: Tarjeta primero → Crédito → Familiar
+
+**⚠️ Deudas que debes evitar a toda costa:**
+• Gota a gota: tasas ilegales del 300-1000% anual, peligroso
+• Pagar solo el mínimo de tarjeta de crédito: la deuda nunca desaparece
+• Apps de préstamo rápido: tasas disfrazadas altísimas""",
+    "sug": "¿Cuánto debes en total? Dime y te calculo cuánto tiempo tardarías en salir.",
+    "btns": [("📊 Ver mis finanzas", RUTAS['dashboard']),
+             ("💡 Ver recomendaciones", RUTAS['recomendaciones'])]
+},
+
+# ─── FONDO DE EMERGENCIA ─────────────────────────────────────────
+"fondo de emergencia|emergencia|colchón financiero|colchon financiero|reserva de emergencia|para imprevistos|ahorro de emergencia": {
+    "titulo": "🛡️ Fondo de emergencia — Tu red de seguridad",
+    "cuerpo": """El **fondo de emergencia** es dinero guardado exclusivamente para situaciones urgentes e imprevistas. Es la primera prioridad financiera, antes que cualquier inversión.
+
+**¿Para qué sirve?**
+• Pérdida repentina de empleo
+• Emergencia médica no cubierta por EPS
+• Reparación urgente del vehículo o vivienda
+• Cualquier crisis que interrumpa tus ingresos
+
+**¿Cuánto necesitas?**
+| Situación | Meses recomendados |
+|---|---|
+| Empleado en empresa estable | 3 meses |
+| Empleado en empresa inestable | 4-6 meses |
+| Independiente / Freelance | 6-12 meses |
+
+**Ejemplo:** Si tus gastos básicos son $1.500.000/mes:
+• Mínimo: $4.500.000 (3 meses)
+• Ideal: $9.000.000 (6 meses)
+
+**¿Dónde guardarlo?**
+✅ Nequi o Daviplata (acceso inmediato + rendimiento diario)
+✅ CDT a 30 días renovable
+✅ Cuenta de ahorros aparte de la del día a día
+❌ NO en criptomonedas (pueden caer justo cuando los necesitas)
+❌ NO en inversiones de largo plazo (baja liquidez)
+
+🔑 **Regla clave:** el fondo de emergencia NO es para vacaciones, ropa ni caprichos. Solo para emergencias reales.""",
+    "sug": "¿Cuánto son tus gastos básicos al mes? Te digo exactamente cuánto necesitas ahorrar.",
+    "btns": [("🎯 Crear meta de ahorro", RUTAS['finanzas']),
+             ("📊 Ver mi balance", RUTAS['dashboard'])]
+},
+
+# ─── TARJETA DE CRÉDITO ──────────────────────────────────────────
+"tarjeta de crédito|tarjeta credito|tarjeta|cuota mínima|cuota minima|extracto|fecha de pago|intereses tarjeta": {
+    "titulo": "💳 Tarjeta de crédito — Cómo usarla a tu favor",
+    "cuerpo": """La tarjeta de crédito puede ser tu mejor aliada o tu peor enemiga. Todo depende de una sola cosa: si pagas el total o no.
+
+**✅ Cómo usarla bien:**
+• Paga el **TOTAL** del extracto antes de la fecha límite → no pagas intereses
+• Úsala solo para gastos que ya tenías planeados
+• Aprovecha los beneficios: millas, cashback, cuotas sin intereses
+• Ponle un límite mental: nunca más del 30% del cupo disponible
+
+**❌ Qué evitar a toda costa:**
+• Pagar solo el mínimo — la deuda se vuelve permanente
+• Usarla para gastos que no puedes pagar de contado
+• Sacar avances en efectivo (tasas del 40%+ anual)
+• Tener varias tarjetas con saldo pendiente
+
+**El costo real del pago mínimo:**
+$1.000.000 de deuda al 28% EA pagando el mínimo (5% mensual):
+→ Tardas **~7 años** en pagarla
+→ Terminas pagando **más de $2.500.000** en total
+→ Pagas **$1.500.000 extra solo en intereses**
+
+**Tasa máxima 2024 en Colombia:** ~28-30% EA (de las más altas de Latinoamérica)
+
+💡 Si ya tienes saldo en tarjeta, págala ANTES de cualquier inversión. No hay inversión conservadora que rinda más del 28%.""",
+    "sug": "¿Quieres calcular cuánto te costaría una deuda en tarjeta? Dime el monto y la tasa.",
+    "btns": [("💸 Ver mis gastos", RUTAS['finanzas']),
+             ("💡 Ver recomendaciones", RUTAS['recomendaciones'])]
+},
+
+# ─── INFLACIÓN ───────────────────────────────────────────────────
+"inflación|inflacion|ipc|índice de precios|indice de precios|poder adquisitivo|precios suben|todo está caro|todo esta caro": {
+    "titulo": "📉 Inflación — Qué es y cómo proteger tu dinero",
+    "cuerpo": """La **inflación** es el aumento generalizado y sostenido de los precios. Si la inflación es del 9%, lo que hoy cuesta $100.000 el próximo año costará $109.000.
+
+**El efecto sobre tu dinero:**
+$1.000.000 guardado en efectivo con inflación del 9%:
+→ En 1 año: solo puedes comprar lo que antes valía $917.000
+→ En 3 años: equivale a $772.000 de hoy
+→ ¡Perdiste poder de compra sin gastar un peso!
+
+**Colombia 2024:** IPC ≈ 7-9% anual (Banco de la República y DANE)
+
+**Cómo protegerte:**
+✅ CDT con tasa superior a la inflación → si CDT paga 12% e inflación es 9%, ganaste 3% real
+✅ Fondos de renta variable → históricamente superan la inflación
+✅ Finca raíz → valorización histórica en Colombia supera la inflación
+✅ Dólares u otros activos → diversificación de riesgo cambiario
+❌ Efectivo guardado → pierde valor garantizadamente
+
+**Concepto clave — Tasa de interés real:**
+Tasa real = Tasa nominal − Inflación
+Si tu CDT paga 7% y la inflación es 9% → tasa real = -2% (¡estás perdiendo!)
+Si tu CDT paga 12% y la inflación es 9% → tasa real = +3% (ganando de verdad)""",
+    "sug": "¿Quieres calcular cuánto pierde tu dinero guardado con la inflación actual?",
+    "btns": [("📈 Simular inversión", RUTAS['simulador']),
+             ("📚 Aprende más", RUTAS['aprende'])]
+},
+
+# ─── INTERÉS SIMPLE VS COMPUESTO ─────────────────────────────────
+"interés simple|interes simple|interés compuesto|interes compuesto|cómo funciona el interés|como funciona el interes|qué es interés|que es interes|diferencia interés": {
+    "titulo": "🔢 Interés simple vs interés compuesto",
+    "cuerpo": """Son dos formas de calcular el rendimiento de una inversión (o el costo de una deuda).
+
+**Interés simple:**
+Los intereses se calculan siempre sobre el capital original. Los intereses ganados no generan nuevos intereses.
+
+Fórmula: Interés = Capital × Tasa × Tiempo
+
+Ejemplo: $1.000.000 al 10% anual por 3 años
+→ Interés cada año: $100.000 (siempre igual)
+→ Total al final: $1.300.000
+
+---
+
+**Interés compuesto:**
+Los intereses del período anterior se suman al capital. Los intereses generan nuevos intereses. Einstein lo llamó "la octava maravilla del mundo".
+
+Fórmula: Capital Final = Capital × (1 + Tasa)^Tiempo
+
+Ejemplo: $1.000.000 al 10% compuesto por 3 años
+→ Año 1: $1.100.000
+→ Año 2: $1.210.000
+→ Año 3: **$1.331.000** (vs $1.300.000 del simple)
+
+**El poder del tiempo con interés compuesto:**
+$1.000.000 al 10% anual:
+• 10 años → $2.593.742
+• 20 años → $6.727.500
+• 30 años → $17.449.402
+
+💡 La diferencia entre quien empieza a ahorrar a los 25 y quien empieza a los 35 puede ser de $10.000.000+ al retirarse, con los mismos aportes.""",
+    "sug": "¿Quieres simular el crecimiento de tus ahorros con interés compuesto?",
+    "btns": [("📈 Ir al simulador", RUTAS['simulador']),
+             ("📚 Aprende más", RUTAS['aprende'])]
+},
+
+# ─── PENSIÓN ─────────────────────────────────────────────────────
+"pensión|pension|colpensiones|afp|fondo de pensiones|jubilación|jubilacion|retiro|vejez|semanas cotizadas": {
+    "titulo": "👴 Pensión en Colombia — Colpensiones vs AFP",
+    "cuerpo": """Colombia tiene dos sistemas de pensión y elegir bien puede significar millones de diferencia.
+
+**🏛️ Colpensiones — Régimen de Prima Media:**
+• Administrado por el Estado (no es una cuenta tuya)
+• Requisitos: 1.300 semanas cotizadas (~25 años)
+• Edad: 57 mujeres / 62 hombres
+• Pensión mínima garantizada: 1 SMMLV
+• Pensión calculada sobre promedio de últimos 10 años de salario
+
+**🏢 AFP — Régimen de Ahorro Individual (RAIS):**
+• Cuenta individual a tu nombre (Porvenir, Colfondos, Protección)
+• Tus aportes se invierten y generan rendimientos
+• Puedes elegir el perfil de riesgo del portafolio
+• Los aportes voluntarios son deducibles de renta (Art. 126-1 E.T.)
+• El saldo es heritable
+
+**¿Quién conviene Colpensiones?**
+→ Mujeres (menor edad de pensión), empleados con salario estable y bajo, personas con muchos años cotizados
+
+**¿Quién conviene AFP?**
+→ Hombres, independientes, personas con ingresos altos o variables
+
+**⚠️ Dato duro:** El 75% de los colombianos NO se pensiona por cotizaciones discontinuas.
+
+**Aportes voluntarios — beneficio tributario:**
+$300.000/mes en pensión voluntaria:
+→ ~$57.000/mes menos en impuestos
+→ En 20 años al 8%: capital adicional de ~$178.000.000""",
+    "sug": "¿Quieres calcular cuánto acumularías con aportes voluntarios a pensión?",
+    "btns": [("📈 Simular pensión voluntaria", RUTAS['simulador']),
+             ("📚 Aprende más", RUTAS['aprende'])]
+},
+
+# ─── CRIPTOMONEDAS ───────────────────────────────────────────────
+"criptomonedas|cripto|bitcoin|ethereum|btc|eth|blockchain|crypto|criptoactivos": {
+    "titulo": "₿ Criptomonedas — Lo que debes saber antes de invertir",
+    "cuerpo": """Las criptomonedas son activos digitales descentralizados. Pueden generar grandes ganancias o grandes pérdidas. La diferencia está en el conocimiento.
+
+**Riesgos reales:**
+• Volatilidad extrema: Bitcoin cayó 75% en 7 meses (nov 2021 → jun 2022)
+• Sin regulación en Colombia: si pierdes, nadie te protege
+• Si pierdes tu clave privada, pierdes TODO permanentemente
+• Estafas frecuentes: rug pulls, esquemas Ponzi, influencers pagados
+• Exchanges pueden quebrar (FTX quebró en 2022 con millones de clientes)
+
+**Si decides invertir:**
+• Máximo 5-10% de tu portafolio total
+• Solo dinero que puedas perder completamente
+• Solo en plataformas reconocidas: Binance, Coinbase, Kraken
+• Guarda en wallet propia (no en el exchange)
+• Nunca sigas "grupos de inversión" de WhatsApp o Telegram
+
+**🚨 Señales de estafa que debes conocer:**
+→ "Rendimientos garantizados del 5-10% mensual"
+→ "Invierte hoy, oferta vence mañana"
+→ Influencers que piden referidos con comisión
+→ Plataformas sin información de quiénes son ni dónde están
+
+**Impuestos en Colombia:**
+La DIAN considera las criptos activos sujetos a declaración de renta.
+Las ganancias se declaran como ganancia ocasional (10%).""",
+    "sug": "¿Tienes dudas sobre una plataforma de cripto específica? Cuéntame y te digo si parece confiable.",
+    "btns": [("📚 Aprende sobre inversión", RUTAS['aprende']),
+             ("💡 Ver recomendaciones", RUTAS['recomendaciones'])]
+},
+
+# ─── FINCA RAÍZ ──────────────────────────────────────────────────
+"finca raíz|finca raiz|bienes raíces|bienes raices|apartamento|casa|inmueble|arriendo|arrendar|hipoteca|leasing habitacional": {
+    "titulo": "🏠 Inversión en Finca Raíz en Colombia",
+    "cuerpo": """La finca raíz es históricamente una de las mejores inversiones en Colombia, pero tiene características que debes conocer.
+
+**¿Por qué funciona en Colombia?**
+• Valorización histórica: 5-12% anual en ciudades principales
+• Ingreso por arriendo: 3-6% anual del valor del inmueble
+• Cobertura contra inflación (el canon se ajusta con el IPC)
+• Activo tangible con valor intrínseco
+
+**Ejemplo real:**
+Inmueble en Medellín: $200.000.000
+Canon de arriendo: $900.000/mes = $10.800.000/año
+Rendimiento por arriendo: 5.4%
+Valorización anual 8%: $16.000.000
+Retorno total bruto: ~12-13% anual
+
+**Costos que debes considerar:**
+• Predial: 0.3-1.5% del avalúo catastral/año
+• Administración: 5-15% del canon mensual
+• Mantenimiento: 1-3% del valor del inmueble/año
+• Notaría al comprar/vender: 0.5-1% del valor
+
+**Si no tienes capital para comprar:**
+✅ Fiducias inmobiliarias: desde $5-10 millones
+✅ Fondos de inversión inmobiliaria
+✅ Crowdfunding inmobiliario
+
+**⚠️ Riesgo principal:**
+Baja liquidez — no puedes vender rápidamente si necesitas dinero.""",
+    "sug": "¿Tienes algún monto disponible? Te ayudo a comparar CDT vs finca raíz.",
+    "btns": [("📈 Simular inversión", RUTAS['simulador']),
+             ("📚 Aprende más", RUTAS['aprende'])]
+},
+
+# ─── IMPUESTOS / DIAN ────────────────────────────────────────────
+"impuestos|renta|declaración de renta|declaracion de renta|dian|iva|retención|retencion|tributar|tributos|uvt": {
+    "titulo": "🧾 Impuestos en Colombia — Lo esencial",
+    "cuerpo": """Los impuestos no tienen por qué ser un dolor de cabeza si sabes lo básico.
+
+**Impuesto de renta — ¿quién declara?**
+Para 2024 (vigencia 2023) debes declarar si:
+• Ingresos brutos > $59.377.000 en el año
+• Patrimonio bruto > $190.854.000
+• Consumos con tarjeta > $59.377.000
+• Eres responsable de IVA
+
+**Retención en la fuente:**
+Tu empleador descuenta mensualmente un anticipo del impuesto de renta directamente de tu salario. Si declaras y retuvieron más de lo que debes → la DIAN te devuelve.
+
+**Deducciones que puedes usar legalmente:**
+✅ Intereses de crédito hipotecario: hasta $21.629.000/año
+✅ Aportes voluntarios a pensión: hasta 30% del ingreso
+✅ Medicina prepagada
+✅ 4×1000 certificado por el banco
+✅ Dependientes económicos
+
+**IVA en Colombia:**
+• Tasa general: 19%
+• Canasta básica, medicamentos, libros: 0% o exentos
+• Algunos servicios: 5%
+
+**UVT 2024:** $47.065 (Unidad de Valor Tributario — referencia para calcular obligaciones)
+
+💡 Los aportes voluntarios a pensión son la deducción más accesible: por cada $100.000 aportados ahorras entre $19.000 y $39.000 en impuestos.""",
+    "sug": "¿Tienes una pregunta específica sobre tu situación tributaria? Cuéntame.",
+    "btns": [("📈 Simular pensión voluntaria", RUTAS['simulador']),
+             ("👤 Ver mi perfil", RUTAS['perfil'])]
+},
+
+# ─── SOBRE FINANBOT ──────────────────────────────────────────────
+"finanbot|qué es finanbot|que es finanbot|cómo funciona finanbot|como funciona finanbot|para qué sirve|para que sirve|proyecto sena": {
+    "titulo": "🤖 ¿Qué es FinanBot?",
+    "cuerpo": """**FinanBot** es tu asistente financiero personal inteligente, desarrollado como proyecto SENA (Ficha 3407184).
+
+**¿Qué puedes hacer?**
+• 💸 Registrar gastos e ingresos con lenguaje natural
+• 🎯 Crear y dar seguimiento a metas de ahorro
+• 📈 Simular inversiones con interés compuesto
+• 🏷️ Calcular descuentos, IVA, repartos, aumentos
+• 📊 Ver tu balance y resumen financiero
+• 🧮 Resolver cualquier cálculo matemático
+• 💡 Recibir consejos y respuestas sobre finanzas
+• 📄 Generar reportes PDF/Excel de tus finanzas
+• 👤 Actualizar tu perfil (nombre, salario, metas)
+
+**Cómo hablarme — ejemplos reales:**
+• *"Gasté $25.000 en el bus"* → registra el gasto
+• *"$80.000 con 15% de descuento"* → calcula el precio
+• *"Simula $500.000 al 10% por 1 año"* → proyecta la inversión
+• *"¿Qué es un CDT?"* → te explico
+• *"Cambia mi nombre a Juan"* → actualiza tu perfil
+• *"Hazme un reporte"* → genera el PDF
+
+No necesitas comandos exactos. Habla como le escribirías a un amigo.""",
+    "sug": "¿Por dónde quieres empezar?",
+    "btns": [("🏠 Ir al dashboard", RUTAS['dashboard']),
+             ("💸 Registrar finanzas", RUTAS['finanzas']),
+             ("📚 Centro de aprendizaje", RUTAS['aprende'])]
+},
+
+# ─── QUÉS PUEDES HACER ───────────────────────────────────────────
+"qué puedes hacer|que puedes hacer|qué haces|que haces|capacidades|funciones|ayuda|comandos|cómo te uso|como te uso": {
+    "titulo": "🤖 Todo lo que puedo hacer por ti",
+    "cuerpo": """Aquí está todo lo que puedes pedirme:
+
+**💸 Transacciones:**
+• *"Gasté $30.000 en comida"* — registra gasto
+• *"Recibí $2.000.000 de salario"* — registra ingreso
+• *"Borra el último gasto de transporte"* — elimina
+• *"Muéstrame mis gastos de esta semana"* — consulta
+
+**🎯 Metas de ahorro:**
+• *"Crea una meta de $1.000.000 para viajes"*
+• *"Actualiza mi meta de viajes a $400.000"*
+• *"Ver todas mis metas"*
+
+**📈 Simulaciones:**
+• *"Simula $500.000 al 12% por 6 meses"*
+• *"Si invierto 2 millones al 8% por 2 años, ¿cuánto tengo?"*
+
+**🧮 Calculadora financiera:**
+• *"$80.000 con 20% de descuento"*
+• *"$50.000 más IVA"*
+• *"Divide $150.000 entre 3 personas"*
+• *"¿Cuánto es 350 por 12?"*
+• *"¿Qué porcentaje es $30.000 de $200.000?"*
+
+**👤 Perfil:**
+• *"Cambia mi nombre a María"*
+• *"Actualiza mi salario a $3.500.000"*
+• *"Mi correo es nuevo@email.com"*
+
+**📄 Reportes:**
+• *"Hazme un reporte"* → genera PDF o Excel descargable
+
+**💡 Preguntas financieras:**
+• *"¿Qué es un CDT?"*
+• *"¿Cómo salgo de deudas?"*
+• *"¿Cuánto debo tener en fondo de emergencia?"*
+• *"¿Qué es el interés compuesto?"*""",
+    "sug": "¿Con cuál empezamos?",
+    "btns": [("💸 Mis finanzas", RUTAS['finanzas']),
+             ("📈 Simulador", RUTAS['simulador']),
+             ("📚 Aprende", RUTAS['aprende'])]
+},
+
+# ─── SALARIO MÍNIMO / SMMLV ──────────────────────────────────────
+"smmlv|salario mínimo|salario minimo|mínimo legal|minimo legal|sueldo mínimo|sueldo minimo": {
+    "titulo": "💵 Salario Mínimo en Colombia (SMMLV)",
+    "cuerpo": """El **SMMLV** (Salario Mínimo Mensual Legal Vigente) es la referencia base del sistema laboral colombiano.
+
+**2024:**
+• SMMLV: $1.300.000
+• Auxilio de transporte: $162.000
+• Total con auxilio: $1.462.000
+
+**¿Cómo se usa el SMMLV?**
+• Base para calcular pensiones y aportes
+• Referencia para multas y sanciones
+• Mínimo para créditos y garantías
+• Referencia de la pensión mínima
+
+**Si ganas el mínimo, ¿cuánto recibes en neto?**
+Salario bruto: $1.300.000
+Descuento salud (4%): $52.000
+Descuento pensión (4%): $52.000
+Salario neto aprox.: $1.196.000 + auxilio transporte $162.000 = **$1.358.000**
+
+**Regla del 20% con el mínimo:**
+Meta de ahorro sugerida: $260.000/mes
+Fondo de emergencia mínimo (3 meses): $3.888.000""",
+    "sug": "¿Quieres ver cómo distribuir el salario mínimo según la regla 50/30/20?",
+    "btns": [("📊 Ver mi balance", RUTAS['dashboard']),
+             ("💸 Registrar mis gastos", RUTAS['finanzas'])]
+},
+
+# ─── DIVERSIFICACIÓN ─────────────────────────────────────────────
+"diversificar|diversificacion|diversificación|portafolio|no pongas todos los huevos|riesgo inversión": {
+    "titulo": "🌱 Diversificación — Cómo reducir el riesgo",
+    "cuerpo": """**Diversificar** significa distribuir tu dinero en diferentes tipos de activos para que si uno baja, los demás puedan compensar.
+
+**¿Por qué diversificar?**
+Si pones $10.000.000 todo en acciones de una sola empresa y esa empresa quiebra, pierdes todo. Si los distribuyes entre CDT, acciones y fondos, una caída parcial no te destruye.
+
+**Ejemplo de portafolio conservador ($5.000.000):**
+• CDT 6 meses 12%: $3.000.000 (60%) — bajo riesgo
+• Fondo de inversión moderado: $1.500.000 (30%) — riesgo medio
+• Acciones BVC largo plazo: $500.000 (10%) — alto riesgo
+
+**Reglas de diversificación:**
+1. No más del 50% en un solo activo o institución
+2. Mezcla activos con comportamientos distintos
+3. Diversifica también en tiempo (no todo al mismo plazo)
+4. Criptomonedas: máximo 5-10% del portafolio total
+
+**Diversificación de ingresos:**
+Una segunda fuente de ingresos reduce tu riesgo financiero personal. Freelance, inversiones con rendimiento, negocio pequeño.
+$300.000/mes extra = $3.600.000/año adicionales.""",
+    "sug": "¿Quieres simular cómo se vería un portafolio diversificado con tu capital disponible?",
+    "btns": [("📈 Usar simulador", RUTAS['simulador']),
+             ("💡 Ver recomendaciones", RUTAS['recomendaciones'])]
+},
+
+# ─── ANÁLISIS TÉCNICO ─────────────────────────────────────────────
+"análisis técnico|analisis tecnico|gráficos|candelas|velas|soportes resistencias|soporte resistencia|trading|trader": {
+    "titulo": "📊 Análisis Técnico — Lectura de gráficos y tendencias",
+    "cuerpo": """El **análisis técnico** es el estudio de los gráficos de precios históricos para predecir movimientos futuros. Se basa en la idea de que los patrones del pasado tienden a repetirse.
+
+**Conceptos clave:**
+
+**Soportes y Resistencias:**
+• **Soporte:** Nivel de precio donde cae la demanda. El precio "rebota" hacia arriba.
+• **Resistencia:** Nivel donde cae la oferta. El precio "cae" hacia abajo.
+• Cuando un soporte se rompe a la baja, se convierte en resistencia.
+• Cuando una resistencia se rompe al alza, se convierte en soporte.
+
+**Tipos de velas japonesas:**
+• **Vela verde (alcista):** Cierre > Apertura. Señal compradora.
+• **Vela roja (bajista):** Cierre < Apertura. Señal vendedora.
+• Mecha larga = indecisión del mercado
+• Sin mecha = fuerza en la dirección
+
+**Indicadores técnicos principales:**
+| Indicador | Señal alcista | Señal bajista |
+|---|---|---|
+| RSI (fuerza relativa) | <30 (sobreventa) | >70 (sobrecompra) |
+| MACD | Cruza hacia arriba | Cruza hacia abajo |
+| Medias móviles | Precio > MA | Precio < MA |
+| Bandas Bollinger | Toca banda baja | Toca banda alta |
+
+**Advertencia importante:**
+⚠️ El análisis técnico es probabilístico, NO definitivo. El mercado puede sorprenderte. Nunca operes con dinero que no puedas perder.
+
+💡 La mayoría de traders retail PIERDEN dinero. Es un juego de habilidad extrema.""",
+    "sug": "¿Quieres aprender sobre análisis fundamental como complemento?",
+    "btns": [("📚 Aprende más", RUTAS['aprende']),
+             ("📈 Ir al simulador", RUTAS['simulador'])]
+},
+
+# ─── ANÁLISIS FUNDAMENTAL ────────────────────────────────────────
+"análisis fundamental|fundamental|earnings|utilidades|pe ratio|p/e|precio ganancia|rentabilidad empresa|valuation": {
+    "titulo": "📈 Análisis Fundamental — Valuar empresas",
+    "cuerpo": """El **análisis fundamental** evalúa el valor intrínseco de una empresa basándose en sus estados financieros y perspectivas.
+
+**Indicadores clave:**
+
+**P/E Ratio (Price to Earnings):**
+P/E = Precio de la acción / Ganancia por acción
+
+Interpretación:
+• P/E bajo (<15): Posiblemente subvaluado o con problemas
+• P/E medio (15-25): Valoración normal
+• P/E alto (>25): Posiblemente sobrevalorado o con gran potencial
+• Comparar SIEMPRE con el promedio del sector
+
+Ejemplo:
+Acción BVC: $45.000, Ganancia por acción: $2.000
+P/E = 45.000 / 2.000 = 22.5x
+
+**ROE (Retorno sobre Patrimonio):**
+ROE = Ganancia Neta / Patrimonio × 100
+
+Mide cuánto beneficio la empresa genera con el capital invertido.
+ROE >15% es excelente. ROE <5% es preocupante.
+
+**Deuda/EBITDA:**
+Mide cuántas veces la ganancia operativa podría pagar la deuda.
+< 3x: Saludable
+> 5x: Riesgoso
+
+**Crecimiento de Ingresos:**
+Comparar ingresos año a año.
+Crecimiento >15% anual es positivo.
+
+**¿Cuándo comprar?**
+1. Empresa con fundamentals fuertes (ROE >15%, deuda baja)
+2. Precio de la acción ha caído temporalmente
+3. P/E está por debajo del promedio histórico
+4. Tienes horizonte de largo plazo (>5 años)
+
+💡 Recuerda: Invertir en empresas es comprar un % de sus ganancias futuras.""",
+    "sug": "¿Quieres aprender las diferencias entre trading (corto plazo) e inversión (largo plazo)?",
+    "btns": [("📚 Aprende más", RUTAS['aprende']),
+             ("📈 Simulador", RUTAS['simulador'])]
+},
+
+# ─── BONOS Y RENTA FIJA ──────────────────────────────────────────
+"bonos|renta fija|tasa fija|cupón|yield|títulos deuda|tes|bonos del gobierno|corporate bonds": {
+    "titulo": "💼 Bonos y Renta Fija — Inversión predecible",
+    "cuerpo": """Un **bono** es un préstamo que le das a una empresa o gobierno. A cambio, recibes pagos periódicos (cupones) y devuelven el capital al vencimiento.
+
+**Partes de un bono:**
+
+• **Valor nominal:** Cantidad original que prestas
+• **Tasa cupón:** % de interés que recibes periódicamente (anual)
+• **Plazo:** Cuándo se devuelve el capital (3, 5, 10, 30 años)
+• **Precio:** Puede variar en el mercado (sube si tasas bajan, baja si suben)
+
+**Ejemplo real:**
+TES (Bonos del Gobierno Colombiano)
+Nominal: $1.000.000
+Plazo: 10 años
+Tasa: 8% anual
+→ Recibirás $80.000 cada año durante 10 años
+→ Al año 10, recibirás $1.000.000 + último cupón
+
+**Tipos de bonos:**
+
+| Tipo | Riesgo | Rendimiento |
+|---|---|---|
+| TES (Gobierno) | Muy bajo | 7-9% |
+| Corporativos (AAA) | Bajo | 9-11% |
+| Corporativos (BBB) | Medio | 11-15% |
+| Corporativos (B) | Alto | 15-25%+ |
+
+**Yield (Rentabilidad real):**
+Si compras un bono a descuento (menos que su valor), el yield es mayor que la tasa cupón.
+
+Precio compra: $950.000 (descuento)
+Tasa cupón: 8%
+Yield: ~8.4%
+
+**Riesgo de tasa de interés:**
+Si compras un bono al 8% y las tasas suben a 12%, tu bono se devalúa en el mercado.
+Si planeas vender antes del vencimiento, podrías perder.
+
+💡 La ventaja de bonos: flujo predecible de ingresos. Ideal para jubilados.""",
+    "sug": "¿Quieres comparar bonos vs acciones para tu portafolio?",
+    "btns": [("📊 Simulador", RUTAS['simulador']),
+             ("💡 Recomendaciones", RUTAS['recomendaciones'])]
+},
+
+# ─── OPCIONES Y FUTUROS ──────────────────────────────────────────
+"opciones|futuros|derivatives|derivados|call|put|strike|contrato futuro|forwards": {
+    "titulo": "🎯 Derivados — Opciones y Futuros (Avanzado)",
+    "cuerpo": """Los **derivados** son contratos cuyo valor depende de otro activo subyacente (acciones, commodities, divisas).
+
+**Opciones:**
+
+Una opción es el DERECHO (no obligación) de comprar o vender un activo a un precio fijo (strike) en una fecha futura.
+
+**Tipos:**
+• **Call (Opción de compra):** Derecho a COMPRAR
+• **Put (Opción de venta):** Derecho a VENDER
+
+**Ejemplo — Call sobre Ecopetrol:**
+Compras una call de Ecopetrol a $2.600 con expiración en 1 mes
+• Si Ecopetrol sube a $3.000: Ejerces → Compras a $2.600, vendes a $3.000 = Ganancia $400
+• Si Ecopetrol baja a $2.400: NO ejerces, pierdes solo la prima (lo que pagaste)
+
+**Ventaja:** Apalancamiento (controlas mucho dinero con poco capital)
+**Desventaja:** Pérdida total del capital invertido en opciones
+
+---
+
+**Futuros:**
+
+Un futuro es un CONTRATO OBLIGATORIO de comprar/vender un activo a un precio fijo en una fecha futura.
+
+**Diferencia con opciones:**
+• Opción: Derecho (puedes no ejercer)
+• Futuro: Obligación (DEBES liquidar)
+
+**Ejemplo — Futuro de café:**
+Agricultor vende futuro de café a $2.000/kg
+Esto le garantiza un precio fijo independientemente de variaciones del mercado
+
+**Riesgo:**
+Si el precio cae a $1.500, igual recibe $2.000 → GANANCIA
+Si el precio sube a $3.000, solo recibe $2.000 → PÉRDIDA
+
+---
+
+**⚠️ ADVERTENCIA IMPORTANTE:**
+Opciones y futuros son instrumentos ALTAMENTE ESPECULATIVOS. Solo para expertos.
+El 95% de principiantes pierde dinero con derivados.
+Requieren depósitos de garantía (margin) que pueden ser liquidados automáticamente.""",
+    "sug": "Estos instrumentos requieren experiencia. ¿Quieres aprender a construir portafolios conservadores primero?",
+    "btns": [("📚 Aprende más", RUTAS['aprende']),
+             ("💡 Recomendaciones", RUTAS['recomendaciones'])]
+},
+
+# ─── FOREX ───────────────────────────────────────────────────────
+"forex|divisas|dólar|euro|libra|trading de divisas|cambio moneda|tipo de cambio|tasa de cambio": {
+    "titulo": "💱 FOREX — Trading de Divisas",
+    "cuerpo": """**FOREX** es el mercado de divisas. Es el mercado financiero más grande del mundo (~$7 billones diarios).
+
+**¿Cómo funciona?**
+
+Una divisa se cotiza siempre en pares: USD/COP (Dólar vs Peso Colombiano)
+
+USD/COP = 4.100
+→ 1 dólar = 4.100 pesos
+
+Si crees que el dólar SUBIRÁ:
+Compras USD/COP. Si sube a 4.150, ganas en dólares.
+
+Si crees que el dólar BAJARÁ:
+Vendes USD/COP en corto.
+
+**Características:**
+• Mercado abierto 24/5 (cierra fin de semana)
+• Máximo apalancamiento (~500:1 en brokers internacionales)
+• Spreads muy bajos (~2 pips)
+• Volatilidad alta
+
+**Pares principales (Majors):**
+EUR/USD, GBP/USD, USD/JPY, etc.
+
+**Pares emergentes (Exoticos):**
+USD/COP (Dólar-Peso), USD/MXN (Dólar-Peso Mexicano), etc.
+
+**⚠️ RIESGOS:**
+1. Apalancamiento extremo = pérdidas amplificadas
+2. Volatilidad geopolítica (guerras, anuncios Fed)
+3. Manipulación de brokers no regulados
+4. El 95% de traders retail PIERDEN
+
+**Estafas comunes:**
+• Brokers sin regulación (offshore)
+• Promesas de "rentabilidad garantizada"
+• Señales de trading "100% confiables"
+• Plataformas copiadas de brokers legales
+
+💡 El FOREX legítimo requiere educación seria y años de experiencia. NO es un atajo al dinero.""",
+    "sug": "Si buscas inversión con divisas de bajo riesgo, ¿quieres conocer sobre fondos dolarizados?",
+    "btns": [("📚 Aprende más", RUTAS['aprende']),
+             ("💡 Recomendaciones", RUTAS['recomendaciones'])]
+},
+
+# ─── FONDOS INDEXADOS ────────────────────────────────────────────
+"fondos indexados|fondo índice|index funds|etf|fondos pasivos|colcap|índice accionario": {
+    "titulo": "📊 Fondos Indexados — Inversión pasiva inteligente",
+    "cuerpo": """Un **fondo indexado** replica el desempeño de un índice (como el Colcap o el S&P 500).
+
+**¿Por qué?**
+La mayoría de administradores activos NO pueden vencer al mercado. Los fondos indexados sí, porque SIMPLEMENTE REPLICAN el índice.
+
+**Ejemplo — Fondo COLCAP:**
+El Colcap agrupa las 20 acciones más grandes de Colombia.
+Un fondo indexado compra todas esas 20 acciones en las mismas proporciones.
+
+**Ventajas vs Fondos Activos:**
+
+| Aspecto | Fondo Activo | Fondo Indexado |
+|---|---|---|
+| Comisión | 1-3% anual | 0.1-0.5% anual |
+| Rendimiento promedio | Pierde vs índice | Iguala al índice |
+| Transparencia | Baja | Alta |
+| Volatilidad | Alta | Igual al índice |
+
+**Estadística probada:**
+En 15 años, el 87% de fondos activos no vencen al S&P 500 (pasivo).
+
+**ETFs (Exchange Traded Funds):**
+Fondos indexados que cotizan en bolsa como acciones.
+Pueden comprarse y venderse durante el día (más liquidez que fondos tradicionales).
+
+**Fondos indexados principales en Colombia:**
+• SURA Fondo Índice Accionario
+• Skandia Fondo Índice Colcap
+• Credicorp Fondo Índice S&P 500
+
+**¿Cuándo comprar fondos indexados?**
+• Eres principiante y no tienes tiempo de investigar
+• Quieres rentabilidad con bajo mantenimiento
+• Tienes horizonte de largo plazo (>10 años)
+
+💡 Warren Buffett recomienda fondos indexados para la mayoría de inversores. Es la inversión más inteligente después de tener fondo de emergencia.""",
+    "sug": "¿Quieres comparar diferentes fondos indexados disponibles en Colombia?",
+    "btns": [("📚 Aprende más", RUTAS['aprende']),
+             ("💡 Recomendaciones", RUTAS['recomendaciones'])]
+},
+
+# ─── SEGUROS ─────────────────────────────────────────────────────
+"seguro|seguros|póliza|cobertura|seguro de vida|seguro automotor|seguro hogar|aseguranza": {
+    "titulo": "🛡️ Seguros — Protección financiera",
+    "cuerpo": """Un **seguro** es un contrato donde pagas una prima (cuota) para transferir el riesgo de un evento a una aseguradora.
+
+**Tipos principales:**
+
+**Seguros de Vida:**
+• Vida temporal: Protege por X años. Es barato (~$20-50/mes)
+• Vida permanente: Protege toda la vida. Más caro pero incluye componente de ahorro
+
+Regla: Asegura 10-12x tu ingreso anual
+Si ganas $2.000.000/año → Póliza de ~$24.000.000
+
+**Seguro Automotor (Obligatorio):**
+Responsabilidad civil: Te cubre si causas daño a terceros
+Cobertura integral: Cubre daños a tu auto también
+
+**Seguro de Hogar:**
+Cubre robo, incendio, daños naturales
+
+**Seguros de Salud:**
+• EPS (Régimen contributivo): Básico, obligatorio si tienes empleo
+• Medicina prepagada: Privada, mejor cobertura, más caro
+• ARL (Riesgos laborales): Si eres empleado, ya está cubierto
+
+---
+
+**¿Es el seguro una inversión?**
+NO. El seguro es PROTECCIÓN, no inversión.
+El dinero que ahorres EN SEGUROS baratos lo INVIERTES en CDT, acciones o fondos.
+
+**Ejemplo:**
+Seguro de vida temporal: $30/mes
+Seguro de vida permanente: $300/mes
+
+La diferencia ($270/mes) la INVIERTES en CDT al 12% anual
+En 30 años: ~$250.000.000 vs posiblemente $0 de ganancia en seguro permanente
+
+💡 Necesitas seguros de RESPONSABILIDAD CIVIL. Los de ahorro son una trampa financiera.""",
+    "sug": "¿Necesitas calcular cuánta cobertura de seguro es adecuada para tu situación?",
+    "btns": [("📚 Aprende más", RUTAS['aprende']),
+             ("👤 Mi perfil", RUTAS['perfil'])]
+},
+
+# ─── PLANIFICACIÓN TRIBUTARIA ────────────────────────────────────
+"planificación tributaria|optimización fiscal|deducción|crédito fiscal|exención|incentivos tributarios|reforma tributaria": {
+    "titulo": "🧾 Planificación Tributaria Avanzada",
+    "cuerpo": """**Planificación tributaria** es organizar tus finanzas LEGALMENTE para pagar la menor cantidad de impuestos posible.
+
+**No es evasión (ilegal), es optimización (legal).**
+
+**Deducciones disponibles en Colombia 2024:**
+
+1. **Aportes voluntarios a pensión:** Hasta 30% del ingreso
+   Deducción tributaria: ~19-39% del aporte
+   $300.000 aportados = $57.000 - $117.000 en ahorro fiscal
+
+2. **Intereses hipotecarios:** Hasta $21.629.000/año
+   Solo para crédito hipotecario para vivienda propia
+
+3. **Donaciones a ONGS reconocidas:** 100% deducible (algunos casos)
+
+4. **Medicina prepagada:** 100% deducible si no usas EPS
+
+5. **Gastos de educación:** Parcialmente deducibles
+
+6. **Pérdidas del ejercicio anterior:** Se trasladan al siguiente
+
+---
+
+**Estructuración legal:**
+
+Si eres independiente/profesional:
+• Constituirse como persona jurídica (SAS) puede beneficiarte
+• Separar ingresos y gastos adecuadamente
+• Documentar TODOS los gastos
+
+**Plazos de prescripción:**
+La DIAN tiene 5 años para auditarte (6 años si hay indicio de fraude)
+
+**⚠️ Multas por evasión:**
+• Multa: 100-200% del impuesto evadido
+• Intereses: 1-2% mensual
+• Cárcel: Hasta 8 años para casos graves
+
+💡 Más dinero se pierde por dejar de usar deducciones legales que por pagar impuestos correctamente. Consulta un contador.""",
+    "sug": "¿Quieres calcular cuánto podrías ahorrar con aportes voluntarios a pensión?",
+    "btns": [("📈 Simular pensión voluntaria", RUTAS['simulador']),
+             ("🧾 Aprende más", RUTAS['aprende'])]
+},
+
+# ─── CRÉDITO HIPOTECARIO ─────────────────────────────────────────
+"hipoteca|crédito hipotecario|credito hipotecario|mortgage|tasa hipotecaria|cuota hipotecaria": {
+    "titulo": "🏠 Crédito Hipotecario — Compra de vivienda",
+    "cuerpo": """Un **crédito hipotecario** es un préstamo para comprar una vivienda. La propiedad queda como garantía.
+
+**Requisitos en Colombia:**
+
+• Capacidad de pago: Ingresos suficientes (relación cuota/ingreso ~40-50%)
+• Activos: Antecedentes de crédito limpios
+• Antigüedad laboral: Mínimo 6-12 meses en el empleo
+• Capital inicial: 10-30% del valor de la propiedad
+
+**Simulación real:**
+
+Vivienda: $150.000.000
+Capital inicial (20%): $30.000.000
+Préstamo solicitado: $120.000.000
+Plazo: 20 años (240 meses)
+Tasa: 8% anual
+
+Cuota mensual ≈ $1.010.000
+
+**Costos adicionales:**
+• Tasación: 0.5-1% del valor
+• Escritura pública: 1-2% del valor
+• Registro catastral: ~$100.000
+• Seguros: Incendio, terremoto (obligatorios)
+• Mantenimiento: 1-3% anual del valor
+
+**Tipos de tasa:**
+• **Tasa fija:** No cambia. Predecible pero tasa inicial más alta
+• **Tasa variable:** Ajusta con DTF o IBR. Riesgo si suben tasas
+• **Mixta:** Fija primeros años, luego variable
+
+**¿Cuándo comprar vivienda con crédito?**
+✅ Si planeas vivir >7 años (los primeros años vas principalmente a intereses)
+✅ Si tu ingreso es estable
+✅ Si tienes fondo de emergencia aparte
+❌ Si está en crisis laboral
+❌ Si no tienes capital inicial (>10%)
+
+**Cálculo del poder adquisitivo:**
+Ingreso mensual: $3.000.000
+Máximo recomendado en cuota (30%): $900.000
+Con tasa 8% a 20 años: Puedes pedir ~$110.000.000
+
+💡 No compres la casa MÁS cara que puedas pedir. Compra la que necesites.""",
+    "sug": "¿Quieres simular cuota y cantidad de vivienda que podrías financiar?",
+    "btns": [("📈 Simulador", RUTAS['simulador']),
+             ("💡 Recomendaciones", RUTAS['recomendaciones'])]
+},
+
+# ─── LEASING Y ARRENDAMIENTO ─────────────────────────────────────
+"leasing|arrendamiento operativo|leasing habitacional|arrendar|alquiler|contrato arrendamiento": {
+    "titulo": "🔄 Leasing — Alternativa a compra",
+    "cuerpo": """**Leasing** es arriendo a largo plazo con opción de compra al final.
+
+**Leasing Operativo (Vehículos, equipos):**
+
+Características:
+• Cuota mensual fija incluye: valor del bien + mantenimiento + seguros
+• Riesgo de depreciación: La asume el arrendador
+• Al final: Devuelves el bien, NO lo tienes
+
+Ejemplo — Auto:
+Valor auto: $30.000.000
+Cuota leasing: $750.000/mes (36 meses)
+Incluye: Mantenimiento, neumáticos, póliza todo riesgo
+
+Ventajas:
+✅ Cuota baja vs financiar + mantener
+✅ Auto nuevo siempre (garantía)
+✅ Sin riesgo de depreciación
+
+Desventajas:
+❌ Millas limitadas (~1.500/mes, pagar extra si excedes)
+❌ Desgaste normal contado en inspección final
+❌ No es tuyo
+
+---
+
+**Leasing Habitacional (Vivienda):**
+
+Es arriendo a largo plazo con opción de compra.
+
+Ventaja: Puedes "probar" vivir en una zona antes de comprar
+
+---
+
+**Leasing vs Comprar Auto:**
+
+| Aspecto | Leasing | Financiar |
+|---|---|---|
+| Cuota | $750 | $500 + gastos |
+| Mantenimiento | Incluido | Por tu cuenta |
+| Depreciación | Asume arrendador | Tú pierdes ~40-50% |
+| Al terminar | Devuelves | Te pertenece |
+| Mejor para | Quien quiere nuevo | Quien maneja mucho |
+
+💡 Si cambias auto cada 3-4 años: Leasing.
+Si cambias cada 8-10 años: Comprar.""",
+    "sug": "¿Quieres calcular cuál es más conveniente para ti: leasing o crédito automotor?",
+    "btns": [("📈 Simulador", RUTAS['simulador']),
+             ("💡 Recomendaciones", RUTAS['recomendaciones'])]
+},
+
+# ─── NETWORTH Y RATIO FINANCIEROS ──────────────────────────────────
+"networth|net worth|patrimonio neto|assets|liabilities|activos pasivos|balance personal|solvencia|ratios financieros": {
+    "titulo": "📊 Net Worth — Tu patrimonio neto",
+    "cuerpo": """**Net Worth (Patrimonio Neto)** = ACTIVOS - PASIVOS
+
+Es el valor real que posees después de pagar todas tus deudas.
+
+**Cálculo:**
+
+ACTIVOS (Lo que tienes):
+• Dinero en efectivo: $500.000
+• Banco: $3.000.000
+• CDT: $5.000.000
+• Auto: $20.000.000
+• Vivienda: $150.000.000
+• Acciones: $2.000.000
+Total Activos: $180.500.000
+
+PASIVOS (Lo que debes):
+• Crédito auto: $15.000.000
+• Tarjeta de crédito: $2.000.000
+• Crédito personal: $1.000.000
+Total Pasivos: $18.000.000
+
+NET WORTH = $180.500.000 - $18.000.000 = **$162.500.000**
+
+---
+
+**Ratios Financieros Personales:**
+
+**1. Ratio de Liquidez = Activos Líquidos / Pasivos Mensuales**
+Cuántos meses puedes mantener tu estilo de vida sin ingresos.
+> 6 meses es excelente
+
+**2. Ratio Deuda/Ingresos = Deudas Totales / Ingresos Anuales**
+< 2x es saludable
+> 4x es riesgoso
+
+**3. Ratio de Ahorro = Ahorro Anual / Ingresos Anuales**
+>20% es excelente
+
+**4. Ratio Endeudamiento = Pasivos / Activos**
+< 30% es excelente
+> 70% es riesgoso
+
+---
+
+**¿Por qué importa tu Net Worth?**
+1. Mide tu verdadera riqueza
+2. Te muestra si estás avanzando
+3. Base para decisiones (¿puedes pedir un crédito?)
+4. Motivación: Aumentarlo anualmente es el objetivo
+
+**Meta:** Incrementar net worth 20-30% anual
+
+💡 El objetivo no es tener mucho ingreso. Es tener mucho patrimonio neto (activos - deudas).""",
+    "sug": "¿Quieres calcular tu net worth y ver cómo ha evolucionado?",
+    "btns": [("📊 Mis finanzas", RUTAS['finanzas']),
+             ("📈 Dashboard", RUTAS['dashboard'])]
+},
+
+}  # fin BASE
+
+
+# ══════════════════════════════════════════════════════════════════
+#  CLASE PRINCIPAL  ─  FinanBotIA
+# ══════════════════════════════════════════════════════════════════
 
 class FinanBotIA:
+    MAX_HISTORIAL = 20
 
     def __init__(self):
-        self.contexto = []
-        self.nombre_usuario = None
-        self.ultimo_tema = None
-        self.turno = 0
+        self.historial: deque = deque(maxlen=self.MAX_HISTORIAL)
 
-        self.transiciones = [
-            "\n\n¿Hay algo más en lo que pueda ayudarte?",
-            "\n\n¿Quieres que haga algún cálculo o registre algo?",
-            "\n\n¿Te gustaría simular una inversión o crear una meta?",
-            "\n\n¿Necesitas que profundice en algún punto?",
-        ]
+    # ── API pública ───────────────────────────────────────────────
 
-        # =============================================
-        # BASE DE CONOCIMIENTO FINANCIERO EXPANDIDA
-        # =============================================
-        self.conocimientos = {
-            'ahorro': {
-                'respuesta': (
-                    "💰 **Estrategias de ahorro inteligente:**\n\n"
-                    "**1. La regla del pago primero**\n"
-                    "En cuanto recibas tu salario, transfiere inmediatamente el 10-20% a una cuenta separada. No lo pienses, hazlo automático.\n\n"
-                    "**2. Elimina gastos hormiga**\n"
-                    "• Café diario: $3.000 × 30 = **$90.000/mes**\n"
-                    "• Taxis innecesarios: $15.000 × 8 = **$120.000/mes**\n"
-                    "• Suscripciones olvidadas: hasta **$80.000/mes**\n\n"
-                    "**3. La regla de las 48 horas**\n"
-                    "Antes de comprar algo no esencial, espera 48 horas. Si lo olvidaste, ¡ahorraste!\n\n"
-                    "**4. Automatiza tu ahorro**\n"
-                    "La mayoría de bancos colombianos permiten transferencias automáticas programadas.\n\n"
-                    "💡 ¿Quieres que calcule cuánto puedes ahorrar con tu ingreso actual?"
-                ),
-                'acciones': [
-                    {'texto': '🎯 Crear meta de ahorro', 'link': 'perfil.html'},
-                    {'texto': '📊 Ver mis gastos', 'link': 'finanzas.html'},
-                    {'texto': '📈 Simular ahorro', 'link': 'simulador.html'}
-                ]
-            },
-            'presupuesto': {
-                'respuesta': (
-                    "📋 **La regla 50/30/20:**\n\n"
-                    "🟢 **50% — Necesidades:** Arriendo, comida, transporte, servicios, salud.\n\n"
-                    "🟡 **30% — Deseos:** Entretenimiento, ropa, salidas, tecnología.\n\n"
-                    "🔵 **20% — Ahorro:** Fondo de emergencia, CDT, inversiones.\n\n"
-                    "💡 Si me dices tu salario, te calculo exactamente cuánto destinar a cada categoría."
-                ),
-                'acciones': [
-                    {'texto': '📈 Simular inversión', 'link': 'simulador.html'},
-                    {'texto': '📚 Ver calculadoras', 'link': 'aprende.html'}
-                ]
-            },
-            'deudas': {
-                'respuesta': (
-                    "💳 **Plan para salir de deudas:**\n\n"
-                    "⛄ **Método Bola de Nieve** — Paga la deuda más pequeña primero. Genera motivación.\n\n"
-                    "🌊 **Método Avalancha** — Paga la de mayor tasa primero. Ahorras más dinero.\n\n"
-                    "**Reglas de oro:**\n"
-                    "• No adquieras nuevas deudas mientras pagas\n"
-                    "• Evita el 'gota a gota' — es ilegal y peligroso\n"
-                    "• Negocia si estás en mora, no ignores\n"
-                    "• Superfinanciera: **01 8000 120 100**"
-                ),
-                'acciones': [
-                    {'texto': '💡 Ver recomendaciones', 'link': 'recomendaciones.html'},
-                    {'texto': '📊 Mis finanzas', 'link': 'finanzas.html'}
-                ]
-            },
-            'inversion': {
-                'respuesta': (
-                    "📈 **Inversiones en Colombia:**\n\n"
-                    "Antes de invertir, asegúrate de tener:\n"
-                    "✅ Fondo de emergencia de 3-6 meses\n"
-                    "✅ Deudas de alto interés pagadas\n\n"
-                    "🟢 **CDT — Bajo riesgo:** 8-14% anual\n"
-                    "🟡 **Fondos de inversión — Riesgo medio:** Desde $50.000\n"
-                    "🔴 **Acciones BVC — Alto riesgo:** Ideal largo plazo (+5 años)\n\n"
-                    "💡 ¿Quieres que simule cuánto crecería tu dinero? Dime el monto, tasa y plazo."
-                ),
-                'acciones': [
-                    {'texto': '📈 Usar simulador', 'link': 'simulador.html'},
-                    {'texto': '📚 Aprender más', 'link': 'aprende.html'}
-                ]
-            },
-            'emergencia': {
-                'respuesta': (
-                    "🚨 **Fondo de emergencia:**\n\n"
-                    "**¿Cuánto necesitas?**\n"
-                    "• Empleado: 3-6 meses de gastos\n"
-                    "• Independiente: 6-12 meses\n\n"
-                    "**¿Dónde guardarlo?**\n"
-                    "✅ Cuenta de ahorros · ✅ CDT 30 días · ✅ Daviplata/Nequi\n"
-                    "❌ No en criptos · ❌ No en efectivo en casa\n\n"
-                    "**Regla clave:** El fondo va ANTES que cualquier inversión."
-                ),
-                'acciones': [
-                    {'texto': '🎯 Crear meta de emergencia', 'link': 'perfil.html'},
-                    {'texto': '📈 Simular ahorro', 'link': 'simulador.html'}
-                ]
-            },
-            'interes': {
-                'respuesta': (
-                    "🔢 **Interés simple vs. Interés compuesto:**\n\n"
-                    "**📊 Interés Simple**\n"
-                    "Fórmula: `Capital × Tasa × Tiempo`\n"
-                    "El capital no cambia, solo se acumulan intereses sobre el monto original.\n"
-                    "Ejemplo: $1.000.000 al 10% anual × 3 años = **$1.300.000**\n\n"
-                    "**📈 Interés Compuesto**\n"
-                    "Fórmula: `Capital × (1 + Tasa)^Tiempo`\n"
-                    "Los intereses generan nuevos intereses. El dinero crece exponencialmente.\n"
-                    "Ejemplo: $1.000.000 al 10% anual × 3 años = **$1.331.000**\n\n"
-                    "**El poder del tiempo:**\n"
-                    "$1.000.000 al 10% anual:\n"
-                    "• 10 años: **$2.593.742**\n"
-                    "• 20 años: **$6.727.500**\n"
-                    "• 30 años: **$17.449.402**\n\n"
-                    "💡 ¿Quieres que calcule el interés de tu inversión específica?"
-                ),
-                'acciones': [
-                    {'texto': '📈 Calcular en simulador', 'link': 'simulador.html'},
-                    {'texto': '📚 Calculadoras', 'link': 'aprende.html'}
-                ]
-            },
-            'pension': {
-                'respuesta': (
-                    "👴 **Colpensiones vs. Fondos privados:**\n\n"
-                    "**🏛️ Colpensiones** — 1.300 semanas · 57/62 años · Pensión mínima garantizada\n\n"
-                    "**🏢 Fondos Privados** — Cuenta individual · Aportes voluntarios con beneficios tributarios\n\n"
-                    "⚠️ El 75% de colombianos no se pensiona. Complementa siempre con ahorro personal."
-                ),
-                'acciones': [{'texto': '📈 Simular pensional', 'link': 'simulador.html'}]
-            },
-            'inflacion': {
-                'respuesta': (
-                    "📉 **Inflación — Cómo proteger tu dinero:**\n\n"
-                    "La inflación reduce tu poder adquisitivo silenciosamente.\n"
-                    "$1.000.000 hoy con inflación del 10% = $900.000 de poder real el próximo año.\n\n"
-                    "✅ CDT tasas superiores a inflación · ✅ Fondos de renta variable\n"
-                    "✅ Finca raíz · ✅ Acciones sólidas · ✅ Dólares\n\n"
-                    "❌ Efectivo por meses · ❌ Cuenta con tasa muy baja"
-                ),
-                'acciones': [{'texto': '📈 Simular inversión', 'link': 'simulador.html'}]
-            },
-            'cripto': {
-                'respuesta': (
-                    "₿ **Criptomonedas — Riesgos y realidades:**\n\n"
-                    "• Volatilidad extrema: Bitcoin cayó 75% en 2022\n"
-                    "• Sin regulación ni protección al inversor en Colombia\n"
-                    "• Estafas frecuentes: rug pulls, esquemas Ponzi\n\n"
-                    "✅ Si decides invertir: máximo **5%** de tu portafolio, solo en plataformas reconocidas.\n"
-                    "🚨 Señal de estafa: rendimientos garantizados muy altos."
-                ),
-                'acciones': [{'texto': '📚 Aprender más', 'link': 'aprende.html'}]
-            },
-            'impuesto': {
-                'respuesta': (
-                    "🧾 **Impuestos en Colombia:**\n\n"
-                    "Debes declarar renta si:\n"
-                    "• Ingresos brutos > $57.124.000/año\n"
-                    "• Patrimonio bruto > $190.854.000\n"
-                    "• Consumos con tarjeta > $57.124.000\n\n"
-                    "💡 Aportes a pensión voluntaria reducen tu base gravable.\n"
-                    "📌 Más info: www.dian.gov.co"
-                ),
-                'acciones': []
+    def responder_con_acciones(
+        self,
+        mensaje: str,
+        ctx: dict | None,
+        accion: dict | None,
+    ) -> tuple[str, list[dict]]:
+        self.historial.append({'rol': 'usuario', 'msg': mensaje})
+        respuesta, acciones_ui = self._generar(mensaje, ctx, accion)
+        self.historial.append({'rol': 'bot', 'msg': respuesta[:200]})
+        return respuesta, acciones_ui
+
+    # ── Router principal ──────────────────────────────────────────
+
+    def _generar(self, mensaje, ctx, accion):
+        if accion is None:
+            return self._sin_accion(mensaje, ctx), []
+
+        tipo = accion.get('tipo', '')
+
+        # Bienvenida
+        if tipo == 'bienvenida':
+            return self._bienvenida(accion, ctx), _btns_bienvenida()
+
+        # Calculadora financiera
+        mapa_calc = {
+            'descuento':    self._descuento,
+            'iva_sumado':   self._iva,
+            'iva_descontado': self._iva,
+            'propina':      self._propina,
+            'aumento':      self._aumento,
+            'reparto':      self._reparto,
+            'porcentaje_de': self._porcentaje,
+            'interes_simple': self._interes_simple,
+            'saldo_restante': self._saldo_restante,
+            'calculo':      self._calculo,
+        }
+        if tipo in mapa_calc:
+            return mapa_calc[tipo](accion), _btns_calc()
+
+        # Transacciones
+        if tipo == 'gasto_registrado':
+            return self._gasto_reg(accion, ctx), _btns_trans()
+        if tipo == 'ingreso_registrado':
+            return self._ingreso_reg(accion, ctx), _btns_trans()
+        if tipo == 'gasto_eliminado':
+            return self._eliminado('gasto', accion), _btns_trans()
+        if tipo == 'ingreso_eliminado':
+            return self._eliminado('ingreso', accion), _btns_trans()
+
+        # Metas
+        if tipo == 'meta_creada':
+            return self._meta_creada(accion, ctx), _btns_metas()
+        if tipo == 'meta_actualizada':
+            return self._meta_actualizada(accion), _btns_metas()
+        if tipo == 'meta_eliminada':
+            return f"🗑️ Meta **{accion['nombre']}** eliminada correctamente.", _btns_metas()
+        if tipo == 'consulta_metas':
+            return self._consulta_metas(accion), _btns_metas()
+
+        # Consultas
+        if tipo == 'consulta_gastos':
+            return self._gastos(accion), _btns_finanzas()
+        if tipo == 'consulta_ingresos':
+            return self._ingresos(accion), _btns_finanzas()
+        if tipo == 'consulta_resumen':
+            return self._resumen(accion, ctx), _btns_resumen()
+
+        # Simulación
+        if tipo == 'simulacion_realizada':
+            return self._simulacion(accion), _btns_simulacion()
+
+        # Perfil
+        if tipo == 'salario_actualizado':
+            s = accion['nuevo_salario']
+            return (f"✅ Salario actualizado a **${s:,.0f}**.\n\n"
+                    f"💡 La regla 20% sugiere ahorrar **${int(s*0.2):,.0f}/mes**."), _btns_perfil()
+        if tipo == 'meta_mensual_actualizada':
+            m = accion['nuevo_monto']
+            return f"✅ Meta mensual de ahorro actualizada a **${m:,.0f}**.", _btns_perfil()
+        if tipo == 'perfil_actualizado':
+            campo = accion.get('campo', '')
+            valor = accion.get('valor', '')
+            msgs = {
+                'nombre': f"✅ Tu nombre ahora es **{valor}**. ¡Hola, {valor}! 👋",
+                'correo': f"✅ Correo actualizado a **{valor}**.",
             }
-        }
+            return msgs.get(campo, f"✅ Perfil actualizado: {campo} → {valor}"), _btns_perfil()
 
-        # =============================================
-        # GLOSARIO FINANCIERO COMPLETO
-        # =============================================
-        self.glosario = {
-            'saldo': "El **saldo** es la cantidad de dinero que tienes disponible en una cuenta, cartera o inversión en un momento dado. Puede ser:\n• **Saldo positivo (+):** tienes más de lo que debes.\n• **Saldo negativo (-):** debes más de lo que tienes.\n• **Saldo disponible:** lo que puedes usar ahora mismo.",
-            'balance': "El **balance** es la diferencia entre tus ingresos totales y tus gastos totales. Si es positivo, vas bien. Si es negativo, gastas más de lo que ganas.",
-            'capital': "El **capital** es el monto de dinero inicial que inviertes o que tienes disponible antes de que genere intereses o rendimientos.",
-            'tasa': "La **tasa de interés** es el porcentaje que se cobra o paga por usar dinero. Puede ser:\n• **Tasa mensual:** porcentaje por mes.\n• **Tasa anual (EA):** porcentaje efectivo anual.\n• **Tasa nominal:** tasa antes de capitalizaciones.",
-            'interes': "El **interés** es el rendimiento o ganancia que genera un capital invertido, o el costo adicional de un préstamo. Es el 'precio' del dinero.",
-            'rendimiento': "El **rendimiento** es la ganancia o beneficio que genera una inversión, expresado generalmente en porcentaje.",
-            'liquidez': "La **liquidez** es la facilidad con que puedes convertir un activo en dinero en efectivo sin perder valor.",
-            'activo': "Un **activo** es todo lo que tienes y tiene valor: dinero, propiedades, inversiones, vehículos, negocios.",
-            'pasivo': "Un **pasivo** es todo lo que debes: deudas, préstamos, hipotecas, tarjetas de crédito.",
-            'patrimonio': "El **patrimonio neto** = Activos - Pasivos. Es lo que realmente posees después de descontar tus deudas.",
-            'dividendo': "Un **dividendo** es la parte de las ganancias de una empresa que se reparte entre sus accionistas.",
-            'portafolio': "Un **portafolio de inversión** es el conjunto de todos tus instrumentos financieros: acciones, CDTs, fondos, etc.",
-            'diversificacion': "La **diversificación** es distribuir el dinero en diferentes inversiones para reducir el riesgo. 'No pongas todos los huevos en la misma canasta.'",
-            'cdt': "Un **CDT (Certificado de Depósito a Término)** es un producto bancario donde depositas dinero por un plazo fijo a cambio de una tasa de interés garantizada.",
-            'inflacion': "La **inflación** es el aumento generalizado de precios que reduce el poder adquisitivo del dinero con el tiempo.",
-            'deflacion': "La **deflación** es la disminución generalizada de precios. Parece buena, pero puede indicar una economía débil.",
-            'riesgo': "El **riesgo financiero** es la probabilidad de perder dinero en una inversión. A mayor rendimiento esperado, generalmente mayor riesgo.",
-            'amortizacion': "La **amortización** es el proceso de pagar una deuda en cuotas periódicas que incluyen capital más intereses.",
-            'cuota': "Una **cuota** es el pago periódico (mensual, quincenal) que haces para pagar un préstamo o crédito.",
-            'mora': "La **mora** ocurre cuando no pagas una deuda en la fecha pactada. Genera intereses adicionales y daña tu historial crediticio.",
-            'historial crediticio': "El **historial crediticio** es el registro de cómo has pagado tus deudas. Un buen historial te da acceso a mejores tasas y créditos.",
-            'bvc': "La **BVC (Bolsa de Valores de Colombia)** es el mercado donde se compran y venden acciones de empresas colombianas.",
-            'accion': "Una **acción** es una pequeña parte de la propiedad de una empresa. Si la empresa gana, tú ganas.",
-            'bono': "Un **bono** es un préstamo que le haces al gobierno o a una empresa. Te pagan intereses periódicos y devuelven el capital al final.",
-            'fondo de inversion': "Un **fondo de inversión** agrupa el dinero de muchos inversores para comprar activos diversificados. Es manejado por expertos.",
-            'tasa ea': "La **tasa EA (Efectiva Anual)** es la tasa de interés real que te cobran o pagan en un año, considerando la capitalización.",
-            'interes compuesto': "El **interés compuesto** es cuando los intereses generados se suman al capital y a su vez generan nuevos intereses. Es exponencial.",
-            'interes simple': "El **interés simple** se calcula siempre sobre el capital original. No hay capitalización de intereses.",
-            'plazo': "El **plazo** es el período de tiempo acordado para pagar una deuda o mantener una inversión.",
-            'vencimiento': "El **vencimiento** es la fecha en que termina un contrato financiero: cuando debes devolver el dinero o cuando te lo devuelven.",
-            'rentabilidad': "La **rentabilidad** es la relación entre la ganancia obtenida y el capital invertido, expresada en porcentaje.",
-            'flujo de caja': "El **flujo de caja** es el movimiento de dinero que entra y sale de tu bolsillo o negocio en un período de tiempo.",
-            'presupuesto': "Un **presupuesto** es un plan que organiza cuánto dinero entra y cuánto puedes gastar en cada categoría.",
-            'ahorro': "El **ahorro** es la parte del ingreso que no se gasta y se guarda para uso futuro o para generar rendimientos.",
-            'inversion': "Una **inversión** es destinar dinero a un activo con la expectativa de obtener un rendimiento en el futuro.",
-            'deuda': "Una **deuda** es una obligación de pagar dinero a alguien en el futuro, generalmente con intereses.",
-            'credito': "El **crédito** es la capacidad de obtener dinero prestado con el compromiso de devolverlo más intereses.",
-            'tasa de cambio': "La **tasa de cambio** es el precio de una moneda en términos de otra. Ej: cuántos pesos colombianos vale 1 dólar.",
-            'iva': "El **IVA (Impuesto al Valor Agregado)** es un impuesto que se cobra sobre la venta de bienes y servicios. En Colombia es del 19%.",
-            'retencion': "La **retención en la fuente** es un anticipo de impuestos que se descuenta directamente del pago.",
-            'utilidad': "La **utilidad** es la ganancia obtenida después de descontar todos los costos y gastos.",
-            'gasto': "Un **gasto** es la salida de dinero para pagar bienes o servicios que se consumen.",
-            'ingreso': "Un **ingreso** es la entrada de dinero proveniente del trabajo, inversiones, negocios u otras fuentes.",
-            'patrimonio neto': "El **patrimonio neto** es la diferencia entre lo que tienes (activos) y lo que debes (pasivos). Es tu riqueza real.",
-            'leverage': "El **apalancamiento (leverage)** es usar deuda para aumentar el potencial de inversión. Amplifica ganancias y pérdidas.",
-            'tir': "La **TIR (Tasa Interna de Retorno)** es la tasa de rendimiento que hace que el valor presente neto de una inversión sea cero.",
-            'van': "El **VAN (Valor Actual Neto)** mide la rentabilidad de una inversión en términos de dinero de hoy.",
-        }
+        # Reporte
+        if tipo == 'reporte':
+            fmt = accion.get('formato', 'pdf')
+            return self._reporte(fmt), _btns_reporte(fmt)
 
-    # ============================================
-    # DETECTAR INTENCIÓN
-    # ============================================
-    def detectar_intencion(self, mensaje):
-        msg = mensaje.lower().strip()
-        msg = re.sub(r'[¿?¡!.,]', '', msg)
+        # Estados especiales
+        if tipo in ('confirmar_eliminar_meta', 'confirmar_eliminar_gasto',
+                    'confirmar_eliminar_ingreso'):
+            return (f"🤔 {accion.get('mensaje', '¿Confirmas?')}\n\n"
+                    "Dime el nombre o monto exacto para eliminarlo de forma segura."), []
+        if tipo == 'sin_datos':
+            return (f"📭 No tienes {accion.get('contexto','registros')} aún.\n\n"
+                    "¿Quieres agregar uno? Solo dime qué fue y el monto."), _btns_finanzas()
+        if tipo == 'pide_monto':
+            textos = {
+                'gasto':      "💬 ¿De cuánto fue el gasto?",
+                'ingreso':    "💬 ¿Cuánto recibiste?",
+                'meta':       "💬 ¿Cuánto quieres ahorrar en esta meta?",
+                'simulacion': "💬 ¿Cuánto dinero quieres simular? Dime también la tasa y el plazo.",
+            }
+            return textos.get(accion.get('contexto',''), "💬 ¿De cuánto es?"), []
+        if tipo == 'error':
+            return (f"⚠️ {accion.get('mensaje','Ocurrió un error.')}\n\n"
+                    "Por favor intenta de nuevo."), []
 
-        mapa = {
-            'saludo': ['hola', 'buenos dias', 'buenas tardes', 'buenas noches', 'hey', 'buenas', 'saludos', 'ey', 'que tal', 'como estas'],
-            'ahorro': ['ahorr', 'guardar dinero', 'reducir gastos', 'economizar', 'gastos hormiga', 'no me alcanza'],
-            'inversion': ['invert', 'inversión', 'invertir', 'rendimiento', 'cdt', 'acciones', 'fondos', 'bolsa'],
-            'deuda': ['deuda', 'credito', 'crédito', 'prestamo', 'préstamo', 'debo', 'endeud', 'mora', 'bola de nieve'],
-            'presupuesto': ['presupuesto', '50/30/20', 'distribuir', 'organizar dinero', 'planificar', 'cuanto gastar'],
-            'emergencia': ['emergencia', 'fondo de emergencia', 'imprevisto', 'colchon', 'reserva'],
-            'interes': ['interés', 'interes', 'compuesto', 'tasa de interes'],
-            'inflacion': ['inflacion', 'inflación', 'poder adquisitivo', 'devaluacion', 'todo está caro'],
-            'impuesto': ['impuesto', 'declaracion', 'dian', 'tributar', 'renta'],
-            'pension': ['pension', 'pensión', 'jubilacion', 'retiro', 'colpensiones', 'porvenir'],
-            'cripto': ['cripto', 'bitcoin', 'ethereum', 'crypto', 'blockchain', 'nft'],
-            'glosario': ['que es', 'qué es', 'que significa', 'qué significa', 'define', 'definicion', 'explicame', 'explícame', 'como funciona', 'cómo funciona'],
-            'problema_financiero': ['tengo', 'mi meta', 'quiero llegar', 'banco me ofrece', 'tasa del', 'cuántos meses', 'cuantos meses', 'cuánto me falta', 'cuanto me falta', 'si saco', 'si retiro', 'si invierto', 'cuanto gano', 'cuánto gano', 'resolver', 'problema', 'ejercicio', 'calcula', 'calcúlame', 'calculame', 'ayúdame', 'ayudame'],
-            'mis_datos': ['mis finanzas', 'mi balance', 'cuanto tengo', 'mis gastos', 'mi situacion', 'como estoy', 'mi dinero', 'resumen'],
-            'mis_metas': ['mis metas', 'mis objetivos', 'como van mis metas'],
-            'simular': ['simular', 'simulacion', 'simulador', 'quiero simular'],
-            'calcular_5030': ['distribuye mi salario', 'aplica 50/30/20', 'cuanto debo gastar', 'dividir mi sueldo'],
-            'calcular_meta': ['cuanto tiempo para', 'cuando alcanzo', 'cuantos meses para mi meta', 'tiempo para ahorrar'],
-            'despedida': ['adios', 'hasta luego', 'chao', 'bye', 'nos vemos'],
-            'gracias': ['gracias', 'muchas gracias', 'te lo agradezco', 'perfecto gracias'],
-            'ayuda': ['ayuda', 'help', 'que puedes hacer', 'para que sirves', 'capacidades', 'funciones', 'comandos'],
-            'broma': ['chiste', 'broma', 'algo curioso', 'dato curioso', 'sabias que'],
-        }
+        return self._sin_accion(mensaje, ctx), []
 
-        for intencion, palabras in mapa.items():
-            for palabra in palabras:
-                if palabra in msg:
-                    return intencion
-        return 'desconocido'
+    # ══════════════════════════════════════════════════════════════
+    #  BIENVENIDA INTELIGENTE
+    # ══════════════════════════════════════════════════════════════
 
-    # ============================================
-    # MÉTODO PRINCIPAL
-    # ============================================
-    def responder_con_acciones(self, mensaje, contexto_financiero=None, accion_ejecutada=None):
-        self.contexto.append(mensaje)
-        self.turno += 1
-        intencion = self.detectar_intencion(mensaje)
-        msg_lower = mensaje.lower()
+    def _bienvenida(self, a, ctx):
+        nombre  = a.get('nombre', 'Usuario')
+        resumen = a.get('resumen', {})
+        hora    = datetime.now().hour
+        saludo  = "¡Buenos días" if hora < 12 else ("¡Buenas tardes" if hora < 18 else "¡Buenas noches")
+        emoji   = "🌅" if hora < 12 else ("☀️" if hora < 18 else "🌙")
 
-        # Detectar nombre
-        for frase in ['me llamo ', 'mi nombre es ', 'soy ']:
-            if frase in msg_lower:
-                idx = msg_lower.find(frase) + len(frase)
-                posible = mensaje[idx:].split()[0]
-                posible = re.sub(r'[^a-zA-ZáéíóúÁÉÍÓÚñÑ]', '', posible)
-                if posible and len(posible) > 1:
-                    self.nombre_usuario = posible.capitalize()
-
-        nombre = None
-        if contexto_financiero and contexto_financiero.get('nombre'):
-            nombre = contexto_financiero['nombre']
-        elif self.nombre_usuario:
-            nombre = self.nombre_usuario
-
-        # PRIORIDAD 1 — Acción CRUD
-        if accion_ejecutada:
-            return self._respuesta_accion_ejecutada(accion_ejecutada, contexto_financiero)
-
-        # PRIORIDAD 2 — Resolver problema financiero complejo
-        if intencion == 'problema_financiero' or self._es_problema_financiero(mensaje):
-            resultado = self._resolver_problema_financiero(mensaje)
-            if resultado:
-                return resultado
-
-        # PRIORIDAD 3 — Glosario
-        if intencion == 'glosario':
-            resultado = self._buscar_en_glosario(mensaje)
-            if resultado:
-                return resultado
-
-        # PRIORIDAD 4 — Intenciones especiales
-        if intencion == 'saludo':
-            return self._saludo_inteligente(nombre, contexto_financiero)
-        if intencion == 'despedida':
-            return self._despedida(nombre), []
-        if intencion == 'gracias':
-            return self._respuesta_gracias(nombre), []
-        if intencion == 'ayuda':
-            return self._respuesta_ayuda(), [
-                {'texto': '📊 Mis Finanzas', 'link': 'finanzas.html'},
-                {'texto': '🎯 Mis Metas', 'link': 'perfil.html'},
-                {'texto': '📈 Simulador', 'link': 'simulador.html'},
-                {'texto': '📚 Aprende', 'link': 'aprende.html'}
-            ]
-        if intencion == 'broma':
-            return self._curiosidad_financiera(), [{'texto': '📚 Aprender más', 'link': 'aprende.html'}]
-
-        # PRIORIDAD 5 — Datos del usuario
-        if intencion in ('mis_datos', 'mis_metas') and contexto_financiero:
-            return self._analisis_financiero_inteligente(contexto_financiero)
-
-        if intencion == 'simular':
-            return (
-                "📈 **¡Claro! Puedo simularlo ahora mismo.**\n\n"
-                "Solo dime:\n"
-                "💰 **Capital inicial** — ej: $2.000.000\n"
-                "📊 **Tasa anual** — ej: 10%\n"
-                "⏱️ **Plazo** — ej: 12 meses o 2 años\n\n"
-                "Ejemplo: *\"Simula $2.000.000 al 10% por 24 meses\"*",
-                [{'texto': '📈 Ir al Simulador', 'link': 'simulador.html'}]
-            )
-
-        if intencion == 'calcular_5030':
-            return self._calcular_5030_desde_mensaje(mensaje, contexto_financiero)
-
-        if intencion == 'calcular_meta':
-            return self._calcular_meta_desde_mensaje(mensaje, contexto_financiero)
-
-        # PRIORIDAD 6 — Base de conocimientos
-        for tema, data in self.conocimientos.items():
-            claves = self._claves_tema(tema)
-            if any(c in msg_lower for c in claves):
-                self.ultimo_tema = tema
-                transicion = random.choice(self.transiciones)
-                return data['respuesta'] + transicion, data['acciones']
-
-        # PRIORIDAD 7 — Respuesta desconocida
-        return self._respuesta_desconocido(mensaje, nombre)
-
-    # ============================================
-    # RESOLVER PROBLEMAS FINANCIEROS COMPLEJOS
-    # ============================================
-    def _es_problema_financiero(self, mensaje):
-        """Detecta si el mensaje es un problema financiero complejo"""
-        indicadores = [
-            r'\$[\d,\.]+', r'\d+%', r'tasa del \d+', r'tengo \$', r'tengo \d+',
-            r'meta.*\d+', r'cuánto.*mes', r'cuantos.*mes', r'interés simple',
-            r'interés compuesto', r'si saco', r'si retiro', r'meses antes',
-            r'llegar a', r'juntar', r'alcanzar.*meta'
+        lineas = [
+            f"{saludo}, **{nombre}**! {emoji} Soy **FinanBot** 🤖, tu asistente financiero inteligente.\n",
+            "**Soy una IA** (Inteligencia Artificial) entrenada para ayudarte con tus finanzas.\n",
+            "✅ Puedo registrar, calcular y analizar  |  ⚠️ Mis consejos son orientativos, no una asesoría legal\n"
         ]
-        msg = mensaje.lower()
-        coincidencias = sum(1 for p in indicadores if re.search(p, msg))
-        return coincidencias >= 2
 
-    def _extraer_numero(self, texto):
-        """Extrae el primer número del texto"""
-        texto = str(texto).replace(',', '').replace('.', '')
-        match = re.search(r'\$?\s*(\d+)', texto)
-        if match:
-            return float(match.group(1))
-        return None
-
-    def _extraer_todos_numeros(self, texto):
-        """Extrae todos los números del texto"""
-        texto_limpio = texto.replace(',', '').replace('.', '')
-        matches = re.findall(r'\$?\s*(\d+(?:\.\d+)?)', texto_limpio)
-        return [float(m) for m in matches if float(m) > 0]
-
-    def _extraer_tasa(self, texto):
-        match = re.search(r'(\d+(?:\.\d+)?)\s*%', texto)
-        if match:
-            return float(match.group(1))
-        # Buscar "tasa del X" o "tasa de X"
-        match2 = re.search(r'tasa\s+de[l]?\s+(\d+(?:\.\d+)?)', texto.lower())
-        if match2:
-            return float(match2.group(1))
-        return None
-
-    def _extraer_tiempo_meses(self, texto):
-        msg = texto.lower()
-        match = re.search(r'(\d+)\s*(año|años)', msg)
-        if match:
-            return int(match.group(1)) * 12
-        match2 = re.search(r'(\d+)\s*(mes|meses)', msg)
-        if match2:
-            return int(match2.group(1))
-        return None
-
-    def _resolver_problema_financiero(self, mensaje):
-        """Motor de resolución de problemas financieros en lenguaje natural"""
-        msg = mensaje.lower()
-        numeros = self._extraer_todos_numeros(mensaje)
-        tasa = self._extraer_tasa(mensaje)
-        meses_param = self._extraer_tiempo_meses(mensaje)
-
-        # -----------------------------------------------
-        # PROBLEMA: Interés simple con meta específica
-        # Ej: "Tengo $2.150, meta $3.000, tasa 1.5% mensual"
-        # -----------------------------------------------
-        tiene_capital = any(p in msg for p in ['tengo', 'capital', 'guardados', 'ahorrado', 'disponible'])
-        tiene_meta = any(p in msg for p in ['meta', 'llegar a', 'juntar', 'alcanzar', 'quiero tener'])
-        tiene_interes_simple = any(p in msg for p in ['interés simple', 'interes simple', 'simple'])
-        tiene_retiro_anticipado = any(p in msg for p in ['antes', 'retiro anticipado', 'saco', 'retiro', 'meses antes'])
-
-        if tiene_capital and tiene_meta and tasa and len(numeros) >= 2:
-            # Identificar capital y meta
-            capital = None
-            meta = None
-
-            # Buscar capital con contexto
-            cap_match = re.search(r'(?:tengo|capital|guardados?|ahorrado?|disponible)[^\d]*\$?\s*([\d,\.]+)', msg)
-            if cap_match:
-                capital = float(cap_match.group(1).replace(',', '').replace('.', ''))
-
-            # Buscar meta con contexto
-            meta_match = re.search(r'(?:meta|llegar a|juntar|alcanzar|quiero tener|quiero llegar)[^\d]*\$?\s*([\d,\.]+)', msg)
-            if meta_match:
-                meta = float(meta_match.group(1).replace(',', '').replace('.', ''))
-
-            # Si no encontró por contexto, usar los dos números más grandes
-            if not capital or not meta:
-                nums_grandes = sorted(numeros, reverse=True)
-                if len(nums_grandes) >= 2:
-                    meta = nums_grandes[0]
-                    capital = nums_grandes[1]
-
-            if capital and meta and tasa and capital < meta:
-                # Detectar si la tasa es mensual o anual
-                es_mensual = 'mensual' in msg or 'al mes' in msg or 'por mes' in msg
-                tasa_mensual = tasa if es_mensual else tasa / 12
-                tipo_tasa = f"{tasa}% mensual" if es_mensual else f"{tasa}% anual ({tasa_mensual:.4f}% mensual)"
-
-                interes_necesario = meta - capital
-
-                # Cálculo con interés simple
-                if tiene_interes_simple or not any(p in msg for p in ['compuesto', 'capitali']):
-                    # Meses para meta: Capital * tasa_mensual * n = interes_necesario
-                    meses_para_meta = interes_necesario / (capital * tasa_mensual / 100)
-                    meses_para_meta_redondeado = math.ceil(meses_para_meta)
-
-                    # Verificar con meses exactos
-                    interes_en_meses = capital * (tasa_mensual / 100) * meses_para_meta_redondeado
-                    total_en_meses = capital + interes_en_meses
-
-                    resp = (
-                        f"🧮 **Resolución del problema — Interés Simple:**\n\n"
-                        f"📋 **Datos identificados:**\n"
-                        f"• Capital inicial: **${capital:,.2f}**\n"
-                        f"• Meta objetivo: **${meta:,.2f}**\n"
-                        f"• Tasa: **{tipo_tasa}**\n\n"
-                        f"━━━━━━━━━━━━━━━━━━━━━\n\n"
-                        f"**1️⃣ ¿Cuánto falta ganar en intereses?**\n\n"
-                        f"Intereses necesarios = Meta − Capital\n"
-                        f"Intereses necesarios = ${meta:,.2f} − ${capital:,.2f}\n"
-                        f"**= ${interes_necesario:,.2f}**\n\n"
-                        f"━━━━━━━━━━━━━━━━━━━━━\n\n"
-                        f"**2️⃣ ¿Exactamente en cuántos meses?**\n\n"
-                        f"Fórmula: Meses = Interés_necesario ÷ (Capital × Tasa_mensual)\n"
-                        f"Meses = ${interes_necesario:,.2f} ÷ (${capital:,.2f} × {tasa_mensual/100:.4f})\n"
-                        f"Meses exactos = {meses_para_meta:.4f}\n"
-                        f"**Redondeando hacia arriba = {meses_para_meta_redondeado} meses**\n\n"
-                        f"✅ En {meses_para_meta_redondeado} meses tendrías:\n"
-                        f"${capital:,.2f} + ${interes_en_meses:,.2f} = **${total_en_meses:,.2f}**\n\n"
-                        f"━━━━━━━━━━━━━━━━━━━━━\n\n"
-                    )
-
-                    # Retiro anticipado
-                    if tiene_retiro_anticipado:
-                        meses_antes_match = re.search(r'(\d+)\s*mes(?:es)?\s*antes', msg)
-                        meses_antes = int(meses_antes_match.group(1)) if meses_antes_match else 3
-
-                        meses_retiro = max(1, meses_para_meta_redondeado - meses_antes)
-                        interes_retiro = capital * (tasa_mensual / 100) * meses_retiro
-                        total_retiro = capital + interes_retiro
-                        diferencia = meta - total_retiro
-
-                        resp += (
-                            f"**3️⃣ ¿Si retiras {meses_antes} meses antes?**\n\n"
-                            f"Meses transcurridos = {meses_para_meta_redondeado} − {meses_antes} = **{meses_retiro} meses**\n\n"
-                            f"Interés generado en {meses_retiro} meses:\n"
-                            f"${capital:,.2f} × {tasa_mensual/100:.4f} × {meses_retiro} = **${interes_retiro:,.2f}**\n\n"
-                            f"💰 **Total al retirar: ${total_retiro:,.2f}**\n\n"
-                            f"📉 Diferencia vs meta (${meta:,.2f}): **−${diferencia:,.2f}**\n\n"
-                            f"━━━━━━━━━━━━━━━━━━━━━\n\n"
-                        )
-                    else:
-                        # Incluir retiro anticipado por defecto (3 meses antes)
-                        meses_retiro = max(1, meses_para_meta_redondeado - 3)
-                        interes_retiro = capital * (tasa_mensual / 100) * meses_retiro
-                        total_retiro = capital + interes_retiro
-
-                        resp += (
-                            f"**3️⃣ ¿Si retiras 3 meses antes de la meta?**\n\n"
-                            f"Meses transcurridos: {meses_para_meta_redondeado} − 3 = **{meses_retiro} meses**\n\n"
-                            f"Interés en {meses_retiro} meses:\n"
-                            f"${capital:,.2f} × {tasa_mensual/100:.4f} × {meses_retiro} = **${interes_retiro:,.2f}**\n\n"
-                            f"💰 **Total al retirar anticipadamente: ${total_retiro:,.2f}**\n\n"
-                            f"━━━━━━━━━━━━━━━━━━━━━\n\n"
-                        )
-
-                    resp += (
-                        f"📊 **Resumen ejecutivo:**\n"
-                        f"• Intereses necesarios: **${interes_necesario:,.2f}**\n"
-                        f"• Tiempo para la meta: **{meses_para_meta_redondeado} meses**\n"
-                        f"• Retiro anticipado (3 meses antes): **${total_retiro:,.2f}**\n\n"
-                        f"💡 ¿Quieres que simule este escenario con interés compuesto para comparar?"
-                    )
-
-                    return resp, [
-                        {'texto': '📈 Ver en Simulador', 'link': 'simulador.html'},
-                        {'texto': '🎯 Crear esta meta', 'link': 'perfil.html'}
-                    ]
-
-                # Cálculo con interés compuesto
+        n_trans = resumen.get('num_transacciones', 0)
+        if n_trans > 0:
+            bal  = resumen['balance']
+            ico  = "📈" if bal >= 0 else "📉"
+            lineas.append(
+                f"\n{ico} **Tu estado financiero:**\n"
+                f"• Balance: **${bal:,.0f}**\n"
+                f"• Ingresos: ${resumen['total_ingresos']:,.0f}  |  Gastos: ${resumen['total_gastos']:,.0f}\n"
+                f"• Metas activas: {resumen['num_metas']}  |  Movimientos: {n_trans}\n"
+            )
+            if bal < 0:
+                lineas.append("⚠️ *Tu balance está negativo. ¿Quieres que revisemos tus gastos?*\n")
+            elif resumen['total_ingresos'] > 0:
+                pct = round(bal / resumen['total_ingresos'] * 100)
+                if pct >= 20:
+                    lineas.append(f"✅ *¡Excelente! Estás ahorrando el {pct}% de tus ingresos.*\n")
                 else:
-                    tasa_dec = tasa_mensual / 100
-                    meses_ic = math.log(meta / capital) / math.log(1 + tasa_dec)
-                    meses_ic_redondeado = math.ceil(meses_ic)
-                    total_ic = capital * ((1 + tasa_dec) ** meses_ic_redondeado)
-                    interes_ic = total_ic - capital
-
-                    resp = (
-                        f"🧮 **Resolución — Interés Compuesto:**\n\n"
-                        f"📋 **Datos:**\n"
-                        f"• Capital: **${capital:,.2f}**\n"
-                        f"• Meta: **${meta:,.2f}**\n"
-                        f"• Tasa: **{tipo_tasa}**\n\n"
-                        f"━━━━━━━━━━━━━━━━━━━━━\n\n"
-                        f"**1️⃣ Intereses necesarios:**\n"
-                        f"${meta:,.2f} − ${capital:,.2f} = **${interes_necesario:,.2f}**\n\n"
-                        f"**2️⃣ Meses para la meta:**\n"
-                        f"Fórmula: n = log(Meta/Capital) ÷ log(1 + Tasa)\n"
-                        f"n = {meses_ic:.4f} → **{meses_ic_redondeado} meses**\n\n"
-                        f"✅ En {meses_ic_redondeado} meses tendrías: **${total_ic:,.2f}**\n\n"
-                        f"━━━━━━━━━━━━━━━━━━━━━\n\n"
-                    )
-
-                    if tiene_retiro_anticipado:
-                        meses_retiro = max(1, meses_ic_redondeado - 3)
-                        total_retiro = capital * ((1 + tasa_dec) ** meses_retiro)
-                        resp += (
-                            f"**3️⃣ Retiro 3 meses antes:**\n"
-                            f"**${total_retiro:,.2f}**\n\n"
-                        )
-
-                    return resp, [{'texto': '📈 Ver en Simulador', 'link': 'simulador.html'}]
-
-        # -----------------------------------------------
-        # PROBLEMA: Interés simple o compuesto general
-        # -----------------------------------------------
-        if tasa and len(numeros) >= 2:
-            capital = numeros[0] if numeros[0] > numeros[-1] else numeros[-1]
-            meses = meses_param or 12
-
-            tasa_mensual = tasa if ('mensual' in msg or 'al mes' in msg) else tasa / 12
-            tasa_dec = tasa_mensual / 100
-
-            if 'simple' in msg:
-                interes = capital * tasa_dec * meses
-                total = capital + interes
-                resp = (
-                    f"🔢 **Cálculo de Interés Simple:**\n\n"
-                    f"• Capital: **${capital:,.2f}**\n"
-                    f"• Tasa mensual: **{tasa_mensual:.2f}%**\n"
-                    f"• Plazo: **{meses} meses**\n\n"
-                    f"Interés = ${capital:,.2f} × {tasa_dec:.4f} × {meses}\n"
-                    f"**Interés = ${interes:,.2f}**\n\n"
-                    f"**Total final = ${total:,.2f}**"
-                )
-                return resp, [{'texto': '📈 Ver en Simulador', 'link': 'simulador.html'}]
-
-            elif 'compuesto' in msg or not 'simple' in msg:
-                total = capital * ((1 + tasa_dec) ** meses)
-                interes = total - capital
-                resp = (
-                    f"📈 **Cálculo de Interés Compuesto:**\n\n"
-                    f"• Capital: **${capital:,.2f}**\n"
-                    f"• Tasa mensual: **{tasa_mensual:.2f}%**\n"
-                    f"• Plazo: **{meses} meses**\n\n"
-                    f"Total = ${capital:,.2f} × (1 + {tasa_dec:.4f})^{meses}\n"
-                    f"**Interés = ${interes:,.2f}**\n\n"
-                    f"**Total final = ${total:,.2f}**"
-                )
-                return resp, [{'texto': '📈 Ver en Simulador', 'link': 'simulador.html'}]
-
-        return None
-
-    # ============================================
-    # GLOSARIO FINANCIERO
-    # ============================================
-    def _buscar_en_glosario(self, mensaje):
-        msg = mensaje.lower()
-        msg = re.sub(r'[¿?¡!.,]', '', msg)
-
-        # Quitar palabras de pregunta
-        for q in ['que es', 'qué es', 'que significa', 'qué significa', 'define', 'definicion', 'explicame', 'explícame', 'como funciona', 'cómo funciona', 'qué son', 'que son']:
-            msg = msg.replace(q, '').strip()
-
-        msg = msg.strip()
-
-        # Buscar coincidencia exacta primero
-        for termino, definicion in self.glosario.items():
-            if termino in msg:
-                resp = (
-                    f"📖 **{termino.upper()}:**\n\n"
-                    f"{definicion}\n\n"
-                    f"¿Quieres que profundice más en este tema o calcule algo relacionado?"
-                )
-                acciones = []
-                if any(t in termino for t in ['inversion', 'interes', 'cdt', 'rendimiento']):
-                    acciones.append({'texto': '📈 Ir al Simulador', 'link': 'simulador.html'})
-                if any(t in termino for t in ['ahorro', 'meta', 'presupuesto']):
-                    acciones.append({'texto': '🎯 Mis metas', 'link': 'perfil.html'})
-                acciones.append({'texto': '📚 Aprender más', 'link': 'aprende.html'})
-                return resp, acciones
-
-        # Búsqueda parcial
-        for termino, definicion in self.glosario.items():
-            palabras_termino = termino.split()
-            if any(p in msg for p in palabras_termino if len(p) > 3):
-                resp = (
-                    f"📖 **{termino.upper()}:**\n\n"
-                    f"{definicion}\n\n"
-                    f"¿Quieres saber algo más?"
-                )
-                return resp, [{'texto': '📚 Aprender más', 'link': 'aprende.html'}]
-
-        return None
-
-    # ============================================
-    # CALCULADORAS EN CHAT
-    # ============================================
-    def _calcular_5030_desde_mensaje(self, mensaje, ctx):
-        ingreso = self._extraer_numero(mensaje)
-        if not ingreso and ctx:
-            ingreso = ctx.get('ingreso_mensual', 0)
-        if not ingreso or ingreso <= 0:
-            return (
-                "📋 **Calculadora 50/30/20**\n\n"
-                "Dime tu ingreso mensual:\n"
-                "Ejemplo: *\"Distribuye mi salario de $2.500.000\"*",
-                [{'texto': '📚 Ver calculadoras', 'link': 'aprende.html'}]
-            )
-        nec = ingreso * 0.5
-        des = ingreso * 0.3
-        aho = ingreso * 0.2
-        resp = (
-            f"📋 **Distribución 50/30/20 para ${ingreso:,.0f}:**\n\n"
-            f"🟢 **Necesidades (50%): ${nec:,.0f}**\nArriendo, comida, transporte, servicios, salud.\n\n"
-            f"🟡 **Deseos (30%): ${des:,.0f}**\nRopa, entretenimiento, salidas, tecnología.\n\n"
-            f"🔵 **Ahorro (20%): ${aho:,.0f}**\nFondo emergencia, metas, inversiones.\n\n"
-            f"💡 Ahorrando ${aho:,.0f}/mes, en un año: **${aho*12:,.0f}**"
-        )
-        return resp, [
-            {'texto': '🎯 Crear meta', 'link': 'perfil.html'},
-            {'texto': '📈 Simular inversión', 'link': 'simulador.html'}
-        ]
-
-    def _calcular_meta_desde_mensaje(self, mensaje, ctx):
-        numeros = self._extraer_todos_numeros(mensaje)
-        if len(numeros) < 2:
-            return (
-                "🎯 **Calculadora de Meta**\n\n"
-                "Dime cuánto quieres ahorrar y cuánto puedes apartar al mes.\n"
-                "Ejemplo: *\"¿Cuánto tiempo para ahorrar $5.000.000 guardando $400.000 al mes?\"*",
-                [{'texto': '🎯 Ver mis metas', 'link': 'perfil.html'}]
-            )
-        vals = sorted(numeros, reverse=True)
-        meta = vals[0]
-        mensual = vals[1]
-        if mensual <= 0:
-            return ("Dime cuánto puedes ahorrar al mes.", [])
-        meses = math.ceil(meta / mensual)
-        anos = meses // 12
-        mr = meses % 12
-        plazo = f"{anos} año{'s' if anos > 1 else ''}" if anos > 0 else ""
-        if mr > 0:
-            plazo += f" y {mr} mes{'es' if mr > 1 else ''}"
-        tasa_m = 0.08 / 12
-        acum = 0
-        meses_ci = 0
-        while acum < meta and meses_ci < 1200:
-            acum = acum * (1 + tasa_m) + mensual
-            meses_ci += 1
-        resp = (
-            f"🎯 **Calculadora de Meta:**\n\n"
-            f"🏁 Meta: **${meta:,.0f}** · 💵 Ahorro mensual: **${mensual:,.0f}**\n\n"
-            f"⏱️ Sin intereses: **{plazo or str(meses) + ' meses'}**\n"
-            f"📈 Con interés compuesto (8% anual): **{meses_ci} meses** *(ahorras {meses - meses_ci} meses)*\n\n"
-            f"💡 Aumentando un 20% tu ahorro (${mensual*1.2:,.0f}), la alcanzarías en **{math.ceil(meta/(mensual*1.2))} meses**."
-        )
-        return resp, [
-            {'texto': '🎯 Crear esta meta', 'link': 'perfil.html'},
-            {'texto': '📈 Simular', 'link': 'simulador.html'}
-        ]
-
-    # ============================================
-    # SALUDO INTELIGENTE
-    # ============================================
-    def _saludo_inteligente(self, nombre, ctx):
-        hora = datetime.now().hour
-        momento = "¡Buenos días" if hora < 12 else "¡Buenas tardes" if hora < 18 else "¡Buenas noches"
-        base = f"{momento}, **{nombre}**! 👋\n\n" if nombre else f"{momento}! 👋 Soy **FinanBot**.\n\n"
-
-        if ctx:
-            balance = ctx.get('balance', 0)
-            ingresos = ctx.get('total_ingresos', 0)
-            gastos = ctx.get('total_gastos', 0)
-            num_trans = ctx.get('num_transacciones', 0)
-            num_metas = ctx.get('num_metas', 0)
-
-            if num_trans == 0:
-                base += (
-                    "Veo que aún no tienes transacciones. ¡Empecemos!\n\n"
-                    "Puedo ayudarte a:\n"
-                    "• 📝 Registrar gastos e ingresos\n"
-                    "• 🎯 Crear metas de ahorro\n"
-                    "• 📈 Simular inversiones\n"
-                    "• 🧮 Resolver problemas financieros\n"
-                    "• 📖 Explicarte cualquier término financiero\n\n"
-                    "¿Por dónde empezamos?"
-                )
-            else:
-                porc = round((gastos / ingresos * 100)) if ingresos > 0 else 0
-                estado = "✅" if balance >= 0 else "⚠️"
-                base += (
-                    f"Tu situación actual:\n\n"
-                    f"📊 Balance: **${balance:,.0f}** {estado}\n"
-                    f"💰 Ingresos: **${ingresos:,.0f}**\n"
-                    f"💸 Gastos: **${gastos:,.0f}** ({porc}%)\n"
-                    f"🎯 Metas: **{num_metas}**\n\n"
-                )
-                if balance < 0:
-                    base += "⚠️ Tus gastos superan tus ingresos. ¿Analizamos cómo mejorar?"
-                elif porc > 80:
-                    base += f"📌 Gastas el {porc}% de tus ingresos. Revisemos la regla 50/30/20."
-                else:
-                    base += "¡Vas bien! ¿En qué te ayudo hoy?"
+                    lineas.append(f"💡 *Estás ahorrando el {pct}% de tus ingresos. La meta es llegar al 20%.*\n")
         else:
-            base += (
-                "Soy tu asistente financiero personal.\n\n"
-                "Puedo **registrar** tus finanzas, **calcular** intereses, **resolver** problemas financieros, "
-                "**explicar** términos, **simular** inversiones y mucho más.\n\n"
-                "¿Qué necesitas?"
-            )
+            lineas.append("\nAún no tienes movimientos registrados. ¡Empecemos ahora!\n")
 
-        return base, [
-            {'texto': '📊 Mis finanzas', 'link': 'finanzas.html'},
-            {'texto': '💡 Recomendaciones', 'link': 'recomendaciones.html'},
-            {'texto': '❓ ¿Qué puedes hacer?', 'link': '#'}
-        ]
+        lineas.append("**¿Qué puedo hacer por ti?** 💡\n")
+        lineas.append("• 💸 Registrar gastos e ingresos  •  🎯 Crear metas de ahorro")
+        lineas.append("• 📈 Simular inversiones  •  🏷️ Calcular descuentos e IVA")
+        lineas.append("• 🧮 Resolver cálculos  •  💬 Responder dudas financieras")
+        lineas.append("• 📄 Generar reportes  •  👤 Actualizar tu perfil\n")
+        lineas.append("*Habla conmigo de forma natural. No necesitas comandos exactos.* 😊\n")
+        lineas.append("_🔒 Tus datos están protegidos. Confidencialidad garantizada._")
 
-    def _despedida(self, nombre):
-        frases = [
-            f"😊 ¡Hasta pronto{', ' + nombre if nombre else ''}! Cada peso bien gestionado hoy es libertad mañana.",
-            f"👋 ¡Nos vemos{', ' + nombre if nombre else ''}! Sigue construyendo tu futuro financiero.",
-            f"🌟 ¡Hasta luego{', ' + nombre if nombre else ''}! Que tus finanzas siempre estén en verde. 💚",
-        ]
-        return random.choice(frases)
+        return "\n".join(lineas)
 
-    def _respuesta_gracias(self, nombre):
-        frases = [
-            f"😊 ¡Con gusto{', ' + nombre if nombre else ''}! ¿Algo más en lo que pueda ayudarte?",
-            f"🤖 ¡Es un placer{', ' + nombre if nombre else ''}! Tu bienestar financiero es mi misión.",
-            f"✨ ¡No hay de qué! También puedo resolver problemas financieros, explicar términos o calcular inversiones.",
-        ]
-        return random.choice(frases)
+    # ══════════════════════════════════════════════════════════════
+    #  CALCULADORA FINANCIERA  ─  respuestas con tabla
+    # ══════════════════════════════════════════════════════════════
 
-    def _respuesta_ayuda(self):
+    def _descuento(self, a):
+        orig, pct = a['precio_original'], a['porcentaje']
+        desc, fin = a['valor_descuento'], a['precio_final']
         return (
-            "🤖 **FinanBot — Todo lo que puedo hacer por ti:**\n\n"
-            "**📝 Gestión de datos:**\n"
-            "• *\"Registra un gasto de $50.000 en ropa\"*\n"
-            "• *\"Agrega un ingreso de $2.000.000 por salario\"*\n"
-            "• *\"Crea una meta de $1.000.000 para vacaciones\"*\n"
-            "• *\"Borra el último gasto\"* · *\"Actualiza mi salario\"*\n\n"
-
-            "**🧮 Problemas financieros complejos:**\n"
-            "• *\"Tengo $2.150, quiero llegar a $3.000 con tasa 1.5% mensual. ¿Cuántos meses?\"*\n"
-            "• *\"¿Cuánto gano si invierto $5M al 10% anual por 3 años con interés compuesto?\"*\n"
-            "• *\"Tengo $1M, tasa 8% anual, ¿cuándo triplico mi dinero?\"*\n\n"
-
-            "**📖 Glosario financiero:**\n"
-            "• *\"¿Qué es el saldo?\"* · *\"¿Qué es la tasa EA?\"*\n"
-            "• *\"¿Qué es amortización?\"* · *\"¿Qué es un CDT?\"*\n"
-            "• *\"¿Qué es el VAN?\"* · *\"¿Qué es liquidez?\"*\n\n"
-
-            "**📊 Calculadoras:**\n"
-            "• Regla 50/30/20 para tu salario\n"
-            "• Interés simple y compuesto\n"
-            "• Tiempo para alcanzar una meta\n"
-            "• Operaciones matemáticas\n\n"
-
-            "**📈 Simulaciones:**\n"
-            "• *\"Simula $2.000.000 al 10% por 24 meses\"*\n\n"
-
-            "**💡 Conocimiento financiero:**\n"
-            "Ahorro, deudas, inversión, inflación, pensión, criptos, impuestos.\n\n"
-
-            "Escríbeme en lenguaje natural, como si le hablaras a una persona."
+            f"🏷️ **Descuento del {pct}%**\n\n"
+            f"| | Valor |\n|---|---|\n"
+            f"| Precio original | ${orig:,.0f} |\n"
+            f"| Descuento ({pct}%) | −${desc:,.0f} |\n"
+            f"| **Precio final** | **${fin:,.0f}** |\n\n"
+            f"💰 *Ahorras ${desc:,.0f} con esta oferta.*"
         )
 
-    def _curiosidad_financiera(self):
-        curiosidades = [
-            "🧠 **¿Sabías que...?**\nWarren Buffett hizo el 99% de su fortuna después de los 50 años gracias al interés compuesto. Empezó a los 11 años.",
-            "🧠 **¿Sabías que...?**\nSi ahorras $10.000 diarios durante 10 años al 10% anual compuesto, tendrías más de **$58 millones**.",
-            "🧠 **¿Sabías que...?**\nEl 75% de los colombianos no se pensionará nunca. La mejor pensión es la que tú construyes hoy.",
-            "🧠 **¿Sabías que...?**\nLa regla 72 dice: divide 72 entre la tasa de interés y obtienes los años para doblar tu dinero. Al 8% anual: 72/8 = **9 años**.",
-            "🧠 **¿Sabías que...?**\nUna deuda con el 'gota a gota' puede tener tasas del 20% **diario**, lo que equivale a más del 7.000% anual.",
+    def _iva(self, a):
+        if a['tipo'] == 'iva_sumado':
+            base, tasa, iva, tot = a['base'], a['tasa_iva'], a['valor_iva'], a['total']
+            return (
+                f"🧾 **Precio con IVA del {tasa}%**\n\n"
+                f"| | Valor |\n|---|---|\n"
+                f"| Base sin IVA | ${base:,.0f} |\n"
+                f"| IVA ({tasa}%) | +${iva:,.0f} |\n"
+                f"| **Total con IVA** | **${tot:,.0f}** |\n\n"
+                f"📌 *IVA general en Colombia: 19%. Se usó {tasa}%.*"
+            )
+        tot, tasa, base, iva = a['valor_con_iva'], a['tasa_iva'], a['base_sin_iva'], a['valor_iva']
+        return (
+            f"🧾 **Precio sin IVA ({tasa}%)**\n\n"
+            f"| | Valor |\n|---|---|\n"
+            f"| Precio con IVA | ${tot:,.0f} |\n"
+            f"| IVA incluido ({tasa}%) | −${iva:,.0f} |\n"
+            f"| **Base sin IVA** | **${base:,.0f}** |"
+        )
+
+    def _propina(self, a):
+        c, p, prop, tot = a['cuenta'], a['porcentaje'], a['propina'], a['total']
+        return (
+            f"🍽️ **Propina del {p}%**\n\n"
+            f"| | Valor |\n|---|---|\n"
+            f"| Cuenta | ${c:,.0f} |\n"
+            f"| Propina ({p}%) | +${prop:,.0f} |\n"
+            f"| **Total a pagar** | **${tot:,.0f}** |"
+        )
+
+    def _aumento(self, a):
+        orig, p, aum, nuevo = a['valor_original'], a['porcentaje'], a['valor_aumento'], a['valor_nuevo']
+        return (
+            f"📊 **Aumento del {p}%**\n\n"
+            f"| | Valor |\n|---|---|\n"
+            f"| Valor original | ${orig:,.0f} |\n"
+            f"| Aumento ({p}%) | +${aum:,.0f} |\n"
+            f"| **Nuevo valor** | **${nuevo:,.0f}** |"
+        )
+
+    def _reparto(self, a):
+        tot, pers, pp = a['total'], a['personas'], a['por_persona']
+        rnd = int(pp // 1000 * 1000 + 1000)
+        return (
+            f"➗ **Reparto entre {pers} personas**\n\n"
+            f"| | Valor |\n|---|---|\n"
+            f"| Total | ${tot:,.0f} |\n"
+            f"| Personas | {pers} |\n"
+            f"| **Le toca a cada uno** | **${pp:,.0f}** |\n\n"
+            f"💡 *Para redondear: cada uno paga ${rnd:,.0f}*"
+        )
+
+    def _porcentaje(self, a):
+        parte, tot, pct = a['parte'], a['total'], a['porcentaje']
+        return (
+            f"📐 **Porcentaje calculado**\n\n"
+            f"${parte:,.0f} representa el **{pct}%** de ${tot:,.0f}.\n\n"
+            f"*Fórmula: ({parte:,.0f} ÷ {tot:,.0f}) × 100 = {pct}%*"
+        )
+
+    def _interes_simple(self, a):
+        cap, tasa, plazo = a['capital'], a['tasa_anual'], a['plazo_meses']
+        intg, tot = a['interes_ganado'], a['total']
+        return (
+            f"💵 **Interés simple**\n\n"
+            f"| | Valor |\n|---|---|\n"
+            f"| Capital | ${cap:,.0f} |\n"
+            f"| Tasa anual | {tasa}% |\n"
+            f"| Plazo | {plazo} meses |\n"
+            f"| Interés ganado | +${intg:,.0f} |\n"
+            f"| **Total al vencer** | **${tot:,.0f}** |\n\n"
+            f"💡 *Con interés compuesto ganarías más. ¿Quieres simular?*"
+        )
+
+    def _saldo_restante(self, a):
+        tot, gasto, rest = a['total'], a['gasto'], a['restante']
+        ico = "✅" if rest >= 0 else "⚠️"
+        return (
+            f"{ico} **Saldo restante**\n\n"
+            f"| | Valor |\n|---|---|\n"
+            f"| Disponible | ${tot:,.0f} |\n"
+            f"| Gasto | −${gasto:,.0f} |\n"
+            f"| **Te queda** | **${rest:,.0f}** |"
+        )
+
+    def _calculo(self, a):
+        res = a['resultado']
+        op  = a.get('operacion', '')
+        return f"🧮 El resultado es **{res:,.2f}**\n\n*Operación: {op}*"
+
+    # ══════════════════════════════════════════════════════════════
+    #  TRANSACCIONES
+    # ══════════════════════════════════════════════════════════════
+
+    def _gasto_reg(self, a, ctx):
+        monto, cat = a['monto'], a['categoria']
+        lineas = [f"{_ok()} Gasto registrado.\n\n💸 **${monto:,.0f}** en **{cat}**\n"]
+        if ctx:
+            bal  = ctx.get('balance', 0) - monto
+            lineas.append(f"📊 Balance actualizado: **${bal:,.0f}**")
+            meta_m = ctx.get('meta_ahorro_mensual', 0)
+            tot_g  = ctx.get('total_gastos', 0) + monto
+            if meta_m > 0 and tot_g > ctx.get('meta_ahorro_mensual', 0) * 3:
+                lineas.append(f"\n⚠️ {_tip()} Tus gastos registrados suman ${tot_g:,.0f}. ¡Ojo con el presupuesto!")
+        return "\n".join(lineas)
+
+    def _ingreso_reg(self, a, ctx):
+        monto, cat = a['monto'], a['categoria']
+        lineas = [f"{_ok()} Ingreso registrado.\n\n💰 **+${monto:,.0f}** en **{cat}**\n"]
+        if ctx:
+            bal = ctx.get('balance', 0) + monto
+            lineas.append(f"📊 Balance actualizado: **${bal:,.0f}**")
+            lineas.append(f"\n💡 *Regla del 20%: guarda **${int(monto*0.2):,.0f}** de este ingreso.*")
+        return "\n".join(lineas)
+
+    def _eliminado(self, tipo_t, a):
+        monto, cat = a['monto'], a['categoria']
+        ico = "💸" if tipo_t == 'gasto' else "💰"
+        return (f"🗑️ {tipo_t.capitalize()} eliminado.\n\n"
+                f"{ico} **${monto:,.0f}** en **{cat}** fue removido de tu historial.")
+
+    # ══════════════════════════════════════════════════════════════
+    #  METAS
+    # ══════════════════════════════════════════════════════════════
+
+    def _meta_creada(self, a, ctx):
+        nombre, monto = a['nombre'], a['monto']
+        lineas = [f"🎯 ¡Meta creada!\n\n**{nombre}** — objetivo: ${monto:,.0f}\n"]
+        if ctx:
+            meta_m = ctx.get('meta_ahorro_mensual', 0)
+            if meta_m > 0:
+                meses = round(monto / meta_m)
+                lineas.append(f"📅 Ahorrando **${meta_m:,.0f}/mes**, la alcanzas en **{meses} meses**.")
+        lineas.append("\n💡 Cuéntame cuando quieras actualizar tu progreso.")
+        return "\n".join(lineas)
+
+    def _meta_actualizada(self, a):
+        nombre, nuevo = a['nombre'], a['nuevo_monto']
+        return f"✅ Meta actualizada.\n\n**{nombre}** → progreso: **${nuevo:,.0f}**"
+
+    def _consulta_metas(self, a):
+        metas = a.get('metas', [])
+        if not metas:
+            return "📭 Aún no tienes metas. ¿Quieres crear una? Dime el monto y el objetivo."
+        lineas = ["🎯 **Tus metas de ahorro:**\n"]
+        for m in metas:
+            barra  = self._barra(m['porcentaje'])
+            estado = "✅ Completada" if m['completada'] else f"{m['porcentaje']}%"
+            lineas.append(f"**{m['nombre']}**\n  {barra} {estado}\n  ${m['actual']:,.0f} de ${m['objetivo']:,.0f}\n")
+        return "\n".join(lineas)
+
+    # ══════════════════════════════════════════════════════════════
+    #  CONSULTAS
+    # ══════════════════════════════════════════════════════════════
+
+    def _gastos(self, a):
+        tot  = a.get('total_gastos', 0)
+        n    = a.get('num_gastos', 0)
+        cats = a.get('gastos_por_categoria', {})
+        rec  = a.get('recientes', [])
+        lineas = [f"💸 **Tus gastos**\n\nTotal: **${tot:,.0f}** en {n} movimiento(s).\n"]
+        if cats:
+            lineas.append("**Por categoría:**")
+            for cat, monto in sorted(cats.items(), key=lambda x: x[1], reverse=True)[:5]:
+                pct = round(monto / tot * 100) if tot > 0 else 0
+                lineas.append(f"  • {cat}: ${monto:,.0f} ({pct}%)")
+        if rec:
+            lineas.append("\n**Últimos movimientos:**")
+            for t in rec[:4]:
+                lineas.append(f"  • {t['categoria']}: ${t['monto']:,.0f} — {t['fecha']}")
+        return "\n".join(lineas)
+
+    def _ingresos(self, a):
+        tot = a.get('total_ingresos', 0)
+        n   = a.get('num_ingresos', 0)
+        rec = a.get('recientes', [])
+        lineas = [f"💰 **Tus ingresos**\n\nTotal: **${tot:,.0f}** en {n} movimiento(s).\n"]
+        if rec:
+            lineas.append("**Últimos ingresos:**")
+            for t in rec[:5]:
+                lineas.append(f"  • {t['categoria']}: ${t['monto']:,.0f} — {t['fecha']}")
+        return "\n".join(lineas)
+
+    def _resumen(self, a, ctx):
+        bal  = a.get('balance', 0)
+        ing  = a.get('total_ingresos', 0)
+        gas  = a.get('total_gastos', 0)
+        n_m  = a.get('num_metas', 0)
+        n_t  = a.get('num_transacciones', 0)
+        cats = a.get('gastos_por_categoria', {})
+        ico  = "📈" if bal >= 0 else "📉"
+
+        lineas = [
+            f"{ico} **Resumen financiero**\n",
+            f"| Concepto | Valor |",
+            f"|---|---|",
+            f"| 💰 Ingresos | ${ing:,.0f} |",
+            f"| 💸 Gastos | ${gas:,.0f} |",
+            f"| 📊 Balance | **${bal:,.0f}** |",
+            f"| 🎯 Metas activas | {n_m} |",
+            f"| 📋 Movimientos | {n_t} |\n",
         ]
-        return random.choice(curiosidades)
 
-    # ============================================
-    # ANÁLISIS FINANCIERO
-    # ============================================
-    def _analisis_financiero_inteligente(self, ctx):
-        balance = ctx.get('balance', 0)
-        ingresos = ctx.get('total_ingresos', 0)
-        gastos = ctx.get('total_gastos', 0)
-        num_trans = ctx.get('num_transacciones', 0)
-        num_metas = ctx.get('num_metas', 0)
-        cat_mayor = ctx.get('categoria_mayor_gasto')
-        monto_mayor = ctx.get('monto_mayor_gasto', 0)
-        metas = ctx.get('metas', [])
-        ingreso_mensual = ctx.get('ingreso_mensual', 0)
+        if cats:
+            mayor = max(cats, key=cats.get)
+            lineas.append(f"📌 *Mayor gasto: **{mayor}** (${cats[mayor]:,.0f})*\n")
 
-        resp = "📊 **Análisis financiero completo:**\n\n"
-        resp += f"• Ingresos: **${ingresos:,.0f}**\n"
-        resp += f"• Gastos: **${gastos:,.0f}**\n"
-        resp += f"• Balance: **${balance:,.0f}**\n"
-        resp += f"• Transacciones: **{num_trans}**\n\n"
-
-        if ingresos > 0:
-            porc = round(gastos / ingresos * 100)
-            if balance < 0:
-                resp += f"⚠️ Gastas el **{porc}%** de tus ingresos. Balance negativo. Revisa la regla 50/30/20.\n\n"
-            elif porc > 80:
-                resp += f"📌 Gastas el **{porc}%**. Intenta reducirlo al 70-75%.\n\n"
-            elif porc > 50:
-                resp += f"🙂 Gastas el **{porc}%**. Podrías ahorrar **${balance * 0.3:,.0f}** más.\n\n"
+        if bal < 0:
+            lineas.append("⚠️ *Balance negativo. ¿Hay ingresos sin registrar o gastos que puedas reducir?*")
+        elif ing > 0:
+            pct = round(bal / ing * 100)
+            if pct >= 20:
+                lineas.append(f"✅ *¡Excelente! Estás ahorrando el {pct}% de tus ingresos. Sigue así.*")
+            elif pct > 0:
+                lineas.append(f"💡 *Estás ahorrando el {pct}% de tus ingresos. La meta ideal es el 20%.*")
             else:
-                resp += f"✅ Solo gastas el **{porc}%**. Podrías invertir **${balance * 0.2:,.0f}**.\n\n"
+                lineas.append("💡 *Tu balance está en cero. Intenta separar aunque sea el 5% de ahorro.*")
+        return "\n".join(lineas)
 
-        if cat_mayor and monto_mayor > 0:
-            resp += f"💸 Mayor gasto: **{cat_mayor}** — ${monto_mayor:,.0f}\n\n"
+    # ══════════════════════════════════════════════════════════════
+    #  SIMULACIÓN
+    # ══════════════════════════════════════════════════════════════
 
-        if metas:
-            resp += f"🎯 **{len(metas)} meta(s):**\n"
-            for m in metas[:3]:
-                barra = self._barra_progreso(m['porcentaje'])
-                resp += f"• **{m['nombre']}:** {barra} {m['porcentaje']}%\n"
-            resp += "\n"
+    def _simulacion(self, a):
+        cap, tasa = a['capital'], a['tasa']
+        plazo, res, gan = a['plazo'], a['resultado'], a['ganancia']
+        anos, mr = plazo // 12, plazo % 12
+        p_txt = (f"{anos} año{'s' if anos > 1 else ''}" if anos > 0 else "")
+        if mr: p_txt += f" {mr} mes{'es' if mr > 1 else ''}"
+        return (
+            f"📈 **Simulación de inversión**\n\n"
+            f"| Concepto | Valor |\n|---|---|\n"
+            f"| Capital inicial | ${cap:,.0f} |\n"
+            f"| Tasa anual | {tasa}% EA |\n"
+            f"| Plazo | {p_txt.strip()} |\n"
+            f"| **Total al vencer** | **${res:,.0f}** |\n"
+            f"| Ganancia | +${gan:,.0f} |\n\n"
+            f"💡 *Simulación con interés compuesto mensual. Los rendimientos reales pueden variar.*"
+        )
 
-        if ingreso_mensual > 0:
-            resp += (
-                f"📋 **Distribución ideal (50/30/20):**\n"
-                f"🟢 Necesidades: **${ingreso_mensual*0.5:,.0f}**\n"
-                f"🟡 Deseos: **${ingreso_mensual*0.3:,.0f}**\n"
-                f"🔵 Ahorro: **${ingreso_mensual*0.2:,.0f}**\n"
-            )
+    # ══════════════════════════════════════════════════════════════
+    #  REPORTE
+    # ══════════════════════════════════════════════════════════════
 
-        return resp, [
-            {'texto': '📊 Ver detalle', 'link': 'finanzas.html'},
-            {'texto': '💡 Recomendaciones', 'link': 'recomendaciones.html'},
-            {'texto': '🎯 Mis metas', 'link': 'perfil.html'}
-        ]
+    def _reporte(self, fmt):
+        if fmt == 'excel':
+            return ("📊 **Reporte Excel listo para descargar.**\n\n"
+                    "Incluye: ingresos, gastos por categoría, metas, simulaciones y balance.\n"
+                    "Haz clic en el botón ↓")
+        return ("📄 **Reporte PDF listo para descargar.**\n\n"
+                "Incluye: resumen financiero, gráficos de gastos, metas y análisis.\n"
+                "Haz clic en el botón ↓")
 
-    def _barra_progreso(self, porcentaje):
-        llenos = round(porcentaje / 10)
-        return '█' * llenos + '░' * (10 - llenos)
+    # ══════════════════════════════════════════════════════════════
+    #  MOTOR DE CONOCIMIENTO  ─  responde CUALQUIER pregunta
+    # ══════════════════════════════════════════════════════════════
 
-    # ============================================
-    # RESPUESTAS DE ACCIONES CRUD
-    # ============================================
-    def _respuesta_accion_ejecutada(self, accion, ctx):
-        tipo = accion.get('tipo')
+    def _sin_accion(self, mensaje: str, ctx) -> str:
+        msg = mensaje.lower()
 
-        if tipo == 'calculo':
+        # 1. Buscar en base de conocimiento CON RAZONAMIENTO
+        for claves, contenido in BASE.items():
+            for clave in claves.split('|'):
+                if clave.strip() and clave.strip() in msg:
+                    # Agregar contexto personalizado según el tema
+                    resp = f"## {contenido['titulo']}\n\n"
+                    
+                    # Preámbulo inteligente según el tema
+                    if any(x in claves for x in ['invertir', 'inversión', 'cdt', 'finca raíz', 'criptomonedas']):
+                        resp += ("🤖 *Como IA, te doy información educativa. Consulta con un asesor financiero antes de invertir.*\n\n")
+                    
+                    if any(x in claves for x in ['deuda', 'tarjeta', 'gota a gota']):
+                        resp += ("⚠️ *Si estás en crisis de deudas, busca ayuda profesional o contacta a Asobancaria.*\n\n")
+                    
+                    resp += f"{contenido['cuerpo']}"
+                    
+                    if contenido.get('sug'):
+                        resp += f"\n\n---\n💬 *{contenido['sug']}*"
+                    
+                    # Agregar contexto personal del usuario
+                    if ctx and ctx.get('num_transacciones', 0) > 0:
+                        if any(x in claves for x in ['ahorrar', 'ahorro', 'presupuesto']):
+                            bal = ctx.get('balance', 0)
+                            if bal > 0:
+                                resp += f"\n\n💡 **Tu situación:** Balance actual de **${bal:,.0f}**. ¿Quieres crear una meta específica?"
+                            else:
+                                resp += f"\n\n💡 **Tu situación:** Balance en **${bal:,.0f}**. Prioriza registrar todos tus ingresos."
+                        
+                        if any(x in claves for x in ['deuda', 'tarjeta', 'salir de deudas']):
+                            gastos = ctx.get('total_gastos', 0)
+                            if gastos > 0:
+                                resp += f"\n\n💡 **Tu situación:** Gastos registrados por **${gastos:,.0f}**. Podemos analizar dónde optimizar."
+                    
+                    return resp
+
+        # 2. Instrucciones de uso
+        if any(p in msg for p in ['cómo registro','como registro','cómo agrego','como agrego',
+                                   'cómo uso','como uso','qué comandos','que comandos']):
+            return self._como_usar()
+
+        # 3. Enseñar a resolver CON RAZONAMIENTO PASO A PASO
+        if any(p in msg for p in ['ayudame','ayúdame','necesito ayuda','enséñame','enseñame',
+                                   'explícame','explicame','no entiendo','no sé','no se']):
+            return self._ensenar_razonamiento(msg, ctx)
+
+        # 4. Agradecimientos
+        if any(p in msg for p in ['gracias','muchas gracias','chevere','excelente','genial',
+                                   'perfecto','muy bien','está bien','esta bien']):
+            return random.choice([
+                "¡Con gusto! 😊 Estoy aquí para lo que necesites.",
+                "¡Para eso estoy! 🤝 ¿Hay algo más en lo que te pueda ayudar?",
+                "¡Me alegra haberte ayudado! 💙 Cualquier duda, aquí estoy.",
+                "🤖 ¡Estoy para servir! ¿Otra pregunta?",
+            ])
+
+        # 5. Identidad - MEJORADO CON MÁS CLARIDAD
+        if any(p in msg for p in ['quién eres','quien eres','qué eres','que eres','cómo te llamas','como te llamas']):
             return (
-                f"🧮 **Resultado:** **= {accion['resultado']:,}**\n\n"
-                f"¿Quieres que registre este valor o hacer otra operación?",
-                []
+                "Soy **FinanBot** 🤖, una **IA (Inteligencia Artificial)** creada como proyecto SENA para ayudarte con finanzas personales.\n\n"
+                "**¿Qué me diferencia?**\n"
+                "✅ Disponible 24/7 para responder dudas  ✅ Rápido en cálculos  ✅ Personalizado a tu contexto\n"
+                "⚠️ No reemplazo asesor financiero profesional  ⚠️ Mis consejos son educativos\n\n"
+                "**Puedo:**\n"
+                "• Registrar tus gastos e ingresos en lenguaje natural\n"
+                "• Simular inversiones con interés compuesto\n"
+                "• Responder preguntas sobre CDT, deudas, ahorro, impuestos\n"
+                "• Calcular descuentos, IVA, repartos\n"
+                "• Crear metas financieras y generar reportes\n\n"
+                "¡Cuéntame qué necesitas! 💬"
             )
 
-        elif tipo == 'meta_creada':
-            nombre_meta = accion['nombre']
-            monto = accion['monto']
-            resp = (
-                f"✅ **¡Meta creada!**\n\n"
-                f"🎯 **{nombre_meta}** — ${monto:,.0f}\n"
-                f"📊 Progreso: ░░░░░░░░░░ 0%\n\n"
+        # 6. Respuesta con contexto del usuario
+        if ctx and ctx.get('num_transacciones', 0) > 0:
+            bal   = ctx.get('balance', 0)
+            mayor = ctx.get('categoria_mayor_gasto')
+            ingresos = ctx.get('total_ingresos', 0)
+            
+            lineas = [f"🤔 No estoy seguro de qué necesitas exactamente, pero puedo ayudarte analizando tu situación:\n"]
+            
+            # Razonamiento contextual
+            if bal < 0:
+                lineas.append(f"\n📊 **Balance negativo:** ${bal:,.0f}")
+                lineas.append("→ Sugerencia: Revisa si hay ingresos sin registrar o gastos a eliminar.")
+            elif ingresos > 0:
+                ahorro_pct = round(bal / ingresos * 100)
+                lineas.append(f"\n📊 **Estás ahorrando:** {ahorro_pct}% de tus ingresos")
+                if ahorro_pct < 20:
+                    lineas.append("→ Meta: Aumentar a 20% mensual usando la regla 50/30/20")
+            
+            if mayor:
+                lineas.append(f"\n💸 **Mayor categoría de gasto:** {mayor}")
+                lineas.append("→ Podemos buscar formas de reducir estos gastos")
+            
+            lineas.append("\n💡 ¿Qué quieres lograr? (ahorrar más, pagar deudas, invertir, etc.)")
+            return "\n".join(lineas)
+
+        # 7. Respuesta genérica inteligente - MEJORADA
+        return self._resp_generica_mejorada(mensaje)
+
+    def _resp_generica(self, mensaje: str) -> str:
+        """Intenta dar una respuesta útil aunque no haya coincidencia exacta."""
+        msg = mensaje.lower()
+
+        # Detectar preguntas con "qué es" o "cómo funciona"
+        if re.search(r'qu[eé]\s+es\s+(\w+)', msg) or re.search(r'c[oó]mo\s+funciona\s+(\w+)', msg):
+            return (
+                "🤔 No tengo información específica sobre ese tema en mi base de conocimiento.\n\n"
+                "Pero puedo responder preguntas sobre:\n"
+                "• CDT, inflación, interés compuesto, fondo de emergencia\n"
+                "• Cómo ahorrar, invertir, salir de deudas\n"
+                "• Tarjetas de crédito, pensión, impuestos, criptomonedas\n"
+                "• Presupuesto, regla 50/30/20, diversificación\n\n"
+                "¿Cuál de estos temas te interesa? 💬"
             )
-            if ctx and ctx.get('balance', 0) > 0:
-                ahorro = ctx['balance'] * 0.2
-                if ahorro > 0:
-                    meses = math.ceil(monto / ahorro)
-                    resp += f"💡 Ahorrando el 20% (~**${ahorro:,.0f}/mes**) la alcanzarías en **{meses} meses**.\n\n"
-            resp += "Puedes verla y abonar desde **Mi Perfil**."
-            return resp, [
-                {'texto': '🎯 Ver mis metas', 'link': 'perfil.html'},
-                {'texto': '📊 Dashboard', 'link': 'dashboard.html'}
+
+        return (
+            "🤔 No estoy seguro de entender completamente tu mensaje. Puedo ayudarte con:\n\n"
+            "• 💸 *'Gasté $30.000 en comida'* — registrar gasto\n"
+            "• 🏷️ *'$80.000 con 15% de descuento'* — calcular precio\n"
+            "• 📈 *'Simula $500.000 al 10% por 1 año'* — proyectar inversión\n"
+            "• 💡 *'¿Qué es un CDT?'* — respuesta educativa\n"
+            "• 📊 *'¿Cómo están mis finanzas?'* — ver tu balance\n\n"
+            "Reformula tu pregunta y con gusto te ayudo. 😊"
+        )
+
+    def _como_usar(self):
+        return (
+            "## 💬 Cómo hablarme\n\n"
+            "Habla de forma natural, como con un amigo. Ejemplos:\n\n"
+            "**Registrar:**\n"
+            "• *'Gasté $25.000 en el bus'*\n"
+            "• *'Recibí $2.000.000 de salario'*\n"
+            "• *'Borra el último gasto de comida'*\n\n"
+            "**Calcular:**\n"
+            "• *'$80.000 con 20% de descuento'*\n"
+            "• *'¿Cuánto es $50.000 más IVA?'*\n"
+            "• *'Divide $180.000 entre 3 personas'*\n\n"
+            "**Metas y simulaciones:**\n"
+            "• *'Crea una meta de $1.000.000 para viajes'*\n"
+            "• *'Simula $500.000 al 12% por 6 meses'*\n\n"
+            "**Preguntas:**\n"
+            "• *'¿Qué es el interés compuesto?'*\n"
+            "• *'¿Cómo salgo de deudas?'*\n"
+            "• *'¿Cómo funciona un CDT?'*\n\n"
+            "**Perfil y reportes:**\n"
+            "• *'Cambia mi nombre a Duban'*\n"
+            "• *'Hazme un reporte PDF'*"
+        )
+
+    def _ensenar_razonamiento(self, msg, ctx):
+        """Enseña paso a paso con razonamiento detallado."""
+        lineas = ["😊 Claro, te enseño paso a paso el razonamiento:\n"]
+        if any(p in msg for p in ['deuda','debo','prestamo','crédito','credito']):
+            lineas += [
+                "**🔍 ANÁLISIS:** Las deudas con altas tasas drenan tu dinero en intereses.",
+                "**🎯 META:** Pagar lo antes posible el monto principal.\n",
+                "**📋 ESTRATEGIA — Método Avalancha (óptimo matemáticamente):**",
+                "1️⃣ Anota TODAS tus deudas: monto, tasa de interés, cuota mínima",
+                "2️⃣ Ordénalas de mayor a menor tasa de interés",
+                "3️⃣ Paga el mínimo en todas EXCEPTO la de mayor tasa",
+                "4️⃣ Todo dinero extra → va a la deuda de mayor tasa",
+                "5️⃣ Cuando esa se pague, el dinero pasa a la siguiente\n",
+                "**💡 Razón:** Ahorras más en intereses vs el método 'bola de nieve'\n",
+                "**⚠️ Paso crítico:** Identifica qué causó la deuda y evita repetir el patrón.",
             ]
-
-        elif tipo == 'meta_eliminada':
-            return (
-                f"🗑️ Meta **{accion['nombre']}** eliminada. Si fue un error, puedes crearla de nuevo.",
-                [{'texto': '🎯 Ver mis metas', 'link': 'perfil.html'}]
-            )
-
-        elif tipo == 'meta_actualizada':
-            nuevo = accion['nuevo_monto']
-            nombre_meta = accion['nombre']
-            meta_obj = next((m for m in ctx.get('metas', []) if m['nombre'] == nombre_meta), None) if ctx else None
-            resp = f"✅ **Meta actualizada** — {nombre_meta}: **${nuevo:,.0f}**\n"
-            if meta_obj:
-                resp += f"\n📊 {self._barra_progreso(meta_obj['porcentaje'])} **{meta_obj['porcentaje']}%**"
-            return resp, [{'texto': '🎯 Ver mis metas', 'link': 'perfil.html'}]
-
-        elif tipo == 'consulta_metas':
-            metas = accion.get('metas', [])
-            if not metas:
-                return (
-                    "🎯 No tienes metas aún.\n\n"
-                    "Ejemplo: *\"Crea una meta de $500.000 para mi viaje\"*",
-                    [{'texto': '➕ Crear meta', 'link': 'perfil.html'}]
-                )
-            resp = f"🎯 **{len(metas)} meta(s):**\n\n"
-            for m in metas:
-                barra = self._barra_progreso(m['porcentaje'])
-                estado = '✅ Completada' if m['completada'] else f"{m['porcentaje']}%"
-                faltante = m['objetivo'] - m['actual']
-                resp += f"**{m['nombre']}** {barra} {estado}\n"
-                resp += f"${m['actual']:,.0f} / ${m['objetivo']:,.0f}"
-                if not m['completada']:
-                    resp += f" · Faltan **${faltante:,.0f}**"
-                resp += "\n\n"
-            return resp, [{'texto': '🎯 Ver mis metas', 'link': 'perfil.html'}]
-
-        elif tipo == 'gasto_registrado':
-            monto = accion['monto']
-            categoria = accion['categoria']
-            nuevo_balance = ctx.get('balance', 0) - monto if ctx else 0
-            resp = (
-                f"✅ **Gasto registrado**\n\n"
-                f"💸 **${monto:,.0f}** · {categoria}\n"
-                f"📊 Nuevo balance: **${nuevo_balance:,.0f}**\n\n"
-            )
-            if ctx and ctx.get('total_ingresos', 0) > 0:
-                porc = round((ctx['total_gastos'] + monto) / ctx['total_ingresos'] * 100)
-                alerta = "⚠️ ¡Cuidado!" if porc > 80 else "📊"
-                resp += f"{alerta} Llevas el **{porc}%** de tus ingresos gastados."
-            return resp, [
-                {'texto': '📊 Mis finanzas', 'link': 'finanzas.html'},
-                {'texto': '🏠 Dashboard', 'link': 'dashboard.html'}
+        elif any(p in msg for p in ['ahorrar','ahorro','guardar','economizar']):
+            lineas += [
+                "**🔍 ANÁLISIS:** Si no ahorras de forma automática, el dinero se gasta naturalmente.",
+                "**🎯 META:** Separar dinero ANTES de gastar, no después.\n",
+                "**📋 ESTRATEGIA — Sistema Automático (probado):**",
+                "1️⃣ Define tu meta: ¿cuánto quieres ahorrar? (sugerencia: 20% del ingreso)",
+                "2️⃣ El DÍA que recibes ingreso, programa transferencia automática",
+                "3️⃣ Abre cuenta SEPARADA solo para ese ahorro (no la toques)",
+                "4️⃣ Lo que no ves, no lo gastas (psicología del dinero)",
+                "5️⃣ Revisa progreso cada domingo\n",
+                "**💡 Razón:** El dinero 'accidental' se gasta en gastos hormiga.",
+                "**Ejemplo:** $50.000 diarios en café × 30 días = $1.500.000/mes gastado sin pensar\n",
             ]
-
-        elif tipo == 'gasto_eliminado':
-            return (
-                f"🗑️ Gasto de **${accion['monto']:,.0f}** en **{accion['categoria']}** eliminado.\nBalance actualizado.",
-                [{'texto': '📊 Mis finanzas', 'link': 'finanzas.html'}]
-            )
-
-        elif tipo == 'ingreso_registrado':
-            monto = accion['monto']
-            categoria = accion['categoria']
-            nuevo_balance = ctx.get('balance', 0) + monto if ctx else 0
-            return (
-                f"✅ **Ingreso registrado**\n\n"
-                f"💰 **${monto:,.0f}** · {categoria}\n"
-                f"📊 Nuevo balance: **${nuevo_balance:,.0f}**\n\n"
-                f"💡 Si apartas el 20% (**${monto*0.2:,.0f}**), aplicarías la regla de oro del ahorro.",
-                [
-                    {'texto': '📊 Mis finanzas', 'link': 'finanzas.html'},
-                    {'texto': '🏠 Dashboard', 'link': 'dashboard.html'}
-                ]
-            )
-
-        elif tipo == 'ingreso_eliminado':
-            return (
-                f"🗑️ Ingreso de **${accion['monto']:,.0f}** en **{accion['categoria']}** eliminado.\nBalance actualizado.",
-                [{'texto': '📊 Mis finanzas', 'link': 'finanzas.html'}]
-            )
-
-        elif tipo == 'consulta_gastos':
-            num = accion.get('num_gastos', 0)
-            total = accion.get('total_gastos', 0)
-            por_cat = accion.get('gastos_por_categoria', {})
-            recientes = accion.get('recientes', [])
-            resp = f"📊 **{num} gastos · Total: ${total:,.0f}**\n\n"
-            if por_cat:
-                total_ref = total if total > 0 else 1
-                for cat, monto in sorted(por_cat.items(), key=lambda x: x[1], reverse=True)[:6]:
-                    porc = round(monto / total_ref * 100)
-                    barra = '█' * round(porc/10) + '░' * (10 - round(porc/10))
-                    resp += f"• **{cat}:** {barra} ${monto:,.0f} ({porc}%)\n"
-                resp += "\n"
-            if recientes:
-                resp += "**Últimos:**\n"
-                for t in recientes[:3]:
-                    resp += f"• {t['categoria']}: **${t['monto']:,.0f}** · {t['fecha']}\n"
-            return resp, [
-                {'texto': '📊 Ver todos', 'link': 'finanzas.html'},
-                {'texto': '💡 Recomendaciones', 'link': 'recomendaciones.html'}
+        elif any(p in msg for p in ['invertir','inversión','inversion','cdt']):
+            lineas += [
+                "**🔍 ANÁLISIS:** El dinero guardado pierde valor por inflación (9% en 2024).",
+                "**🎯 META:** Hacer que tu dinero trabaje ganando más que la inflación.\n",
+                "**📋 CHECKLIST ANTES DE INVERTIR:**",
+                "✅ ¿Tengo fondo de emergencia de 3-6 meses?",
+                "✅ ¿Estoy libre de deudas de alto interés (tarjeta > 20%)?",
+                "✅ ¿Entiendo el producto donde voy a invertir?",
+                "✅ ¿Puedo dejar ese dinero invertido sin necesitarlo en 1+ año?\n",
+                "**📋 OPCIONES en Colombia (de menor a mayor riesgo):**",
+                "1️⃣ CDT 12% → Bajo riesgo, dinero garantizado (Fogafín)",
+                "2️⃣ Fondo conservador 8-10% → Riesgo bajo-medio, flexible",
+                "3️⃣ Acciones BVC 10-15% → Riesgo medio-alto, largo plazo",
+                "4️⃣ Criptomonedas → Alto riesgo, solo si entiendes bien\n",
+                "**⚠️ Regla de oro:** No inviertas en algo que no entiendas. Consuma asesor.",
             ]
-
-        elif tipo == 'consulta_ingresos':
-            num = accion.get('num_ingresos', 0)
-            total = accion.get('total_ingresos', 0)
-            recientes = accion.get('recientes', [])
-            resp = f"💰 **{num} ingresos · Total: ${total:,.0f}**\n\n"
-            if recientes:
-                for t in recientes[:3]:
-                    resp += f"• {t['categoria']}: **${t['monto']:,.0f}** · {t['fecha']}\n"
-            return resp, [{'texto': '📊 Ver todos', 'link': 'finanzas.html'}]
-
-        elif tipo == 'salario_actualizado':
-            nuevo = accion['nuevo_salario']
-            return (
-                f"✅ **Salario actualizado: ${nuevo:,.0f}**\n\n"
-                f"📋 Distribución ideal (50/30/20):\n"
-                f"🟢 Necesidades: **${nuevo*0.5:,.0f}**\n"
-                f"🟡 Deseos: **${nuevo*0.3:,.0f}**\n"
-                f"🔵 Ahorro: **${nuevo*0.2:,.0f}**",
-                [
-                    {'texto': '👤 Ver perfil', 'link': 'perfil.html'},
-                    {'texto': '💡 Recomendaciones', 'link': 'recomendaciones.html'}
-                ]
-            )
-
-        elif tipo == 'meta_mensual_actualizada':
-            nuevo = accion['nuevo_monto']
-            return (
-                f"✅ **Meta mensual: ${nuevo:,.0f}**\n\n"
-                f"• En 6 meses: **${nuevo*6:,.0f}**\n"
-                f"• En 1 año: **${nuevo*12:,.0f}**",
-                [{'texto': '👤 Ver perfil', 'link': 'perfil.html'}]
-            )
-
-        elif tipo == 'simulacion_realizada':
-            capital = accion['capital']
-            tasa = accion['tasa']
-            plazo = accion['plazo']
-            resultado = accion['resultado']
-            ganancia = accion['ganancia']
-            porc = round((ganancia / capital) * 100)
-            anos = plazo // 12
-            mr = plazo % 12
-            plazo_txt = f"{anos} año{'s' if anos > 1 else ''}" if anos > 0 else ""
-            if mr > 0:
-                plazo_txt += f" y {mr} mes{'es' if mr > 1 else ''}"
-
-            return (
-                f"📈 **¡Simulación completada!**\n\n"
-                f"💰 Capital: **${capital:,.0f}** · 📊 Tasa: **{tasa}%** · ⏱️ Plazo: **{plazo_txt}**\n\n"
-                f"━━━━━━━━━━━━━━━\n"
-                f"🏆 **Resultado: ${resultado:,.0f}**\n"
-                f"📈 **Ganancia: ${ganancia:,.0f} (+{porc}%)**\n"
-                f"━━━━━━━━━━━━━━━\n\n"
-                f"✅ Guardada en tu historial. ¿Ves la gráfica completa en el simulador?",
-                [
-                    {'texto': '📈 Ver simulación completa', 'link': 'simulador.html'},
-                    {'texto': '📊 Dashboard', 'link': 'dashboard.html'}
-                ]
-            )
-
-        elif tipo == 'consulta_resumen':
-            balance = accion.get('balance', 0)
-            ingresos = accion.get('total_ingresos', 0)
-            gastos = accion.get('total_gastos', 0)
-            num_metas = accion.get('num_metas', 0)
-            num_trans = accion.get('num_transacciones', 0)
-            porc = round(gastos / ingresos * 100) if ingresos > 0 else 0
-            resp = (
-                f"📊 **Tu resumen:**\n\n"
-                f"💰 Ingresos: **${ingresos:,.0f}**\n"
-                f"💸 Gastos: **${gastos:,.0f}** ({porc}%)\n"
-                f"📈 Balance: **${balance:,.0f}**\n"
-                f"🎯 Metas: **{num_metas}** · 📋 Trans: **{num_trans}**\n\n"
-            )
-            if balance < 0:
-                resp += "⚠️ Balance negativo. Revisa tus gastos urgentemente."
-            elif porc > 80:
-                resp += f"📌 Gastas el {porc}%. Lo ideal es no superar el 80%."
-            else:
-                resp += f"✅ ¡Bien! Podrías invertir **${balance*0.3:,.0f}** productivamente."
-            return resp, [
-                {'texto': '🏠 Dashboard', 'link': 'dashboard.html'},
-                {'texto': '💡 Recomendaciones', 'link': 'recomendaciones.html'}
+        elif any(p in msg for p in ['presupuesto','gastos','organizar']):
+            lineas += [
+                "**🔍 ANÁLISIS:** Gastar sin presupuesto es como conducir sin mapa.",
+                "**🎯 META:** Saber exactamente a dónde va cada peso.\n",
+                "**📋 ESTRATEGIA — Regla 50/30/20:**",
+                "50% NECESIDADES (arriendo, comida, transporte, servicios, salud)",
+                "30% DESEOS (entretenimiento, ropa, salidas, hobbies)",
+                "20% AHORRO (fondo emergencia, inversiones, metas)\n",
+                "**PASOS:**",
+                "1️⃣ Calcula ingreso neto REAL (salario − impuestos)",
+                "2️⃣ Multiplica por 0.5, 0.3, 0.2",
+                "3️⃣ Abre 3 cuentas separadas o bolsas de dinero",
+                "4️⃣ Registra CADA gasto en FinanBot por categoría",
+                "5️⃣ Analiza cada viernes: ¿dónde me excedí?\n",
+                "**💡 Razón:** Visibilidad = control. Lo que se mide, se mejora.",
             ]
+        else:
+            lineas.append("Dime en cuál área necesitas ayuda:")
+            lineas.append("• 💰 Ahorrar más dinero")
+            lineas.append("• 💳 Pagar deudas")
+            lineas.append("• 📈 Empezar a invertir")
+            lineas.append("• 📋 Organizar presupuesto")
+            if ctx and ctx.get('categoria_mayor_gasto'):
+                lineas.append(f"\nVi que tu mayor gasto está en **{ctx['categoria_mayor_gasto']}**. Podemos optimizar ahí.")
+        return "\n".join(lineas)
 
-        elif tipo == 'pide_monto':
-            ctx_tipo = accion.get('contexto', 'transacción')
+    def _resp_generica_mejorada(self, mensaje: str) -> str:
+        """Intenta dar una respuesta útil aunque no haya coincidencia exacta."""
+        msg = mensaje.lower()
+
+        # Detectar preguntas con "qué es" o "cómo funciona"
+        if re.search(r'qu[eé]\s+es\s+(\w+)', msg) or re.search(r'c[oó]mo\s+funciona\s+(\w+)', msg):
             return (
-                f"💭 Quiero ayudarte a registrar un **{ctx_tipo}**. ¿Por cuánto es?\n\n"
-                f"Ejemplo: *\"Registra un {ctx_tipo} de $50.000 en alimentación\"*",
-                []
+                "🤖 No tengo esa información específica en mi base, pero puedo enseñarte sobre:\n\n"
+                "**Inversiones:** CDT • Fondos • Acciones • Criptomonedas\n"
+                "**Deudas:** Tarjeta de crédito • Préstamos • Salir de deudas\n"
+                "**Ahorro:** Fondo de emergencia • Metas • Presupuesto\n"
+                "**Conceptos:** Inflación • Interés compuesto • Diversificación • Impuestos\n\n"
+                "¿Cuál de estos temas te interesa? 💬"
             )
 
-        elif tipo == 'sin_datos':
-            return (
-                f"📭 No tienes **{accion.get('contexto', 'datos')}** aún.\n"
-                f"¿Quieres que te ayude a agregar el primero?",
-                [{'texto': '📊 Mis Finanzas', 'link': 'finanzas.html'}]
-            )
+        return (
+            "🤔 No estoy 100% seguro qué necesitas, pero puedo ayudarte con esto:\n\n"
+            "**📝 Registrar:**  *'Gasté $30.000 en comida'* o *'Recibí $2M de salario'*\n"
+            "**🧮 Calcular:**  *'$80.000 con 20% descuento'* o *'$50.000 más IVA'*\n"
+            "**📈 Simular:**  *'Simula $500.000 al 10% por 1 año'*\n"
+            "**💡 Preguntar:**  *'¿Qué es un CDT?'* o *'¿Cómo ahorrar más?'*\n"
+            "**🎯 Metas:**  *'Crea meta de $1M para viajes'*\n\n"
+            "Reformula así tu pregunta o cuéntame qué necesitas lograr financieramente 😊"
+        )
 
-        elif tipo == 'error':
-            return (
-                f"❌ {accion.get('mensaje', 'Error inesperado.')}\n\nIntenta reformular tu mensaje.",
-                []
-            )
-
-        return "✅ Listo, acción completada.", []
-
-    # ============================================
-    # RESPUESTA DESCONOCIDA
-    # ============================================
-    def _respuesta_desconocido(self, mensaje, nombre):
-        respuestas = [
-            (
-                f"🤔 Entiendo que dices *\"{mensaje[:50]}\"*, pero no logro identificar exactamente qué necesitas.\n\n"
-                f"Puedo ayudarte con:\n"
-                f"• 📖 *\"¿Qué es el saldo/tasa/amortización...?\"*\n"
-                f"• 🧮 Problemas con capital, tasas y metas\n"
-                f"• 📝 Registrar gastos, ingresos o metas\n"
-                f"• 📈 Simular inversiones\n"
-                f"• 💡 Consejos financieros\n\n"
-                f"¿Puedes ser más específico?"
-            ),
-            (
-                f"💬 No logro identificar la acción en *\"{mensaje[:40]}\"*.\n\n"
-                f"Intenta con:\n"
-                f"• *\"¿Qué es la tasa EA?\"*\n"
-                f"• *\"Tengo $2M, meta $3M, tasa 1.5% mensual\"*\n"
-                f"• *\"Registra un gasto de $50.000 en ropa\"*\n"
-                f"• *\"Simula $1M al 10% por 12 meses\"*"
-            ),
-        ]
-        return random.choice(respuestas), [
-            {'texto': '❓ ¿Qué puedes hacer?', 'link': '#'},
-            {'texto': '📊 Mis Finanzas', 'link': 'finanzas.html'}
-        ]
-
-    # ============================================
-    # CLAVES POR TEMA
-    # ============================================
-    def _claves_tema(self, tema):
-        mapa = {
-            'ahorro': ['ahorrar', 'ahorro', 'gastos hormiga', 'guardar dinero', 'economizar'],
-            'presupuesto': ['50/30/20', 'presupuesto', 'regla 50', 'distribuir salario', 'planificar gastos'],
-            'deudas': ['deuda', 'salir de deudas', 'bola de nieve', 'avalancha', 'crédito', 'préstamo', 'mora'],
-            'inversion': ['invertir', 'inversión', 'cdt', 'acciones', 'fondos de inversión', 'bvc'],
-            'emergencia': ['fondo de emergencia', 'emergencia', 'imprevisto', 'colchón', 'reserva'],
-            'interes': ['interés simple', 'interés compuesto', 'interes compuesto', 'interes simple'],
-            'pension': ['colpensiones', 'fondos privados', 'pensión', 'jubilación', 'cotizar'],
-            'inflacion': ['inflación', 'inflacion', 'poder adquisitivo', 'devaluación'],
-            'cripto': ['criptomoneda', 'bitcoin', 'ethereum', 'crypto', 'blockchain'],
-            'impuesto': ['impuesto', 'declaración de renta', 'dian', 'tributar'],
-        }
-        return mapa.get(tema, [])
+    # ─── Utilidades ───────────────────────────────────────────────
+    @staticmethod
+    def _barra(pct, largo=10):
+        f = int(pct / 100 * largo)
+        return f"[{'█'*f}{'░'*(largo-f)}]"
 
 
-def obtener_respuesta(mensaje):
-    bot = FinanBotIA()
-    respuesta, _ = bot.responder_con_acciones(mensaje)
-    return respuesta
+# ══════════════════════════════════════════════════════════════════
+#  BOTONES DE ACCIÓN  ─  URLs reales del proyecto
+# ══════════════════════════════════════════════════════════════════
+
+def _btn(texto, link): return {'tipo': 'link', 'texto': texto, 'link': link}
+def _sug(texto):       return {'tipo': 'sugerencia', 'texto': texto}
+
+def _btns_bienvenida():
+    return [
+        _sug('¿Cómo están mis finanzas?'),
+        _sug('Registra un gasto'),
+        _sug('¿Qué es un CDT?'),
+        _sug('¿Cómo puedo ahorrar más?'),
+        _btn('📊 Dashboard', RUTAS['dashboard']),
+        _btn('💸 Mis finanzas', RUTAS['finanzas']),
+    ]
+
+def _btns_calc():
+    return [
+        _sug('Otro cálculo'),
+        _btn('📊 Ver mis finanzas', RUTAS['finanzas']),
+    ]
+
+def _btns_trans():
+    return [
+        _sug('¿Cómo están mis finanzas?'),
+        _btn('💸 Ver mis finanzas', RUTAS['finanzas']),
+        _btn('📊 Dashboard', RUTAS['dashboard']),
+    ]
+
+def _btns_metas():
+    return [
+        _sug('Ver todas mis metas'),
+        _sug('Crear otra meta'),
+        _btn('🎯 Ver metas', RUTAS['metas']),
+    ]
+
+def _btns_finanzas():
+    return [
+        _btn('💸 Ir a mis finanzas', RUTAS['finanzas']),
+        _btn('📊 Ver dashboard', RUTAS['dashboard']),
+    ]
+
+def _btns_resumen():
+    return [
+        _sug('Ver mis gastos por categoría'),
+        _sug('Ver mis metas'),
+        _sug('¿Cómo puedo mejorar?'),
+        _btn('📊 Dashboard', RUTAS['dashboard']),
+        _btn('💡 Recomendaciones', RUTAS['recomendaciones']),
+    ]
+
+def _btns_simulacion():
+    return [
+        _sug('Simular otra inversión'),
+        _sug('¿Qué es un CDT?'),
+        _btn('📈 Simulador', RUTAS['simulador']),
+    ]
+
+def _btns_perfil():
+    return [
+        _btn('👤 Ver mi perfil', RUTAS['perfil']),
+        _btn('📊 Dashboard', RUTAS['dashboard']),
+    ]
+
+def _btns_reporte(fmt='pdf'):
+    url = RUTAS['exportar_excel'] if fmt == 'excel' else RUTAS['exportar_pdf']
+    icono = '📊 Descargar Excel' if fmt == 'excel' else '📄 Descargar PDF'
+    return [
+        _btn(icono, url),
+        _btn('👤 Ver mi perfil', RUTAS['perfil']),
+    ]

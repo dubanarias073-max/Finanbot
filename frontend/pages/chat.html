@@ -451,11 +451,16 @@
                     <div class="bot-status-dot"></div>
                 </div>
                 <div class="chat-header-info">
-                    <h2>FinanBot</h2>
-                    <p><span class="status-text">● En línea</span>&nbsp;·&nbsp; Asistente Financiero Inteligente</p>
+                    <h2>FinanBot 🤖 <span style="font-size: 12px; background: rgba(168,85,247,0.2); padding: 3px 8px; border-radius: 12px; margin-left: 8px; color: #c4b5fd;">IA</span></h2>
+                    <p><span class="status-text">● En línea</span>&nbsp;·&nbsp; Asistente Financiero con IA · <span style="font-size: 11px; color: #10b981;">Inteligencia Artificial</span></p>
                 </div>
             </div>
             <div class="conv-badge" id="convTituloActual">💬 Selecciona o crea una conversación</div>
+        </div>
+
+        <div style="background: rgba(34,211,238,0.08); border: 1px solid rgba(34,211,238,0.2); border-top: none; padding: 12px 18px; font-size: 12px; color: #22d3ee; display: flex; align-items: center; gap: 10px;">
+            <i class="fas fa-robot"></i>
+            <span><strong>Soy una IA</strong> disponible 24/7 para ayudarte con tus finanzas. Mis consejos son educativos—consulta con un asesor profesional antes de tomar decisiones financieras importantes.</span>
         </div>
 
         <div class="banner-invitado" id="bannerInvitado">
@@ -469,15 +474,16 @@
         <!-- SIN CONVERSACIÓN -->
         <div class="sin-chat" id="sinChat">
             <div class="sin-chat-icon">🤖</div>
-            <h3>¿En qué puedo ayudarte hoy?</h3>
-            <p>Soy FinanBot, tu asistente financiero inteligente. Puedo gestionar tus finanzas, responder preguntas y hacer cálculos en tiempo real.</p>
+            <h3>¡Hola! Soy FinanBot 🤖</h3>
+            <p><strong>Soy una IA (Inteligencia Artificial)</strong> especializada en finanzas personales. Estoy aquí para ayudarte a gestionar tu dinero, responder preguntas y hacer cálculos financieros.</p>
+            <p style="font-size: 13px; color: var(--muted);">✅ Disponible 24/7 · ⚠️ Mis consejos son educativos, no asesoría legal</p>
             <div class="capacidades-grid">
-                <div class="capacidad-item"><span>📝</span><div>Registra gastos e ingresos al instante</div></div>
+                <div class="capacidad-item"><span>📝</span><div>Registra gastos e ingresos con lenguaje natural</div></div>
                 <div class="capacidad-item"><span>🎯</span><div>Crea y gestiona metas de ahorro</div></div>
                 <div class="capacidad-item"><span>📈</span><div>Simula inversiones con interés compuesto</div></div>
-                <div class="capacidad-item"><span>🧮</span><div>Calcula operaciones matemáticas</div></div>
+                <div class="capacidad-item"><span>🧮</span><div>Calcula descuentos, IVA, repartos</div></div>
                 <div class="capacidad-item"><span>📊</span><div>Analiza tu situación financiera</div></div>
-                <div class="capacidad-item"><span>💡</span><div>Recibe consejos financieros personalizados</div></div>
+                <div class="capacidad-item"><span>💡</span><div>Recibe consejos personalizados</div></div>
             </div>
             <button class="btn-nueva-conv" style="width:auto;padding:13px 35px;font-size:15px;" onclick="nuevaConversacion()">
                 <i class="fas fa-plus"></i> Comenzar conversación
@@ -674,31 +680,70 @@
             const div = document.createElement('div');
             div.className = `mensaje ${tipo}`;
 
-            const accionesHTML = acciones.length
-                ? `<div class="msg-acciones">${acciones.map(a => `<a href="${a.link}" class="msg-accion-btn">${a.texto}</a>`).join('')}</div>`
-                : '';
-            const checkHTML = tipo === 'usuario'
-                ? `<span class="msg-leido"><i class="fas fa-check-double"></i></span>` : '';
+                const checkHTML = tipo === 'usuario'
+                    ? `<span class="msg-leido"><i class="fas fa-check-double"></i></span>` : '';
 
-            if (tipo === 'usuario') {
-                div.innerHTML = `
-                    <div class="msg-avatar user">${inicial}</div>
-                    <div class="msg-contenido">
-                        <div class="msg-nombre">${nombreDisplay}</div>
-                        <div class="msg-burbuja">${texto}</div>
-                        <div class="msg-meta"><span class="msg-hora">${horaTexto}</span>${checkHTML}</div>
-                    </div>`;
-            } else {
-                div.innerHTML = `
-                    <div class="msg-avatar bot">
-                        <img src="../../images/logo.png" alt="Bot" onerror="this.parentElement.innerHTML='🤖'">
-                    </div>
-                    <div class="msg-contenido">
-                        <div class="msg-nombre">${nombreDisplay}</div>
-                        <div class="msg-burbuja">${formatearTexto(texto)}${accionesHTML}</div>
-                        <div class="msg-meta"><span class="msg-hora">${horaTexto}</span></div>
-                    </div>`;
-            }
+                if (tipo === 'usuario') {
+                    div.innerHTML = `
+                        <div class="msg-avatar user">${inicial}</div>
+                        <div class="msg-contenido">
+                            <div class="msg-nombre">${nombreDisplay}</div>
+                            <div class="msg-burbuja">${texto}</div>
+                            <div class="msg-meta"><span class="msg-hora">${horaTexto}</span>${checkHTML}</div>
+                        </div>`;
+                } else {
+                    div.innerHTML = `
+                        <div class="msg-avatar bot">
+                            <img src="../../images/logo.png" alt="Bot" onerror="this.parentElement.innerHTML='🤖'">
+                        </div>
+                        <div class="msg-contenido">
+                            <div class="msg-nombre">${nombreDisplay}</div>
+                            <div class="msg-burbuja">${formatearTexto(texto)}</div>
+                            <div class="msg-meta"><span class="msg-hora">${horaTexto}</span></div>
+                        </div>`;
+
+                    // Renderizar acciones de manera segura (soporta formatos legacy y nuevos)
+                    if (acciones && acciones.length) {
+                        const accionesWrap = document.createElement('div');
+                        accionesWrap.className = 'msg-acciones';
+                        acciones.forEach(a => {
+                            // Normalizar keys posibles
+                            const tipoA = a.tipo || (a.link ? 'link' : 'sugerencia');
+                            const textoA = a.texto || a.label || a.title || '';
+                            const linkA = a.link || a.url || null;
+
+                            if (tipoA === 'sugerencia') {
+                                const btn = document.createElement('button');
+                                btn.type = 'button';
+                                btn.className = 'msg-accion-btn';
+                                btn.textContent = textoA || linkA || 'Sugerencia';
+                                btn.onclick = () => {
+                                    enviarSugerencia(textoA || linkA || '');
+                                };
+                                accionesWrap.appendChild(btn);
+                            } else if (tipoA === 'link' && linkA) {
+                                const aEl = document.createElement('a');
+                                aEl.className = 'msg-accion-btn';
+                                aEl.href = linkA;
+                                aEl.textContent = textoA || linkA;
+                                // Si es endpoint API, abrir en nueva pestaña para descarga o navegación
+                                aEl.target = '_blank';
+                                accionesWrap.appendChild(aEl);
+                            } else {
+                                // Fallback: mostrar como sugerencia que envía texto
+                                const btn = document.createElement('button');
+                                btn.type = 'button';
+                                btn.className = 'msg-accion-btn';
+                                btn.textContent = textoA || linkA || 'Acción';
+                                btn.onclick = () => enviarSugerencia(textoA || linkA || '');
+                                accionesWrap.appendChild(btn);
+                            }
+                        });
+                        // Insertar acciones después de la burbuja
+                        const burbuja = div.querySelector('.msg-burbuja');
+                        if (burbuja) burbuja.parentElement.appendChild(accionesWrap);
+                    }
+                }
             chatBox.appendChild(div);
             scrollAbajo();
         }
@@ -940,6 +985,23 @@
 
         function enviarSugerencia(texto) {
             const input = document.getElementById('inputMensaje');
+            const t = (texto || '').toLowerCase();
+
+            // Intercepciones locales para acciones más interactivas
+            if (t.includes('mis finanzas') || t.includes('cómo están mis finanzas') || t.includes('¿cómo están mis finanzas')) {
+                // Abrir página de finanzas para mostrar informes visuales
+                window.location.href = 'finanzas.html';
+                return;
+            }
+            if (t.includes('mis metas') || t.includes('ver mis metas') || t.includes('mis metas')) {
+                window.location.href = 'perfil.html';
+                return;
+            }
+            if (t.includes('registrar gasto') || t.includes('registra un gasto') || t.includes('registrar un gasto')) {
+                input.value = texto; autoResize(input); input.focus();
+                return;
+            }
+            // Default: poner el texto en el input y enviar al bot
             input.value = texto; autoResize(input); enviarMensaje();
         }
 

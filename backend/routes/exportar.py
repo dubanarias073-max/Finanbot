@@ -6,6 +6,19 @@ from datetime import datetime
 from collections import defaultdict
 import io
 
+# ⚡ OPTIMIZACIÓN: ReportLab se importa aquí arriba para que la descarga responda de inmediato
+try:
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib import colors
+    from reportlab.lib.units import mm
+    from reportlab.platypus import (SimpleDocTemplate, Paragraph, Spacer,
+                                     Table, TableStyle, HRFlowable)
+    from reportlab.lib.styles import ParagraphStyle
+    from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT
+except ImportError:
+    # Se maneja preventivamente para que no rompa el hilo principal si falta la librería
+    pass
+
 exportar_bp = Blueprint('exportar', __name__)
 
 # ── CATEGORÍAS SINCRONIZADAS con finanzas.html ────────────
