@@ -23,7 +23,6 @@ def obtener_perfil():
         'meta_ahorro': float(usuario.meta_ahorro or 0),
         'fecha_registro': usuario.fecha_registro.strftime('%d/%m/%Y'),
         'onboarding_completado': usuario.onboarding_completado,
-        'foto_perfil': usuario.foto_perfil or None
     }), 200
 
 
@@ -68,8 +67,6 @@ def actualizar_perfil():
     if data.get('onboarding_completado') is not None:
         usuario.onboarding_completado = data['onboarding_completado']
 
-    if 'foto_perfil' in data:
-        usuario.foto_perfil = data['foto_perfil']
 
     db.session.commit()
     return jsonify({'mensaje': '✅ Perfil actualizado!'}), 200

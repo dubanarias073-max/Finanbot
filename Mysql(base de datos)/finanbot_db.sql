@@ -17,7 +17,6 @@ CREATE TABLE usuarios (
     ingreso_mensual DECIMAL(10,2) DEFAULT 0.00,
     meta_ahorro DECIMAL(10,2) DEFAULT 0.00,
     onboarding_completado BOOLEAN DEFAULT FALSE,
-    foto_perfil VARCHAR(255) NULL,
     pregunta_seguridad VARCHAR(255) NULL,
     respuesta_seguridad VARCHAR(255) NULL,
     fecha_registro DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -31,21 +30,26 @@ CREATE TABLE categorias (
     icono VARCHAR(50)
 );
 
--- Categorías iniciales
+-- Categorías actualizadas según la interfaz de la aplicación
 INSERT INTO categorias (nombre, tipo, icono) VALUES
+-- Gastos
 ('Alimentación', 'gasto', '🍔'),
 ('Transporte', 'gasto', '🚌'),
 ('Arriendo', 'gasto', '🏠'),
 ('Salud', 'gasto', '💊'),
-('Entretenimiento', 'gasto', '🎮'),
+('Entretenimiento', 'gasto', '🎬'),
 ('Educación', 'gasto', '📚'),
-('Ropa', 'gasto', '👕'),
-('Servicios públicos', 'gasto', '💡'),
-('Otros gastos', 'gasto', '💸'),
+('Ropa', 'gasto', '👗'),
+('Servicios', 'gasto', '⚡'),
+('Mascotas', 'gasto', '🐾'),
+('Regalos', 'gasto', '🎁'),
+('Viajes', 'gasto', '✈️'),
+('Otros gastos', 'gasto', '📦'),
+
+-- Ingresos
 ('Salario', 'ingreso', '💼'),
 ('Freelance', 'ingreso', '💻'),
 ('Otros ingresos', 'ingreso', '💰');
-
 -- 3. TABLA: transacciones
 CREATE TABLE transacciones (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -107,5 +111,3 @@ CREATE TABLE chats (
     FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE SET NULL,
     FOREIGN KEY (conversacion_id) REFERENCES conversaciones(id) ON DELETE SET NULL
 );
-
-

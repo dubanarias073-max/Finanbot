@@ -10,7 +10,6 @@ class Usuario(db.Model):
     contrasena_hash = db.Column(db.String(255), nullable=False)
     ingreso_mensual = db.Column(db.Numeric(10, 2), default=0.00)
     meta_ahorro = db.Column(db.Numeric(10, 2), default=0.00)
-    foto_perfil = db.Column(db.Text, nullable=True)  # URL base64 de la foto
     pregunta_seguridad = db.Column(db.String(255), nullable=True)
     respuesta_seguridad = db.Column(db.String(255), nullable=True)
     onboarding_completado = db.Column(db.Boolean, default=False)

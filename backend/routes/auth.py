@@ -16,72 +16,6 @@ from models import Usuario
 
 auth = Blueprint('auth', __name__)
 
-# =========================================================
-# FOTO DE PERFIL
-# =========================================================
-
-@auth.route('/update_profile_pic', methods=['POST'])
-@jwt_required()
-def update_profile_pic():
-
-    if 'foto' not in request.files:
-
-        return jsonify({
-            "error": "No hay archivo en la petición"
-        }), 400
-
-    archivo = request.files['foto']
-
-    if archivo.filename == '':
-
-        return jsonify({
-            "error": "No se seleccionó ningún archivo"
-        }), 400
-
-    usuario_id = get_jwt_identity()
-
-    usuario = Usuario.query.get(usuario_id)
-
-    if not usuario:
-
-        return jsonify({
-            "error": "Usuario no encontrado"
-        }), 404
-
-    upload_folder = os.path.join(
-        'static',
-        'uploads',
-        'perfiles'
-    )
-
-    if not os.path.exists(upload_folder):
-
-        os.makedirs(upload_folder)
-
-    extension = archivo.filename.rsplit('.', 1)[1].lower()
-
-    nombre_archivo = f"perfil_{usuario_id}.{extension}"
-
-    ruta_completa = os.path.join(
-        upload_folder,
-        nombre_archivo
-    )
-
-    archivo.save(ruta_completa)
-
-    usuario.foto_perfil = (
-        f"/static/uploads/perfiles/{nombre_archivo}"
-    )
-
-    db.session.commit()
-
-    return jsonify({
-
-        "mensaje": "✅ Foto actualizada",
-
-        "url": usuario.foto_perfil
-
-    }), 200
 
 
 # =========================================================
@@ -216,8 +150,6 @@ def login():
             'correo':
             usuario.correo,
 
-            'foto_perfil':
-            usuario.foto_perfil,
 
             'ingreso_mensual':
             float(usuario.ingreso_mensual or 0),
