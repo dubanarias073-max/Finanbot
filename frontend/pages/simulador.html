@@ -56,41 +56,33 @@
             display: flex; flex-direction: column; padding: 25px 0;
             transition: background 0.4s;
         }
-
         .sidebar-logo {
             display: flex; align-items: center; gap: 12px;
             padding: 0 20px 25px;
             border-bottom: 1px solid rgba(168,85,247,0.15);
             margin-bottom: 20px;
         }
-
         .sidebar-logo img { width: 40px; height: 40px; border-radius: 50%; box-shadow: 0 0 15px rgba(168,85,247,0.5); }
-
         .sidebar-logo span {
             font-size: 20px; font-weight: 800;
             background: linear-gradient(90deg, #c026d3, #22d3ee);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         }
-
         .nav-item {
             display: flex; align-items: center; gap: 12px;
             padding: 12px 20px; color: var(--secondary,#9ca3af); text-decoration: none;
             font-size: 14px; font-weight: 500; transition: all 0.3s;
             border-left: 3px solid transparent; margin: 2px 0;
         }
-
         .nav-item:hover, .nav-item.active {
             color: white; background: rgba(168,85,247,0.08); border-left-color: #a855f7;
         }
-
         .nav-item i { width: 18px; text-align: center; font-size: 15px; }
         .nav-item.active i { color: #a855f7; }
-
         .sidebar-bottom {
             margin-top: auto; padding: 20px;
             border-top: 1px solid rgba(168,85,247,0.15);
         }
-
         .btn-cerrar {
             display: flex; align-items: center; gap: 10px;
             color: #ef4444; background: rgba(239,68,68,0.08);
@@ -98,7 +90,6 @@
             padding: 10px 15px; font-size: 13px; cursor: pointer;
             transition: all 0.3s; width: 100%; text-decoration: none;
         }
-
         .btn-cerrar:hover { background: rgba(239,68,68,0.15); color: #ef4444; }
 
         /* MAIN */
@@ -128,7 +119,6 @@
             border-radius: 20px; padding: 26px;
             transition: background 0.4s, border-color 0.4s;
         }
-
         .card-title {
             font-size: 15px; font-weight: 700; color: #c4b5fd;
             margin-bottom: 22px; display: flex; align-items: center; gap: 8px;
@@ -136,91 +126,69 @@
 
         /* FORM */
         .form-group { margin-bottom: 16px; }
-
         .form-label {
             color: #c4b5fd; font-size: 13px; font-weight: 500;
             margin-bottom: 7px; display: block;
         }
-
-        .form-control, .form-select {
+        .form-control {
             background: var(--input-bg); border: 1px solid var(--input-border);
             border-radius: 12px; color: white;
             padding: 11px 15px; font-size: 14px;
             width: 100%; outline: none; transition: all 0.3s;
         }
-
-        .form-control:focus, .form-select:focus {
+        .form-control:focus {
             background: rgba(168,85,247,0.08); border-color: #a855f7;
             box-shadow: 0 0 0 3px rgba(168,85,247,0.1); color: white;
         }
-
         .form-control::placeholder { color: var(--muted,#6b7280); }
-        .form-select option { background: #1a1a4e; color: white; }
 
         /* TIPOS DE INVERSIÓN */
         .tipos-grid {
             display: grid; grid-template-columns: 1fr 1fr;
             gap: 8px; margin-bottom: 16px;
         }
-
         .tipo-btn {
             background: var(--item-bg); border: 2px solid var(--item-border);
             border-radius: 12px; padding: 10px 12px; cursor: pointer;
             transition: all 0.3s; text-align: left;
         }
-
         .tipo-btn:hover { background: rgba(168,85,247,0.08); border-color: rgba(168,85,247,0.3); }
-
-        .tipo-btn.activo {
-            background: rgba(168,85,247,0.12); border-color: #a855f7;
-        }
-
-        .tipo-btn-emoji { font-size: 18px; display: block; margin-bottom: 4px; }
+        .tipo-btn.activo { background: rgba(168,85,247,0.12); border-color: #a855f7; }
+        .tipo-btn-emoji  { font-size: 18px; display: block; margin-bottom: 4px; }
         .tipo-btn-nombre { font-size: 12px; font-weight: 600; color: white; display: block; }
-        .tipo-btn-tasa { font-size: 11px; color: var(--muted,#6b7280); }
+        .tipo-btn-tasa   { font-size: 11px; color: var(--muted,#6b7280); }
         .tipo-btn-riesgo { font-size: 10px; border-radius: 50px; padding: 1px 7px; display: inline-block; margin-top: 3px; }
-
-        .riesgo-bajo  { background: rgba(74,222,128,0.15); color: #4ade80; }
-        .riesgo-medio { background: rgba(245,158,11,0.15); color: #fbbf24; }
-        .riesgo-alto  { background: rgba(239,68,68,0.15);  color: #f87171; }
+        .riesgo-bajo  { background: rgba(74,222,128,0.15);  color: #4ade80; }
+        .riesgo-medio { background: rgba(245,158,11,0.15);  color: #fbbf24; }
+        .riesgo-alto  { background: rgba(239,68,68,0.15);   color: #f87171; }
 
         /* MONTOS RÁPIDOS */
         .montos-rapidos { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 4px; }
-
         .monto-btn {
             background: var(--item-bg); border: 1px solid var(--item-border);
             color: var(--secondary,#9ca3af); border-radius: 8px;
             padding: 5px 11px; font-size: 11px; cursor: pointer; transition: all 0.3s;
         }
-
         .monto-btn:hover { background: rgba(168,85,247,0.12); border-color: rgba(168,85,247,0.35); color: white; }
 
         /* SLIDER */
         .slider-container { margin-bottom: 16px; }
-
-        .slider-display {
-            display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;
-        }
-
+        .slider-display { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .slider-val {
             font-size: 22px; font-weight: 800;
             background: linear-gradient(90deg, #c026d3, #a855f7);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         }
-
         .slider-anios { font-size: 13px; color: var(--muted,#6b7280); }
-
         .slider {
             -webkit-appearance: none; width: 100%; height: 6px;
             border-radius: 10px; background: rgba(168,85,247,0.2); outline: none; margin: 6px 0;
         }
-
         .slider::-webkit-slider-thumb {
             -webkit-appearance: none; width: 22px; height: 22px;
             border-radius: 50%; background: linear-gradient(135deg, #c026d3, #a855f7);
             cursor: pointer; box-shadow: 0 0 10px rgba(168,85,247,0.5);
         }
-
         .slider-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted,#6b7280); }
 
         /* BTN SIMULAR */
@@ -232,46 +200,47 @@
             box-shadow: 0 8px 25px rgba(192,38,211,0.3);
             display: flex; align-items: center; justify-content: center; gap: 8px;
         }
-
         .btn-simular:hover { transform: translateY(-2px); box-shadow: 0 12px 35px rgba(192,38,211,0.5); }
         .btn-simular:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
 
+        /* BTN EXPORTAR EXCEL */
+        .btn-excel {
+            background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.35);
+            color: #4ade80; border-radius: 10px;
+            padding: 11px 16px; font-size: 13px; font-weight: 600;
+            cursor: pointer; transition: all 0.3s;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            width: 100%;
+        }
+        .btn-excel:hover {
+            background: rgba(34,197,94,0.2); border-color: #4ade80;
+            transform: translateY(-2px); box-shadow: 0 6px 16px rgba(74,222,128,0.2);
+        }
+
         /* RESULTADOS */
         .resultados-panel { display: flex; flex-direction: column; gap: 14px; }
-
         .placeholder-card {
             background: var(--card-bg); border: 1px dashed var(--card-border);
             border-radius: 20px; padding: 60px 30px; text-align: center; color: var(--muted,#6b7280);
             flex: 1;
         }
-
-        .placeholder-card i { font-size: 56px; opacity: 0.15; display: block; margin-bottom: 18px; }
+        .placeholder-card i  { font-size: 56px; opacity: 0.15; display: block; margin-bottom: 18px; }
         .placeholder-card h3 { font-size: 17px; color: white; margin-bottom: 8px; font-weight: 600; }
-        .placeholder-card p { font-size: 13px; line-height: 1.6; }
+        .placeholder-card p  { font-size: 13px; line-height: 1.6; }
 
         /* STATS TOP */
-        .stats-top {
-            display: grid; grid-template-columns: repeat(2,1fr);
-            gap: 12px;
-        }
-
+        .stats-top { display: grid; grid-template-columns: repeat(2,1fr); gap: 12px; }
         .stat-card {
             background: var(--card-bg); border: 1px solid var(--card-border);
             border-radius: 16px; padding: 18px;
             position: relative; overflow: hidden; transition: all 0.3s;
         }
-
-        .stat-card::before {
-            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 3px;
-        }
-
+        .stat-card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 3px; }
         .stat-card.capital::before  { background: linear-gradient(90deg,#22d3ee,#38bdf8); }
         .stat-card.ganancia::before { background: linear-gradient(90deg,#4ade80,#22d3ee); }
         .stat-card.total::before    { background: linear-gradient(90deg,#fbbf24,#f59e0b); }
         .stat-card.renta::before    { background: linear-gradient(90deg,#a855f7,#c026d3); }
-
         .stat-card:hover { transform: translateY(-3px); }
-
         .stat-label { font-size: 11px; color: var(--secondary,#9ca3af); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 7px; }
         .stat-valor { font-size: 20px; font-weight: 800; }
         .stat-card.capital  .stat-valor { color: #22d3ee; }
@@ -281,36 +250,25 @@
 
         /* GANANCIA DESTACADA */
         .ganancia-highlight {
-            background: rgba(74,222,128,0.06);
-            border: 1px solid rgba(74,222,128,0.3);
+            background: rgba(74,222,128,0.06); border: 1px solid rgba(74,222,128,0.3);
             border-radius: 16px; padding: 18px 22px;
             display: flex; align-items: center; justify-content: space-between;
         }
-
         .ganancia-highlight-left { display: flex; align-items: center; gap: 14px; }
-        .ganancia-icon { font-size: 28px; }
+        .ganancia-icon  { font-size: 28px; }
         .ganancia-label { font-size: 12px; color: #4ade80; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
         .ganancia-monto { font-size: 26px; font-weight: 800; color: #4ade80; }
-        .ganancia-pct { font-size: 22px; font-weight: 700; color: #4ade80; }
+        .ganancia-pct   { font-size: 22px; font-weight: 700; color: #4ade80; }
 
         /* GRÁFICA */
-        .chart-card {
-            background: var(--card-bg); border: 1px solid var(--card-border);
-            border-radius: 18px; padding: 20px;
-        }
-
+        .chart-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 18px; padding: 20px; }
         .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
         .chart-titulo { font-size: 14px; font-weight: 600; color: #c4b5fd; display: flex; align-items: center; gap: 8px; }
-        .chart-wrap { position: relative; height: 200px; }
+        .chart-wrap   { position: relative; height: 200px; }
 
         /* INFO GRID */
         .info-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 10px; }
-
-        .info-item {
-            background: var(--item-bg); border: 1px solid var(--item-border);
-            border-radius: 12px; padding: 13px;
-        }
-
+        .info-item  { background: var(--item-bg); border: 1px solid var(--item-border); border-radius: 12px; padding: 13px; }
         .info-label { font-size: 11px; color: var(--secondary,#9ca3af); margin-bottom: 5px; }
         .info-valor { font-size: 15px; font-weight: 700; }
 
@@ -323,46 +281,24 @@
 
         /* COMPARADOR */
         .comparador-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-top: 14px; }
+        .comp-item    { background: var(--item-bg); border: 1px solid var(--item-border); border-radius: 12px; padding: 14px; text-align: center; }
+        .comp-nombre  { font-size: 11px; color: var(--secondary,#9ca3af); margin-bottom: 6px; }
+        .comp-monto   { font-size: 15px; font-weight: 700; color: white; margin-bottom: 3px; }
+        .comp-ganancia{ font-size: 12px; font-weight: 600; }
 
-        .comp-item {
-            background: var(--item-bg); border: 1px solid var(--item-border);
-            border-radius: 12px; padding: 14px; text-align: center;
+        /* EXPORTAR CARD */
+        .exportar-card {
+            background: rgba(34,197,94,0.04); border: 1px solid rgba(34,197,94,0.2);
+            border-radius: 16px; padding: 18px 20px;
+            display: flex; flex-direction: column; gap: 14px;
         }
-
-        .comp-nombre { font-size: 11px; color: var(--secondary,#9ca3af); margin-bottom: 6px; }
-        .comp-monto  { font-size: 15px; font-weight: 700; color: white; margin-bottom: 3px; }
-        .comp-ganancia { font-size: 12px; font-weight: 600; }
-
-        /* HISTORIAL */
-        .historial-item {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 13px 16px; border-radius: 12px; margin-bottom: 8px;
-            background: var(--item-bg); border: 1px solid var(--item-border);
-            cursor: pointer; transition: all 0.3s;
+        .exportar-info {}
+        .exportar-titulo {
+            font-size: 13px; font-weight: 700; color: #4ade80; margin-bottom: 4px;
         }
-
-        .historial-item:hover {
-            background: rgba(168,85,247,0.08); border-color: rgba(168,85,247,0.3); transform: translateX(3px);
+        .exportar-desc {
+            font-size: 12px; color: var(--secondary,#9ca3af); line-height: 1.5;
         }
-
-        .historial-datos { font-size: 13px; color: var(--secondary,#9ca3af); line-height: 1.6; }
-        .historial-datos strong { color: white; }
-        .historial-ganancia { font-size: 16px; font-weight: 700; color: #4ade80; flex-shrink: 0; margin-left: 12px; }
-
-        .btn-borrar {
-            background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2);
-            color: #ef4444; border-radius: 8px; padding: 6px 14px;
-            font-size: 12px; cursor: pointer; transition: all 0.3s;
-        }
-
-        .btn-borrar:hover { background: rgba(239,68,68,0.18); }
-
-        .sin-datos {
-            text-align: center; color: var(--muted,#6b7280);
-            padding: 24px; font-size: 13px;
-        }
-
-        .sin-datos i { opacity: 0.2; margin-right: 8px; }
     </style>
 </head>
 <body class="tema-oscuro">
@@ -373,12 +309,12 @@
             <span>FinanBot</span>
         </div>
         <a href="dashboard.html" class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
-        <a href="chat.html" class="nav-item"><i class="fas fa-robot"></i> Chat FinanBot</a>
-        <a href="finanzas.html" class="nav-item"><i class="fas fa-wallet"></i> Mis Finanzas</a>
+        <a href="chat.html"      class="nav-item"><i class="fas fa-robot"></i> Chat FinanBot</a>
+        <a href="finanzas.html"  class="nav-item"><i class="fas fa-wallet"></i> Mis Finanzas</a>
         <a href="recomendaciones.html" class="nav-item"><i class="fas fa-lightbulb"></i> Recomendaciones</a>
         <a href="simulador.html" class="nav-item active"><i class="fas fa-chart-line"></i> Simulador</a>
-        <a href="aprende.html" class="nav-item"><i class="fas fa-graduation-cap"></i> Aprende</a>
-        <a href="perfil.html" class="nav-item"><i class="fas fa-user-circle"></i> Mi Perfil</a>
+        <a href="aprende.html"   class="nav-item"><i class="fas fa-graduation-cap"></i> Aprende</a>
+        <a href="perfil.html"    class="nav-item"><i class="fas fa-user-circle"></i> Mi Perfil</a>
         <div class="sidebar-bottom">
             <a href="../index.html" class="btn-cerrar" onclick="cerrarSesion()">
                 <i class="fas fa-sign-out-alt"></i> Cerrar sesión
@@ -451,7 +387,6 @@
                             <span class="tipo-btn-riesgo riesgo-medio">Variable</span>
                         </div>
                     </div>
-
                     <div id="tasaCustomWrap" style="display:none;">
                         <label class="form-label">Tasa anual personalizada (%)</label>
                         <input type="number" class="form-control" id="tasaPersonalizada"
@@ -497,9 +432,7 @@
                            min="1" max="60" value="12"
                            oninput="actualizarPlazo(this.value)">
                     <div class="slider-labels">
-                        <span>1 mes</span>
-                        <span>30 meses</span>
-                        <span>5 años</span>
+                        <span>1 mes</span><span>30 meses</span><span>5 años</span>
                     </div>
                 </div>
 
@@ -601,28 +534,26 @@
                     <!-- RESUMEN NARRATIVO -->
                     <div class="resumen-card" id="resResumen"></div>
 
+                    <!-- ── EXPORTAR EXCEL PREMIUM ── -->
+                    <div class="exportar-card" id="exportarCard">
+                        <div class="exportar-info">
+                            <div class="exportar-titulo" id="exportarTitulo">
+                                <i class="fas fa-file-excel"></i> Exportar simulación a Excel
+                            </div>
+                            <div class="exportar-desc" id="exportarDesc">
+                                Descarga esta simulación con 4 hojas: resumen, proyección mes a mes, comparador de escenarios y análisis financiero.
+                            </div>
+                        </div>
+                        <button class="btn-excel" id="btnExcel" onclick="exportarExcelBackend()">
+                            <i class="fas fa-download"></i> Descargar Excel
+                        </button>
+                    </div>
+
                 </div>
             </div>
         </div>
 
-        <!-- HISTORIAL -->
-        <div class="card">
-            <div class="card-title">
-                <i class="fas fa-history" style="color:#4ade80;"></i>
-                Historial de simulaciones
-                <button class="btn-borrar ms-auto" id="btnBorrar"
-                        onclick="borrarHistorial()" style="display:none;">
-                    <i class="fas fa-trash me-1"></i> Borrar todo
-                </button>
-            </div>
-            <div id="historialSimulaciones">
-                <div class="sin-datos">
-                    <i class="fas fa-clock"></i> Aún no has realizado simulaciones
-                </div>
-            </div>
-        </div>
-
-    </div>
+    </div><!-- /.main -->
 
     <script>
         // ── TEMA ──────────────────────────────────────────
@@ -631,10 +562,12 @@
             document.body.className = 'tema-' + t;
         })();
 
-        const token = localStorage.getItem('token');
         let chartInst  = null;
         let tasaActual = 5;
         let esCustom   = false;
+
+        // Estado de la última simulación (para exportar)
+        let ultimaSim = null;
 
         // ── SELECCIONAR TIPO ─────────────────────────────
         function seleccionarTipo(btn, tasa, custom = false) {
@@ -645,26 +578,20 @@
             document.getElementById('tasaCustomWrap').style.display = custom ? 'block' : 'none';
         }
 
-        function setCapital(v) {
-            document.getElementById('capital').value = v;
-        }
-
-        function setAporte(v) {
-            document.getElementById('aporteMensual').value = v;
-        }
+        function setCapital(v) { document.getElementById('capital').value = v; }
+        function setAporte(v)  { document.getElementById('aporteMensual').value = v; }
 
         // ── PLAZO ─────────────────────────────────────────
         function actualizarPlazo(val) {
             const m = parseInt(val);
-            let texto = m === 1 ? '1 mes' : `${m} meses`;
-            let anios = '';
+            document.getElementById('plazoValor').textContent = m === 1 ? '1 mes' : `${m} meses`;
             if (m >= 12) {
-                const a = Math.floor(m / 12);
-                const mr = m % 12;
-                anios = a + ' año' + (a > 1 ? 's' : '') + (mr > 0 ? ` ${mr} mes${mr > 1 ? 'es' : ''}` : '');
+                const a = Math.floor(m / 12), mr = m % 12;
+                document.getElementById('plazoAnios').textContent =
+                    a + ' año' + (a > 1 ? 's' : '') + (mr > 0 ? ` ${mr} mes${mr > 1 ? 'es' : ''}` : '');
+            } else {
+                document.getElementById('plazoAnios').textContent = '';
             }
-            document.getElementById('plazoValor').textContent = texto;
-            document.getElementById('plazoAnios').textContent = anios;
         }
 
         function textoplazo(m) {
@@ -675,7 +602,7 @@
         }
 
         // ── SIMULAR ───────────────────────────────────────
-        async function simular() {
+        function simular() {
             const capital       = parseFloat(document.getElementById('capital').value);
             const plazo         = parseInt(document.getElementById('plazoSlider').value);
             const aporteMensual = parseFloat(document.getElementById('aporteMensual').value) || 0;
@@ -694,28 +621,37 @@
 
             // ── Cálculo con interés compuesto mensual ──
             const tasaMensual = tasa / 100 / 12;
-            const labels = [];
-            const valoresCrecimiento = [];
-            const valoresCapital     = [];
+            const labels = [], valoresCrecimiento = [], valoresCapital = [];
 
             let balance = capital;
             for (let i = 0; i <= plazo; i++) {
                 labels.push(i === 0 ? 'Inicio' : `Mes ${i}`);
                 valoresCrecimiento.push(Math.round(balance));
                 valoresCapital.push(Math.round(capital + aporteMensual * i));
-                if (i < plazo) {
-                    balance = balance * (1 + tasaMensual) + aporteMensual;
-                }
+                if (i < plazo) balance = balance * (1 + tasaMensual) + aporteMensual;
             }
 
-            const valorFinal    = valoresCrecimiento[valoresCrecimiento.length - 1];
+            const valorFinal     = valoresCrecimiento[valoresCrecimiento.length - 1];
             const totalInvertido = capital + aporteMensual * plazo;
             const ganancia       = valorFinal - totalInvertido;
-            const intereses      = ganancia;
-            const retencion      = Math.round(Math.max(intereses, 0) * 0.04);
+            const retencion      = Math.round(Math.max(ganancia, 0) * 0.04);
             const saldoNeto      = valorFinal - retencion;
             const rentabilidad   = ((valorFinal / capital) - 1) * 100;
             const pctGanancia    = ((valorFinal / totalInvertido) - 1) * 100;
+
+            const nombreTipo = esCustom
+                ? `Personalizada (${tasa}%)`
+                : document.querySelector('.tipo-btn.activo .tipo-btn-nombre').textContent;
+
+            // ── Guardar estado para exportar ──
+            ultimaSim = {
+                capital, tasa, plazo, aporteMensual,
+                totalInvertido, valorFinal, ganancia,
+                retencion, saldoNeto, rentabilidad, pctGanancia,
+                nombreTipo,
+                labels, valoresCrecimiento, valoresCapital,
+                fecha: new Date().toLocaleDateString('es-CO')
+            };
 
             // ── Actualizar stats ──
             document.getElementById('resCapital').textContent      = '$' + totalInvertido.toLocaleString('es-CO');
@@ -724,18 +660,17 @@
             document.getElementById('resRentabilidad').textContent = rentabilidad.toFixed(2) + '%';
             document.getElementById('resSaldoNeto').textContent    = '$' + saldoNeto.toLocaleString('es-CO');
             document.getElementById('resGananciaPct').textContent  = '+' + pctGanancia.toFixed(1) + '%';
-            document.getElementById('resIntereses').textContent    = '$' + Math.round(Math.max(intereses,0)).toLocaleString('es-CO');
+            document.getElementById('resIntereses').textContent    = '$' + Math.round(Math.max(ganancia,0)).toLocaleString('es-CO');
             document.getElementById('resRetencion').textContent    = '$' + retencion.toLocaleString('es-CO');
             document.getElementById('resTasaMensual').textContent  = (tasa/12).toFixed(3) + '%';
             document.getElementById('resAportes').textContent      = '$' + (aporteMensual * plazo).toLocaleString('es-CO');
 
             // ── Comparador de escenarios ──
             const escenarios = [
-                { nombre: 'CDT 5%', tasa: 5, emoji: '🏦' },
-                { nombre: 'Fondo 10%', tasa: 10, emoji: '📊' },
-                { nombre: 'Acciones 15%', tasa: 15, emoji: '📈' },
+                { nombre: 'CDT 5%',      tasa: 5,  emoji: '🏦' },
+                { nombre: 'Fondo 10%',   tasa: 10, emoji: '📊' },
+                { nombre: 'Acciones 15%',tasa: 15, emoji: '📈' },
             ];
-
             document.getElementById('comparadorGrid').innerHTML = escenarios.map(e => {
                 const tm = e.tasa / 100 / 12;
                 let b = capital;
@@ -751,10 +686,6 @@
             }).join('');
 
             // ── Resumen narrativo ──
-            const nombreTipo = esCustom
-                ? `tasa personalizada del ${tasa}%`
-                : document.querySelector('.tipo-btn.activo .tipo-btn-nombre').textContent;
-
             document.getElementById('resResumen').innerHTML =
                 `📊 Invirtiendo <strong>$${capital.toLocaleString('es-CO')}</strong> en <strong>${nombreTipo}</strong> ` +
                 `durante <strong>${textoplazo(plazo)}</strong>` +
@@ -766,15 +697,11 @@
                 (ganancia > 0 ? '¡Excelente decisión de inversión! 🚀' : '');
 
             // ── Mostrar resultados ──
-            document.getElementById('placeholder').style.display  = 'none';
-            const resDiv = document.getElementById('resultados');
-            resDiv.style.display = 'flex';
+            document.getElementById('placeholder').style.display = 'none';
+            document.getElementById('resultados').style.display  = 'flex';
 
             // ── Reducir puntos de la gráfica ──
-            let labelsChart = labels;
-            let valuesChart = valoresCrecimiento;
-            let capitalChart = valoresCapital;
-
+            let labelsChart = labels, valuesChart = valoresCrecimiento, capitalChart = valoresCapital;
             if (labels.length > 14) {
                 const step = Math.ceil(plazo / 12);
                 labelsChart  = labels.filter((_,i) => i % step === 0 || i === labels.length - 1);
@@ -785,10 +712,9 @@
             // ── Gráfica ──
             if (chartInst) chartInst.destroy();
             const ctx = document.getElementById('chartSimulacion').getContext('2d');
-
             const gradiente = ctx.createLinearGradient(0, 0, 0, 200);
-            gradiente.addColorStop(0,   'rgba(168,85,247,0.35)');
-            gradiente.addColorStop(1,   'rgba(168,85,247,0.02)');
+            gradiente.addColorStop(0, 'rgba(168,85,247,0.35)');
+            gradiente.addColorStop(1, 'rgba(168,85,247,0.02)');
 
             chartInst = new Chart(ctx, {
                 type: 'line',
@@ -798,195 +724,166 @@
                         {
                             label: 'Valor con interés compuesto',
                             data: valuesChart,
-                            borderColor: '#a855f7',
-                            backgroundColor: gradiente,
-                            borderWidth: 2.5,
-                            fill: true,
-                            tension: 0.4,
-                            pointBackgroundColor: '#c026d3',
-                            pointBorderColor: 'rgba(0,0,0,0)',
-                            pointRadius: 4,
-                            pointHoverRadius: 7,
+                            borderColor: '#a855f7', backgroundColor: gradiente,
+                            borderWidth: 2.5, fill: true, tension: 0.4,
+                            pointBackgroundColor: '#c026d3', pointBorderColor: 'rgba(0,0,0,0)',
+                            pointRadius: 4, pointHoverRadius: 7,
                         },
                         {
                             label: 'Capital invertido',
                             data: capitalChart,
-                            borderColor: '#22d3ee',
-                            borderWidth: 1.8,
-                            borderDash: [6, 4],
-                            fill: false,
-                            tension: 0,
-                            pointRadius: 0,
-                            pointHoverRadius: 5,
+                            borderColor: '#22d3ee', borderWidth: 1.8,
+                            borderDash: [6, 4], fill: false, tension: 0,
+                            pointRadius: 0, pointHoverRadius: 5,
                         }
                     ]
                 },
                 options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
+                    responsive: true, maintainAspectRatio: false,
                     animation: { duration: 800, easing: 'easeInOutQuart' },
                     plugins: {
-                        legend: {
-                            labels: {
-                                color: '#c4b5fd',
-                                font: { size: 11 },
-                                usePointStyle: true,
-                                pointStyleWidth: 8,
-                            }
-                        },
+                        legend: { labels: { color: '#c4b5fd', font: { size: 11 }, usePointStyle: true, pointStyleWidth: 8 } },
                         tooltip: {
-                            backgroundColor: 'rgba(10,10,30,0.96)',
-                            titleColor: '#a855f7',
-                            bodyColor: '#c4b5fd',
-                            borderColor: 'rgba(168,85,247,0.3)',
-                            borderWidth: 1,
-                            padding: 12,
-                            callbacks: {
-                                label: ctx => ` ${ctx.dataset.label}: $${Math.round(ctx.parsed.y).toLocaleString('es-CO')}`,
-                            }
+                            backgroundColor: 'rgba(10,10,30,0.96)', titleColor: '#a855f7',
+                            bodyColor: '#c4b5fd', borderColor: 'rgba(168,85,247,0.3)',
+                            borderWidth: 1, padding: 12,
+                            callbacks: { label: ctx => ` ${ctx.dataset.label}: $${Math.round(ctx.parsed.y).toLocaleString('es-CO')}` }
                         }
                     },
                     scales: {
-                        x: {
-                            ticks: { color: '#6b7280', font: { size: 10 }, maxRotation: 40 },
-                            grid: { display: false },
-                        },
+                        x: { ticks: { color: '#6b7280', font: { size: 10 }, maxRotation: 40 }, grid: { display: false } },
                         y: {
                             ticks: {
                                 color: '#6b7280', font: { size: 10 },
                                 callback: v => {
-                                    if (v >= 1000000000) return '$' + (v/1000000000).toFixed(1) + 'B';
-                                    if (v >= 1000000)    return '$' + (v/1000000).toFixed(1) + 'M';
-                                    if (v >= 1000)       return '$' + (v/1000).toFixed(0) + 'K';
+                                    if (v >= 1e9) return '$' + (v/1e9).toFixed(1) + 'B';
+                                    if (v >= 1e6) return '$' + (v/1e6).toFixed(1) + 'M';
+                                    if (v >= 1e3) return '$' + (v/1e3).toFixed(0) + 'K';
                                     return '$' + v;
                                 }
                             },
-                            grid: { color: 'rgba(168,85,247,0.07)' },
-                            beginAtZero: false,
+                            grid: { color: 'rgba(168,85,247,0.07)' }, beginAtZero: false,
                         }
                     }
                 }
             });
 
-            // ── Guardar en BD ──
-            if (token) {
-                try {
-                    await fetch('http://127.0.0.1:5000/api/simulaciones/', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                        body: JSON.stringify({
-                            capital_inicial: capital,
-                            tasa_retorno: tasa,
-                            plazo_meses: plazo,
-                            resultado_final: valorFinal
-                        })
-                    });
-                    await cargarHistorial();
-                } catch (e) { console.error(e); }
-            }
-
             btn.disabled = false;
             btn.innerHTML = '<i class="fas fa-play"></i> Simular inversión';
         }
 
-        // ── HISTORIAL ─────────────────────────────────────
-        async function cargarHistorial() {
-            if (!token) return;
+        // ── EXPORTAR EXCEL PREMIUM (solo usuarios con cuenta) ────
+        async function exportarExcelBackend() {
+            if (!ultimaSim) return;
+            const s     = ultimaSim;
+            const token = localStorage.getItem('token');
+
+            if (!token) {
+                mostrarBloqueoInvitado();
+                return;
+            }
+
+            const btn     = document.getElementById('btnExcel');
+            const txtOrig = btn.innerHTML;
+            btn.disabled  = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando...';
+
             try {
-                const res = await fetch('http://127.0.0.1:5000/api/simulaciones/', {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                const res = await fetch('http://127.0.0.1:5000/api/simulaciones/exportar', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type':  'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        capital_inicial: s.capital,
+                        tasa_retorno:    s.tasa,
+                        plazo_meses:     s.plazo,
+                        aporte_mensual:  s.aporteMensual,
+                        nombre_tipo:     s.nombreTipo
+                    })
                 });
-                if (res.ok) renderHistorial(await res.json());
-            } catch (e) { console.error(e); }
-        }
-function renderHistorial(historial) {
-    const div = document.getElementById('historialSimulaciones');
-    const btn = document.getElementById('btnBorrar');
 
-    if (!historial || !historial.length) {
-        div.innerHTML = `<div class="sin-datos"><i class="fas fa-clock"></i> Aún no has realizado simulaciones</div>`;
-        btn.style.display = 'none';
-        return;
-    }
+                if (!res.ok) {
+                    const err = await res.json();
+                    alert('Error: ' + (err.mensaje || 'No se pudo generar el Excel.'));
+                    return;
+                }
 
-    btn.style.display = 'inline-block';
-    div.innerHTML = historial.map(s => `
-        <div class="historial-item" id="sim-${s.id}">
-            <div class="historial-datos" style="cursor:pointer;"
-                 onclick="cargarDeHistorial(${s.capital_inicial},${s.tasa_retorno},${s.plazo_meses},${s.resultado_final})">
-                <strong>${s.tipo_texto || '💰 Simulación'}</strong>
-                &nbsp;·&nbsp; Capital: <strong>$${s.capital_inicial.toLocaleString('es-CO')}</strong>
-                &nbsp;·&nbsp; <strong>${s.tasa_retorno}%</strong> anual
-                &nbsp;·&nbsp; ${s.plazo_texto || s.plazo_meses + ' meses'}
-                &nbsp;·&nbsp; 📅 ${s.fecha}
-                <br>
-                <span style="font-size:12px;color:var(--muted,#6b7280);">
-                    Resultado: $${s.resultado_final.toLocaleString('es-CO')}
-                    &nbsp;·&nbsp; Neto: $${s.saldo_neto.toLocaleString('es-CO')}
-                    &nbsp;·&nbsp; Retención: $${s.retencion.toLocaleString('es-CO')}
-                </span>
-            </div>
-            <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;margin-left:12px;">
-                <div class="historial-ganancia">+$${Math.round(Math.max(s.ganancia,0)).toLocaleString('es-CO')}</div>
-                <button class="btn-borrar" onclick="eliminarSimulacion(${s.id})" title="Eliminar esta simulación">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </div>
-        </div>`).join('');
-}
+                const blob = await res.blob();
+                const url  = URL.createObjectURL(blob);
+                const a    = document.createElement('a');
+                a.href     = url;
+                a.download = `FinanBot_Simulacion_${s.nombreTipo.replace(/\s+/g,'_')}_${new Date().toLocaleDateString('es-CO').replace(/\//g,'-')}.xlsx`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
 
-async function eliminarSimulacion(id) {
-    if (!confirm('¿Eliminar esta simulación?')) return;
-    try {
-        const res = await fetch(`http://127.0.0.1:5000/api/simulaciones/${id}`, {
-            method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (res.ok) {
-            const el = document.getElementById(`sim-${id}`);
-            if (el) {
-                el.style.transition = 'opacity 0.3s, transform 0.3s';
-                el.style.opacity = '0';
-                el.style.transform = 'translateX(20px)';
-                setTimeout(() => { el.remove(); cargarHistorial(); }, 300);
+            } catch (e) {
+                console.error(e);
+                alert('Error de conexión con el servidor.');
+            } finally {
+                btn.disabled  = false;
+                btn.innerHTML = txtOrig;
             }
         }
-    } catch (e) { console.error(e); }
-}
-        function cargarDeHistorial(capital, tasa, plazo, valorFinal) {
-            document.getElementById('capital').value     = capital;
-            document.getElementById('plazoSlider').value = plazo;
-            actualizarPlazo(plazo);
 
-            const tipos = [5, 8, 10, 15, 20];
-            const btns  = document.querySelectorAll('.tipo-btn');
-            if (tipos.includes(tasa)) {
-                btns[tipos.indexOf(tasa)].click();
+        // ── Bloqueo visual para invitados ─────────────────
+        function mostrarBloqueoInvitado() {
+            const card = document.getElementById('exportarCard');
+            card.style.background    = 'rgba(239,68,68,0.06)';
+            card.style.borderColor   = 'rgba(239,68,68,0.3)';
+            document.getElementById('exportarTitulo').innerHTML =
+                '<i class="fas fa-lock" style="color:#ef4444;"></i> Función exclusiva para usuarios registrados';
+            document.getElementById('exportarDesc').innerHTML =
+                '🔒 Los invitados no pueden exportar simulaciones. ' +
+                '<a href="../index.html" style="color:#a855f7;font-weight:600;">Crea una cuenta gratis</a> ' +
+                'para desbloquear la exportación y muchas más funciones.';
+            const btn = document.getElementById('btnExcel');
+            btn.style.background    = 'rgba(239,68,68,0.1)';
+            btn.style.borderColor   = 'rgba(239,68,68,0.3)';
+            btn.style.color         = '#ef4444';
+            btn.innerHTML           = '<i class="fas fa-lock"></i> Solo para registrados';
+            btn.disabled            = false;
+
+            // Restaurar después de 5 segundos
+            setTimeout(() => {
+                card.style.background  = '';
+                card.style.borderColor = '';
+                document.getElementById('exportarTitulo').innerHTML =
+                    '<i class="fas fa-file-excel"></i> Exportar simulación a Excel';
+                document.getElementById('exportarDesc').innerHTML =
+                    'Descarga esta simulación con 4 hojas: resumen, proyección mes a mes, comparador de escenarios y análisis financiero.';
+                btn.style.background = '';
+                btn.style.borderColor= '';
+                btn.style.color      = '';
+                btn.innerHTML        = '<i class="fas fa-download"></i> Descargar Excel';
+            }, 5000);
+        }
+
+        // ── Estado del botón según sesión ─────────────────
+        function actualizarBotonExportar() {
+            const token = localStorage.getItem('token');
+            const btn   = document.getElementById('btnExcel');
+            if (!btn) return;
+            if (!token) {
+                btn.title = 'Inicia sesión para descargar el Excel';
+                btn.style.opacity = '0.55';
+                btn.style.cursor  = 'default';
             } else {
-                btns[5].click();
-                document.getElementById('tasaPersonalizada').value = tasa;
+                btn.title   = 'Descargar simulación en Excel';
+                btn.style.opacity = '1';
+                btn.style.cursor  = 'pointer';
             }
-
-            simular();
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-
-        async function borrarHistorial() {
-            if (!confirm('¿Borrar todo el historial de simulaciones?')) return;
-            try {
-                const res = await fetch('http://127.0.0.1:5000/api/simulaciones/', {
-                    method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (res.ok) cargarHistorial();
-            } catch (e) { console.error(e); }
         }
 
         function cerrarSesion() {
             localStorage.removeItem('token');
             localStorage.removeItem('usuario');
         }
-
-        cargarHistorial();
+        // Revisar estado botón exportar al cargar
+        actualizarBotonExportar();
     </script>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

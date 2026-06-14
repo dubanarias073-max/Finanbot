@@ -7,12 +7,12 @@ from datetime import timedelta
 app = Flask(__name__)
 
 # ── CONFIGURACIÓN ─────────────────────────────────────────
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:@localhost/finanbot_db'
-app.config['SECRET_KEY']              = 'finanbot_secret_key_2026'
-app.config['JWT_SECRET_KEY']          = 'finanbot_jwt_secret_2026'
-app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(days=7)
+app.config['SQLALCHEMY_DATABASE_URI']      = 'mysql+pymysql://root:@localhost/finanbot_db'
+app.config['SECRET_KEY']                   = 'finanbot_secret_key_2026'
+app.config['JWT_SECRET_KEY']               = 'finanbot_jwt_secret_2026'
+app.config['JWT_ACCESS_TOKEN_EXPIRES']     = timedelta(days=7)
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+app.config['SQLALCHEMY_ENGINE_OPTIONS']    = {
     'pool_pre_ping': True,
     'pool_recycle': 300,
 }
@@ -40,7 +40,7 @@ def after_request(response):
 
 # ── BASE DE DATOS ─────────────────────────────────────────
 with app.app_context():
-    from models import Usuario, Categoria, Transaccion, MetaAhorro, Simulacion, Chat
+    from models import Usuario, Categoria, Transaccion, MetaAhorro, Chat, Conversacion
     db.create_all()
     print('✅ Base de datos conectada correctamente!')
 
@@ -55,9 +55,11 @@ from routes.recomendaciones import recomendaciones_bp
 from routes.chat_historial  import chat_historial_bp
 from routes.exportar        import exportar_bp
 from routes.excel           import excel_bp
-from routes.aprende         import aprende_bp          # ← NUEVO
+from routes.excel_simulaciones import excel_sim_bp
+from routes.aprende         import aprende_bp
 
 app.register_blueprint(auth,               url_prefix='/api/auth')
+app.register_blueprint(excel_sim_bp,       url_prefix='/api/simulaciones')
 app.register_blueprint(chat_bp,            url_prefix='/api/chat')
 app.register_blueprint(transacciones_bp,   url_prefix='/api/transacciones')
 app.register_blueprint(simulaciones_bp,    url_prefix='/api/simulaciones')
@@ -67,7 +69,7 @@ app.register_blueprint(recomendaciones_bp, url_prefix='/api/recomendaciones')
 app.register_blueprint(chat_historial_bp,  url_prefix='/api/chat-historial')
 app.register_blueprint(exportar_bp,        url_prefix='/api/exportar')
 app.register_blueprint(excel_bp,           url_prefix='/api/exportar')
-app.register_blueprint(aprende_bp,         url_prefix='/api/aprende')   # ← NUEVO
+app.register_blueprint(aprende_bp,         url_prefix='/api/aprende')
 
 # ── RUTA RAÍZ ─────────────────────────────────────────────
 @app.route('/')
