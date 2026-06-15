@@ -43,7 +43,8 @@ def actualizar_perfil():
         usuario.ingreso_mensual = float(data['ingreso_mensual'])
 
     if data.get('meta_ahorro') is not None:
-        usuario.meta_ahorro = float(data['meta_ahorro'])
+        meta_valor = data.get('meta_ahorro', '')
+        usuario.meta_ahorro = float(meta_valor) if meta_valor != '' else 0.0
 
     # ── CONTRASEÑA: requiere la actual ──────────────────────────
     if data.get('nueva_contrasena'):

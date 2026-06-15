@@ -368,6 +368,16 @@ body::before {
 .dato-txt { font-size:12px; color:var(--secondary); line-height:1.5; }
 .dato-txt strong { color:white; }
 
+/* Info salario auto */
+.salario-auto-info {
+  display:flex; align-items:center; gap:10px;
+  background:rgba(74,222,128,0.06); border:1px solid rgba(74,222,128,0.2);
+  border-radius:14px; padding:12px 16px; margin-bottom:18px;
+  font-size:12px; color:#86efac; line-height:1.5;
+}
+.salario-auto-info i { font-size:16px; flex-shrink:0; }
+.salario-auto-info strong { color:#4ade80; }
+
 /* ═══════════════════════════════════════
    BOTONES
 ═══════════════════════════════════════ */
@@ -599,10 +609,15 @@ body::before {
     </div>
 
     <div class="btn-row">
-      <button class="btn btn-back" onclick="ir(2)">←</button>
-      <button class="btn btn-next" onclick="ir(4)">
-        Ver resumen <span class="arrow">→</span>
-      </button>
+        <button class="btn btn-back" onclick="ir(2)">←</button>
+
+  <button class="btn btn-back" onclick="omitirMeta()">
+    Omitir
+  </button>
+
+  <button class="btn btn-next" onclick="ir(4)">
+    Ver resumen <span class="arrow">→</span>
+  </button>
     </div>
   </div>
 
@@ -623,6 +638,12 @@ body::before {
         deberías ahorrar <strong>cada mes</strong> (regla del 20%)<br>
         para alcanzar tu meta en <strong id="datoMeses">—</strong>
       </div>
+    </div>
+
+    <!-- Info salario automático -->
+    <div class="salario-auto-info" id="salarioAutoInfo">
+      <i class="fas fa-circle-info">ℹ️</i>
+      <span>Tu ingreso mensual se registrará automáticamente como <strong>Salario</strong> en Mis Finanzas. Podrás editarlo cuando quieras desde Mi Perfil.</span>
     </div>
 
     <div class="sum-box">
@@ -759,7 +780,6 @@ function ir(n){
   // Validar
   if(n===2&&!st.perfil){ show('e1'); return; }
   if(n===3&&st.ingreso<10000){ show('e2'); return; }
-  if(n===4&&!st.objetivo){ show('e3'); return; }
 
   // Ocultar todo
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
@@ -772,6 +792,11 @@ function ir(n){
   window.scrollTo({top:0,behavior:'smooth'});
 
   if(n===4){ buildSummary(); launchConfetti(); }
+}
+function omitirMeta(){
+  st.meta = 0;
+  st.objetivo = '';
+  ir(4);
 }
 function show(id){ document.getElementById(id).classList.add('show'); }
 
@@ -788,6 +813,9 @@ function buildSummary(){
   document.getElementById('sIngreso').textContent = '$'+st.ingreso.toLocaleString('es-CO');
   document.getElementById('sMeta').textContent    = '$'+(st.meta||0).toLocaleString('es-CO');
   document.getElementById('sObj').textContent     = LABELS[st.objetivo]||'—';
+
+  // Ocultar el aviso de salario automático si no hay ingreso
+  document.getElementById('salarioAutoInfo').style.display = st.ingreso > 0 ? 'flex' : 'none';
 }
 
 /* ── Confetti con colores morado/cyan del proyecto ── */
@@ -836,11 +864,14 @@ async function finish(){
   btn.disabled=true;
   btn.innerHTML='<span class="sp"></span> Configurando...';
   try{
+    // 1. Guardar perfil (ingreso mensual, meta, onboarding completado)
     await req('/perfil/','PUT',{
       ingreso_mensual:st.ingreso,
       meta_ahorro:st.meta,
       onboarding_completado:true
     });
+
+    // 2. Crear meta de ahorro si el usuario definió un objetivo
     if(st.meta>0){
       await req('/metas/','POST',{
         nombre:LABELS[st.objetivo],
@@ -848,6 +879,17 @@ async function finish(){
         monto_actual:0
       });
     }
+
+    // 3. ── SALARIO AUTOMÁTICO ──────────────────────────
+    // El ingreso mensual capturado en el onboarding se registra
+    // automáticamente como un ingreso "Salario" en Mis Finanzas.
+    // Queda oculto en la lista de transacciones (descripcion='__auto_salario__')
+    // pero SÍ cuenta en los totales de ingresos y balance.
+    if(st.ingreso>0){
+      await sincronizarSalarioAuto(st.ingreso);
+    }
+    // ───────────────────────────────────────────────────
+
     await new Promise(r=>setTimeout(r,500));
     window.location.href='dashboard.html';
   }catch(err){
@@ -856,6 +898,52 @@ async function finish(){
     btn.disabled=false;
     btn.innerHTML='Intentar nuevamente';
     alert(err.message||'Error del servidor.');
+  }
+}
+
+/* ── SALARIO AUTOMÁTICO ──────────────────────────────────
+   Crea (o reemplaza si ya existiera) una transacción de tipo
+   ingreso/Salario marcada con el tag oculto __auto_salario__.
+   Esta misma función se reutiliza en perfil.html cuando el
+   usuario edita su ingreso mensual después del onboarding.
+──────────────────────────────────────────────────────── */
+async function sincronizarSalarioAuto(monto){
+  try{
+    // 1. Obtener transacciones existentes
+    const res = await fetch(API+'/transacciones/', {
+      headers:{'Authorization':'Bearer '+token}
+    });
+    if(!res.ok) return;
+    const todas = await res.json();
+
+    // 2. Eliminar salario(s) auto previo(s) — evita duplicados
+    const autoAnteriores = todas.filter(t =>
+      t.descripcion && t.descripcion.includes('__auto_salario__')
+    );
+    for(const t of autoAnteriores){
+      await fetch(`${API}/transacciones/${t.id}`, {
+        method:'DELETE',
+        headers:{'Authorization':'Bearer '+token}
+      });
+    }
+
+    // 3. Crear el nuevo registro de salario con la fecha actual
+    const hoy = new Date().toISOString().split('T')[0];
+    await fetch(API+'/transacciones/', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+      body: JSON.stringify({
+        tipo: 'ingreso',
+        categoria: 'Salario',
+        icono: '💼',
+        monto: monto,
+        descripcion: '__auto_salario__',   // tag oculto, no editable por el usuario
+        fecha: hoy
+      })
+    });
+  }catch(e){
+    console.error('Error sincronizando salario automático:', e);
+    // No interrumpe el flujo de finish() — el perfil ya quedó guardado
   }
 }
 

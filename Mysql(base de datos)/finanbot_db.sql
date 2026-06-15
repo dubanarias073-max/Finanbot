@@ -20,6 +20,8 @@ CREATE TABLE usuarios (
     correo VARCHAR(150) NOT NULL UNIQUE,
     contrasena_hash VARCHAR(255) NOT NULL,
     ingreso_mensual DECIMAL(10,2) DEFAULT 0.00,
+    frecuencia_pago ENUM('mensual','quincenal','semanal') NOT NULL DEFAULT 'mensual',
+    dia_pago INT NOT NULL DEFAULT 1,  -- 1-31 (mensual/quincenal) o 1-7 (semanal, 1=Lunes)
     meta_ahorro DECIMAL(10,2) DEFAULT 0.00,
     onboarding_completado BOOLEAN DEFAULT FALSE,
     pregunta_seguridad VARCHAR(255),
@@ -126,14 +128,29 @@ CREATE TABLE chats (
 CREATE INDEX idx_transacciones_usuario_fecha
 ON transacciones(usuario_id, fecha);
 
+-- Cubre la calculadora financiera que filtra por usuario_id + tipo
+-- ('gasto'/'ingreso') antes de sumar montos — ver models.py Transaccion.
+CREATE INDEX idx_transacciones_usuario_tipo
+ON transacciones(usuario_id, tipo);
+
 CREATE INDEX idx_transacciones_categoria
 ON transacciones(categoria_id);
+
+-- Listar mensajes de un usuario ordenados por fecha (historial de chat
+-- fuera de una conversación específica) — ver models.py Chat.
+CREATE INDEX idx_chats_usuario_fecha
+ON chats(usuario_id, fecha);
 
 CREATE INDEX idx_chats_conversacion_fecha
 ON chats(conversacion_id, fecha);
 
 CREATE INDEX idx_metas_usuario
 ON metas_ahorro(usuario_id);
+
+-- Filtrar metas activas vs completadas de un usuario sin tabla completa
+-- — ver models.py MetaAhorro / consulta_metas en finanbot_ia.py.
+CREATE INDEX idx_metas_usuario_completada
+ON metas_ahorro(usuario_id, completada);
 
 -- =========================================================
 -- CATEGORIAS INICIALES
