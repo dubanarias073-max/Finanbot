@@ -410,15 +410,15 @@
         btn.innerHTML = '<span class="spinner"></span> Creando cuenta...';
 
         try {
-            const res  = await fetch('http://127.0.0.1:5000/api/auth/registro', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    nombre, correo, contrasena,
-                    pregunta_seguridad:  pregunta,
-                    respuesta_seguridad: respuesta
-                })
-            });
+            const res = await fetch('http://127.0.0.1:8000/api/auth/registro', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+        nombre, correo, contrasena,
+        pregunta_seguridad:  pregunta,
+        respuesta_seguridad: respuesta
+    })
+});
             const data = await res.json();
 
             if (res.ok) {
@@ -432,8 +432,8 @@
                 mostrarError(data.mensaje || 'Error al registrar usuario.');
             }
         } catch {
-            mostrarError('No se pudo conectar con el servidor Flask.');
-        } finally {
+    mostrarError('No se pudo conectar con el servidor. Verifica que esté en ejecución.');
+      } finally  {
             btn.disabled = false;
             btn.innerHTML = '<i class="fas fa-user-plus"></i> Crear mi cuenta';
         }

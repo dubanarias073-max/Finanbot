@@ -332,7 +332,7 @@ kbd{background:rgba(255,255,255,.08);border-radius:4px;padding:1px 5px;font-size
 /* ═══════════════════════════════════════════════════
    VARIABLES
 ═══════════════════════════════════════════════════ */
-const API      = 'http://127.0.0.1:5000/api';
+const API      = 'http://127.0.0.1:8000/api';
 const token    = localStorage.getItem('token');
 const usuario  = JSON.parse(localStorage.getItem('usuario') || '{}');
 const esInv    = new URLSearchParams(location.search).get('invitado') === 'true';
@@ -786,7 +786,7 @@ async function enviarYRenderizar(msg) {
     }
   } catch(e) {
     quitarTyping();
-    addMsg('⚠️ **Sin conexión con el servidor.** Verifica que Flask esté ejecutándose en `http://127.0.0.1:5000`.','bot',[],null,false);
+    addMsg('⚠️ **Sin conexión con el servidor.** Verifica que Flask esté ejecutándose en `http://127.0.0.1:8000`.','bot',[],null,false);
   }
 
   enviando = false;

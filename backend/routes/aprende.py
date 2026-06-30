@@ -1,25 +1,20 @@
 # routes/aprende.py
-"""
-FinanBot — Enciclopedia Financiera
-Motor de búsqueda tipo Google para conceptos de finanzas personales en Colombia.
-Acceso público. No requiere autenticación.
-"""
 
-from flask import Blueprint, jsonify, request
+from fastapi import APIRouter, HTTPException, Query, Body
+from pydantic import BaseModel
+from typing import Any, Optional
 import math
 import re
 
-aprende_bp = Blueprint('aprende', __name__)
+router = APIRouter()
 
 
 # ════════════════════════════════════════════════════════════════════════════
-#  ENCICLOPEDIA FINANCIERA
-#  Cada entrada es un artículo completo con:
-#  - titulo, resumen, cuerpo (secciones), ejemplo, consejo, tags, relacionados
+#  ENCICLOPEDIA FINANCIERA  (sin cambios — Python puro)
 # ════════════════════════════════════════════════════════════════════════════
 
 ENCICLOPEDIA = {
-
+   
     # ── AHORRO ───────────────────────────────────────────────────────────────
     "ahorro": {
         "id": "ahorro",
@@ -556,6 +551,8 @@ ENCICLOPEDIA = {
 
 }
 
+
+
 # ════════════════════════════════════════════════════════════════════════════
 #  GLOSARIO COMPLETO (35 términos)
 # ════════════════════════════════════════════════════════════════════════════
@@ -598,8 +595,9 @@ GLOSARIO = [
     {"nombre": "4x1000",              "definicion": "Gravamen a los Movimientos Financieros (GMF). Impuesto del 4 por cada 1.000 pesos en transacciones bancarias. Algunas cuentas tienen exención parcial.",          "categoria": "Impuestos"},
 ]
 
+
 # ════════════════════════════════════════════════════════════════════════════
-#  MOTOR DE BÚSQUEDA TIPO GOOGLE
+#  MOTOR DE BÚSQUEDA TIPO GOOGLE  (sin cambios — Python puro)
 # ════════════════════════════════════════════════════════════════════════════
 
 def normalizar(texto):
@@ -614,28 +612,21 @@ def normalizar(texto):
 
 
 def calcular_relevancia(query_norm, articulo):
-    """
-    Calcula un score de relevancia (0-100) para un artículo dado una query.
-    Más alto = más relevante.
-    """
     score = 0
     q = query_norm
 
-    # Coincidencia exacta en título
     titulo_norm = normalizar(articulo['titulo'])
     if q in titulo_norm:
         score += 50
     elif any(palabra in titulo_norm for palabra in q.split() if len(palabra) > 3):
         score += 25
 
-    # Coincidencia en resumen
     resumen_norm = normalizar(articulo['resumen'])
     if q in resumen_norm:
         score += 20
     elif any(palabra in resumen_norm for palabra in q.split() if len(palabra) > 3):
         score += 10
 
-    # Coincidencia en tags
     for tag in articulo.get('tags', []):
         tag_norm = normalizar(tag)
         if q in tag_norm or tag_norm in q:
@@ -644,12 +635,10 @@ def calcular_relevancia(query_norm, articulo):
         elif any(palabra in tag_norm for palabra in q.split() if len(palabra) > 3):
             score += 8
 
-    # Coincidencia en categoría
     cat_norm = normalizar(articulo['categoria'])
     if q in cat_norm or any(p in cat_norm for p in q.split() if len(p) > 3):
         score += 10
 
-    # Coincidencia en contenido de secciones
     for seccion in articulo.get('secciones', []):
         contenido_norm = normalizar(seccion.get('contenido', ''))
         if q in contenido_norm:
@@ -659,7 +648,6 @@ def calcular_relevancia(query_norm, articulo):
             score += 6
             break
 
-    # Coincidencia en id del artículo
     if q in articulo['id'] or articulo['id'] in q:
         score += 30
 
@@ -667,7 +655,6 @@ def calcular_relevancia(query_norm, articulo):
 
 
 def buscar_en_enciclopedia(query):
-    """Motor principal de búsqueda — devuelve resultados ordenados por relevancia."""
     query_norm = normalizar(query)
 
     resultados = []
@@ -689,7 +676,6 @@ def buscar_en_enciclopedia(query):
 
 
 def buscar_en_glosario(query):
-    """Busca términos en el glosario."""
     query_norm = normalizar(query)
     resultados = []
     for termino in GLOSARIO:
@@ -707,36 +693,19 @@ def buscar_en_glosario(query):
 #  ENDPOINTS
 # ════════════════════════════════════════════════════════════════════════════
 
-# ── GET /api/aprende/buscar?q=... ─────────────────────────────────────────
-@aprende_bp.route('/buscar', methods=['GET'])
-def buscar():
-    """
-    Motor de búsqueda tipo Google para la enciclopedia financiera.
-    Devuelve artículos ordenados por relevancia + términos de glosario relacionados.
-
-    Parámetro: ?q=texto (mínimo 2 caracteres)
-
-    Respuesta:
-    {
-        "query": "...",
-        "total_articulos": N,
-        "total_glosario": M,
-        "articulos": [...],        ← ordenados por relevancia
-        "glosario": [...],         ← términos relacionados
-        "sugerencias": [...]       ← otras búsquedas recomendadas
-    }
-    """
-    q = request.args.get('q', '').strip()
+# ── GET /buscar?q=... ─────────────────────────────────────────
+@router.get('/buscar')
+def buscar(q: str = Query(...)):
+    q = q.strip()
     if not q or len(q) < 2:
-        return jsonify({'error': 'El parámetro q debe tener al menos 2 caracteres.'}), 400
+        raise HTTPException(status_code=400, detail='El parámetro q debe tener al menos 2 caracteres.')
 
-    articulos   = buscar_en_enciclopedia(q)
-    glosario    = buscar_en_glosario(q)
+    articulos = buscar_en_enciclopedia(q)
+    glosario  = buscar_en_glosario(q)
 
-    # Sugerencias: artículos relacionados del primer resultado
     sugerencias = []
     if articulos:
-        primer_id  = articulos[0]['id']
+        primer_id = articulos[0]['id']
         relacionados = ENCICLOPEDIA.get(primer_id, {}).get('relacionados', [])
         for rel_id in relacionados[:4]:
             rel = ENCICLOPEDIA.get(rel_id)
@@ -748,25 +717,21 @@ def buscar():
                     'categoria': rel['categoria'],
                 })
 
-    return jsonify({
-        'query':            q,
-        'total_articulos':  len(articulos),
-        'total_glosario':   len(glosario),
-        'articulos':        articulos,
-        'glosario':         glosario[:5],   # máximo 5 del glosario en búsqueda
-        'sugerencias':      sugerencias,
-    }), 200
+    return {
+        'query': q,
+        'total_articulos': len(articulos),
+        'total_glosario': len(glosario),
+        'articulos': articulos,
+        'glosario': glosario[:5],
+        'sugerencias': sugerencias,
+    }
 
 
-# ── GET /api/aprende/articulos ────────────────────────────────────────────
-@aprende_bp.route('/articulos', methods=['GET'])
-def listar_articulos():
-    """
-    Lista todos los artículos de la enciclopedia (sin contenido completo).
-    Filtros opcionales: ?nivel=basico&categoria=Ahorro
-    """
-    nivel     = request.args.get('nivel', '').strip().lower()
-    categoria = request.args.get('categoria', '').strip()
+# ── GET /articulos ────────────────────────────────────────────
+@router.get('/articulos')
+def listar_articulos(nivel: Optional[str] = None, categoria: Optional[str] = None):
+    nivel     = (nivel or '').strip().lower()
+    categoria = (categoria or '').strip()
 
     resultado = []
     for art in ENCICLOPEDIA.values():
@@ -775,61 +740,46 @@ def listar_articulos():
         if categoria and normalizar(art['categoria']) != normalizar(categoria):
             continue
         resultado.append({
-            'id':        art['id'],
-            'emoji':     art['emoji'],
+            'id': art['id'],
+            'emoji': art['emoji'],
             'categoria': art['categoria'],
-            'nivel':     art['nivel'],
-            'titulo':    art['titulo'],
-            'resumen':   art['resumen'],
+            'nivel': art['nivel'],
+            'titulo': art['titulo'],
+            'resumen': art['resumen'],
             'num_secciones': len(art.get('secciones', [])),
         })
 
-    return jsonify({
-        'total':     len(resultado),
-        'articulos': resultado,
-    }), 200
+    return {'total': len(resultado), 'articulos': resultado}
 
 
-# ── GET /api/aprende/articulos/<id> ───────────────────────────────────────
-@aprende_bp.route('/articulos/<string:articulo_id>', methods=['GET'])
-def obtener_articulo(articulo_id):
-    """
-    Devuelve el artículo completo de la enciclopedia por su ID.
-    Incluye secciones, ejemplo, consejo, tags y artículos relacionados.
-    """
+# ── GET /articulos/{articulo_id} ───────────────────────────────────────
+@router.get('/articulos/{articulo_id}')
+def obtener_articulo(articulo_id: str):
     art = ENCICLOPEDIA.get(articulo_id)
     if not art:
-        return jsonify({'error': f"Artículo '{articulo_id}' no encontrado."}), 404
+        raise HTTPException(status_code=404, detail=f"Artículo '{articulo_id}' no encontrado.")
 
-    # Añadir datos de artículos relacionados
     relacionados_full = []
     for rel_id in art.get('relacionados', []):
         rel = ENCICLOPEDIA.get(rel_id)
         if rel:
             relacionados_full.append({
-                'id':        rel['id'],
-                'emoji':     rel['emoji'],
-                'titulo':    rel['titulo'],
+                'id': rel['id'],
+                'emoji': rel['emoji'],
+                'titulo': rel['titulo'],
                 'categoria': rel['categoria'],
-                'nivel':     rel['nivel'],
+                'nivel': rel['nivel'],
             })
 
-    return jsonify({
-        **art,
-        'relacionados_detalle': relacionados_full,
-    }), 200
+    return {**art, 'relacionados_detalle': relacionados_full}
 
 
-# ── GET /api/aprende/glosario ─────────────────────────────────────────────
-@aprende_bp.route('/glosario', methods=['GET'])
-def listar_glosario():
-    """
-    Devuelve el glosario financiero completo.
-    Filtros: ?letra=A&categoria=Inversión&q=texto
-    """
-    letra     = request.args.get('letra', '').strip().upper()
-    categoria = request.args.get('categoria', '').strip()
-    q         = request.args.get('q', '').strip()
+# ── GET /glosario ─────────────────────────────────────────────
+@router.get('/glosario')
+def listar_glosario(letra: Optional[str] = None, categoria: Optional[str] = None, q: Optional[str] = None):
+    letra     = (letra or '').strip().upper()
+    categoria = (categoria or '').strip()
+    q         = (q or '').strip()
 
     resultado = list(GLOSARIO)
 
@@ -840,21 +790,20 @@ def listar_glosario():
     if q:
         resultado = buscar_en_glosario(q)
 
-    letras_disponibles    = sorted({t['nombre'][0].upper() for t in GLOSARIO})
+    letras_disponibles     = sorted({t['nombre'][0].upper() for t in GLOSARIO})
     categorias_disponibles = sorted({t['categoria'] for t in GLOSARIO})
 
-    return jsonify({
-        'total':                   len(resultado),
-        'terminos':                resultado,
-        'letras_disponibles':      letras_disponibles,
-        'categorias_disponibles':  categorias_disponibles,
-    }), 200
+    return {
+        'total': len(resultado),
+        'terminos': resultado,
+        'letras_disponibles': letras_disponibles,
+        'categorias_disponibles': categorias_disponibles,
+    }
 
 
-# ── GET /api/aprende/categorias ───────────────────────────────────────────
-@aprende_bp.route('/categorias', methods=['GET'])
+# ── GET /categorias ───────────────────────────────────────────
+@router.get('/categorias')
 def listar_categorias():
-    """Metadatos de la enciclopedia: categorías, niveles y totales."""
     categorias = sorted({a['categoria'] for a in ENCICLOPEDIA.values()})
     niveles    = ['basico', 'intermedio', 'avanzado']
 
@@ -863,52 +812,48 @@ def listar_categorias():
         for n in niveles
     }
 
-    return jsonify({
-        'total_articulos':          len(ENCICLOPEDIA),
-        'total_terminos_glosario':  len(GLOSARIO),
-        'categorias':               categorias,
-        'niveles':                  niveles,
-        'articulos_por_nivel':      por_nivel,
-    }), 200
+    return {
+        'total_articulos': len(ENCICLOPEDIA),
+        'total_terminos_glosario': len(GLOSARIO),
+        'categorias': categorias,
+        'niveles': niveles,
+        'articulos_por_nivel': por_nivel,
+    }
 
 
-# ── POST /api/aprende/calcular ────────────────────────────────────────────
-@aprende_bp.route('/calcular', methods=['POST'])
-def calcular():
-    """
-    Motor de cálculos financieros. Mueve la lógica al servidor.
-    Body: { "tipo": "nombre_calculadora", "datos": {...} }
+# ── POST /calcular ────────────────────────────────────────────
 
-    Tipos disponibles:
-      interes_simple | interes_compuesto | regla_50_30_20
-      meta_ahorro | retencion_fuente | cuota_credito
-      inflacion | pension_voluntaria
-    """
-    data = request.get_json(silent=True) or {}
-    tipo = data.get('tipo', '').strip()
-    d    = data.get('datos', {})
+class CalculoRequest(BaseModel):
+    tipo: str
+    datos: dict[str, Any] = {}
+
+
+@router.post('/calcular')
+def calcular(body: CalculoRequest):
+    tipo = body.tipo.strip()
+    d    = body.datos
 
     if not tipo:
-        return jsonify({'error': 'El campo tipo es requerido.'}), 400
+        raise HTTPException(status_code=400, detail='El campo tipo es requerido.')
 
     try:
         resultado = _ejecutar_calculo(tipo, d)
-        return jsonify({'tipo': tipo, 'resultado': resultado}), 200
+        return {'tipo': tipo, 'resultado': resultado}
     except (KeyError, TypeError, ValueError, ZeroDivisionError) as e:
-        return jsonify({'error': f'Error en los datos: {str(e)}'}), 400
+        raise HTTPException(status_code=400, detail=f'Error en los datos: {str(e)}')
 
 
 def _ejecutar_calculo(tipo, d):
-    """Ejecuta el cálculo financiero según el tipo."""
+    """Ejecuta el cálculo financiero según el tipo. (sin cambios — Python puro)"""
 
     if tipo == 'interes_simple':
         k, tasa, meses = float(d['capital']), float(d['tasa_anual']) / 100, float(d['meses'])
         tm = tasa / 12
         interes = round(k * tm * meses, 2)
         return {
-            'capital_inicial':  k,
+            'capital_inicial': k,
             'interes_generado': interes,
-            'total_final':      round(k + interes, 2),
+            'total_final': round(k + interes, 2),
             'tasa_mensual_pct': round(tm * 100, 4),
         }
 
@@ -927,10 +872,10 @@ def _ejecutar_calculo(tipo, d):
         intereses = round(bal - invertido, 2)
         renta     = round((bal / k - 1) * 100, 2) if k > 0 else 0
         return {
-            'total_invertido':   invertido,
+            'total_invertido': invertido,
             'intereses_ganados': intereses,
-            'total_final':       bal,
-            'rentabilidad_pct':  renta,
+            'total_final': bal,
+            'rentabilidad_pct': renta,
         }
 
     elif tipo == 'regla_50_30_20':
@@ -944,11 +889,11 @@ def _ejecutar_calculo(tipo, d):
             else:         aviso = '✅ Tus gastos fijos están en rango controlado.'
         return {
             'necesidades_50': round(ing * 0.5, 2),
-            'deseos_30':      round(ing * 0.3, 2),
-            'ahorro_20':      round(ing * 0.2, 2),
-            'gastos_fijos':   fijos,
+            'deseos_30': round(ing * 0.3, 2),
+            'ahorro_20': round(ing * 0.2, 2),
+            'gastos_fijos': fijos,
             'pct_gastos_fijos': pf,
-            'aviso':          aviso,
+            'aviso': aviso,
         }
 
     elif tipo == 'meta_ahorro':
@@ -973,10 +918,10 @@ def _ejecutar_calculo(tipo, d):
         else:
             txt = f"{meses} mes{'es' if meses > 1 else ''}"
         return {
-            'ya_alcanzada':  False,
-            'faltante':      round(faltante, 2),
-            'meses':         meses,
-            'tiempo_texto':  txt,
+            'ya_alcanzada': False,
+            'faltante': round(faltante, 2),
+            'meses': meses,
+            'tiempo_texto': txt,
             'total_acumulado': round(bal, 2),
         }
 
@@ -1008,8 +953,8 @@ def _ejecutar_calculo(tipo, d):
         r = float(d['tasa_anual']) / 100 / 12
         n = int(d['plazo_meses'])
         cuota = P / n if r == 0 else P * r * (1 + r)**n / ((1 + r)**n - 1)
-        cuota    = round(cuota, 2)
-        total    = round(cuota * n, 2)
+        cuota     = round(cuota, 2)
+        total     = round(cuota * n, 2)
         intereses = round(total - P, 2)
         costo_pct = round(intereses / P * 100, 2) if P > 0 else 0
         return {
@@ -1043,9 +988,9 @@ def _ejecutar_calculo(tipo, d):
         rendim     = round(bal - tot_aporte, 2)
         ahorro_imp = round(aporte * 0.19 * 12, 2)
         return {
-            'capital_acumulado':    bal,
-            'total_aportado':       tot_aporte,
-            'rendimientos':         rendim,
+            'capital_acumulado': bal,
+            'total_aportado': tot_aporte,
+            'rendimientos': rendim,
             'ahorro_impuestos_ano': ahorro_imp,
         }
 

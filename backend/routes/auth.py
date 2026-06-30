@@ -1,300 +1,155 @@
-
 # routes/auth.py
 
-import os
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+from pydantic import BaseModel
+from typing import Optional
 
-from flask import Blueprint, request, jsonify
-
-from flask_jwt_extended import (
-    create_access_token,
-    jwt_required,
-    get_jwt_identity
-)
-
-from extensions import db, bcrypt
+from database import get_db
+from extensions import hash_password, verify_password, create_access_token
 from models import Usuario
 
-auth = Blueprint('auth', __name__)
+router = APIRouter()
 
+
+# =========================================================
+# ESQUEMAS (reemplazan request.get_json() con validación)
+# =========================================================
+
+class RegistroSchema(BaseModel):
+    nombre: str
+    correo: str
+    contrasena: str
+    pregunta_seguridad: Optional[str] = None
+    respuesta_seguridad: Optional[str] = ""
+
+class LoginSchema(BaseModel):
+    correo: str
+    contrasena: str
+
+class CorreoSchema(BaseModel):
+    correo: str
+
+class VerificarSeguridadSchema(BaseModel):
+    correo: str
+    respuesta: Optional[str] = ""
+
+class ResetearContrasenaSchema(BaseModel):
+    correo: str
+    nueva_contrasena: str
 
 
 # =========================================================
 # REGISTRO
 # =========================================================
 
-@auth.route('/registro', methods=['POST'])
-def registro():
+@router.post('/registro', status_code=201)
+def registro(body: RegistroSchema, db: Session = Depends(get_db)):
 
-    data = request.get_json()
-
-    nombre = data.get('nombre')
-    correo = data.get('correo')
-    contrasena = data.get('contrasena')
-
-    if not nombre or not correo or not contrasena:
-
-        return jsonify({
-            'mensaje':
-            'Todos los campos son obligatorios'
-        }), 400
-
-    usuario_existente = Usuario.query.filter_by(
-        correo=correo
-    ).first()
+    usuario_existente = db.query(Usuario).filter_by(correo=body.correo).first()
 
     if usuario_existente:
+        raise HTTPException(status_code=409, detail='El correo ya está registrado')
 
-        return jsonify({
-            'mensaje':
-            'El correo ya está registrado'
-        }), 409
-
-    contrasena_hash = bcrypt.generate_password_hash(
-        contrasena
-    ).decode('utf-8')
+    contrasena_hash = hash_password(body.contrasena)
 
     nuevo_usuario = Usuario(
-
-        nombre=nombre,
-
-        correo=correo,
-
+        nombre=body.nombre,
+        correo=body.correo,
         contrasena_hash=contrasena_hash,
-
-        pregunta_seguridad=data.get(
-            'pregunta_seguridad'
-        ),
-
-        respuesta_seguridad=data.get(
-            'respuesta_seguridad',
-            ''
-        ).lower().strip(),
-
-        # ✅ IMPORTANTE
+        pregunta_seguridad=body.pregunta_seguridad,
+        respuesta_seguridad=(body.respuesta_seguridad or '').lower().strip(),
         onboarding_completado=False
     )
 
-    db.session.add(nuevo_usuario)
+    db.add(nuevo_usuario)
+    db.commit()
 
-    db.session.commit()
-
-    return jsonify({
-
-        'mensaje':
-        '✅ Usuario registrado exitosamente!'
-
-    }), 201
+    return {'mensaje': '✅ Usuario registrado exitosamente!'}
 
 
 # =========================================================
 # LOGIN
 # =========================================================
 
-@auth.route('/login', methods=['POST'])
-def login():
+@router.post('/login')
+def login(body: LoginSchema, db: Session = Depends(get_db)):
 
-    data = request.get_json()
-
-    correo = data.get('correo')
-    contrasena = data.get('contrasena')
-
-    if not correo or not contrasena:
-
-        return jsonify({
-            'mensaje':
-            'Correo y contraseña son obligatorios'
-        }), 400
-
-    usuario = Usuario.query.filter_by(
-        correo=correo
-    ).first()
+    usuario = db.query(Usuario).filter_by(correo=body.correo).first()
 
     if not usuario:
+        raise HTTPException(status_code=401, detail='Correo o contraseña incorrectos')
 
-        return jsonify({
-            'mensaje':
-            'Correo o contraseña incorrectos'
-        }), 401
+    if not verify_password(body.contrasena, usuario.contrasena_hash):
+        raise HTTPException(status_code=401, detail='Correo o contraseña incorrectos')
 
-    password_correcta = bcrypt.check_password_hash(
-        usuario.contrasena_hash,
-        contrasena
-    )
+    token = create_access_token({"sub": str(usuario.id)})
 
-    if not password_correcta:
-
-        return jsonify({
-            'mensaje':
-            'Correo o contraseña incorrectos'
-        }), 401
-
-    token = create_access_token(
-        identity=str(usuario.id)
-    )
-
-    return jsonify({
-
-        'mensaje':
-        '✅ Inicio de sesión exitoso!',
-
+    return {
+        'mensaje': '✅ Inicio de sesión exitoso!',
         'token': token,
-
         'usuario': {
-
-            'id':
-            usuario.id,
-
-            'nombre':
-            usuario.nombre,
-
-            'correo':
-            usuario.correo,
-
-
-            'ingreso_mensual':
-            float(usuario.ingreso_mensual or 0),
-
-            'meta_ahorro':
-            float(usuario.meta_ahorro or 0),
-
-            # ✅ CLAVE PARA EL ONBOARDING
-            'onboarding_completado':
-            usuario.onboarding_completado
+            'id': usuario.id,
+            'nombre': usuario.nombre,
+            'correo': usuario.correo,
+            'ingreso_mensual': float(usuario.ingreso_mensual or 0),
+            'meta_ahorro': float(usuario.meta_ahorro or 0),
+            'onboarding_completado': usuario.onboarding_completado
         }
-
-    }), 200
+    }
 
 
 # =========================================================
 # OBTENER PREGUNTA
 # =========================================================
 
-@auth.route('/obtener-pregunta', methods=['POST'])
-def obtener_pregunta():
+@router.post('/obtener-pregunta')
+def obtener_pregunta(body: CorreoSchema, db: Session = Depends(get_db)):
 
-    data = request.get_json()
-
-    correo = data.get('correo')
-
-    if not correo:
-
-        return jsonify({
-            'mensaje':
-            'Correo es obligatorio'
-        }), 400
-
-    usuario = Usuario.query.filter_by(
-        correo=correo
-    ).first()
+    usuario = db.query(Usuario).filter_by(correo=body.correo).first()
 
     if not usuario:
-
-        return jsonify({
-            'mensaje':
-            'No existe una cuenta con ese correo'
-        }), 404
+        raise HTTPException(status_code=404, detail='No existe una cuenta con ese correo')
 
     if not usuario.pregunta_seguridad:
+        raise HTTPException(status_code=400, detail='Esta cuenta no tiene pregunta de seguridad')
 
-        return jsonify({
-            'mensaje':
-            'Esta cuenta no tiene pregunta de seguridad'
-        }), 400
-
-    return jsonify({
-
-        'pregunta':
-        usuario.pregunta_seguridad
-
-    }), 200
+    return {'pregunta': usuario.pregunta_seguridad}
 
 
 # =========================================================
 # VERIFICAR RESPUESTA
 # =========================================================
 
-@auth.route('/verificar-seguridad', methods=['POST'])
-def verificar_seguridad():
+@router.post('/verificar-seguridad')
+def verificar_seguridad(body: VerificarSeguridadSchema, db: Session = Depends(get_db)):
 
-    data = request.get_json()
+    respuesta = (body.respuesta or '').lower().strip()
 
-    correo = data.get('correo')
-
-    respuesta = data.get(
-        'respuesta',
-        ''
-    ).lower().strip()
-
-    usuario = Usuario.query.filter_by(
-        correo=correo
-    ).first()
+    usuario = db.query(Usuario).filter_by(correo=body.correo).first()
 
     if not usuario:
-
-        return jsonify({
-            'mensaje':
-            'Usuario no encontrado'
-        }), 404
+        raise HTTPException(status_code=404, detail='Usuario no encontrado')
 
     if usuario.respuesta_seguridad != respuesta:
+        raise HTTPException(status_code=401, detail='Respuesta incorrecta')
 
-        return jsonify({
-            'mensaje':
-            'Respuesta incorrecta'
-        }), 401
-
-    return jsonify({
-
-        'mensaje':
-        '✅ Verificación exitosa'
-
-    }), 200
+    return {'mensaje': '✅ Verificación exitosa'}
 
 
 # =========================================================
 # RESETEAR CONTRASEÑA
 # =========================================================
 
-@auth.route('/resetear-contrasena', methods=['POST'])
-def resetear_contrasena():
+@router.post('/resetear-contrasena')
+def resetear_contrasena(body: ResetearContrasenaSchema, db: Session = Depends(get_db)):
 
-    data = request.get_json()
-
-    correo = data.get('correo')
-
-    nueva_contrasena = data.get(
-        'nueva_contrasena'
-    )
-
-    usuario = Usuario.query.filter_by(
-        correo=correo
-    ).first()
+    usuario = db.query(Usuario).filter_by(correo=body.correo).first()
 
     if not usuario:
+        raise HTTPException(status_code=404, detail='Usuario no encontrado')
 
-        return jsonify({
-            'mensaje':
-            'Usuario no encontrado'
-        }), 404
+    usuario.contrasena_hash = hash_password(body.nueva_contrasena)
+    db.commit()
 
-    if not nueva_contrasena:
-
-        return jsonify({
-            'mensaje':
-            'Nueva contraseña requerida'
-        }), 400
-
-    nueva_hash = bcrypt.generate_password_hash(
-        nueva_contrasena
-    ).decode('utf-8')
-
-    usuario.contrasena_hash = nueva_hash
-
-    db.session.commit()
-
-    return jsonify({
-
-        'mensaje':
-        '✅ Contraseña actualizada exitosamente'
-
-    }), 200
+    return {'mensaje': '✅ Contraseña actualizada exitosamente'}

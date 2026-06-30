@@ -789,7 +789,7 @@
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando...';
 
             try {
-                const res = await fetch('http://127.0.0.1:5000/api/simulaciones/exportar', {
+                const res = await fetch('http://127.0.0.1:8000/api/simulaciones/exportar', {
                     method: 'POST',
                     headers: {
                         'Content-Type':  'application/json',

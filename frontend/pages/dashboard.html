@@ -561,7 +561,7 @@ Dashboard · HTML
  
             try {
                 // ── Transacciones ──
-                const resTrans = await fetch('http://127.0.0.1:5000/api/transacciones/', {
+                const resTrans = await fetch('http://127.0.0.1:8000/api/transacciones/', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
  
@@ -601,7 +601,7 @@ Dashboard · HTML
                 }
  
                 // ── Metas ──
-                const resMetas = await fetch('http://127.0.0.1:5000/api/metas/', {
+                const resMetas = await fetch('http://127.0.0.1:8000/api/metas/', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
  
@@ -879,7 +879,7 @@ Dashboard · HTML
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando...';
             btn.disabled = true;
             try {
-                const res = await fetch('http://127.0.0.1:5000/api/exportar/pdf', {
+                const res = await fetch('http://127.0.0.1:8000/api/exportar/pdf', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (res.ok) {

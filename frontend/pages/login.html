@@ -492,7 +492,7 @@
             btn.innerHTML = '<span class="spinner"></span> Ingresando...';
 
             try {
-                const res  = await fetch('http://127.0.0.1:5000/api/auth/login', {
+                const res  = await fetch('http://127.0.0.1:8000/api/auth/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ correo, contrasena })
@@ -506,9 +506,9 @@
 
                     setTimeout(async () => {
                         try {
-                            const rp = await fetch('http://127.0.0.1:5000/api/perfil/', {
-                                headers: { 'Authorization': 'Bearer ' + data.token }
-                            });
+                            const rp = await fetch('http://127.0.0.1:8000/api/perfil/', {
+    headers: { 'Authorization': 'Bearer ' + data.token }
+});
                             const perfil = await rp.json();
                             window.location.href = perfil.onboarding_completado ? 'dashboard.html' : 'onboarding.html';
                         } catch {
@@ -519,8 +519,8 @@
                     mostrarError(data.mensaje || 'Correo o contraseña incorrectos.');
                 }
             } catch {
-                mostrarError('No se pudo conectar con el servidor. Verifica que Flask esté corriendo.');
-            }
+    mostrarError('No se pudo conectar con el servidor. Verifica que esté en ejecución.');
+}
 
             btn.disabled = false;
             btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Ingresar';
@@ -593,7 +593,7 @@
             }
 
             try {
-                const res  = await fetch('http://127.0.0.1:5000/api/auth/obtener-pregunta', {
+                const res  = await fetch('http://127.0.0.1:8000/api/auth/obtener-pregunta', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ correo, recaptcha: recaptchaResp })
@@ -623,7 +623,7 @@
             if (!respuesta) { mostrarErrorModal('Escribe tu respuesta de seguridad.'); return; }
 
             try {
-                const res  = await fetch('http://127.0.0.1:5000/api/auth/verificar-seguridad', {
+                const res  = await fetch('http://127.0.0.1:8000/api/auth/verificar-seguridad', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ correo, respuesta })
@@ -668,7 +668,7 @@
             if (nueva !== confirmar)   { mostrarErrorModal('Las contraseñas no coinciden.'); return; }
 
             try {
-                const res  = await fetch('http://127.0.0.1:5000/api/auth/resetear-contrasena', {
+                const res  = await fetch('http://127.0.0.1:8000/api/auth/resetear-contrasena', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ correo, respuesta, nueva_contrasena: nueva })

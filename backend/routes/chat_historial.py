@@ -1,144 +1,173 @@
 # routes/chat_historial.py
-from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity
-from extensions import db
-from models import Chat, Conversacion
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+from pydantic import BaseModel
+from typing import Optional
 from datetime import datetime
 
-chat_historial_bp = Blueprint('chat_historial', __name__)
+from database import get_db
+from extensions import obtener_usuario_id_requerido
+from models import Chat, Conversacion
+
+router = APIRouter()
+
+
+# =========================================================
+# ESQUEMAS
+# =========================================================
+
+class ConversacionCreate(BaseModel):
+    titulo: Optional[str] = 'Nueva conversación'
+
+class TituloUpdate(BaseModel):
+    titulo: Optional[str] = None
+
+class MensajeCreate(BaseModel):
+    mensaje: str
+    respuesta: str
+
 
 # ============================================
 # CONVERSACIONES
 # ============================================
 
-@chat_historial_bp.route('/conversaciones', methods=['GET'])
-@jwt_required()
-def obtener_conversaciones():
-    usuario_id = int(get_jwt_identity())
-    conversaciones = Conversacion.query.filter_by(
-        usuario_id=usuario_id
-    ).order_by(Conversacion.fecha_actualizacion.desc()).all()
+@router.get('/conversaciones')
+def obtener_conversaciones(
+    usuario_id: str = Depends(obtener_usuario_id_requerido),
+    db: Session = Depends(get_db),
+):
+    uid = int(usuario_id)
+    conversaciones = (db.query(Conversacion).filter_by(usuario_id=uid)
+                       .order_by(Conversacion.fecha_actualizacion.desc()).all())
 
     resultado = []
     for c in conversaciones:
-        ultimo_mensaje = Chat.query.filter_by(
-            conversacion_id=c.id
-        ).order_by(Chat.fecha.desc()).first()
+        ultimo_mensaje = (db.query(Chat).filter_by(conversacion_id=c.id)
+                           .order_by(Chat.fecha.desc()).first())
 
         resultado.append({
             'id': c.id,
             'titulo': c.titulo,
             'fecha': c.fecha_actualizacion.strftime('%d/%m/%Y'),
-            'ultimo_mensaje': ultimo_mensaje.mensaje[:50] + '...' if ultimo_mensaje and len(ultimo_mensaje.mensaje) > 50 else (ultimo_mensaje.mensaje if ultimo_mensaje else ''),
+            'ultimo_mensaje': (
+                ultimo_mensaje.mensaje[:50] + '...'
+                if ultimo_mensaje and len(ultimo_mensaje.mensaje) > 50
+                else (ultimo_mensaje.mensaje if ultimo_mensaje else '')
+            ),
         })
 
-    return jsonify(resultado), 200
+    return resultado
 
 
-@chat_historial_bp.route('/conversaciones', methods=['POST'])
-@jwt_required()
-def crear_conversacion():
-    usuario_id = int(get_jwt_identity())
-    data = request.get_json()
+@router.post('/conversaciones', status_code=201)
+def crear_conversacion(
+    body: ConversacionCreate,
+    usuario_id: str = Depends(obtener_usuario_id_requerido),
+    db: Session = Depends(get_db),
+):
+    uid = int(usuario_id)
 
-    nueva = Conversacion(
-        usuario_id=usuario_id,
-        titulo=data.get('titulo', 'Nueva conversación')
-    )
+    nueva = Conversacion(usuario_id=uid, titulo=body.titulo)
 
-    db.session.add(nueva)
-    db.session.commit()
+    db.add(nueva)
+    db.commit()
 
-    return jsonify({'id': nueva.id, 'titulo': nueva.titulo}), 201
-
-
-@chat_historial_bp.route('/conversaciones/<int:id>', methods=['DELETE'])
-@jwt_required()
-def eliminar_conversacion(id):
-    usuario_id = int(get_jwt_identity())
-    conv = Conversacion.query.filter_by(id=id, usuario_id=usuario_id).first()
-
-    if not conv:
-        return jsonify({'error': 'No encontrada'}), 404
-
-    Chat.query.filter_by(conversacion_id=id).delete()
-    db.session.delete(conv)
-    db.session.commit()
-
-    return jsonify({'mensaje': '✅ Conversación eliminada'}), 200
+    return {'id': nueva.id, 'titulo': nueva.titulo}
 
 
-@chat_historial_bp.route('/conversaciones/<int:id>/titulo', methods=['PUT'])
-@jwt_required()
-def actualizar_titulo(id):
-    usuario_id = int(get_jwt_identity())
-    conv = Conversacion.query.filter_by(id=id, usuario_id=usuario_id).first()
-    data = request.get_json()
+@router.delete('/conversaciones/{id}')
+def eliminar_conversacion(
+    id: int,
+    usuario_id: str = Depends(obtener_usuario_id_requerido),
+    db: Session = Depends(get_db),
+):
+    uid = int(usuario_id)
+    conv = db.query(Conversacion).filter_by(id=id, usuario_id=uid).first()
 
     if not conv:
-        return jsonify({'error': 'No encontrada'}), 404
+        raise HTTPException(status_code=404, detail='No encontrada')
 
-    conv.titulo = data.get('titulo', conv.titulo)
-    db.session.commit()
+    db.query(Chat).filter_by(conversacion_id=id).delete()
+    db.delete(conv)
+    db.commit()
 
-    return jsonify({'mensaje': '✅ Título actualizado'}), 200
+    return {'mensaje': '✅ Conversación eliminada'}
+
+
+@router.put('/conversaciones/{id}/titulo')
+def actualizar_titulo(
+    id: int,
+    body: TituloUpdate,
+    usuario_id: str = Depends(obtener_usuario_id_requerido),
+    db: Session = Depends(get_db),
+):
+    uid = int(usuario_id)
+    conv = db.query(Conversacion).filter_by(id=id, usuario_id=uid).first()
+
+    if not conv:
+        raise HTTPException(status_code=404, detail='No encontrada')
+
+    conv.titulo = body.titulo or conv.titulo
+    db.commit()
+
+    return {'mensaje': '✅ Título actualizado'}
 
 
 # ============================================
 # MENSAJES
 # ============================================
 
-@chat_historial_bp.route('/mensajes/<int:conv_id>', methods=['GET'])
-@jwt_required()
-def obtener_mensajes(conv_id):
-    usuario_id = int(get_jwt_identity())
-    conv = Conversacion.query.filter_by(id=conv_id, usuario_id=usuario_id).first()
+@router.get('/mensajes/{conv_id}')
+def obtener_mensajes(
+    conv_id: int,
+    usuario_id: str = Depends(obtener_usuario_id_requerido),
+    db: Session = Depends(get_db),
+):
+    uid = int(usuario_id)
+    conv = db.query(Conversacion).filter_by(id=conv_id, usuario_id=uid).first()
 
     if not conv:
-        return jsonify({'error': 'No encontrada'}), 404
+        raise HTTPException(status_code=404, detail='No encontrada')
 
-    mensajes = Chat.query.filter_by(
-        conversacion_id=conv_id
-    ).order_by(Chat.fecha.asc()).all()
+    mensajes = (db.query(Chat).filter_by(conversacion_id=conv_id)
+                .order_by(Chat.fecha.asc()).all())
 
-    resultado = [{
+    return [{
         'id': m.id,
         'mensaje': m.mensaje,
         'respuesta': m.respuesta,
         'hora': m.fecha.strftime('%I:%M %p')
     } for m in mensajes]
 
-    return jsonify(resultado), 200
 
-
-@chat_historial_bp.route('/mensajes/<int:conv_id>', methods=['POST'])
-@jwt_required()
-def guardar_mensaje(conv_id):
-    usuario_id = int(get_jwt_identity())
-    conv = Conversacion.query.filter_by(id=conv_id, usuario_id=usuario_id).first()
+@router.post('/mensajes/{conv_id}', status_code=201)
+def guardar_mensaje(
+    conv_id: int,
+    body: MensajeCreate,
+    usuario_id: str = Depends(obtener_usuario_id_requerido),
+    db: Session = Depends(get_db),
+):
+    uid = int(usuario_id)
+    conv = db.query(Conversacion).filter_by(id=conv_id, usuario_id=uid).first()
 
     if not conv:
-        return jsonify({'error': 'Conversación no encontrada'}), 404
-
-    data = request.get_json()
+        raise HTTPException(status_code=404, detail='Conversación no encontrada')
 
     nuevo = Chat(
-        usuario_id=usuario_id,
+        usuario_id=uid,
         conversacion_id=conv_id,
-        mensaje=data['mensaje'],
-        respuesta=data['respuesta'],
+        mensaje=body.mensaje,
+        respuesta=body.respuesta,
         es_invitado=False
     )
 
-    # Actualizar fecha de conversación
     conv.fecha_actualizacion = datetime.utcnow()
 
-    # Actualizar título con primer mensaje si es nueva
     if conv.titulo == 'Nueva conversación':
-        titulo = data['mensaje'][:40]
-        conv.titulo = titulo + '...' if len(data['mensaje']) > 40 else titulo
+        titulo = body.mensaje[:40]
+        conv.titulo = titulo + '...' if len(body.mensaje) > 40 else titulo
 
-    db.session.add(nuevo)
-    db.session.commit()
+    db.add(nuevo)
+    db.commit()
 
-    return jsonify({'mensaje': '✅ Guardado!'}), 201
+    return {'mensaje': '✅ Guardado!'}

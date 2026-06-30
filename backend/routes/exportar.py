@@ -1,10 +1,14 @@
 # routes/exportar.py
-from flask import Blueprint, send_file, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity
-from models import Usuario, Transaccion, MetaAhorro
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
+from sqlalchemy.orm import Session
 from datetime import datetime
 from collections import defaultdict
 import io
+
+from database import get_db
+from extensions import obtener_usuario_id_requerido
+from models import Usuario, Transaccion, MetaAhorro
 
 try:
     from reportlab.lib.pagesizes import A4
@@ -17,9 +21,9 @@ try:
 except ImportError:
     pass
 
-exportar_bp = Blueprint('exportar', __name__)
+router = APIRouter()
 
-# ── CATEGORÍAS ────────────────────────────────────────────
+# ── CATEGORÍAS (sin cambios — Python puro) ────────────────
 TEXTO_CAT = {
     'Alimentación':    'Alimentacion',
     'Transporte':      'Transporte',
@@ -61,9 +65,11 @@ def get_texto_cat(cat):
 # ══════════════════════════════════════════════════════════
 #  PDF — tema oscuro profesional
 # ══════════════════════════════════════════════════════════
-@exportar_bp.route('/pdf', methods=['GET'])
-@jwt_required()
-def exportar_pdf():
+@router.get('/pdf')
+def exportar_pdf(
+    usuario_id: str = Depends(obtener_usuario_id_requerido),
+    db: Session = Depends(get_db),
+):
     try:
         from reportlab.lib.pagesizes import A4
         from reportlab.lib import colors
@@ -73,15 +79,15 @@ def exportar_pdf():
         from reportlab.lib.styles import ParagraphStyle
         from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT
     except ImportError:
-        return jsonify({'mensaje': 'Instala reportlab: pip install reportlab'}), 500
+        raise HTTPException(status_code=500, detail='Instala reportlab: pip install reportlab')
 
-    uid  = int(get_jwt_identity())
-    user = Usuario.query.get(uid)
+    uid  = int(usuario_id)
+    user = db.query(Usuario).get(uid)
     if not user:
-        return jsonify({'mensaje': 'Usuario no encontrado'}), 404
+        raise HTTPException(status_code=404, detail='Usuario no encontrado')
 
-    trans = Transaccion.query.filter_by(usuario_id=uid).order_by(Transaccion.fecha.desc()).all()
-    metas = MetaAhorro.query.filter_by(usuario_id=uid).all()
+    trans = db.query(Transaccion).filter_by(usuario_id=uid).order_by(Transaccion.fecha.desc()).all()
+    metas = db.query(MetaAhorro).filter_by(usuario_id=uid).all()
 
     # ── COLORES ───────────────────────────────────────────
     def rgb(r, g, b): return colors.Color(r/255, g/255, b/255)
@@ -457,5 +463,9 @@ def exportar_pdf():
         f'FinanBot_{nombre_pdf.replace(" ", "_")}'
         f'_{datetime.now().strftime("%d-%m-%Y")}.pdf'
     )
-    return send_file(buf, mimetype='application/pdf',
-                     as_attachment=True, download_name=nombre_archivo)
+
+    return StreamingResponse(
+        buf,
+        media_type='application/pdf',
+        headers={'Content-Disposition': f'attachment; filename="{nombre_archivo}"'}
+    )

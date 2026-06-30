@@ -1,25 +1,27 @@
-Despues de que pongas la carpeta del proyecto en documentos sigue estos pasos:
+Después de que pongas la carpeta del proyecto en documentos sigue estos pasos:
 
-1. abre la carpeta Mysql(base de datos ) deberas tener xampp instalado y workbench
-2. abre el archivo finanbot_db.sql y te abrira en workbench copia su contenido
-3. luego abre  xampp  y luego workbench  y al entrar en un servidor pega el contenido y lo ejecutas , creando la base de datos 
-4. luego abre la carpeta del proyecto , y abre la terminal de git bash y coloca este codigo:
+1. Abre la carpeta MySQL (base de datos). Deberás tener XAMPP instalado y Workbench.
+2. Abre el archivo finanbot_db.sql y te abrirá en Workbench, copia su contenido.
+3. Luego abre XAMPP y luego Workbench, y al entrar en un servidor pega el contenido y lo ejecutas, creando la base de datos.
+4. Luego abre la carpeta del proyecto, y abre la terminal de Git Bash y coloca este código:
+
 cd backend
 python -m venv venv
 source venv/Scripts/activate
-generara una carpeta llamada venv significando  que se creo el entorno virtual de flask
 
+Generará una carpeta llamada venv significando que se creó el entorno virtual de FastAPI.
 
-5. luego coloca estos codigos uno por uno dado ENTER en la terminal de powershell:
+5. Luego coloca estos códigos uno por uno dando ENTER en la terminal de PowerShell:
+
 cd backend
 venv\Scripts\Activate
-pip install flask
-pip install flask-cors python-dotenv
-pip install flask-sqlalchemy flask-bcrypt flask-jwt-extended
-pip install pymysql
+pip install "fastapi[standard]"
+pip install "uvicorn[standard]"
+pip install python-dotenv
+pip install sqlalchemy pymysql
+pip install python-jose[cryptography] passlib python-multipart
+pip install "bcrypt==4.0.1"
 pip install reportlab --break-system-packages
 pip install openpyxl --break-system-packages
-python app.py
-
-
-6. al hacer todo lo anterior abre  frontend/index.html y pon Go live  (si no tienes isntalado en vs code live server no aparecera)
+fastapi dev app.py
+6. Al hacer todo lo anterior abre frontend/index.html y pon Go Live (si no tienes instalado en VS Code Live Server no aparecerá).

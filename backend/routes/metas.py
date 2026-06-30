@@ -1,17 +1,43 @@
 # routes/metas.py
-from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity
-from extensions import db
-from models import MetaAhorro
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+from pydantic import BaseModel
+from typing import Optional
 from datetime import datetime
 
-metas_bp = Blueprint('metas', __name__)
+from database import get_db
+from extensions import obtener_usuario_id_requerido
+from models import MetaAhorro
 
-@metas_bp.route('/', methods=['GET'])
-@jwt_required()
-def obtener_metas():
-    usuario_id = int(get_jwt_identity())
-    metas = MetaAhorro.query.filter_by(usuario_id=usuario_id).all()
+router = APIRouter()
+
+
+# =========================================================
+# ESQUEMAS
+# =========================================================
+
+class MetaCreate(BaseModel):
+    nombre: str
+    monto_objetivo: float
+    monto_actual: Optional[float] = 0
+    fecha_limite: Optional[str] = None
+
+class MetaUpdate(BaseModel):
+    nombre: Optional[str] = None
+    monto_actual: Optional[float] = None
+
+
+# =========================================================
+# OBTENER TODAS
+# =========================================================
+
+@router.get('/')
+def obtener_metas(
+    usuario_id: str = Depends(obtener_usuario_id_requerido),
+    db: Session = Depends(get_db),
+):
+    uid = int(usuario_id)
+    metas = db.query(MetaAhorro).filter_by(usuario_id=uid).all()
 
     resultado = []
     for m in metas:
@@ -26,64 +52,80 @@ def obtener_metas():
             'fecha_limite': str(m.fecha_limite) if m.fecha_limite else None
         })
 
-    return jsonify(resultado), 200
+    return resultado
 
 
-@metas_bp.route('/', methods=['POST'])
-@jwt_required()
-def crear_meta():
-    usuario_id = int(get_jwt_identity())
-    data = request.get_json()
+# =========================================================
+# CREAR
+# =========================================================
 
-    if not data.get('nombre') or not data.get('monto_objetivo'):
-        return jsonify({'mensaje': 'Nombre y monto objetivo son obligatorios'}), 400
+@router.post('/', status_code=201)
+def crear_meta(
+    body: MetaCreate,
+    usuario_id: str = Depends(obtener_usuario_id_requerido),
+    db: Session = Depends(get_db),
+):
+    uid = int(usuario_id)
 
     nueva = MetaAhorro(
-        usuario_id=usuario_id,
-        nombre=data['nombre'],
-        monto_objetivo=float(data['monto_objetivo']),
-        monto_actual=float(data.get('monto_actual', 0)),
-        fecha_limite=datetime.strptime(data['fecha_limite'], '%Y-%m-%d').date() if data.get('fecha_limite') else None
+        usuario_id=uid,
+        nombre=body.nombre,
+        monto_objetivo=body.monto_objetivo,
+        monto_actual=body.monto_actual,
+        fecha_limite=datetime.strptime(body.fecha_limite, '%Y-%m-%d').date() if body.fecha_limite else None
     )
 
-    db.session.add(nueva)
-    db.session.commit()
+    db.add(nueva)
+    db.commit()
 
-    return jsonify({'mensaje': '✅ Meta creada!', 'id': nueva.id}), 201
+    return {'mensaje': '✅ Meta creada!', 'id': nueva.id}
 
 
-@metas_bp.route('/<int:id>', methods=['PUT'])
-@jwt_required()
-def actualizar_meta(id):
-    usuario_id = int(get_jwt_identity())
-    meta = MetaAhorro.query.filter_by(id=id, usuario_id=usuario_id).first()
+# =========================================================
+# ACTUALIZAR
+# =========================================================
+
+@router.put('/{id}')
+def actualizar_meta(
+    id: int,
+    body: MetaUpdate,
+    usuario_id: str = Depends(obtener_usuario_id_requerido),
+    db: Session = Depends(get_db),
+):
+    uid = int(usuario_id)
+    meta = db.query(MetaAhorro).filter_by(id=id, usuario_id=uid).first()
 
     if not meta:
-        return jsonify({'mensaje': 'Meta no encontrada'}), 404
+        raise HTTPException(status_code=404, detail='Meta no encontrada')
 
-    data = request.get_json()
-
-    if data.get('monto_actual') is not None:
-        meta.monto_actual = float(data['monto_actual'])
+    if body.monto_actual is not None:
+        meta.monto_actual = body.monto_actual
         if meta.monto_actual >= float(meta.monto_objetivo):
             meta.completada = True
 
-    if data.get('nombre'):
-        meta.nombre = data['nombre']
+    if body.nombre:
+        meta.nombre = body.nombre
 
-    db.session.commit()
-    return jsonify({'mensaje': '✅ Meta actualizada!'}), 200
+    db.commit()
+    return {'mensaje': '✅ Meta actualizada!'}
 
 
-@metas_bp.route('/<int:id>', methods=['DELETE'])
-@jwt_required()
-def eliminar_meta(id):
-    usuario_id = int(get_jwt_identity())
-    meta = MetaAhorro.query.filter_by(id=id, usuario_id=usuario_id).first()
+# =========================================================
+# ELIMINAR
+# =========================================================
+
+@router.delete('/{id}')
+def eliminar_meta(
+    id: int,
+    usuario_id: str = Depends(obtener_usuario_id_requerido),
+    db: Session = Depends(get_db),
+):
+    uid = int(usuario_id)
+    meta = db.query(MetaAhorro).filter_by(id=id, usuario_id=uid).first()
 
     if not meta:
-        return jsonify({'mensaje': 'Meta no encontrada'}), 404
+        raise HTTPException(status_code=404, detail='Meta no encontrada')
 
-    db.session.delete(meta)
-    db.session.commit()
-    return jsonify({'mensaje': '✅ Meta eliminada!'}), 200
+    db.delete(meta)
+    db.commit()
+    return {'mensaje': '✅ Meta eliminada!'}

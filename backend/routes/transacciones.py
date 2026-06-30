@@ -1,144 +1,173 @@
 # routes/transacciones.py
-from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity
-from extensions import db
-from models import Transaccion, Categoria
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+from pydantic import BaseModel
+from typing import Optional
 from datetime import datetime
 
-transacciones_bp = Blueprint('transacciones', __name__)
+from database import get_db
+from extensions import obtener_usuario_id_requerido
+from models import Transaccion, Categoria
+
+router = APIRouter()
 
 
-@transacciones_bp.route('/', methods=['GET'])
-@jwt_required()
-def obtener_transacciones():
-    usuario_id = int(get_jwt_identity())
-    transacciones = Transaccion.query.filter_by(
-        usuario_id=usuario_id
-    ).order_by(Transaccion.fecha.desc()).all()
+# =========================================================
+# ESQUEMAS
+# =========================================================
+
+class TransaccionCreate(BaseModel):
+    tipo: str
+    categoria: str
+    monto: float
+    fecha: str
+    descripcion: Optional[str] = ''
+    icono: Optional[str] = '💸'
+
+class TransaccionUpdate(BaseModel):
+    tipo: Optional[str] = None
+    categoria: Optional[str] = None
+    monto: Optional[float] = None
+    descripcion: Optional[str] = None
+    fecha: Optional[str] = None
+    icono: Optional[str] = '💸'
+
+
+# =========================================================
+# OBTENER TODAS
+# =========================================================
+
+@router.get('/')
+def obtener_transacciones(
+    usuario_id: str = Depends(obtener_usuario_id_requerido),
+    db: Session = Depends(get_db),
+):
+    uid = int(usuario_id)
+    transacciones = (db.query(Transaccion).filter_by(usuario_id=uid)
+                      .order_by(Transaccion.fecha.desc()).all())
 
     resultado = []
     for t in transacciones:
         resultado.append({
-            'id':          t.id,
-            'tipo':        t.tipo,
-            'categoria':   t.categoria.nombre if t.categoria else '',
-            'icono':       t.categoria.icono  if t.categoria else '💸',
-            'monto':       float(t.monto),
+            'id': t.id,
+            'tipo': t.tipo,
+            'categoria': t.categoria.nombre if t.categoria else '',
+            'icono': t.categoria.icono if t.categoria else '💸',
+            'monto': float(t.monto),
             'descripcion': t.descripcion or '',
-            'fecha':       str(t.fecha),
+            'fecha': str(t.fecha),
         })
 
-    return jsonify(resultado), 200
+    return resultado
 
 
-@transacciones_bp.route('/', methods=['POST'])
-@jwt_required()
-def crear_transaccion():
-    usuario_id = int(get_jwt_identity())
-    data = request.get_json()
+# =========================================================
+# CREAR
+# =========================================================
 
-    if not data.get('tipo') or not data.get('categoria') or not data.get('monto') or not data.get('fecha'):
-        return jsonify({'mensaje': 'Faltan campos obligatorios'}), 400
+@router.post('/', status_code=201)
+def crear_transaccion(
+    body: TransaccionCreate,
+    usuario_id: str = Depends(obtener_usuario_id_requerido),
+    db: Session = Depends(get_db),
+):
+    uid = int(usuario_id)
 
-    categoria = Categoria.query.filter_by(nombre=data['categoria']).first()
+    categoria = db.query(Categoria).filter_by(nombre=body.categoria).first()
     if not categoria:
-        categoria = Categoria(
-            nombre=data['categoria'],
-            tipo=data['tipo'],
-            icono=data.get('icono', '💸')
-        )
-        db.session.add(categoria)
-        db.session.flush()
+        categoria = Categoria(nombre=body.categoria, tipo=body.tipo, icono=body.icono)
+        db.add(categoria)
+        db.flush()
 
     nueva = Transaccion(
-        usuario_id=usuario_id,
+        usuario_id=uid,
         categoria_id=categoria.id,
-        tipo=data['tipo'],
-        monto=float(data['monto']),
-        descripcion=data.get('descripcion', ''),
-        fecha=datetime.strptime(data['fecha'], '%Y-%m-%d').date()
+        tipo=body.tipo,
+        monto=body.monto,
+        descripcion=body.descripcion,
+        fecha=datetime.strptime(body.fecha, '%Y-%m-%d').date()
     )
 
-    db.session.add(nueva)
-    db.session.commit()
+    db.add(nueva)
+    db.commit()
 
-    return jsonify({'mensaje': '✅ Transacción guardada!', 'id': nueva.id}), 201
+    return {'mensaje': '✅ Transacción guardada!', 'id': nueva.id}
 
 
-@transacciones_bp.route('/<int:id>', methods=['PUT'])
-@jwt_required()
-def editar_transaccion(id):
-    usuario_id = int(get_jwt_identity())
+# =========================================================
+# EDITAR
+# =========================================================
 
-    transaccion = Transaccion.query.filter_by(id=id, usuario_id=usuario_id).first()
+@router.put('/{id}')
+def editar_transaccion(
+    id: int,
+    body: TransaccionUpdate,
+    usuario_id: str = Depends(obtener_usuario_id_requerido),
+    db: Session = Depends(get_db),
+):
+    uid = int(usuario_id)
+
+    transaccion = db.query(Transaccion).filter_by(id=id, usuario_id=uid).first()
     if not transaccion:
-        return jsonify({'mensaje': 'Transacción no encontrada'}), 404
+        raise HTTPException(status_code=404, detail='Transacción no encontrada')
 
-    data = request.get_json()
+    if body.tipo is not None:
+        transaccion.tipo = body.tipo
 
-    # ── Actualizar tipo ───────────────────────────────
-    if 'tipo' in data:
-        transaccion.tipo = data['tipo']
-
-    # ── Actualizar categoría ──────────────────────────
-    if 'categoria' in data:
-        tipo_para_cat = data.get('tipo', transaccion.tipo)
-        categoria = Categoria.query.filter_by(nombre=data['categoria']).first()
+    if body.categoria is not None:
+        tipo_para_cat = body.tipo or transaccion.tipo
+        categoria = db.query(Categoria).filter_by(nombre=body.categoria).first()
         if not categoria:
-            categoria = Categoria(
-                nombre=data['categoria'],
-                tipo=tipo_para_cat,
-                icono=data.get('icono', '💸')
-            )
-            db.session.add(categoria)
-            db.session.flush()
+            categoria = Categoria(nombre=body.categoria, tipo=tipo_para_cat, icono=body.icono)
+            db.add(categoria)
+            db.flush()
         transaccion.categoria_id = categoria.id
 
-    # ── Actualizar monto ──────────────────────────────
-    if 'monto' in data:
-        try:
-            monto = float(data['monto'])
-            if monto <= 0:
-                return jsonify({'mensaje': 'El monto debe ser mayor a cero'}), 400
-            transaccion.monto = monto
-        except (ValueError, TypeError):
-            return jsonify({'mensaje': 'Monto inválido'}), 400
+    if body.monto is not None:
+        if body.monto <= 0:
+            raise HTTPException(status_code=400, detail='El monto debe ser mayor a cero')
+        transaccion.monto = body.monto
 
-    # ── Actualizar descripción ────────────────────────
-    if 'descripcion' in data:
-        transaccion.descripcion = data['descripcion']
+    if body.descripcion is not None:
+        transaccion.descripcion = body.descripcion
 
-    # ── Actualizar fecha ──────────────────────────────
-    if 'fecha' in data:
+    if body.fecha is not None:
         try:
-            transaccion.fecha = datetime.strptime(data['fecha'], '%Y-%m-%d').date()
+            transaccion.fecha = datetime.strptime(body.fecha, '%Y-%m-%d').date()
         except ValueError:
-            return jsonify({'mensaje': 'Formato de fecha inválido. Usa YYYY-MM-DD'}), 400
+            raise HTTPException(status_code=400, detail='Formato de fecha inválido. Usa YYYY-MM-DD')
 
-    db.session.commit()
+    db.commit()
 
-    return jsonify({
-        'mensaje':     '✅ Transacción actualizada!',
-        'id':          transaccion.id,
-        'tipo':        transaccion.tipo,
-        'categoria':   transaccion.categoria.nombre if transaccion.categoria else '',
-        'icono':       transaccion.categoria.icono  if transaccion.categoria else '💸',
-        'monto':       float(transaccion.monto),
+    return {
+        'mensaje': '✅ Transacción actualizada!',
+        'id': transaccion.id,
+        'tipo': transaccion.tipo,
+        'categoria': transaccion.categoria.nombre if transaccion.categoria else '',
+        'icono': transaccion.categoria.icono if transaccion.categoria else '💸',
+        'monto': float(transaccion.monto),
         'descripcion': transaccion.descripcion or '',
-        'fecha':       str(transaccion.fecha),
-    }), 200
+        'fecha': str(transaccion.fecha),
+    }
 
 
-@transacciones_bp.route('/<int:id>', methods=['DELETE'])
-@jwt_required()
-def eliminar_transaccion(id):
-    usuario_id = int(get_jwt_identity())
-    transaccion = Transaccion.query.filter_by(id=id, usuario_id=usuario_id).first()
+# =========================================================
+# ELIMINAR
+# =========================================================
+
+@router.delete('/{id}')
+def eliminar_transaccion(
+    id: int,
+    usuario_id: str = Depends(obtener_usuario_id_requerido),
+    db: Session = Depends(get_db),
+):
+    uid = int(usuario_id)
+    transaccion = db.query(Transaccion).filter_by(id=id, usuario_id=uid).first()
 
     if not transaccion:
-        return jsonify({'mensaje': 'Transacción no encontrada'}), 404
+        raise HTTPException(status_code=404, detail='Transacción no encontrada')
 
-    db.session.delete(transaccion)
-    db.session.commit()
+    db.delete(transaccion)
+    db.commit()
 
-    return jsonify({'mensaje': '✅ Transacción eliminada!'}), 200
+    return {'mensaje': '✅ Transacción eliminada!'}

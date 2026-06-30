@@ -1,21 +1,45 @@
 # routes/perfil.py
-from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity
-from extensions import db, bcrypt
+from fastapi import APIRouter, Depends, HTTPException, Body
+from sqlalchemy.orm import Session
+from pydantic import BaseModel
+from typing import Optional
+
+from database import get_db
+from extensions import obtener_usuario_id_requerido, verify_password, hash_password
 from models import Usuario
 
-perfil_bp = Blueprint('perfil', __name__)
+router = APIRouter()
 
-@perfil_bp.route('/', methods=['GET'])
-@jwt_required()
-def obtener_perfil():
-    usuario_id = int(get_jwt_identity())
-    usuario = Usuario.query.get(usuario_id)
+
+# =========================================================
+# ESQUEMA
+# =========================================================
+
+class PerfilUpdate(BaseModel):
+    nombre: Optional[str] = None
+    ingreso_mensual: Optional[float] = None
+    meta_ahorro: Optional[float] = None
+    nueva_contrasena: Optional[str] = None
+    contrasena_actual: Optional[str] = None
+    onboarding_completado: Optional[bool] = None
+
+
+# =========================================================
+# OBTENER PERFIL
+# =========================================================
+
+@router.get('/')
+def obtener_perfil(
+    usuario_id: str = Depends(obtener_usuario_id_requerido),
+    db: Session = Depends(get_db),
+):
+    uid = int(usuario_id)
+    usuario = db.query(Usuario).get(uid)
 
     if not usuario:
-        return jsonify({'mensaje': 'Usuario no encontrado'}), 404
+        raise HTTPException(status_code=404, detail='Usuario no encontrado')
 
-    return jsonify({
+    return {
         'id': usuario.id,
         'nombre': usuario.nombre,
         'correo': usuario.correo,
@@ -23,51 +47,55 @@ def obtener_perfil():
         'meta_ahorro': float(usuario.meta_ahorro or 0),
         'fecha_registro': usuario.fecha_registro.strftime('%d/%m/%Y'),
         'onboarding_completado': usuario.onboarding_completado,
-    }), 200
+    }
 
 
-@perfil_bp.route('/', methods=['PUT'])
-@jwt_required()
-def actualizar_perfil():
-    usuario_id = int(get_jwt_identity())
-    usuario = Usuario.query.get(usuario_id)
-    data = request.get_json()
+# =========================================================
+# ACTUALIZAR PERFIL
+# =========================================================
+
+@router.put('/')
+def actualizar_perfil(
+    body: PerfilUpdate,
+    usuario_id: str = Depends(obtener_usuario_id_requerido),
+    db: Session = Depends(get_db),
+):
+    uid = int(usuario_id)
+    usuario = db.query(Usuario).get(uid)
 
     if not usuario:
-        return jsonify({'mensaje': 'Usuario no encontrado'}), 404
+        raise HTTPException(status_code=404, detail='Usuario no encontrado')
 
-    if data.get('nombre'):
-        usuario.nombre = data['nombre']
+    if body.nombre:
+        usuario.nombre = body.nombre
 
-    if data.get('ingreso_mensual') is not None:
-        usuario.ingreso_mensual = float(data['ingreso_mensual'])
+    if body.ingreso_mensual is not None:
+        usuario.ingreso_mensual = body.ingreso_mensual
 
-    if data.get('meta_ahorro') is not None:
-        meta_valor = data.get('meta_ahorro', '')
-        usuario.meta_ahorro = float(meta_valor) if meta_valor != '' else 0.0
+    if body.meta_ahorro is not None:
+        usuario.meta_ahorro = body.meta_ahorro
 
     # ── CONTRASEÑA: requiere la actual ──────────────────────────
-    if data.get('nueva_contrasena'):
-        contrasena_actual = data.get('contrasena_actual', '').strip()
+    if body.nueva_contrasena:
+        contrasena_actual = (body.contrasena_actual or '').strip()
 
         if not contrasena_actual:
-            return jsonify({
-                'mensaje': '❌ Debes ingresar tu contraseña actual para cambiarla.'
-            }), 400
+            raise HTTPException(
+                status_code=400,
+                detail='❌ Debes ingresar tu contraseña actual para cambiarla.'
+            )
 
-        if not bcrypt.check_password_hash(usuario.contrasena_hash, contrasena_actual):
-            return jsonify({
-                'mensaje': '❌ La contraseña actual es incorrecta.'
-            }), 400
+        if not verify_password(contrasena_actual, usuario.contrasena_hash):
+            raise HTTPException(
+                status_code=400,
+                detail='❌ La contraseña actual es incorrecta.'
+            )
 
-        usuario.contrasena_hash = bcrypt.generate_password_hash(
-            data['nueva_contrasena']
-        ).decode('utf-8')
+        usuario.contrasena_hash = hash_password(body.nueva_contrasena)
     # ────────────────────────────────────────────────────────────
 
-    if data.get('onboarding_completado') is not None:
-        usuario.onboarding_completado = data['onboarding_completado']
+    if body.onboarding_completado is not None:
+        usuario.onboarding_completado = body.onboarding_completado
 
-
-    db.session.commit()
-    return jsonify({'mensaje': '✅ Perfil actualizado!'}), 200
+    db.commit()
+    return {'mensaje': '✅ Perfil actualizado!'}

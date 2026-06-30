@@ -1,28 +1,30 @@
-
 # routes/recomendaciones.py
-from flask import Blueprint, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity
-from models import Transaccion, MetaAhorro, Simulacion, Usuario
-from extensions import db
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
 from collections import defaultdict
-from datetime import date, timedelta
 
-recomendaciones_bp = Blueprint('recomendaciones', __name__)
+from database import get_db
+from extensions import obtener_usuario_id_requerido
+from models import Transaccion, MetaAhorro, Simulacion, Usuario
+
+router = APIRouter()
 
 
-@recomendaciones_bp.route('/', methods=['GET'])
-@jwt_required()
-def obtener_recomendaciones():
-    usuario_id = int(get_jwt_identity())
+@router.get('/')
+def obtener_recomendaciones(
+    usuario_id: str = Depends(obtener_usuario_id_requerido),
+    db: Session = Depends(get_db),
+):
+    uid = int(usuario_id)
 
-    usuario      = Usuario.query.get(usuario_id)
-    transacciones = Transaccion.query.filter_by(usuario_id=usuario_id)\
-                                     .order_by(Transaccion.fecha.desc()).all()
-    metas        = MetaAhorro.query.filter_by(usuario_id=usuario_id).all()
-    simulaciones = Simulacion.query.filter_by(usuario_id=usuario_id).all()
+    usuario       = db.query(Usuario).get(uid)
+    transacciones = (db.query(Transaccion).filter_by(usuario_id=uid)
+                      .order_by(Transaccion.fecha.desc()).all())
+    metas         = db.query(MetaAhorro).filter_by(usuario_id=uid).all()
+    simulaciones  = db.query(Simulacion).filter_by(usuario_id=uid).all()
 
     if not usuario:
-        return jsonify([]), 404
+        return []
 
     # ── MÉTRICAS BASE ─────────────────────────────────────
     total_ingresos = sum(float(t.monto) for t in transacciones if t.tipo == 'ingreso')
@@ -50,21 +52,13 @@ def obtener_recomendaciones():
 
     metas_activas   = [m for m in metas if not m.completada]
     metas_completas = [m for m in metas if m.completada]
-    dias_registro   = len(set(t.fecha for t in transacciones if t.fecha))
 
     recs = []
     rid  = 1
 
-    # ════════════════════════════════════════════════════════
-    #  REGLA PRINCIPAL:
-    #  Cada bloque decide si muestra UNA recomendación
-    #  según el estado real del usuario.
-    #  Máximo ~5-6 recomendaciones activas a la vez.
-    # ════════════════════════════════════════════════════════
-
     # ── 1. SIN DATOS: solo esta, nada más ────────────────
     if num_trans == 0:
-        return jsonify([{
+        return [{
             'id': 1, 'tipo': 'info', 'prioridad': 'Alta',
             'icono': '📝',
             'titulo': 'Registra tu primera transacción',
@@ -81,10 +75,57 @@ def obtener_recomendaciones():
             'accion': 'Ir a Mis Finanzas', 'link': 'finanzas.html',
             'completada': False, 'ahorro_potencial': 0,
             'dato_clave': '💡 Registra lo de hoy — solo toma 30 segundos.',
-        }]), 200
+        }]
 
-    # ── 2. BALANCE NEGATIVO (prioridad máxima) ────────────
-    #    Solo aparece si realmente hay déficit
+    # ── 1.5. FALTA UN TIPO DE MOVIMIENTO ──────────────────
+    if total_ingresos == 0 and total_gastos > 0:
+        recs.append({
+            'id': rid, 'tipo': 'advertencia', 'prioridad': 'Alta',
+            'icono': '💰',
+            'titulo': 'Aún no has registrado ningún ingreso',
+            'descripcion': (
+                f'Llevas ${total_gastos:,.0f} en gastos registrados, '
+                f'pero ningún ingreso. Sin tu salario u otros ingresos, '
+                f'FinanBot no puede calcular tu balance real ni darte '
+                f'recomendaciones precisas.'
+            ),
+            'beneficios': [
+                'Calcula tu balance real (ingresos - gastos)',
+                'Activa el análisis de % de gastos sobre tus ingresos',
+                'Si tienes un salario fijo, regístralo una sola vez en Mi Perfil y se suma automáticamente cada mes',
+            ],
+            'accion': 'Registrar mi ingreso', 'link': 'finanzas.html',
+            'completada': False, 'ahorro_potencial': 0,
+            'dato_clave': '💡 Si recibes un salario mensual, configúralo en Mi Perfil y FinanBot lo sincroniza solo cada mes.',
+        })
+        rid += 1
+        orden_tipo = {'alerta': 0, 'advertencia': 1, 'info': 2, 'exito': 3}
+        orden_prio = {'Alta': 0, 'Media': 1, 'Baja': 2}
+        recs.sort(key=lambda r: (orden_tipo.get(r['tipo'], 4), orden_prio.get(r['prioridad'], 3)))
+        return recs
+
+    if total_gastos == 0 and total_ingresos > 0:
+        recs.append({
+            'id': rid, 'tipo': 'info', 'prioridad': 'Media',
+            'icono': '🧾',
+            'titulo': 'Aún no has registrado ningún gasto',
+            'descripcion': (
+                f'Tienes ${total_ingresos:,.0f} en ingresos registrados '
+                f'pero ningún gasto. Registrar tus gastos te muestra a dónde '
+                f'va realmente tu dinero y permite detectar fugas a tiempo.'
+            ),
+            'beneficios': [
+                'Identifica en qué categorías gastas más',
+                'Activa alertas de gasto excesivo automáticas',
+                'Calcula tu capacidad real de ahorro',
+            ],
+            'accion': 'Registrar un gasto', 'link': 'finanzas.html',
+            'completada': False, 'ahorro_potencial': 0,
+            'dato_clave': '💡 Registra hasta el gasto más pequeño — los pequeños son los que más se acumulan.',
+        })
+        rid += 1
+
+    # ── 2. BALANCE NEGATIVO ──────────────────────────────
     if balance < 0 and total_ingresos > 0:
         recs.append({
             'id': rid, 'tipo': 'alerta', 'prioridad': 'Alta',
@@ -108,8 +149,7 @@ def obtener_recomendaciones():
         })
         rid += 1
 
-    # ── 3. GASTOS ELEVADOS (solo si > 85 % y balance >= 0) ─
-    #    No aparece si ya mostró alerta de balance negativo
+    # ── 3. GASTOS ELEVADOS ────────────────────────────────
     elif total_ingresos > 0 and pct_gastos > 85:
         recs.append({
             'id': rid, 'tipo': 'advertencia', 'prioridad': 'Alta',
@@ -133,8 +173,7 @@ def obtener_recomendaciones():
         })
         rid += 1
 
-    # ── 4. CATEGORÍA DOMINANTE (> 45 %, solo con 5+ trans) ─
-    #    Aparece cuando hay datos suficientes para que sea real
+    # ── 4. CATEGORÍA DOMINANTE ────────────────────────────
     if cat_mayor and pct_cat_mayor > 45 and num_trans >= 5:
         recs.append({
             'id': rid, 'tipo': 'advertencia', 'prioridad': 'Media',
@@ -158,8 +197,7 @@ def obtener_recomendaciones():
         })
         rid += 1
 
-    # ── 5. SIN METAS (solo si tiene 3+ transacciones) ─────
-    #    No tiene sentido mostrarla al inicio, cuando aún no entiende la app
+    # ── 5. SIN METAS ───────────────────────────────────────
     if len(metas) == 0 and num_trans >= 3:
         recs.append({
             'id': rid, 'tipo': 'advertencia', 'prioridad': 'Media',
@@ -182,7 +220,7 @@ def obtener_recomendaciones():
         })
         rid += 1
 
-    # ── 6. META MENSUAL vs REALIDAD (solo si la tiene configurada) ─
+    # ── 6. META MENSUAL vs REALIDAD ──────────────────────
     if meta_mensual > 0 and total_ingresos > 0:
         ahorro_real = max(0, balance)
         pct_meta    = min(100, round(ahorro_real / meta_mensual * 100))
@@ -210,8 +248,7 @@ def obtener_recomendaciones():
             })
             rid += 1
 
-    # ── 7. FONDO DE EMERGENCIA (solo si tiene 8+ trans y no tiene meta de fondo) ─
-    #    Aparece cuando el usuario ya usa la app con regularidad
+    # ── 7. FONDO DE EMERGENCIA ───────────────────────────
     if num_trans >= 8 and total_ingresos > 0:
         tiene_fondo = any(
             'emergencia' in m.nombre.lower() or 'fondo' in m.nombre.lower()
@@ -241,8 +278,7 @@ def obtener_recomendaciones():
             })
             rid += 1
 
-    # ── 8. SIMULADOR (solo si balance > 0 y nunca ha simulado) ─
-    #    Solo tiene sentido sugerirlo cuando hay dinero disponible
+    # ── 8. SIMULADOR ──────────────────────────────────────
     if balance > 0 and len(simulaciones) == 0 and num_trans >= 5:
         capital_sug = round(balance * 0.5)
         recs.append({
@@ -266,8 +302,7 @@ def obtener_recomendaciones():
         })
         rid += 1
 
-    # ── 9. REGLA 50/30/20 (solo si tiene ingreso mensual Y pct > 80) ─
-    #    Educativa, aparece cuando hay contexto suficiente
+    # ── 9. REGLA 50/30/20 ─────────────────────────────────
     if ing_mensual > 0 and pct_gastos > 80 and num_trans >= 5:
         n20 = round(ing_mensual * 0.2)
         recs.append({
@@ -293,10 +328,9 @@ def obtener_recomendaciones():
         rid += 1
 
     # ════════════════════════════════════════════════════════
-    #  ÉXITOS — Aparecen cuando realmente se logran
+    #  ÉXITOS
     # ════════════════════════════════════════════════════════
 
-    # Balance positivo y gastos controlados
     if balance > 0 and pct_gastos < 70 and total_ingresos > 0:
         recs.append({
             'id': rid, 'tipo': 'exito', 'prioridad': 'Baja',
@@ -318,7 +352,6 @@ def obtener_recomendaciones():
         })
         rid += 1
 
-    # Meta mensual cumplida
     if meta_mensual > 0 and max(0, balance) >= meta_mensual:
         excedente = max(0, balance) - meta_mensual
         recs.append({
@@ -343,7 +376,6 @@ def obtener_recomendaciones():
         })
         rid += 1
 
-    # Metas casi completadas (≥ 80 %)
     for m in metas_activas:
         if m.monto_objetivo <= 0:
             continue
@@ -371,7 +403,6 @@ def obtener_recomendaciones():
             })
             rid += 1
 
-    # Metas completadas
     if metas_completas:
         total_comp = sum(float(m.monto_objetivo) for m in metas_completas)
         recs.append({
@@ -393,7 +424,6 @@ def obtener_recomendaciones():
         })
         rid += 1
 
-    # Simulador usado
     if len(simulaciones) > 0:
         ultima = simulaciones[-1]
         gan    = float(ultima.resultado_final) - float(ultima.capital_inicial)
@@ -417,12 +447,9 @@ def obtener_recomendaciones():
         })
         rid += 1
 
-    # ── ORDENAR: alertas primero, luego advertencias, info, éxitos ─
+    # ── ORDENAR ────────────────────────────────────────────
     orden_tipo = {'alerta': 0, 'advertencia': 1, 'info': 2, 'exito': 3}
     orden_prio = {'Alta': 0, 'Media': 1, 'Baja': 2}
-    recs.sort(key=lambda r: (
-        orden_tipo.get(r['tipo'], 4),
-        orden_prio.get(r['prioridad'], 3)
-    ))
+    recs.sort(key=lambda r: (orden_tipo.get(r['tipo'], 4), orden_prio.get(r['prioridad'], 3)))
 
-    return jsonify(recs), 200
+    return recs

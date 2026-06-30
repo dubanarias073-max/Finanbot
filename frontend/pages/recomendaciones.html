@@ -740,10 +740,10 @@
         if (!token) { window.location.href = 'login.html'; return; }
         try {
             const [rT, rM, rR, rP] = await Promise.all([
-                fetch('http://127.0.0.1:5000/api/transacciones/',  { headers:{'Authorization':`Bearer ${token}`} }),
-                fetch('http://127.0.0.1:5000/api/metas/',           { headers:{'Authorization':`Bearer ${token}`} }),
-                fetch('http://127.0.0.1:5000/api/recomendaciones/', { headers:{'Authorization':`Bearer ${token}`} }),
-                fetch('http://127.0.0.1:5000/api/perfil/',          { headers:{'Authorization':`Bearer ${token}`} }),
+                fetch('http://127.0.0.1:8000/api/transacciones/',  { headers:{'Authorization':`Bearer ${token}`} }),
+                fetch('http://127.0.0.1:8000/api/metas/',           { headers:{'Authorization':`Bearer ${token}`} }),
+                fetch('http://127.0.0.1:8000/api/recomendaciones/', { headers:{'Authorization':`Bearer ${token}`} }),
+                fetch('http://127.0.0.1:8000/api/perfil/',          { headers:{'Authorization':`Bearer ${token}`} }),
             ]);
 
             const trans  = rT.ok ? await rT.json() : [];

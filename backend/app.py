@@ -1,81 +1,67 @@
 # app.py
-from flask import Flask
-from flask_cors import CORS
-from extensions import db, bcrypt, jwt
-from datetime import timedelta
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
+from database import engine, Base
 
-app = Flask(__name__)
+# ── LIFESPAN (reemplaza "with app.app_context(): db.create_all()") ────────
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Importa los modelos para que SQLAlchemy los registre antes de crear tablas
+    import models
+    Base.metadata.create_all(bind=engine)
+    print('✅ Base de datos conectada correctamente!')
+    yield
+    # (código de cierre/limpieza, si lo necesitas en el futuro)
 
-# ── CONFIGURACIÓN ─────────────────────────────────────────
-app.config['SQLALCHEMY_DATABASE_URI']      = 'mysql+pymysql://root:@localhost/finanbot_db'
-app.config['SECRET_KEY']                   = 'finanbot_secret_key_2026'
-app.config['JWT_SECRET_KEY']               = 'finanbot_jwt_secret_2026'
-app.config['JWT_ACCESS_TOKEN_EXPIRES']     = timedelta(days=7)
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SQLALCHEMY_ENGINE_OPTIONS']    = {
-    'pool_pre_ping': True,
-    'pool_recycle': 300,
-}
+app = FastAPI(lifespan=lifespan)
 
-# ── EXTENSIONES ───────────────────────────────────────────
-db.init_app(app)
-bcrypt.init_app(app)
-jwt.init_app(app)
+# ── CORS ────────────────────────────────────────────────────
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization"],
+)
 
-# ── CORS ──────────────────────────────────────────────────
-CORS(app, resources={r"/api/*": {
-    "origins": "*",
-    "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    "allow_headers": ["Content-Type", "Authorization"],
-    "supports_credentials": True
-}})
-
-# ── HEADERS DE RESPUESTA ──────────────────────────────────
-@app.after_request
-def after_request(response):
-    response.headers.add('Cache-Control', 'no-cache, no-store, must-revalidate')
-    response.headers.add('Pragma', 'no-cache')
-    response.headers.add('Expires', '0')
+# ── HEADERS DE RESPUESTA (reemplaza @app.after_request) ────
+@app.middleware("http")
+async def add_no_cache_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
     return response
 
-# ── BASE DE DATOS ─────────────────────────────────────────
-with app.app_context():
-    from models import Usuario, Categoria, Transaccion, MetaAhorro, Chat, Conversacion
-    db.create_all()
-    print('✅ Base de datos conectada correctamente!')
+# ── ROUTERS (reemplaza Blueprints) ──────────────────────────
+from routes.auth import router as auth_router
+from routes.chat_route import router as chat_router
+from routes.transacciones import router as transacciones_router
+from routes.simulaciones import router as simulaciones_router
+from routes.perfil import router as perfil_router
+from routes.metas import router as metas_router
+from routes.recomendaciones import router as recomendaciones_router
+from routes.chat_historial import router as chat_historial_router
+from routes.exportar import router as exportar_router
+from routes.excel import router as excel_router
+from routes.excel_simulaciones import router as excel_sim_router
+from routes.aprende import router as aprende_router
 
-# ── BLUEPRINTS ────────────────────────────────────────────
-from routes.auth            import auth
-from routes.chat_route      import chat_bp
-from routes.transacciones   import transacciones_bp
-from routes.simulaciones    import simulaciones_bp
-from routes.perfil          import perfil_bp
-from routes.metas           import metas_bp
-from routes.recomendaciones import recomendaciones_bp
-from routes.chat_historial  import chat_historial_bp
-from routes.exportar        import exportar_bp
-from routes.excel           import excel_bp
-from routes.excel_simulaciones import excel_sim_bp
-from routes.aprende         import aprende_bp
+app.include_router(auth_router,               prefix='/api/auth')
+app.include_router(excel_sim_router,           prefix='/api/simulaciones')
+app.include_router(chat_router,                prefix='/api/chat')
+app.include_router(transacciones_router,       prefix='/api/transacciones')
+app.include_router(simulaciones_router,        prefix='/api/simulaciones')
+app.include_router(perfil_router,              prefix='/api/perfil')
+app.include_router(metas_router,               prefix='/api/metas')
+app.include_router(recomendaciones_router,     prefix='/api/recomendaciones')
+app.include_router(chat_historial_router,      prefix='/api/chat-historial')
+app.include_router(exportar_router,            prefix='/api/exportar')
+app.include_router(excel_router,               prefix='/api/exportar')
+app.include_router(aprende_router,             prefix='/api/aprende')
 
-app.register_blueprint(auth,               url_prefix='/api/auth')
-app.register_blueprint(excel_sim_bp,       url_prefix='/api/simulaciones')
-app.register_blueprint(chat_bp,            url_prefix='/api/chat')
-app.register_blueprint(transacciones_bp,   url_prefix='/api/transacciones')
-app.register_blueprint(simulaciones_bp,    url_prefix='/api/simulaciones')
-app.register_blueprint(perfil_bp,          url_prefix='/api/perfil')
-app.register_blueprint(metas_bp,           url_prefix='/api/metas')
-app.register_blueprint(recomendaciones_bp, url_prefix='/api/recomendaciones')
-app.register_blueprint(chat_historial_bp,  url_prefix='/api/chat-historial')
-app.register_blueprint(exportar_bp,        url_prefix='/api/exportar')
-app.register_blueprint(excel_bp,           url_prefix='/api/exportar')
-app.register_blueprint(aprende_bp,         url_prefix='/api/aprende')
-
-# ── RUTA RAÍZ ─────────────────────────────────────────────
-@app.route('/')
+# ── RUTA RAÍZ ────────────────────────────────────────────────
+@app.get('/')
 def index():
-    return '🤖 FinanBot API funcionando!'
-
-# ── ARRANQUE ──────────────────────────────────────────────
-if __name__ == '__main__':
-    app.run(debug=True)
+    return {"message": "🤖 FinanBot API funcionando!"}

@@ -1,19 +1,23 @@
 # routes/excel.py
-from flask import Blueprint, send_file, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity
-from models import Usuario, Transaccion, MetaAhorro
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
+from sqlalchemy.orm import Session
 from datetime import datetime
 from collections import defaultdict
 import io
+
+from database import get_db
+from extensions import obtener_usuario_id_requerido
+from models import Usuario, Transaccion, MetaAhorro
 
 import openpyxl
 from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
 from openpyxl.chart import BarChart, PieChart, LineChart, Reference
 from openpyxl.utils import get_column_letter
 
-excel_bp = Blueprint('excel', __name__)
+router = APIRouter()
 
-# ── Iconos por categoría ───────────────────────────────────
+# ── Iconos por categoría (sin cambios — Python puro) ──────
 ICONOS = {
     'Alimentación':'🍔','Transporte':'🚌','Arriendo':'🏠','Salud':'💊',
     'Entretenimiento':'🎬','Educación':'📚','Ropa':'👗','Servicios':'⚡',
@@ -34,24 +38,26 @@ def get_icono(cat_str):
     return ICONOS.get(cat_str, '💸')
 
 
-@excel_bp.route('/excel', methods=['GET'])
-@jwt_required()
-def exportar_excel():
+@router.get('/excel')
+def exportar_excel(
+    usuario_id: str = Depends(obtener_usuario_id_requerido),
+    db: Session = Depends(get_db),
+):
     try:
         import openpyxl
         from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
         from openpyxl.chart import BarChart, PieChart, LineChart, Reference
         from openpyxl.utils import get_column_letter
     except ImportError:
-        return jsonify({'mensaje': 'Instala openpyxl: pip install openpyxl'}), 500
+        raise HTTPException(status_code=500, detail='Instala openpyxl: pip install openpyxl')
 
-    uid  = int(get_jwt_identity())
-    user = Usuario.query.get(uid)
+    uid  = int(usuario_id)
+    user = db.query(Usuario).get(uid)
     if not user:
-        return jsonify({'mensaje': 'Usuario no encontrado'}), 404
+        raise HTTPException(status_code=404, detail='Usuario no encontrado')
 
-    trans = Transaccion.query.filter_by(usuario_id=uid).order_by(Transaccion.fecha.asc()).all()
-    metas = MetaAhorro.query.filter_by(usuario_id=uid).all()
+    trans = db.query(Transaccion).filter_by(usuario_id=uid).order_by(Transaccion.fecha.asc()).all()
+    metas = db.query(MetaAhorro).filter_by(usuario_id=uid).all()
 
     # ── Paleta ────────────────────────────────────────────
     P = {
@@ -531,6 +537,9 @@ def exportar_excel():
     wb.save(output)
     output.seek(0)
     nombre = f'FinanBot_{user.nombre.replace(" ","_")}_{datetime.now().strftime("%d-%m-%Y")}.xlsx'
-    return send_file(output,
-                     mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                     as_attachment=True, download_name=nombre)
+
+    return StreamingResponse(
+        output,
+        media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        headers={'Content-Disposition': f'attachment; filename="{nombre}"'}
+    )

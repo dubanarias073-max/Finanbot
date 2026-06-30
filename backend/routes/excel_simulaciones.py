@@ -1,6 +1,9 @@
 # routes/excel_simulaciones.py
 # Exporta una simulación de inversión a Excel con tema oscuro morado/cyan
-from flask import Blueprint, request, send_file, jsonify
+from fastapi import APIRouter
+from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
+from typing import Optional
 from datetime import datetime
 import io
 
@@ -9,33 +12,33 @@ from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
 from openpyxl.chart import LineChart, BarChart, Reference
 from openpyxl.utils import get_column_letter
 
-excel_sim_bp = Blueprint('excel_simulaciones', __name__)
+router = APIRouter()
+
+
+# =========================================================
+# ESQUEMA
+# =========================================================
+
+class SimulacionExportInput(BaseModel):
+    capital_inicial: float
+    tasa_retorno: float
+    plazo_meses: int
+    aporte_mensual: Optional[float] = 0
+    nombre_tipo: Optional[str] = 'Inversión'
 
 
 # ─────────────────────────────────────────────────────────
-#  POST /api/simulaciones/exportar
+#  POST /exportar
 #  Recibe los datos de la simulación y devuelve un .xlsx
 # ─────────────────────────────────────────────────────────
-@excel_sim_bp.route('/exportar', methods=['POST'])
-def exportar_simulacion_excel():
-    data = request.get_json()
-    if not data:
-        return jsonify({'mensaje': '❌ No se recibieron datos'}), 400
+@router.post('/exportar')
+def exportar_simulacion_excel(body: SimulacionExportInput):
 
-    # ── Validar campos ────────────────────────────────────
-    campos = ['capital_inicial', 'tasa_retorno', 'plazo_meses']
-    for campo in campos:
-        if data.get(campo) is None:
-            return jsonify({'mensaje': f'❌ Falta el campo: {campo}'}), 400
-
-    try:
-        capital        = float(data['capital_inicial'])
-        tasa           = float(data['tasa_retorno'])
-        plazo          = int(data['plazo_meses'])
-        aporte_mensual = float(data.get('aporte_mensual', 0))
-        nombre_tipo    = str(data.get('nombre_tipo', 'Inversión'))
-    except (ValueError, TypeError):
-        return jsonify({'mensaje': '❌ Los valores deben ser numéricos'}), 400
+    capital        = body.capital_inicial
+    tasa           = body.tasa_retorno
+    plazo          = body.plazo_meses
+    aporte_mensual = body.aporte_mensual
+    nombre_tipo    = body.nombre_tipo
 
     # ── Cálculo completo ──────────────────────────────────
     tasa_mensual   = tasa / 100 / 12
@@ -104,26 +107,12 @@ def exportar_simulacion_excel():
 
     # ── PALETA OSCURA ─────────────────────────────────────
     P = {
-        'mo': 'C026D3',  # morado principal
-        'md': '7E22CE',  # morado oscuro
-        'mp': 'A855F7',  # morado pastel
-        'cy': '06B6D4',  # cyan
-        'ce': '22D3EE',  # cyan claro
-        've': '22C55E',  # verde
-        'vl': '4ADE80',  # verde claro
-        'ro': 'F472B6',  # rosa
-        'am': 'F59E0B',  # amarillo
-        'ac': 'FBBF24',  # amarillo claro
-        're': 'EF4444',  # rojo
-        'bg': '0F0F2D',  # fondo página
-        'ca': '1A1A4E',  # fondo card
-        'c2': '14143C',  # fondo card alt
-        'li': '2D1B69',  # líneas/bordes
-        'lc': '3D2B79',  # líneas claras
-        'bl': 'FFFFFF',  # blanco
-        'gr': '9CA3AF',  # gris secundario
-        'gd': 'C4B5FD',  # gris violeta (texto label)
-        'mu': '6B7280',  # muted
+        'mo': 'C026D3', 'md': '7E22CE', 'mp': 'A855F7',
+        'cy': '06B6D4', 'ce': '22D3EE', 've': '22C55E', 'vl': '4ADE80',
+        'ro': 'F472B6', 'am': 'F59E0B', 'ac': 'FBBF24', 're': 'EF4444',
+        'bg': '0F0F2D', 'ca': '1A1A4E', 'c2': '14143C',
+        'li': '2D1B69', 'lc': '3D2B79', 'bl': 'FFFFFF',
+        'gr': '9CA3AF', 'gd': 'C4B5FD', 'mu': '6B7280',
     }
 
     wb = openpyxl.Workbook()
@@ -177,13 +166,11 @@ def exportar_simulacion_excel():
         return c
 
     def barra_pct(pct, largo=20):
-        """Barra visual ASCII proporcional al porcentaje."""
         lleno = max(0, min(int(pct / 5), largo))
         vacio = largo - lleno
         return '█' * lleno + '░' * vacio + f'  {pct:.1f}%'
 
     def fila_enc(ws, row, defs, bg=None, fg=None):
-        """Dibuja fila de encabezado de tabla."""
         rh(ws, row, 28)
         for i, (txt, ancho) in enumerate(defs, 1):
             c = ws.cell(row=row, column=i, value=txt)
@@ -202,7 +189,6 @@ def exportar_simulacion_excel():
     ws1.sheet_properties.tabColor = P['mo']
     fondo(ws1, 60, 12)
 
-    # ── Barra de título ──────────────────────────────────
     rh(ws1, 1, 56)
     merge_cel(ws1, 1, 1, 1, 8,
               val='FinanBot — Simulación de Inversión',
@@ -213,13 +199,11 @@ def exportar_simulacion_excel():
               val=f'{nombre_tipo}  ·  {plazo_texto}  ·  Generado: {datetime.now().strftime("%d/%m/%Y %H:%M")}',
               bg=P['md'], fg=P['gd'], sz=9, italic=True)
 
-    # ── Línea separadora ─────────────────────────────────
     rh(ws1, 3, 6)
     for i in range(1, 9):
         c = ws1.cell(row=3, column=i)
         c.fill = fl(P['mp'] if i <= 4 else P['cy'])
 
-    # ── KPIs principales (fila 5–7) ──────────────────────
     rh(ws1, 4, 10)
     rh(ws1, 5, 42)
     rh(ws1, 6, 18)
@@ -236,20 +220,16 @@ def exportar_simulacion_excel():
     ]
 
     for label, val, color, col in kpis:
-        # Label
         c_lbl = ws1.cell(row=4, column=col, value=label)
         c_lbl.fill = fl(P['bg']); c_lbl.font = fn(P['mu'], sz=8)
         c_lbl.alignment = al(); c_lbl.border = bd(color)
-        # Valor
         c_val = ws1.cell(row=5, column=col, value=val)
         c_val.fill = fl(P['ca']); c_val.font = fn(color, bold=True, sz=15)
         c_val.alignment = al(); c_val.border = bd(color)
-        # Fila inferior decorativa
         c_dec = ws1.cell(row=6, column=col)
         c_dec.fill = fl(P['ca']); c_dec.border = bd(color)
         cw(ws1, col, 17)
 
-    # ── Sección parámetros ───────────────────────────────
     rh(ws1, 8, 8)
     merge_cel(ws1, 8, 1, 8, 4,
               val='⚙️  PARÁMETROS DE ENTRADA',
@@ -272,7 +252,6 @@ def exportar_simulacion_excel():
         cel(ws1, idx, 3, '',   bg_, brd=False)
         cel(ws1, idx, 4, '',   bg_, brd=False)
 
-    # ── Sección resultados ───────────────────────────────
     rh(ws1, 17, 8)
     merge_cel(ws1, 17, 1, 17, 4,
               val='📈  RESULTADOS DE LA SIMULACIÓN',
@@ -295,7 +274,6 @@ def exportar_simulacion_excel():
         cel(ws1, idx, 3, '',  bg_, brd=False)
         cel(ws1, idx, 4, '',  bg_, brd=False)
 
-    # ── Barra de progreso ganancia ────────────────────────
     rh(ws1, 26, 8)
     merge_cel(ws1, 26, 1, 26, 8,
               val='📊  INDICADOR DE RENDIMIENTO',
@@ -316,7 +294,6 @@ def exportar_simulacion_excel():
               val=f'Por cada $1.000 invertido generaste ${round(ganancia/total_invertido*1000):,.0f} de ganancia bruta' if total_invertido > 0 else '',
               bg=P['ca'], fg=P['gd'], sz=9, italic=True)
 
-    # ── Pie de hoja ──────────────────────────────────────
     rh(ws1, 30, 6)
     for i in range(1, 9):
         c = ws1.cell(row=30, column=i)
@@ -335,7 +312,6 @@ def exportar_simulacion_excel():
     ws2.sheet_properties.tabColor = P['cy']
     fondo(ws2, 100, 10)
 
-    # Cabecera
     rh(ws2, 1, 50)
     merge_cel(ws2, 1, 1, 1, 6,
               val='Proyección Mes a Mes — Interés Compuesto',
@@ -350,7 +326,6 @@ def exportar_simulacion_excel():
     for i in range(1, 7):
         ws2.cell(row=3, column=i).fill = fl(P['cy'])
 
-    # Encabezados tabla
     fila_enc(ws2, 4, [
         ('#',                   6),
         ('Período',             12),
@@ -360,7 +335,6 @@ def exportar_simulacion_excel():
         ('Crecimiento %',       16),
     ], bg=P['li'], fg=P['gd'])
 
-    # Datos mes a mes
     for p in proyeccion:
         r   = p['mes'] + 5
         bg_ = P['ca'] if p['mes'] % 2 == 0 else P['c2']
@@ -375,7 +349,6 @@ def exportar_simulacion_excel():
         cel(ws2, r, 5, p['intereses'], bg_, P['vl'],  sz=9)
         cel(ws2, r, 6, f'{pct_crec:.2f}%', bg_, col_crec, sz=9, bold=(p['mes'] == plazo))
 
-        # Resaltar fila inicial y final
         if p['mes'] == 0 or p['mes'] == plazo:
             for col in range(1, 7):
                 c = ws2.cell(row=r, column=col)
@@ -385,14 +358,11 @@ def exportar_simulacion_excel():
 
     ws2.auto_filter.ref = 'A4:F4'
 
-    # ── Gráfico líneas: valor vs capital ─────────────────
-    # Datos auxiliares para el gráfico (columnas H, I, J)
     ws2['H1'] = 'Mes';    ws2['H1'].fill = fl(P['li']); ws2['H1'].font = fn(P['gd'], bold=True, sz=9)
     ws2['I1'] = 'Valor';  ws2['I1'].fill = fl(P['li']); ws2['I1'].font = fn(P['gd'], bold=True, sz=9)
     ws2['J1'] = 'Capital';ws2['J1'].fill = fl(P['li']); ws2['J1'].font = fn(P['gd'], bold=True, sz=9)
     cw(ws2, 8, 8); cw(ws2, 9, 16); cw(ws2, 10, 16)
 
-    # Reducir puntos si hay muchos
     step = max(1, plazo // 24)
     puntos = [p for p in proyeccion if p['mes'] % step == 0 or p['mes'] == plazo]
     for i, p in enumerate(puntos, 2):
@@ -443,7 +413,6 @@ def exportar_simulacion_excel():
     for i in range(1, 8):
         ws3.cell(row=3, column=i).fill = fl(P['am'])
 
-    # Encabezados
     fila_enc(ws3, 4, [
         ('Tipo de inversión', 24),
         ('Tasa anual',        12),
@@ -481,7 +450,6 @@ def exportar_simulacion_excel():
             bg_, col_d if not e['es_actual'] else P['ac'], sz=9, bold=True)
         cel(ws3, idx, 7, txt_r, bg_, col_r, sz=9)
 
-    # ── Gráfico barras comparador ─────────────────────────
     ws3['I1'] = 'Escenario'; ws3['J1'] = 'Valor final'; ws3['K1'] = 'Ganancia'
     for c in ['I1','J1','K1']:
         ws3[c].fill = fl(P['li']); ws3[c].font = fn(P['gd'], bold=True, sz=9)
@@ -532,7 +500,6 @@ def exportar_simulacion_excel():
     for i in range(1, 7):
         ws4.cell(row=3, column=i).fill = fl(P['ve'])
 
-    # ── Desglose de la ganancia ──────────────────────────
     rh(ws4, 5, 8)
     merge_cel(ws4, 5, 1, 5, 4,
               val='💰  DESGLOSE DE LA GANANCIA',
@@ -560,7 +527,6 @@ def exportar_simulacion_excel():
         )
         cw(ws4, 1, 30); cw(ws4, 2, 18); cw(ws4, 3, 20); cw(ws4, 4, 24)
 
-    # ── Proyecciones de ahorro mensual ───────────────────
     rh(ws4, 14, 8)
     merge_cel(ws4, 14, 1, 14, 4,
               val='📈  PROYECCIONES — Si ahorras mensualmente',
@@ -602,7 +568,6 @@ def exportar_simulacion_excel():
         cel(ws4, idx, 3, f'${c8:,.0f}',    bg_, P['ce'],  sz=9)
         cel(ws4, idx, 4, f'${ct:,.0f}',    bg_, mejor,    sz=9, bold=True)
 
-    # ── Consejo final ─────────────────────────────────────
     rh(ws4, 24, 8)
     merge_cel(ws4, 24, 1, 24, 4,
               val='💡  CONSEJO FINANCIERO',
@@ -630,9 +595,8 @@ def exportar_simulacion_excel():
         f'FinanBot_Simulacion_{nombre_tipo.replace(" ","_").replace("/","_")}_{fecha_str}.xlsx'
     )
 
-    return send_file(
+    return StreamingResponse(
         output,
-        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        as_attachment=True,
-        download_name=nombre_archivo
+        media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        headers={'Content-Disposition': f'attachment; filename="{nombre_archivo}"'}
     )

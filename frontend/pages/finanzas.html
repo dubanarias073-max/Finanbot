@@ -505,7 +505,7 @@
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
 
             try {
-                const res = await fetch('http://127.0.0.1:5000/api/transacciones/', {
+                const res = await fetch('http://127.0.0.1:8000/api/transacciones/', {
                     method: 'POST',
                     headers: {'Content-Type':'application/json','Authorization':'Bearer '+token},
                     body: JSON.stringify({tipo:tipoSeleccionado, categoria:cat, icono:ICONOS_MAP[cat]||'💸', monto, descripcion:desc, fecha})
@@ -526,7 +526,7 @@
         async function eliminarTransaccion(id) {
             if (!confirm('¿Eliminar esta transacción?')) return;
             try {
-                const res = await fetch(`http://127.0.0.1:5000/api/transacciones/${id}`, {
+                const res = await fetch(`http://127.0.0.1:8000/api/transacciones/${id}`, {
                     method: 'DELETE', headers: {'Authorization':'Bearer '+token}
                 });
                 if (res.ok) await cargarTransacciones();
@@ -592,7 +592,7 @@
             btn.innerHTML = '<span class="spinner"></span> Guardando...';
 
             try {
-                const res = await fetch(`http://127.0.0.1:5000/api/transacciones/${editandoId}`, {
+                const res = await fetch(`http://127.0.0.1:8000/api/transacciones/${editandoId}`, {
                     method: 'PUT',
                     headers: {'Content-Type':'application/json','Authorization':'Bearer '+token},
                     body: JSON.stringify({ tipo: editTipo, categoria: cat, icono: ICONOS_MAP[cat] || '💸', monto, descripcion: desc, fecha })
@@ -632,7 +632,7 @@
         async function cargarTransacciones() {
             if (!token) return;
             try {
-                const res = await fetch('http://127.0.0.1:5000/api/transacciones/', {
+                const res = await fetch('http://127.0.0.1:8000/api/transacciones/', {
                     headers: {'Authorization':'Bearer '+token}
                 });
                 if (res.ok) {
