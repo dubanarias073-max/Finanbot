@@ -510,6 +510,48 @@ ENCICLOPEDIA = {
         "relacionados": ["pension", "inversion", "ahorro"]
     },
 
+    # ── METAS DE AHORRO ─────────────────────────────────────────────────────
+    "meta_ahorro": {
+        "id": "meta_ahorro",
+        "emoji": "🎯",
+        "categoria": "Metas financieras",
+        "nivel": "basico",
+        "titulo": "Metas de ahorro — Cómo lograr tus objetivos sin frustrarte",
+        "resumen": "Las metas de ahorro te ayudan a convertir el ahorro en algo concreto y medible. Cuando sabes para qué estás ahorrando, es más fácil mantener el hábito.",
+        "secciones": [
+            {
+                "subtitulo": "¿Por qué las metas ayudan tanto?",
+                "contenido": "Ahorrar sin un objetivo suele sentirse abstracto. Cuando defines una meta clara — como un viaje, una moto o un fondo de emergencia — el dinero deja de ser solo números y se convierte en una decisión con propósito."
+            },
+            {
+                "subtitulo": "Cómo definir una meta realista",
+                "contenido": "Usa la regla SMART: específica, medible, alcanzable, relevante y con tiempo. Ejemplo: 'Quiero ahorrar $2.000.000 para un viaje en 10 meses' es mucho mejor que 'quiero ahorrar más'."
+            },
+            {
+                "subtitulo": "Divide la meta en pasos mensuales",
+                "contenido": "Si necesitas $2.000.000 en 10 meses, debes ahorrar aproximadamente $200.000 al mes. Si esa cantidad es alta, puedes empezar con $100.000 y aumentar poco a poco. Lo importante es que la meta sea sostenible."
+            },
+            {
+                "subtitulo": "Protege la meta de los gastos impulsivos",
+                "contenido": "Una buena estrategia es separar el dinero de la meta en una cuenta distinta o en una app de ahorro. Si no lo ves, es más fácil gastarlo. También ayuda ponerle una fecha y un recordatorio mensual."
+            },
+            {
+                "subtitulo": "Cuando la meta se retrasa",
+                "contenido": "No pasa nada si no avanzas como planeabas. Ajusta el plazo, reduce el gasto innecesario o aumenta el aporte mensual. Lo importante es no abandonar la meta, sino adaptarla con inteligencia."
+            }
+        ],
+        "ejemplo": {
+            "titulo": "Meta: viaje de fin de año",
+            "detalle": """Objetivo: $3.000.000
+Plazo: 12 meses
+Ahorro mensual requerido: $250.000
+Si ahorras $250.000/mes, llegas a la meta sin necesidad de usar crédito."""
+        },
+        "consejo": "💡 El mejor momento para empezar una meta es hoy. Incluso una meta pequeña y constante tiene más valor que una gran meta que nunca comienzas.",
+        "tags": ["metas de ahorro", "objetivos", "viaje", "ahorro", "planificación", "disciplina"],
+        "relacionados": ["ahorro", "presupuesto", "fondo_emergencia", "habitos"]
+    },
+
     # ── HABITOS FINANCIEROS ───────────────────────────────────────────────────
     "habitos": {
         "id": "habitos",

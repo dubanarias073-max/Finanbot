@@ -1137,6 +1137,13 @@ class FinanBotIA:
 
     def __init__(self):
         self.historial: deque = deque(maxlen=self.MAX_HISTORIAL)
+        self.memoria = {
+            'ultimo_tema': 'general',
+            'ultimo_objetivo': None,
+            'ultimo_balance': None,
+            'resumen': [],
+            'historial_reciente': [],
+        }
 
     # ── API pública ───────────────────────────────────────────────
 
@@ -1146,16 +1153,19 @@ class FinanBotIA:
         ctx: dict | None,
         accion: dict | None,
     ) -> tuple[str, list[dict]]:
-        self.historial.append({'rol': 'usuario', 'msg': mensaje})
+        ts = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        self.historial.append({'rol': 'usuario', 'msg': mensaje, 'timestamp': ts})
+        self._actualizar_memoria(mensaje, ctx)
         respuesta, acciones_ui = self._generar(mensaje, ctx, accion)
-        self.historial.append({'rol': 'bot', 'msg': respuesta[:200]})
+        respuesta = self._personalizar_respuesta(respuesta, mensaje, ctx)
+        self.historial.append({'rol': 'bot', 'msg': respuesta[:200], 'timestamp': ts})
         return respuesta, acciones_ui
 
     # ── Router principal ──────────────────────────────────────────
 
     def _generar(self, mensaje, ctx, accion):
         if accion is None:
-            return self._sin_accion(mensaje, ctx), []
+            return self._sin_accion(mensaje, ctx)
 
         tipo = accion.get('tipo', '')
 
@@ -1173,6 +1183,7 @@ class FinanBotIA:
             'reparto':      self._reparto,
             'porcentaje_de': self._porcentaje,
             'interes_simple': self._interes_simple,
+            'interes_compuesto': self._interes_compuesto,
             'saldo_restante': self._saldo_restante,
             'calculo':      self._calculo,
         }
@@ -1209,7 +1220,7 @@ class FinanBotIA:
 
         # Simulación
         if tipo == 'simulacion_realizada':
-            return self._simulacion(accion), _btns_simulacion()
+            return self._simulacion(accion), _btns_simulacion(accion)
 
         # Perfil
         if tipo == 'salario_actualizado':
@@ -1253,7 +1264,7 @@ class FinanBotIA:
             return (f"⚠️ {accion.get('mensaje','Ocurrió un error.')}\n\n"
                     "Por favor intenta de nuevo."), []
 
-        return self._sin_accion(mensaje, ctx), []
+        return self._sin_accion(mensaje, ctx)
 
     # ══════════════════════════════════════════════════════════════
     #  BIENVENIDA INTELIGENTE
@@ -1391,6 +1402,19 @@ class FinanBotIA:
             f"| Interés ganado | +${intg:,.0f} |\n"
             f"| **Total al vencer** | **${tot:,.0f}** |\n\n"
             f"💡 *Con interés compuesto ganarías más. ¿Quieres simular?*"
+        )
+
+    def _interes_compuesto(self, a):
+        cap, tasa, plazo = a['capital'], a['tasa_anual'], a['plazo_meses']
+        final, gan = a['valor_final'], a['ganancia']
+        return (
+            f"📈 **Interés compuesto**\n\n"
+            f"| | Valor |\n|---|---|\n"
+            f"| Capital inicial | ${cap:,.0f} |\n"
+            f"| Tasa anual | {tasa}% |\n"
+            f"| Plazo | {plazo} meses |\n"
+            f"| **Monto final** | **${final:,.0f}** |\n"
+            f"| Ganancia | +${gan:,.0f} |"
         )
 
     def _saldo_restante(self, a):
@@ -1576,8 +1600,277 @@ class FinanBotIA:
     #  MOTOR DE CONOCIMIENTO  ─  responde CUALQUIER pregunta
     # ══════════════════════════════════════════════════════════════
 
-    def _sin_accion(self, mensaje: str, ctx) -> str:
+    @staticmethod
+    def _normalizar_respuesta(texto: str) -> str:
+        if not texto:
+            return texto
+        texto = re.sub(r'(?<!\w)(\d+(?:[.,]\d+)?)\s*%', r'\1 porcentaje', texto)
+        return texto.replace('%', 'porcentaje')
+
+    def _detectar_tema(self, mensaje: str) -> str:
         msg = mensaje.lower()
+        if any(p in msg for p in ['deuda', 'tarjeta', 'prestamo', 'crédito', 'credito']):
+            return 'deuda'
+        if any(p in msg for p in ['meta', 'ahorro', 'guardar', 'economizar', 'objetivo']):
+            return 'ahorro'
+        if any(p in msg for p in ['invers', 'cdt', 'fondo', 'cripto', 'acciones', 'renta']):
+            return 'inversion'
+        if any(p in msg for p in ['gasto', 'ingreso', 'balance', 'finanzas', 'presupuesto']):
+            return 'finanzas'
+        return 'general'
+
+    def _actualizar_memoria(self, mensaje: str, ctx: dict | None) -> None:
+        tema = self._detectar_tema(mensaje)
+        self.memoria['ultimo_tema'] = tema
+        if ctx and ctx.get('balance') is not None:
+            self.memoria['ultimo_balance'] = ctx.get('balance')
+        if ctx and ctx.get('metas'):
+            self.memoria['ultimo_objetivo'] = ctx['metas'][0].get('nombre') if isinstance(ctx['metas'], list) and ctx['metas'] else None
+        historial = self.memoria.get('resumen', [])
+        historial.append(mensaje.strip())
+        self.memoria['resumen'] = historial[-6:]
+
+        reciente = self.memoria.get('historial_reciente', [])
+        reciente.append(mensaje.strip())
+        self.memoria['historial_reciente'] = reciente[-8:]
+
+    def _frase_empatica(self, ctx: dict | None, tema: str) -> str:
+        if ctx and ctx.get('balance', 0) < 0:
+            return 'Entiendo que este momento puede sentirse pesado, pero vamos paso a paso y lo solucionamos juntos.'
+        if ctx and ctx.get('num_metas', 0) > 0:
+            return 'Veo que ya estás trabajando en metas, así que te voy a orientar de forma práctica y sencilla.'
+        if tema == 'deuda':
+            return 'Lo importante ahora es avanzar con calma y sin presión; podemos encontrar una salida clara.'
+        if tema == 'ahorro':
+            return 'Me alegra que quieras mejorar tu ahorro; pequeños pasos bien hechos marcan la diferencia.'
+        return 'Estoy aquí para ayudarte con claridad y sin complicarte la vida.'
+
+    def _sugerencia_personalizada(self, mensaje: str, ctx: dict | None, tema: str) -> str | None:
+        if not ctx:
+            return None
+
+        balance = ctx.get('balance', 0)
+        ingresos = ctx.get('total_ingresos', 0)
+        metas = ctx.get('metas', []) or []
+        categoria_mayor = ctx.get('categoria_mayor_gasto')
+
+        if balance < 0:
+            return 'Tu balance actual está negativo, así que hoy priorizaría registrar todos los gastos y revisar la categoría que más pesa.'
+
+        if ingresos > 0:
+            ahorro_pct = round(balance / ingresos * 100) if ingresos else 0
+            if ahorro_pct < 20 and tema in {'ahorro', 'finanzas'}:
+                return f'Con tus ingresos actuales, un siguiente paso útil sería ahorrar al menos el 20 porcentaje mensual y dejarlo automático.'
+
+        if metas:
+            meta_activa = next((m for m in metas if not m.get('completada')), None)
+            if meta_activa:
+                faltante = max(0, float(meta_activa.get('objetivo', 0)) - float(meta_activa.get('actual', 0)))
+                if faltante > 0:
+                    return f'Tienes una meta activa: {meta_activa.get("nombre", "tu objetivo")}. Faltan ${faltante:,.0f} para completarla.'
+
+        if categoria_mayor:
+            return f'Veo que tu mayor gasto está en {categoria_mayor}; podemos buscar una forma sencilla de reducirlo sin afectar lo esencial.'
+
+        return None
+
+    def _corregir_pedido(self, mensaje: str) -> str | None:
+        msg = mensaje.lower()
+        if any(p in msg for p in ['ahorrar', 'guardar', 'ahorro']) and re.search(r'(\d+(?:[.,]\d+)?)\s*%', msg):
+            pct = None
+            for valor in re.findall(r'(\d+(?:[.,]\d+)?)\s*%', mensaje):
+                pct = float(valor.replace(',', '.'))
+            if pct is not None and pct > 100:
+                return (
+                    "⚠️ Ese porcentaje parece demasiado alto. Ahorrar más del 100 porcentaje de tus ingresos no es realista para la mayoría de personas. "
+                    "Lo más recomendable suele ser entre 10 y 20 porcentaje de tus ingresos, o incluso menos si tu situación está ajustada. "
+                    "Si quieres, te ayudo a calcular una meta más sostenible."
+                )
+        if any(p in msg for p in ['descuento', 'rebaja', 'oferta']) and re.search(r'(\d+(?:[.,]\d+)?)\s*%', msg):
+            pct = None
+            for valor in re.findall(r'(\d+(?:[.,]\d+)?)\s*%', mensaje):
+                pct = float(valor.replace(',', '.'))
+            if pct is not None and pct > 100:
+                return "⚠️ Un descuento superior al 100 porcentaje no tiene sentido práctico; revisa el dato o el porcentaje que quieres aplicar."
+        return None
+
+    def _personalizar_respuesta(self, respuesta: str, mensaje: str, ctx: dict | None) -> str:
+        if not respuesta:
+            return respuesta
+
+        tema = self._detectar_tema(mensaje)
+        if tema != self.memoria.get('ultimo_tema', 'general'):
+            self.memoria['ultimo_tema'] = tema
+
+        intro = self._frase_empatica(ctx, tema)
+        sugerencia = self._sugerencia_personalizada(mensaje, ctx, tema)
+        correccion = self._corregir_pedido(mensaje)
+
+        if correccion:
+            respuesta = f"{correccion}\n\n{respuesta}"
+
+        if sugerencia:
+            respuesta = f"{respuesta}\n\n💬 {sugerencia}"
+
+        if self.memoria.get('historial_reciente') and len(self.memoria['historial_reciente']) > 1:
+            respuesta = f"{respuesta}\n\n🧠 Contexto reciente: {', '.join(self.memoria['historial_reciente'][-3:])}."
+
+        respuesta = f"{intro}\n\n{respuesta}"
+        return self._normalizar_respuesta(respuesta)
+
+    def _respuesta_inteligente_contextual(self, mensaje: str, ctx: dict | None) -> str | None:
+        msg = mensaje.lower().strip()
+        if not msg:
+            return None
+
+        if re.search(r'(\d+(?:[.,]\d+)?)\s*%\s*(?:de|del|de los|de las)?\s*(\d+(?:[.,]\d+)?)', msg):
+            match = re.search(r'(\d+(?:[.,]\d+)?)\s*%\s*(?:de|del|de los|de las)?\s*(\d+(?:[.,]\d+)?)', msg)
+            if match:
+                pct = float(match.group(1).replace(',', '.'))
+                base = float(match.group(2).replace(',', '.'))
+                resultado = round((pct / 100) * base)
+                return f"🧮 El {int(pct) if float(pct).is_integer() else pct} porcentaje de {base:,.0f} es **{resultado:,.0f}**."
+
+        if any(p in msg for p in ['mejorar mis finanzas', 'mejorar finanzas', 'quiero mejorar', 'como mejorar', 'cómo mejorar', 'plan financiero', 'mejorar mi dinero']):
+            balance = ctx.get('balance', 0) if ctx else 0
+            lineas = [
+                "🤖 Claro. El mejor camino no es hacer todo a la vez, sino empezar con un plan simple y realista.",
+                "1️⃣ Primer paso: registrar ingresos y gastos con claridad.",
+                "2️⃣ Segundo: separar un porcentaje fijo para ahorro automático.",
+                "3️⃣ Tercero: revisar gastos repetitivos y reducir lo que no aporta valor.",
+            ]
+            if balance < 0:
+                lineas.append(f"Tu balance actual es ${balance:,.0f}, así que hoy priorizaría cortar gastos hormiga y revisar si hay ingresos sin registrar.")
+            else:
+                lineas.append("Tu balance está en positivo, así que el siguiente paso ideal es automatizar un ahorro mensual y evitar gastos innecesarios.")
+            lineas.append("Si me dices tu ingreso mensual, te preparo un plan mucho más preciso.")
+            return "\n".join(lineas)
+
+        if any(p in msg for p in ['quiero ahorrar', 'ahorrar más', 'ahorrar mas', 'guardar dinero', 'economizar', 'como ahorrar', 'cómo ahorrar']):
+            return (
+                "💡 La forma más efectiva de ahorrar es automatizarlo desde el inicio del mes.\n\n"
+                "1️⃣ Define una meta concreta y un plazo.\n"
+                "2️⃣ Programa una transferencia automática al recibir tu sueldo.\n"
+                "3️⃣ Usa una cuenta separada para no gastar ese dinero por impulso.\n\n"
+                "Si me dices cuánto ganas, te propongo un plan realista."
+            )
+
+        if any(p in msg for p in ['deuda', 'deudas', 'pagar deudas', 'salir de deudas']):
+            return (
+                "⚠️ Para salir de deudas, lo más útil es priorizar primero las que tienen mayor tasa.\n\n"
+                "1️⃣ Haz una lista completa de todas tus deudas.\n"
+                "2️⃣ Paga el mínimo en todas, pero dirige el dinero extra a la más costosa.\n"
+                "3️⃣ Evita usar más crédito mientras estás cerrando la deuda."
+            )
+
+        return None
+
+    def _extraer_monto(self, texto: str) -> int | None:
+        n = re.sub(r'(\d)[\.,](\d{3})\b', r'\1\2', texto)
+        for patron, mult in [
+            (r'\$\s*(\d+(?:\.\d+)?)', None),
+            (r'(\d+(?:\.\d+)?)\s*millones?', 1_000_000),
+            (r'(\d+(?:\.\d+)?)\s*mil\b', 1_000),
+            (r'\b(\d+(?:\.\d+)?)\s*k\b', 1_000),
+            (r'\b(\d{4,})\b', 1),
+        ]:
+            m = re.search(patron, n, re.IGNORECASE)
+            if m:
+                v = float(m.group(1))
+                if mult:
+                    return int(v * mult)
+                t = texto.lower()
+                if 'millon' in t and v < 1_000:
+                    return int(v * 1_000_000)
+                if 'mil' in t and v < 10_000:
+                    return int(v * 1_000)
+                return int(v)
+        return None
+
+    def _extraer_porcentaje(self, texto: str) -> float | None:
+        m = re.search(r'(\d+(?:[.,]\d+)?)\s*(?:%|por\s*ciento)', texto, re.IGNORECASE)
+        return float(m.group(1).replace(',', '.')) if m else None
+
+    def _extraer_plazo(self, texto: str) -> int | None:
+        m = re.search(r'(\d+)\s*(mes(?:es)?|año(?:s)?)', texto.lower())
+        if m:
+            v = int(m.group(1))
+            return v * 12 if 'año' in m.group(2) else v
+        return None
+
+    def _resolver_operacion_directa(self, mensaje: str) -> tuple[str, list[dict]] | None:
+        msg = mensaje.lower()
+        valor = self._extraer_monto(mensaje)
+        pct = self._extraer_porcentaje(mensaje)
+
+        if valor is not None and pct is not None and ('descuento' in msg or 'rebaja' in msg or 'oferta' in msg):
+            desc = round(valor * pct / 100, 2)
+            final = round(valor - desc, 2)
+            return (
+                f"🏷️ **Descuento aplicado**\n\n"
+                f"Precio original: **${valor:,.0f}**\n"
+                f"Descuento: **{pct}%**\n"
+                f"Valor del descuento: **${desc:,.0f}**\n"
+                f"**Precio final: ${int(final)}**\n"
+                f"(equivalente a **${final:,.0f}**)",
+                _btns_calc(),
+            )
+
+        if valor is not None and pct is not None and ('interés compuesto' in msg or 'interes compuesto' in msg):
+            plazo = self._extraer_plazo(mensaje) or 12
+            tasa_mensual = pct / 100 / 12
+            final = round(valor * ((1 + tasa_mensual) ** plazo), 2)
+            ganancia = round(final - valor, 2)
+            return (
+                f"📈 **Interés compuesto**\n\n"
+                f"Capital inicial: **${valor:,.0f}**\n"
+                f"Tasa anual: **{pct}%**\n"
+                f"Plazo: **{plazo} meses**\n"
+                f"**Monto final: ${final:,.0f}**\n"
+                f"Ganancia: **${ganancia:,.0f}**",
+                _btns_simulacion({'capital': valor, 'tasa': int(pct), 'plazo': plazo}),
+            )
+
+        if valor is not None and pct is not None and ('interés simple' in msg or 'interes simple' in msg):
+            plazo = self._extraer_plazo(mensaje) or 12
+            interes = round(valor * (pct / 100) * (plazo / 12), 2)
+            total = round(valor + interes, 2)
+            return (
+                f"💵 **Interés simple**\n\n"
+                f"Capital: **${valor:,.0f}**\n"
+                f"Tasa anual: **{pct}%**\n"
+                f"Plazo: **{plazo} meses**\n"
+                f"Interés generado: **${interes:,.0f}**\n"
+                f"**Total: ${total:,.0f}**",
+                _btns_calc(),
+            )
+
+        if 'simula' in msg or 'simular' in msg or 'simulación' in msg:
+            capital = self._extraer_monto(mensaje)
+            tasa = pct
+            plazo = self._extraer_plazo(mensaje) or 12
+            if capital is not None and tasa is not None:
+                return (
+                    f"📈 **Simulación sugerida**\n\n"
+                    f"Capital: **${capital:,.0f}**\n"
+                    f"Tasa: **{tasa}% anual**\n"
+                    f"Plazo: **{plazo} meses**\n"
+                    f"Te dejo el botón para abrir el simulador con esos datos.",
+                    _btns_simulacion({'capital': capital, 'tasa': int(tasa), 'plazo': plazo}),
+                )
+
+        return None
+
+    def _sin_accion(self, mensaje: str, ctx) -> tuple[str, list[dict]]:
+        msg = mensaje.lower()
+
+        respuesta_contextual = self._respuesta_inteligente_contextual(mensaje, ctx)
+        if respuesta_contextual:
+            return respuesta_contextual, []
+
+        directa = self._resolver_operacion_directa(mensaje)
+        if directa is not None:
+            return directa[0], directa[1]
 
         # 1. Buscar en base de conocimiento CON RAZONAMIENTO
         for claves, contenido in BASE.items():
@@ -1612,17 +1905,17 @@ class FinanBotIA:
                             if gastos > 0:
                                 resp += f"\n\n💡 **Tu situación:** Gastos registrados por **${gastos:,.0f}**. Podemos analizar dónde optimizar."
                     
-                    return resp
+                    return resp, []
 
         # 2. Instrucciones de uso
         if any(p in msg for p in ['cómo registro','como registro','cómo agrego','como agrego',
                                    'cómo uso','como uso','qué comandos','que comandos']):
-            return self._como_usar()
+            return self._como_usar(), []
 
         # 3. Enseñar a resolver CON RAZONAMIENTO PASO A PASO
         if any(p in msg for p in ['ayudame','ayúdame','necesito ayuda','enséñame','enseñame',
                                    'explícame','explicame','no entiendo','no sé','no se']):
-            return self._ensenar_razonamiento(msg, ctx)
+            return self._ensenar_razonamiento(msg, ctx), []
 
         # 4. Agradecimientos
         if any(p in msg for p in ['gracias','muchas gracias','chevere','excelente','genial',
@@ -1632,7 +1925,7 @@ class FinanBotIA:
                 "¡Para eso estoy! 🤝 ¿Hay algo más en lo que te pueda ayudar?",
                 "¡Me alegra haberte ayudado! 💙 Cualquier duda, aquí estoy.",
                 "🤖 ¡Estoy para servir! ¿Otra pregunta?",
-            ])
+            ]), []
 
         # 5. Identidad - MEJORADO CON MÁS CLARIDAD
         if any(p in msg for p in ['quién eres','quien eres','qué eres','que eres','cómo te llamas','como te llamas']):
@@ -1648,7 +1941,7 @@ class FinanBotIA:
                 "• Calcular descuentos, IVA, repartos\n"
                 "• Crear metas financieras y generar reportes\n\n"
                 "¡Cuéntame qué necesitas! 💬"
-            )
+            ), []
 
         # 6. Respuesta con contexto del usuario
         if ctx and ctx.get('num_transacciones', 0) > 0:
@@ -1673,10 +1966,10 @@ class FinanBotIA:
                 lineas.append("→ Podemos buscar formas de reducir estos gastos")
             
             lineas.append("\n💡 ¿Qué quieres lograr? (ahorrar más, pagar deudas, invertir, etc.)")
-            return "\n".join(lineas)
+            return "\n".join(lineas), []
 
         # 7. Respuesta genérica inteligente - MEJORADA
-        return self._resp_generica_mejorada(mensaje)
+        return self._resp_generica_mejorada(mensaje), []
 
     def _resp_generica(self, mensaje: str) -> str:
         """Intenta dar una respuesta útil aunque no haya coincidencia exacta."""
@@ -1883,10 +2176,25 @@ def _btns_resumen():
         _btn('💡 Recomendaciones', RUTAS['recomendaciones']),
     ]
 
-def _btns_simulacion():
+def _btns_simulacion(accion=None):
+    accion = accion or {}
+    capital = accion.get('capital')
+    tasa = accion.get('tasa')
+    plazo = accion.get('plazo')
+    link = RUTAS['simulador']
+    if capital is not None or tasa is not None or plazo is not None:
+        params = []
+        if capital is not None:
+            params.append(f'capital={int(capital)}')
+        if tasa is not None:
+            params.append(f'tasa={int(tasa)}')
+        if plazo is not None:
+            params.append(f'plazo={int(plazo)}')
+        link = f"{RUTAS['simulador']}?{'&'.join(params)}"
     return [
         _sug('Simular otra inversión'),
         _sug('¿Qué es un CDT?'),
+        _btn('🧪 Simular esta propuesta', link),
         _btn('📈 Simulador', RUTAS['simulador']),
     ]
 

@@ -1,6 +1,6 @@
 # routes/chat_route.py
 import re, ast, operator
-from datetime import date
+from datetime import date, datetime
 from collections import defaultdict
 from typing import Optional
 
@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from extensions import obtener_usuario_id_opcional
 from finanbot_ia import FinanBotIA
-from models import Transaccion, MetaAhorro, Usuario, Categoria, Simulacion
+from models import Transaccion, MetaAhorro, Usuario, Categoria, Simulacion, Conversacion, Chat
 
 router = APIRouter()
 sesiones   = {}
@@ -75,6 +75,19 @@ def mensaje(
 
     respuesta, acciones_ui = bot.responder_con_acciones(msg_usuario, ctx, accion)
     respuesta = _agregar_disclaimers_si_necesario(respuesta, msg_usuario)
+
+    if uid:
+        try:
+            conv = (db.query(Conversacion).filter_by(usuario_id=uid).order_by(Conversacion.fecha_actualizacion.desc()).first())
+            if conv is None:
+                conv = Conversacion(usuario_id=uid, titulo=msg_usuario[:40] or 'Nueva conversación')
+                db.add(conv)
+                db.flush()
+            conv.fecha_actualizacion = datetime.utcnow()
+            db.add(Chat(usuario_id=uid, conversacion_id=conv.id, mensaje=msg_original, respuesta=respuesta, es_invitado=False))
+            db.commit()
+        except Exception as e:
+            print(f'[FinanBot] Error guardar conversación: {e}')
 
     return {
         'respuesta': respuesta,
@@ -625,7 +638,14 @@ def _resolver_financiero(mensaje: str, msg: str) -> dict | None:
                         'total': total, 'porcentaje': round(parte / total * 100, 2)}
 
     if _t(msg, INTERES_KW) and valor and pct is not None:
-        plazo   = extraer_plazo(mensaje) or 12
+        plazo = extraer_plazo(mensaje) or 12
+        if 'compuesto' in msg:
+            tasa_mensual = pct / 100 / 12
+            valor_final = round(valor * ((1 + tasa_mensual) ** plazo), 2)
+            ganancia = round(valor_final - valor, 2)
+            return {'tipo': 'interes_compuesto', 'capital': valor, 'tasa_anual': pct,
+                    'plazo_meses': plazo, 'valor_final': valor_final,
+                    'ganancia': ganancia}
         interes = round(valor * (pct / 100) * (plazo / 12), 2)
         return {'tipo': 'interes_simple', 'capital': valor, 'tasa_anual': pct,
                 'plazo_meses': plazo, 'interes_ganado': interes,

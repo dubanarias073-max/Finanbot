@@ -350,37 +350,37 @@
                 <div class="form-group">
                     <label class="form-label">Tipo de inversión</label>
                     <div class="tipos-grid" id="tiposGrid">
-                        <div class="tipo-btn activo" onclick="seleccionarTipo(this, 5)">
+                        <div class="tipo-btn activo" data-tasa="5" onclick="seleccionarTipo(this, 5)">
                             <span class="tipo-btn-emoji">🏦</span>
                             <span class="tipo-btn-nombre">CDT Básico</span>
                             <span class="tipo-btn-tasa">5% anual</span>
                             <span class="tipo-btn-riesgo riesgo-bajo">Bajo riesgo</span>
                         </div>
-                        <div class="tipo-btn" onclick="seleccionarTipo(this, 8)">
+                        <div class="tipo-btn" data-tasa="8" onclick="seleccionarTipo(this, 8)">
                             <span class="tipo-btn-emoji">💎</span>
                             <span class="tipo-btn-nombre">CDT Premium</span>
                             <span class="tipo-btn-tasa">8% anual</span>
                             <span class="tipo-btn-riesgo riesgo-bajo">Bajo riesgo</span>
                         </div>
-                        <div class="tipo-btn" onclick="seleccionarTipo(this, 10)">
+                        <div class="tipo-btn" data-tasa="10" onclick="seleccionarTipo(this, 10)">
                             <span class="tipo-btn-emoji">📊</span>
                             <span class="tipo-btn-nombre">Fondo de inversión</span>
                             <span class="tipo-btn-tasa">10% anual</span>
                             <span class="tipo-btn-riesgo riesgo-medio">Riesgo medio</span>
                         </div>
-                        <div class="tipo-btn" onclick="seleccionarTipo(this, 15)">
+                        <div class="tipo-btn" data-tasa="15" onclick="seleccionarTipo(this, 15)">
                             <span class="tipo-btn-emoji">📈</span>
                             <span class="tipo-btn-nombre">Acciones BVC</span>
                             <span class="tipo-btn-tasa">15% anual</span>
                             <span class="tipo-btn-riesgo riesgo-alto">Alto riesgo</span>
                         </div>
-                        <div class="tipo-btn" onclick="seleccionarTipo(this, 20)">
+                        <div class="tipo-btn" data-tasa="20" onclick="seleccionarTipo(this, 20)">
                             <span class="tipo-btn-emoji">🚀</span>
                             <span class="tipo-btn-nombre">Startups</span>
                             <span class="tipo-btn-tasa">20% anual</span>
                             <span class="tipo-btn-riesgo riesgo-alto">Muy alto riesgo</span>
                         </div>
-                        <div class="tipo-btn" onclick="seleccionarTipo(this, 0, true)">
+                        <div class="tipo-btn" id="tipoCustom" onclick="seleccionarTipo(this, 0, true)">
                             <span class="tipo-btn-emoji">⚙️</span>
                             <span class="tipo-btn-nombre">Personalizada</span>
                             <span class="tipo-btn-tasa">Tasa libre</span>
@@ -568,6 +568,37 @@
 
         // Estado de la última simulación (para exportar)
         let ultimaSim = null;
+
+        document.addEventListener('DOMContentLoaded', aplicarParametrosDeURL);
+
+        function aplicarParametrosDeURL() {
+            const params = new URLSearchParams(window.location.search);
+            const capital = params.get('capital');
+            const tasa = params.get('tasa');
+            const plazo = params.get('plazo');
+
+            if (capital) document.getElementById('capital').value = capital;
+            if (tasa) {
+                const btn = document.querySelector('.tipo-btn[data-tasa="' + tasa + '"]');
+                if (btn) {
+                    seleccionarTipo(btn, Number(tasa), false);
+                } else {
+                    document.getElementById('tasaPersonalizada').value = tasa;
+                    document.getElementById('tasaCustomWrap').style.display = 'block';
+                    document.querySelectorAll('.tipo-btn').forEach(b => b.classList.remove('activo'));
+                    document.getElementById('tipoCustom').classList.add('activo');
+                    esCustom = true;
+                    tasaActual = Number(tasa);
+                }
+            }
+            if (plazo) {
+                document.getElementById('plazoSlider').value = plazo;
+                actualizarPlazo(plazo);
+            }
+            if (capital || tasa || plazo) {
+                setTimeout(() => simular(), 250);
+            }
+        }
 
         // ── SELECCIONAR TIPO ─────────────────────────────
         function seleccionarTipo(btn, tasa, custom = false) {
