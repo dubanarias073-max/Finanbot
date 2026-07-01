@@ -154,7 +154,7 @@ Dashboard · HTML
  
         /* ACCESOS */
         .accesos-grid {
-            display: grid; grid-template-columns: repeat(4,1fr);
+            display: grid; grid-template-columns: repeat(6,1fr);
             gap: 14px; margin-bottom: 24px;
         }
         .acceso-card {
@@ -379,10 +379,10 @@ Dashboard · HTML
  
         <!-- ② RESUMEN SEMANAL (solo si resumenSemanal = true) -->
         <div class="resumen-semanal" id="resumenSemanal">
-            <div class="resumen-semanal-titulo">
-                <i class="fas fa-calendar-week" style="color:#22d3ee"></i>
-                Resumen de los últimos 7 días
-            </div>
+                <div class="resumen-semanal-titulo">
+                    <i class="fas fa-calendar-week" style="color:#22d3ee"></i>
+                    Resumen de los últimos días
+                </div>
             <div class="resumen-semanal-grid">
                 <div class="resumen-sem-item">
                     <div class="resumen-sem-icon">💰</div>
@@ -405,6 +405,7 @@ Dashboard · HTML
                     <div class="resumen-sem-valor" id="semMetas" style="color:#fbbf24">—</div>
                 </div>
             </div>
+            <div class="tip-sub" id="estado7Dias" style="margin-top:10px; color:#c4b5fd; font-size:13px;">Evaluando tu última semana…</div>
         </div>
  
         <!-- ③ TIP FINANCIERO (solo si tipsFinancieros = true) -->
@@ -451,7 +452,9 @@ Dashboard · HTML
             <a href="chat.html"      class="acceso-card"><div class="acceso-icon">🤖</div><div class="acceso-texto">Chat FinanBot</div></a>
             <a href="finanzas.html"  class="acceso-card"><div class="acceso-icon">➕</div><div class="acceso-texto">Registrar gasto</div></a>
             <a href="simulador.html" class="acceso-card"><div class="acceso-icon">📈</div><div class="acceso-texto">Simular inversión</div></a>
-            <a href="perfil.html"    class="acceso-card"><div class="acceso-icon">🎯</div><div class="acceso-texto">Crear meta</div></a>
+            <a href="perfil.html"    class="acceso-card"><div class="acceso-icon">👤</div><div class="acceso-texto">Mi Perfil</div></a>
+            <a href="perfil.html#tab-metas" class="acceso-card"><div class="acceso-icon">🎯</div><div class="acceso-texto">Crear meta</div></a>
+            <a href="aprende.html"   class="acceso-card"><div class="acceso-icon">🎓</div><div class="acceso-texto">Aprender</div></a>
         </div>
  
         <!-- GRÁFICAS -->
@@ -593,6 +596,9 @@ Dashboard · HTML
                     if (prefs.resumenSemanal) {
                         renderResumenSemanal(todasTrans);
                     }
+
+                    // ②b RESUMEN DE LOS ÚLTIMOS 7 DÍAS
+                    actualizarResumen7Dias(todasTrans);
  
                     // ③ TIP FINANCIERO
                     if (prefs.tipsFinancieros) {
@@ -694,10 +700,7 @@ Dashboard · HTML
         //  ② RESUMEN SEMANAL
         // ════════════════════════════════════════════════
         function renderResumenSemanal(trans) {
-            const hace7 = new Date();
-            hace7.setDate(hace7.getDate() - 7);
- 
-            const semana = trans.filter(t => new Date(t.fecha) >= hace7);
+            const semana = filtrarUltimos7Dias(trans);
             const semIng = semana.filter(t => t.tipo === 'ingreso').reduce((s,t) => s + t.monto, 0);
             const semGas = semana.filter(t => t.tipo === 'gasto').reduce((s,t) => s + t.monto, 0);
             const semBal = semIng - semGas;
@@ -711,13 +714,33 @@ Dashboard · HTML
  
             document.getElementById('resumenSemanal').classList.add('visible');
         }
+
+        function filtrarUltimos7Dias(trans) {
+            const hace7 = new Date();
+            hace7.setDate(hace7.getDate() - 7);
+            return trans.filter(t => new Date(t.fecha) >= hace7);
+        }
+
+        function actualizarResumen7Dias(trans) {
+            const semana = filtrarUltimos7Dias(trans);
+            const semIng = semana.filter(t => t.tipo === 'ingreso').reduce((s,t) => s + t.monto, 0);
+            const semGas = semana.filter(t => t.tipo === 'gasto').reduce((s,t) => s + t.monto, 0);
+            const semBal = semIng - semGas;
+            const estadoEl = document.getElementById('estado7Dias');
+            if (estadoEl) {
+                estadoEl.textContent = semBal >= 0
+                    ? `✅ Cumpliste tu última semana con ${semIng > 0 ? 'ingresos superiores a gastos' : 'movimientos positivos'}`
+                    : '⚠️ Tu última semana aún muestra un déficit; revisa gastos recurrentes';
+            }
+        }
  
         // ════════════════════════════════════════════════
         //  ③ TIP FINANCIERO PERSONALIZADO
         // ════════════════════════════════════════════════
         function renderTip(trans) {
-            const ingresos = trans.filter(t => t.tipo === 'ingreso').reduce((s,t) => s + t.monto, 0);
-            const gastos   = trans.filter(t => t.tipo === 'gasto').reduce((s,t) => s + t.monto, 0);
+            const semana = filtrarUltimos7Dias(trans);
+            const ingresos = semana.filter(t => t.tipo === 'ingreso').reduce((s,t) => s + t.monto, 0);
+            const gastos   = semana.filter(t => t.tipo === 'gasto').reduce((s,t) => s + t.monto, 0);
             const balance  = ingresos - gastos;
  
             // Frecuencia de categorías de gasto

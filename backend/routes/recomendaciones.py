@@ -1,4 +1,5 @@
 # routes/recomendaciones.py
+from datetime import date, datetime, timedelta
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from collections import defaultdict
@@ -8,6 +9,39 @@ from extensions import obtener_usuario_id_requerido
 from models import Transaccion, MetaAhorro, Simulacion, Usuario
 
 router = APIRouter()
+
+
+def _parsear_fecha(fecha):
+    if isinstance(fecha, datetime):
+        return fecha.date()
+    if isinstance(fecha, date):
+        return fecha
+    if isinstance(fecha, str):
+        texto = fecha.split(' ', 1)[0]
+        try:
+            return date.fromisoformat(texto)
+        except ValueError:
+            return None
+    return None
+
+
+def filtrar_transacciones_recientes(transacciones, dias=7):
+    if not transacciones:
+        return []
+
+    hoy = date.today()
+    limite = hoy - timedelta(days=dias)
+    resultado = []
+
+    for t in transacciones:
+        fecha_valor = getattr(t, 'fecha', None)
+        if isinstance(t, dict):
+            fecha_valor = t.get('fecha')
+        fecha_obj = _parsear_fecha(fecha_valor)
+        if fecha_obj and fecha_obj >= limite:
+            resultado.append(t)
+
+    return resultado
 
 
 @router.get('/')
@@ -20,6 +54,7 @@ def obtener_recomendaciones(
     usuario       = db.query(Usuario).get(uid)
     transacciones = (db.query(Transaccion).filter_by(usuario_id=uid)
                       .order_by(Transaccion.fecha.desc()).all())
+    transacciones_analisis = filtrar_transacciones_recientes(transacciones, dias=7) or transacciones
     metas         = db.query(MetaAhorro).filter_by(usuario_id=uid).all()
     simulaciones  = db.query(Simulacion).filter_by(usuario_id=uid).all()
 
@@ -27,16 +62,16 @@ def obtener_recomendaciones(
         return []
 
     # ── MÉTRICAS BASE ─────────────────────────────────────
-    total_ingresos = sum(float(t.monto) for t in transacciones if t.tipo == 'ingreso')
-    total_gastos   = sum(float(t.monto) for t in transacciones if t.tipo == 'gasto')
+    total_ingresos = sum(float(t.monto) for t in transacciones_analisis if t.tipo == 'ingreso')
+    total_gastos   = sum(float(t.monto) for t in transacciones_analisis if t.tipo == 'gasto')
     balance        = total_ingresos - total_gastos
     ing_mensual    = float(usuario.ingreso_mensual or 0)
     meta_mensual   = float(usuario.meta_ahorro or 0)
-    num_trans      = len(transacciones)
+    num_trans      = len(transacciones_analisis)
 
     gastos_cat = defaultdict(float)
     ingresos_cat = defaultdict(float)
-    for t in transacciones:
+    for t in transacciones_analisis:
         cat = t.categoria if isinstance(t.categoria, str) else (
             t.categoria.nombre if t.categoria else 'Otros'
         )
@@ -144,7 +179,6 @@ def obtener_recomendaciones(
             'accion': 'Ver mis gastos', 'link': 'finanzas.html',
             'completada': False,
             'ahorro_potencial': round(abs(balance)),
-            'progreso': max(0, min(100, round((1 - abs(balance) / max(total_ingresos, 1)) * 100))),
             'dato_clave': f'🎯 Meta inmediata: recortar ${abs(balance):,.0f} para llegar a $0 de déficit.',
         })
         rid += 1
@@ -168,7 +202,6 @@ def obtener_recomendaciones(
             'accion': 'Ver mis gastos', 'link': 'finanzas.html',
             'completada': False,
             'ahorro_potencial': round(total_ingresos * (pct_gastos / 100 - 0.8)),
-            'progreso': max(0, 100 - pct_gastos),
             'dato_clave': f'🎯 Meta: no superar ${round(total_ingresos * 0.8):,.0f}/mes en gastos.',
         })
         rid += 1
@@ -192,7 +225,6 @@ def obtener_recomendaciones(
             'accion': 'Ver mis gastos', 'link': 'finanzas.html',
             'completada': False,
             'ahorro_potencial': round(monto_cat_mayor * 0.15),
-            'progreso': max(0, 100 - pct_cat_mayor),
             'dato_clave': f'🔍 Revisa los últimos gastos en {cat_mayor} — casi siempre hay 1 evitable.',
         })
         rid += 1
@@ -243,7 +275,6 @@ def obtener_recomendaciones(
                 'accion': 'Ajustar mis gastos', 'link': 'finanzas.html',
                 'completada': False,
                 'ahorro_potencial': brecha,
-                'progreso': pct_meta,
                 'dato_clave': f'💡 El día de pago, separa ${meta_mensual:,.0f} antes de gastar nada.',
             })
             rid += 1
@@ -279,11 +310,12 @@ def obtener_recomendaciones(
             rid += 1
 
     # ── 8. SIMULADOR ──────────────────────────────────────
-    if balance > 0 and len(simulaciones) == 0 and num_trans >= 5:
+    if balance > 0 and num_trans >= 5 and len(simulaciones) == 0:
         capital_sug = round(balance * 0.5)
         recs.append({
             'id': rid, 'tipo': 'info', 'prioridad': 'Baja',
             'icono': '📈',
+            'key': 'simulador',
             'titulo': 'Tu balance puede generar dinero solo',
             'descripcion': (
                 f'Tienes ${balance:,.0f} de balance positivo. '
@@ -371,7 +403,6 @@ def obtener_recomendaciones(
             'accion': 'Actualizar mi meta', 'link': 'perfil.html',
             'completada': False,
             'ahorro_potencial': excedente * 12,
-            'progreso': 100,
             'dato_clave': f'🚀 Sube tu meta a ${round(meta_mensual*1.2):,.0f} para seguir creciendo.',
         })
         rid += 1
@@ -398,7 +429,6 @@ def obtener_recomendaciones(
                 'accion': 'Abonar a la meta', 'link': 'perfil.html',
                 'completada': False,
                 'ahorro_potencial': 0,
-                'progreso': pct_m,
                 'dato_clave': f'🏁 Con ${round(faltante/2):,.0f} en 2 abonos cierras esta meta.',
             })
             rid += 1
@@ -419,7 +449,7 @@ def obtener_recomendaciones(
                 f'Siguiente reto: ${round(total_comp * 1.5):,.0f} (50% más)',
             ],
             'accion': 'Crear nueva meta', 'link': 'perfil.html',
-            'completada': False, 'ahorro_potencial': 0, 'progreso': 100,
+            'completada': False, 'ahorro_potencial': 0,
             'dato_clave': f'🎯 Siguiente reto: una meta de ${round(total_comp * 1.5):,.0f}.',
         })
         rid += 1
@@ -442,7 +472,6 @@ def obtener_recomendaciones(
             ],
             'accion': 'Nueva simulación', 'link': 'simulador.html',
             'completada': False, 'ahorro_potencial': 0,
-            'progreso': min(100, len(simulaciones) * 25),
             'dato_clave': f'📊 {len(simulaciones)} simulación(es). Próximo paso: abre un CDT real con ese capital.',
         })
         rid += 1

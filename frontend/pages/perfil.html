@@ -1420,17 +1420,25 @@ if (res.ok) {
         if(confirm('¿Cerrar sesión?')){localStorage.clear();window.location.href='../index.html';}
     }
 
-    // ── INIT ──────────────────────────────────────────────
-    cargarPerfil();
-    cargarStats();
-    cargarMetas();
-    aplicarPreferenciasGuardadas();
-    actualizarDist();
-
-    const reg=localStorage.getItem('finanbot_registro');
-    if(!reg) localStorage.setItem('finanbot_registro',Date.now());
-    document.getElementById('totalDias').textContent=Math.max(1,Math.floor((Date.now()-parseInt(localStorage.getItem('finanbot_registro')))/86400000));
-</script>
+     // ── INIT ──────────────────────────────────────────────
+     cargarPerfil();
+     cargarStats();
+     cargarMetas();
+     aplicarPreferenciasGuardadas();
+     actualizarDist();
+ 
+     // Abrir pestaña de metas si viene con hash
+     if (window.location.hash === '#tab-metas') {
+         document.addEventListener('DOMContentLoaded', function() {
+             const tabBtn = document.querySelector('.perfil-tab:nth-child(2)');
+             if (tabBtn) cambiarTab('metas', tabBtn);
+         });
+     }
+ 
+     const reg=localStorage.getItem('finanbot_registro');
+     if(!reg) localStorage.setItem('finanbot_registro',Date.now());
+     document.getElementById('totalDias').textContent=Math.max(1,Math.floor((Date.now()-parseInt(localStorage.getItem('finanbot_registro')))/86400000));
+     </script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="tema.js"></script>

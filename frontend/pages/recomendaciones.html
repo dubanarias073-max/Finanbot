@@ -777,19 +777,24 @@
             }
             if (todasRec.length === 0) todasRec = generarRecomendaciones(datosFinancieros);
 
+            const simuladorRealizado = localStorage.getItem('finanbot_simulacion_realizada') === 'true';
+            if (simuladorRealizado) {
+                todasRec = todasRec.filter(r => r.key !== 'simulador');
+            }
+
             actualizarStats();
             renderRec(todasRec);
             aplicarFiltrosNotif();
 
         } catch(e) {
-            console.error(e);
-            document.getElementById('listaRec').innerHTML = `
-                <div class="estado-vacio">
-                    <div class="estado-vacio-icon" style="font-size:30px;">🔌</div>
-                    <h3>Error de conexión</h3>
-                    <p>Verifica que Flask esté corriendo en el puerto 5000</p>
-                </div>`;
-        }
+    console.error(e);
+    document.getElementById('listaRec').innerHTML = `
+        <div class="estado-vacio">
+            <div class="estado-vacio-icon" style="font-size:30px;">🔌</div>
+            <h3>Error de conexión</h3>
+            <p>${e.message}</p>
+        </div>`;
+}
     }
 
     // ── RESUMEN ───────────────────────────────────────────
