@@ -9,7 +9,8 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', sans-serif; min-height: 100vh; color: white; transition: background 0.4s; }
+        body { font-family: 'Segoe UI', sans-serif; min-height: 100vh; color: white; transition: background 0.4s; overflow-x: hidden; }
+        html { overflow-x: hidden; max-width: 100vw; }
 
         body.tema-oscuro {
             background: radial-gradient(ellipse at top, #1a1a4e 0%, #0f0f2d 50%, #000010 100%);
@@ -29,10 +30,12 @@
         }
 
         /* SIDEBAR */
-        .sidebar { position: fixed; top: 0; left: 0; width: 240px; height: 100vh; background: var(--sidebar-bg); border-right: 1px solid var(--sidebar-border); backdrop-filter: blur(20px); z-index: 100; display: flex; flex-direction: column; padding: 25px 0; }
+        .sidebar { position: fixed; top: 0; left: 0; width: 240px; height: 100vh; background: var(--sidebar-bg); border-right: 1px solid var(--sidebar-border); backdrop-filter: blur(20px); z-index: 1100; display: flex; flex-direction: column; padding: 25px 0; transition: transform .35s ease; }
         .sidebar-logo { display: flex; align-items: center; gap: 12px; padding: 0 20px 25px; border-bottom: 1px solid rgba(168,85,247,0.15); margin-bottom: 20px; }
         .sidebar-logo img { width: 40px; height: 40px; border-radius: 50%; box-shadow: 0 0 15px rgba(168,85,247,0.5); }
         .sidebar-logo span { font-size: 20px; font-weight: 800; background: linear-gradient(90deg, #c026d3, #22d3ee); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .sidebar-close { display: none; margin-left: auto; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.15); color: white; width: 34px; height: 34px; border-radius: 50%; align-items: center; justify-content: center; cursor: pointer; font-size: 14px; flex-shrink: 0; -webkit-tap-highlight-color: transparent; }
+        .sidebar-close:active { background: rgba(239,68,68,.25); }
         .nav-item { display: flex; align-items: center; gap: 12px; padding: 12px 20px; color: var(--secondary, #9ca3af); text-decoration: none; font-size: 14px; font-weight: 500; transition: all 0.3s; border-left: 3px solid transparent; margin: 2px 0; }
         .nav-item:hover, .nav-item.active { color: white; background: rgba(168,85,247,0.08); border-left-color: #a855f7; }
         .nav-item i { width: 18px; text-align: center; font-size: 15px; }
@@ -41,9 +44,16 @@
         .btn-cerrar { display: flex; align-items: center; gap: 10px; color: #ef4444; background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); border-radius: 10px; padding: 10px 15px; font-size: 13px; cursor: pointer; transition: all 0.3s; width: 100%; text-decoration: none; }
         .btn-cerrar:hover { background: rgba(239,68,68,0.15); color: #ef4444; }
 
+        .nav-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 1050; opacity: 0; visibility: hidden; transition: opacity .35s ease, visibility .35s ease; }
+        .nav-overlay.abierto { opacity: 1; visibility: visible; }
+
+        .menu-toggle { display: none; background: rgba(168,85,247,.18); border: 1px solid rgba(168,85,247,.5); color: white; width: 40px; height: 40px; border-radius: 11px; align-items: center; justify-content: center; font-size: 17px; cursor: pointer; flex-shrink: 0; -webkit-tap-highlight-color: transparent; }
+        .menu-toggle:active { background: rgba(168,85,247,.32); transform: scale(.94); }
+
         /* MAIN */
         .main { margin-left: 240px; padding: 30px; min-height: 100vh; }
-        .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; }
+        .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; gap: 12px; flex-wrap: wrap; }
+        .topbar-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
         .topbar h1 { font-size: 24px; font-weight: 700; }
         .topbar p { color: var(--secondary, #9ca3af); font-size: 14px; margin-top: 3px; }
         .btn-accion { background: var(--card-bg); border: 1px solid var(--card-border); color: var(--secondary, #9ca3af); border-radius: 10px; padding: 9px 16px; font-size: 13px; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; gap: 7px; }
@@ -73,7 +83,7 @@
         .grid-principal { display: grid; grid-template-columns: 360px 1fr; gap: 22px; }
         .card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 20px; padding: 26px; margin-bottom: 20px; transition: background 0.4s, border-color 0.4s; }
         .card:last-child { margin-bottom: 0; }
-        .card-title { font-size: 15px; font-weight: 700; color: #c4b5fd; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
+        .card-title { font-size: 15px; font-weight: 700; color: #c4b5fd; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
         .tipo-selector { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
         .tipo-btn { padding: 12px; border-radius: 12px; border: 2px solid transparent; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.3s; text-align: center; }
@@ -122,7 +132,7 @@
         .trans-icon.ingreso { background: rgba(34,211,238,0.15); }
         .trans-info { flex: 1; min-width: 0; }
         .trans-nombre { font-size: 14px; font-weight: 600; color: white; margin-bottom: 2px; }
-        .trans-detalle { font-size: 12px; color: var(--muted, #6b7280); }
+        .trans-detalle { font-size: 12px; color: var(--muted, #6b7280); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .trans-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
         .trans-monto { font-size: 15px; font-weight: 700; }
         .trans-monto.gasto   { color: #f472b6; }
@@ -141,7 +151,7 @@
         .fecha-separador { display: flex; align-items: center; gap: 10px; margin: 14px 0 10px; font-size: 12px; color: var(--muted, #6b7280); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
         .fecha-separador::before, .fecha-separador::after { content: ''; flex: 1; height: 1px; background: var(--item-border); }
 
-        .paginacion { display: flex; justify-content: center; gap: 6px; margin-top: 16px; }
+        .paginacion { display: flex; justify-content: center; gap: 6px; margin-top: 16px; flex-wrap: wrap; }
         .pag-btn { background: var(--item-bg); border: 1px solid var(--item-border); color: var(--secondary, #9ca3af); border-radius: 8px; padding: 7px 13px; font-size: 13px; cursor: pointer; transition: all 0.3s; }
         .pag-btn:hover, .pag-btn.activo { background: rgba(168,85,247,0.15); border-color: #a855f7; color: white; }
 
@@ -158,7 +168,7 @@
         /* MODAL EDITAR */
         .modal-overlay { display: none; position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.82); backdrop-filter: blur(6px); align-items: center; justify-content: center; padding: 20px; }
         .modal-overlay.visible { display: flex; }
-        .modal-box { background: linear-gradient(145deg, #12103a, #0d0d2a); border: 1px solid rgba(168,85,247,0.3); border-radius: 24px; padding: 34px 32px; width: 100%; max-width: 480px; position: relative; box-shadow: 0 30px 80px rgba(0,0,0,0.7); animation: modalIn .35s cubic-bezier(0.34,1.56,0.64,1); }
+        .modal-box { background: linear-gradient(145deg, #12103a, #0d0d2a); border: 1px solid rgba(168,85,247,0.3); border-radius: 24px; padding: 34px 32px; width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; position: relative; box-shadow: 0 30px 80px rgba(0,0,0,0.7); animation: modalIn .35s cubic-bezier(0.34,1.56,0.64,1); }
         body.tema-azul .modal-box { background: linear-gradient(145deg, #060e1e, #0a1628); }
         @keyframes modalIn { from{opacity:0;transform:scale(0.9) translateY(20px)} to{opacity:1;transform:scale(1) translateY(0)} }
         .modal-box::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, #c026d3, #a855f7, #22d3ee, transparent); border-radius: 24px 24px 0 0; }
@@ -194,6 +204,65 @@
         .salario-banner p { font-size: 12px; color: #86efac; line-height: 1.6; margin: 0; }
         .salario-banner strong { color: #4ade80; }
         .salario-banner a { color: #22d3ee; text-decoration: underline; cursor: pointer; }
+
+        /* ===================== RESPONSIVE / MOBILE ===================== */
+        @media (max-width: 1000px) {
+            .grid-principal { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 900px) {
+            .sidebar { transform: translateX(-100%); width: min(80vw, 280px); }
+            .sidebar.abierta { transform: translateX(0); }
+            .sidebar-close { display: flex; }
+            .main { margin-left: 0; padding: 20px 16px; width: 100%; }
+            .menu-toggle { display: flex; }
+
+            .topbar h1 { font-size: 20px; }
+            .topbar p { font-size: 12.5px; }
+            .btn-accion { padding: 8px 12px; font-size: 12px; }
+
+            .stats-row { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+            .stat-card { padding: 16px; border-radius: 14px; }
+            .stat-icon-wrap { width: 36px; height: 36px; font-size: 17px; margin-bottom: 10px; }
+            .stat-value { font-size: 18px; }
+
+            .card { padding: 18px; border-radius: 16px; }
+
+            .filtros-bar { flex-direction: column; align-items: stretch; }
+            .search-wrap { min-width: 0; }
+            .filter-chip { text-align: center; }
+
+            .modal-box { padding: 24px 18px; border-radius: 18px; }
+
+            .trans-nombre { font-size: 13px; }
+            .trans-monto { font-size: 13.5px; }
+            .trans-icon { width: 38px; height: 38px; font-size: 17px; margin-right: 10px; }
+        }
+
+        @media (max-width: 560px) {
+            .stats-row { grid-template-columns: 1fr 1fr; gap: 10px; }
+            .stat-card { padding: 13px; }
+            .stat-label { font-size: 10px; }
+            .stat-value { font-size: 16px; }
+            .stat-sub { font-size: 10.5px; }
+
+            .tipo-selector, .modal-tipo { grid-template-columns: 1fr 1fr; gap: 8px; }
+            .tipo-btn, .modal-tipo-btn { padding: 10px; font-size: 13px; }
+
+            .montos-rapidos { gap: 6px; }
+            .monto-btn { font-size: 11px; padding: 5px 10px; }
+
+            .trans-item { padding: 11px 12px; }
+            .trans-detalle { max-width: 140px; }
+            .btn-trans-accion { padding: 5px 7px; }
+
+            .card-title { font-size: 14px; }
+        }
+
+        @media (max-width: 380px) {
+            .stats-row { grid-template-columns: 1fr; }
+            .trans-right { flex-wrap: wrap; justify-content: flex-end; }
+        }
     </style>
 </head>
 <body class="tema-oscuro">
@@ -242,11 +311,14 @@
         </div>
     </div>
 
+    <div class="nav-overlay" id="navOverlay"></div>
+
     <!-- SIDEBAR -->
-    <div class="sidebar">
+    <div class="sidebar" id="sidebar">
         <div class="sidebar-logo">
             <img src="../../images/logo.png" alt="FinanBot" onerror="this.style.display='none'">
             <span>FinanBot</span>
+            <button class="sidebar-close" id="sidebarClose" aria-label="Cerrar"><i class="fas fa-times"></i></button>
         </div>
         <a href="dashboard.html" class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
         <a href="chat.html" class="nav-item"><i class="fas fa-robot"></i> Chat FinanBot</a>
@@ -265,9 +337,12 @@
     <div class="main">
         <!-- TOPBAR -->
         <div class="topbar">
-            <div>
-                <h1>💳 Mis Finanzas</h1>
-                <p>Registra y controla todos tus movimientos financieros</p>
+            <div class="topbar-left">
+                <button class="menu-toggle" id="menuToggle" aria-label="Abrir menú"><i class="fas fa-bars"></i></button>
+                <div>
+                    <h1>💳 Mis Finanzas</h1>
+                    <p>Registra y controla todos tus movimientos financieros</p>
+                </div>
             </div>
             <div style="display:flex;gap:10px">
                 <button class="btn-accion" onclick="location.href='chat.html'">
@@ -402,7 +477,7 @@
                         <button class="filter-chip tipo-gasto"   id="chip-gasto"   onclick="setFiltro('gasto',this)">Gastos</button>
                     </div>
 
-                    <div style="display:flex;gap:8px;margin-bottom:14px;align-items:center;">
+                    <div style="display:flex;gap:8px;margin-bottom:14px;align-items:center;flex-wrap:wrap;">
                         <span style="font-size:12px;color:var(--muted,#6b7280);">Ordenar por:</span>
                         <button class="monto-btn activo" id="ord-fecha" onclick="setOrden('fecha',this)">📅 Fecha</button>
                         <button class="monto-btn" id="ord-monto"        onclick="setOrden('monto',this)">💲 Monto</button>
@@ -428,6 +503,25 @@
             const t = localStorage.getItem('finanbot_tema') || 'oscuro';
             document.body.className = 'tema-' + t;
         })();
+
+        /* ── MENÚ MÓVIL ─────────────────────────────────── */
+        const sidebarEl   = document.getElementById('sidebar');
+        const navOverlay  = document.getElementById('navOverlay');
+        const menuToggle  = document.getElementById('menuToggle');
+        const sidebarClose = document.getElementById('sidebarClose');
+
+        function abrirSidebarMovil() {
+            sidebarEl.classList.add('abierta');
+            navOverlay.classList.add('abierto');
+        }
+        function cerrarSidebarMovil() {
+            sidebarEl.classList.remove('abierta');
+            navOverlay.classList.remove('abierto');
+        }
+        menuToggle.addEventListener('click', abrirSidebarMovil);
+        sidebarClose.addEventListener('click', cerrarSidebarMovil);
+        navOverlay.addEventListener('click', cerrarSidebarMovil);
+        document.querySelectorAll('.nav-item').forEach(a => a.addEventListener('click', cerrarSidebarMovil));
 
         const token = localStorage.getItem('token');
         let transacciones = [];

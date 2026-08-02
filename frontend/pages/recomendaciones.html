@@ -9,7 +9,8 @@
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', sans-serif; min-height: 100vh; color: white; transition: background 0.4s; }
+        body { font-family: 'Segoe UI', sans-serif; min-height: 100vh; color: white; transition: background 0.4s; overflow-x: hidden; }
+        html { overflow-x: hidden; max-width: 100vw; }
 
         body.tema-oscuro {
             background: radial-gradient(ellipse at top, #1a1a4e 0%, #0f0f2d 50%, #000010 100%);
@@ -27,10 +28,12 @@
         }
 
         /* SIDEBAR */
-        .sidebar { position: fixed; top: 0; left: 0; width: 240px; height: 100vh; background: var(--sidebar-bg); border-right: 1px solid var(--sidebar-brd); backdrop-filter: blur(20px); z-index: 100; display: flex; flex-direction: column; padding: 25px 0; transition: background 0.4s; }
+        .sidebar { position: fixed; top: 0; left: 0; width: 240px; height: 100vh; background: var(--sidebar-bg); border-right: 1px solid var(--sidebar-brd); backdrop-filter: blur(20px); z-index: 1100; display: flex; flex-direction: column; padding: 25px 0; transition: background 0.4s, transform .35s ease; }
         .sidebar-logo { display: flex; align-items: center; gap: 12px; padding: 0 20px 25px; border-bottom: 1px solid rgba(168,85,247,0.15); margin-bottom: 20px; }
         .sidebar-logo img { width: 40px; height: 40px; border-radius: 50%; box-shadow: 0 0 15px rgba(168,85,247,0.5); }
         .sidebar-logo span { font-size: 20px; font-weight: 800; background: linear-gradient(90deg,#c026d3,#22d3ee); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .sidebar-close { display: none; margin-left: auto; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.15); color: white; width: 34px; height: 34px; border-radius: 50%; align-items: center; justify-content: center; cursor: pointer; font-size: 14px; flex-shrink: 0; -webkit-tap-highlight-color: transparent; }
+        .sidebar-close:active { background: rgba(239,68,68,.25); }
         .nav-item { display: flex; align-items: center; gap: 12px; padding: 12px 20px; color: var(--secondary,#9ca3af); text-decoration: none; font-size: 14px; font-weight: 500; transition: all 0.3s; border-left: 3px solid transparent; margin: 2px 0; }
         .nav-item:hover, .nav-item.active { color: white; background: rgba(168,85,247,0.08); border-left-color: #a855f7; }
         .nav-item i { width: 18px; text-align: center; font-size: 15px; }
@@ -39,15 +42,21 @@
         .btn-cerrar { display: flex; align-items: center; gap: 10px; color: #ef4444; background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); border-radius: 10px; padding: 10px 15px; font-size: 13px; cursor: pointer; transition: all 0.3s; width: 100%; text-decoration: none; }
         .btn-cerrar:hover { background: rgba(239,68,68,0.15); color: #ef4444; }
 
+        .nav-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 1050; opacity: 0; visibility: hidden; transition: opacity .35s ease, visibility .35s ease; }
+        .nav-overlay.abierto { opacity: 1; visibility: visible; }
+        .menu-toggle { display: none; background: rgba(168,85,247,.18); border: 1px solid rgba(168,85,247,.5); color: white; width: 40px; height: 40px; border-radius: 11px; align-items: center; justify-content: center; font-size: 17px; cursor: pointer; flex-shrink: 0; -webkit-tap-highlight-color: transparent; }
+        .menu-toggle:active { background: rgba(168,85,247,.32); transform: scale(.94); }
+
         /* MAIN */
         .main { margin-left: 240px; padding: 32px 36px; min-height: 100vh; }
 
         /* TOPBAR */
-        .topbar { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 28px; }
+        .topbar { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 28px; gap: 14px; flex-wrap: wrap; }
+        .topbar-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
         .topbar h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; display: flex; align-items: center; gap: 10px; }
         .topbar h1 span.grad { background: linear-gradient(90deg,#c4b5fd,#22d3ee); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .topbar p { color: var(--secondary); font-size: 14px; margin-top: 4px; }
-        .topbar-right { display: flex; gap: 10px; align-items: center; }
+        .topbar-right { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
         .btn-accion { background: var(--card-bg); border: 1px solid var(--card-border); color: var(--secondary); border-radius: 12px; padding: 10px 18px; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; gap: 8px; font-family: 'Segoe UI', sans-serif; }
         .btn-accion:hover { background: rgba(168,85,247,0.12); color: white; border-color: #a855f7; transform: translateY(-1px); }
 
@@ -89,7 +98,7 @@
         /* ── REGLA PERSONALIZABLE ── */
         .regla-widget { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 18px; padding: 22px; margin-bottom: 22px; position: relative; overflow: hidden; }
         .regla-widget::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px; background: linear-gradient(90deg,#22d3ee,#a855f7,#4ade80); }
-        .regla-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+        .regla-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 10px; }
         .regla-titulo-wrap { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
         .regla-titulo { font-size: 14px; font-weight: 700; color: #c4b5fd; }
         .regla-nombre-badge { background: rgba(168,85,247,0.12); border: 1px solid rgba(168,85,247,0.25); color: #a855f7; border-radius: 50px; padding: 3px 12px; font-size: 11px; font-weight: 600; }
@@ -250,6 +259,59 @@
         .mini-toggle input:checked + .mini-slider::before { transform: translateX(17px); }
         .notif-panel-footer { margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 11px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
         .notif-panel-footer a { color: #a855f7; text-decoration: none; }
+
+        /* ===================== RESPONSIVE / MOBILE ===================== */
+        @media (max-width: 900px) {
+            .sidebar { transform: translateX(-100%); width: min(80vw, 280px); }
+            .sidebar.abierta { transform: translateX(0); }
+            .sidebar-close { display: flex; }
+            .main { margin-left: 0; padding: 18px 16px; width: 100%; }
+            .menu-toggle { display: flex; }
+
+            .topbar h1 { font-size: 20px; }
+            .topbar p { font-size: 12.5px; }
+            .topbar-right { width: 100%; justify-content: flex-start; }
+            .btn-accion, .notif-settings-btn { padding: 8px 12px; font-size: 12px; }
+
+            .resumen-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+            .resumen-card { padding: 15px; }
+            .resumen-valor { font-size: 17px; }
+
+            .analisis-grid, .regla-grid { grid-template-columns: 1fr; }
+            .analisis-section, .regla-widget { padding: 16px; }
+
+            .stats-bar { grid-template-columns: repeat(2, 1fr); }
+            .stat-bar-item:nth-child(2)::after { display: none; }
+            .stat-bar-num { font-size: 22px; }
+
+            .filtros-bar { gap: 6px; }
+            .filter-chip { padding: 7px 12px; font-size: 12px; }
+
+            .rec-grid { grid-template-columns: 1fr; gap: 14px; }
+            .rec-card { padding: 18px; }
+
+            .notif-panel { position: fixed; top: auto; bottom: 0; left: 0; right: 0; width: 100%; border-radius: 18px 18px 0 0; max-height: 80vh; overflow-y: auto; }
+
+            .presets-row { gap: 6px; }
+            .preset-btn { font-size: 11px; padding: 5px 10px; }
+        }
+
+        @media (max-width: 560px) {
+            .resumen-grid { grid-template-columns: 1fr 1fr; }
+            .resumen-label { font-size: 9px; }
+            .resumen-valor { font-size: 15px; }
+
+            .topbar-right { flex-direction: column; align-items: stretch; }
+            .btn-accion, .notif-settings-btn { width: 100%; justify-content: center; }
+
+            .stats-bar { grid-template-columns: 1fr 1fr; }
+            .stat-bar-item:nth-child(odd)::after { display: none; }
+
+            .regla-item { padding: 13px; }
+            .regla-pct { font-size: 24px; }
+
+            .panel-btns { flex-direction: column; }
+        }
     </style>
 </head>
 <body class="tema-oscuro">
@@ -259,10 +321,13 @@
     <span id="toastMsg">Mensaje</span>
 </div>
 
-<div class="sidebar">
+<div class="nav-overlay" id="navOverlay"></div>
+
+<div class="sidebar" id="sidebar">
     <div class="sidebar-logo">
         <img src="../../images/logo.png" alt="FinanBot" onerror="this.style.display='none'">
         <span>FinanBot</span>
+        <button class="sidebar-close" id="sidebarClose" aria-label="Cerrar"><i class="fas fa-times"></i></button>
     </div>
     <a href="dashboard.html"       class="nav-item"><i class="fas fa-home"></i>          Dashboard</a>
     <a href="chat.html"            class="nav-item"><i class="fas fa-robot"></i>          Chat FinanBot</a>
@@ -281,9 +346,12 @@
 <div class="main">
 
     <div class="topbar">
-        <div>
-            <h1><i class="fas fa-lightbulb" style="color:#a855f7;font-size:22px;"></i> <span class="grad">Recomendaciones</span></h1>
-            <p>Análisis financiero personalizado basado en tus datos reales</p>
+        <div class="topbar-left">
+            <button class="menu-toggle" id="menuToggle" aria-label="Abrir menú"><i class="fas fa-bars"></i></button>
+            <div>
+                <h1><i class="fas fa-lightbulb" style="color:#a855f7;font-size:22px;"></i> <span class="grad">Recomendaciones</span></h1>
+                <p>Análisis financiero personalizado basado en tus datos reales</p>
+            </div>
         </div>
         <div class="topbar-right">
             <button class="btn-accion" onclick="cargarTodo()"><i class="fas fa-sync-alt"></i> Actualizar</button>
@@ -498,6 +566,19 @@
         const t = localStorage.getItem('finanbot_tema') || 'oscuro';
         document.body.className = 'tema-' + t;
     })();
+
+    // ── MENÚ MÓVIL ────────────────────────────────────────
+    const sidebarEl2   = document.getElementById('sidebar');
+    const navOverlay2  = document.getElementById('navOverlay');
+    const menuToggle2   = document.getElementById('menuToggle');
+    const sidebarClose2 = document.getElementById('sidebarClose');
+
+    function abrirSidebarMovil() { sidebarEl2.classList.add('abierta'); navOverlay2.classList.add('abierto'); }
+    function cerrarSidebarMovil() { sidebarEl2.classList.remove('abierta'); navOverlay2.classList.remove('abierto'); }
+    menuToggle2.addEventListener('click', abrirSidebarMovil);
+    sidebarClose2.addEventListener('click', cerrarSidebarMovil);
+    navOverlay2.addEventListener('click', cerrarSidebarMovil);
+    document.querySelectorAll('.nav-item').forEach(a => a.addEventListener('click', cerrarSidebarMovil));
 
     const token = localStorage.getItem('token');
     let todasRec = [];

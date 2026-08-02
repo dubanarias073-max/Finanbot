@@ -15,7 +15,9 @@
             min-height: 100vh;
             color: white;
             transition: background 0.4s;
+            overflow-x: hidden;
         }
+        html { overflow-x: hidden; max-width: 100vw; }
 
         /* ── TEMAS ── */
         body.tema-oscuro {
@@ -52,9 +54,9 @@
             width: 240px; height: 100vh;
             background: var(--sidebar-bg);
             border-right: 1px solid var(--sidebar-brd);
-            backdrop-filter: blur(20px); z-index: 100;
+            backdrop-filter: blur(20px); z-index: 1100;
             display: flex; flex-direction: column; padding: 25px 0;
-            transition: background 0.4s;
+            transition: background 0.4s, transform .35s ease;
         }
         .sidebar-logo {
             display: flex; align-items: center; gap: 12px;
@@ -68,6 +70,8 @@
             background: linear-gradient(90deg, #c026d3, #22d3ee);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         }
+        .sidebar-close { display: none; margin-left: auto; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.15); color: white; width: 34px; height: 34px; border-radius: 50%; align-items: center; justify-content: center; cursor: pointer; font-size: 14px; flex-shrink: 0; -webkit-tap-highlight-color: transparent; }
+        .sidebar-close:active { background: rgba(239,68,68,.25); }
         .nav-item {
             display: flex; align-items: center; gap: 12px;
             padding: 12px 20px; color: var(--secondary,#9ca3af); text-decoration: none;
@@ -92,11 +96,17 @@
         }
         .btn-cerrar:hover { background: rgba(239,68,68,0.15); color: #ef4444; }
 
+        .nav-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 1050; opacity: 0; visibility: hidden; transition: opacity .35s ease, visibility .35s ease; }
+        .nav-overlay.abierto { opacity: 1; visibility: visible; }
+        .menu-toggle { display: none; background: rgba(168,85,247,.18); border: 1px solid rgba(168,85,247,.5); color: white; width: 40px; height: 40px; border-radius: 11px; align-items: center; justify-content: center; font-size: 17px; cursor: pointer; flex-shrink: 0; -webkit-tap-highlight-color: transparent; margin-right: 10px; }
+        .menu-toggle:active { background: rgba(168,85,247,.32); transform: scale(.94); }
+
         /* MAIN */
         .main { margin-left: 240px; padding: 30px; min-height: 100vh; }
 
         /* TOPBAR */
-        .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; gap: 10px; }
+        .topbar-left { display: flex; align-items: center; min-width: 0; }
         .topbar h1 { font-size: 24px; font-weight: 700; }
         .topbar p { color: var(--secondary,#9ca3af); font-size: 14px; margin-top: 3px; }
 
@@ -218,7 +228,7 @@
         }
 
         /* RESULTADOS */
-        .resultados-panel { display: flex; flex-direction: column; gap: 14px; }
+        .resultados-panel { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
         .placeholder-card {
             background: var(--card-bg); border: 1px dashed var(--card-border);
             border-radius: 20px; padding: 60px 30px; text-align: center; color: var(--muted,#6b7280);
@@ -253,6 +263,7 @@
             background: rgba(74,222,128,0.06); border: 1px solid rgba(74,222,128,0.3);
             border-radius: 16px; padding: 18px 22px;
             display: flex; align-items: center; justify-content: space-between;
+            flex-wrap: wrap; gap: 10px;
         }
         .ganancia-highlight-left { display: flex; align-items: center; gap: 14px; }
         .ganancia-icon  { font-size: 28px; }
@@ -262,7 +273,7 @@
 
         /* GRÁFICA */
         .chart-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 18px; padding: 20px; }
-        .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 6px; }
         .chart-titulo { font-size: 14px; font-weight: 600; color: #c4b5fd; display: flex; align-items: center; gap: 8px; }
         .chart-wrap   { position: relative; height: 200px; }
 
@@ -299,14 +310,61 @@
         .exportar-desc {
             font-size: 12px; color: var(--secondary,#9ca3af); line-height: 1.5;
         }
+
+        /* ===================== RESPONSIVE / MOBILE ===================== */
+        @media (max-width: 1050px) {
+            .grid-main { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 900px) {
+            .sidebar { transform: translateX(-100%); width: min(80vw, 280px); }
+            .sidebar.abierta { transform: translateX(0); }
+            .sidebar-close { display: flex; }
+            .main { margin-left: 0; padding: 18px 16px; width: 100%; }
+            .menu-toggle { display: flex; }
+
+            .topbar h1 { font-size: 19px; }
+            .topbar p { font-size: 12px; }
+            .demo-badge { font-size: 11px; padding: 5px 12px; margin-bottom: 18px; }
+
+            .card { padding: 18px; border-radius: 16px; }
+            .tipos-grid { grid-template-columns: 1fr 1fr; }
+
+            .stats-top { grid-template-columns: repeat(2,1fr); gap: 8px; }
+            .stat-card { padding: 13px; }
+            .stat-valor { font-size: 16px; }
+
+            .ganancia-monto { font-size: 20px; }
+            .ganancia-pct { font-size: 18px; }
+
+            .comparador-grid { grid-template-columns: 1fr; gap: 8px; }
+            .info-grid { grid-template-columns: 1fr 1fr; }
+
+            .exportar-card { padding: 14px 16px; }
+        }
+
+        @media (max-width: 560px) {
+            .tipos-grid { grid-template-columns: 1fr 1fr; gap: 6px; }
+            .tipo-btn { padding: 8px 10px; }
+            .tipo-btn-emoji { font-size: 16px; }
+            .tipo-btn-nombre { font-size: 11px; }
+
+            .info-grid { grid-template-columns: 1fr; }
+            .chart-wrap { height: 170px; }
+
+            .ganancia-highlight { flex-direction: column; align-items: flex-start; }
+        }
     </style>
 </head>
 <body class="tema-oscuro">
 
-    <div class="sidebar">
+    <div class="nav-overlay" id="navOverlay"></div>
+
+    <div class="sidebar" id="sidebar">
         <div class="sidebar-logo">
             <img src="../../images/logo.png" alt="FinanBot" onerror="this.style.display='none'">
             <span>FinanBot</span>
+            <button class="sidebar-close" id="sidebarClose" aria-label="Cerrar"><i class="fas fa-times"></i></button>
         </div>
         <a href="dashboard.html" class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
         <a href="chat.html"      class="nav-item"><i class="fas fa-robot"></i> Chat FinanBot</a>
@@ -326,9 +384,12 @@
 
         <!-- TOPBAR -->
         <div class="topbar">
-            <div>
-                <h1>📈 Simulador de Inversiones</h1>
-                <p>Proyecta el crecimiento de tu dinero con interés compuesto real — Sin riesgo</p>
+            <div class="topbar-left">
+                <button class="menu-toggle" id="menuToggle" aria-label="Abrir menú"><i class="fas fa-bars"></i></button>
+                <div>
+                    <h1>📈 Simulador de Inversiones</h1>
+                    <p>Proyecta el crecimiento de tu dinero con interés compuesto real — Sin riesgo</p>
+                </div>
             </div>
         </div>
 
@@ -561,6 +622,19 @@
             const t = localStorage.getItem('finanbot_tema') || 'oscuro';
             document.body.className = 'tema-' + t;
         })();
+
+        // ── MENÚ MÓVIL ────────────────────────────────────
+        const sidebarEl3   = document.getElementById('sidebar');
+        const navOverlay3  = document.getElementById('navOverlay');
+        const menuToggle3   = document.getElementById('menuToggle');
+        const sidebarClose3 = document.getElementById('sidebarClose');
+
+        function abrirSidebarMovil() { sidebarEl3.classList.add('abierta'); navOverlay3.classList.add('abierto'); }
+        function cerrarSidebarMovil() { sidebarEl3.classList.remove('abierta'); navOverlay3.classList.remove('abierto'); }
+        menuToggle3.addEventListener('click', abrirSidebarMovil);
+        sidebarClose3.addEventListener('click', cerrarSidebarMovil);
+        navOverlay3.addEventListener('click', cerrarSidebarMovil);
+        document.querySelectorAll('.nav-item').forEach(a => a.addEventListener('click', cerrarSidebarMovil));
 
         let chartInst  = null;
         let tasaActual = 5;

@@ -40,10 +40,8 @@ pip install -r requirements.txt
 
 Una vez instaladas las dependencias, inicia el servidor con:
 
-```powershell
-cd backend
 fastapi dev app.py
-```
+
 
 Si prefieres usar Uvicorn directamente:
 

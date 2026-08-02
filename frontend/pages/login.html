@@ -200,6 +200,8 @@
             position: relative;
             box-shadow: 0 30px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(168,85,247,0.1);
             animation: modalIn .35s cubic-bezier(0.34,1.56,0.64,1);
+            max-height: 90vh;
+            overflow-y: auto;
         }
         @keyframes modalIn { from{opacity:0;transform:scale(0.9) translateY(20px)} to{opacity:1;transform:scale(1) translateY(0)} }
         .modal-box::before {
@@ -277,6 +279,7 @@
         .recaptcha-wrap {
             margin-bottom: 18px;
             display: flex; justify-content: center;
+            overflow-x: auto;
         }
         /* Estilizar el iframe de reCAPTCHA */
         .recaptcha-wrap .g-recaptcha > div {
@@ -297,6 +300,51 @@
 
         /* Hint match contraseñas */
         .match-hint { font-size: 11px; margin-top: 6px; display: none; align-items: center; gap: 5px; }
+
+        /* ===================== RESPONSIVE / MOBILE ===================== */
+        @media (max-width: 480px) {
+            body { padding: 16px 12px; align-items: flex-start; padding-top: 40px; }
+
+            .orb-1, .orb-2 { filter: blur(60px); }
+
+            .card-login {
+                padding: 32px 22px 26px;
+                border-radius: 20px;
+            }
+
+            .logo-img, .logo-fallback { width: 60px; height: 60px; }
+            .titulo { font-size: 21px; }
+            .subtitulo { font-size: 12px; }
+
+            .campo-label { font-size: 10.5px; }
+            .campo-input, .m-input { font-size: 15px; padding: 11px 13px; } /* 15px+ evita zoom automático en iOS */
+            .campo-prefix { width: 40px; }
+
+            .btn-login, .btn-modal { font-size: 14px; padding: 13px; }
+
+            .modal-box {
+                padding: 26px 18px 22px;
+                border-radius: 18px;
+            }
+            .modal-titulo { font-size: 17px; }
+            .modal-sub { font-size: 12px; margin-bottom: 18px; }
+
+            .ms-circle { width: 24px; height: 24px; font-size: 10px; }
+            .modal-stepper { margin-bottom: 22px; }
+
+            .pregunta-box { font-size: 13px; padding: 12px 14px; }
+
+            /* Escalar el widget de reCAPTCHA (304px fijo) para que quepa en pantallas angostas */
+            .recaptcha-wrap {
+                transform: scale(0.87);
+                transform-origin: center;
+                margin-bottom: 6px;
+            }
+        }
+
+        @media (max-width: 340px) {
+            .recaptcha-wrap { transform: scale(0.77); }
+        }
     </style>
 </head>
 <body>

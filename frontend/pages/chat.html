@@ -36,10 +36,12 @@ body.tema-azul{
 }
 
 /* ── SIDEBAR ── */
-.sidebar{position:fixed;top:0;left:0;width:240px;height:100vh;background:var(--sb-bg);border-right:1px solid var(--sb-brd);backdrop-filter:blur(20px);z-index:100;display:flex;flex-direction:column;padding:25px 0}
+.sidebar{position:fixed;top:0;left:0;width:240px;height:100vh;background:var(--sb-bg);border-right:1px solid var(--sb-brd);backdrop-filter:blur(20px);z-index:1100;display:flex;flex-direction:column;padding:25px 0;transition:transform .35s ease}
 .sidebar-logo{display:flex;align-items:center;gap:12px;padding:0 20px 25px;border-bottom:1px solid rgba(168,85,247,.15);margin-bottom:20px}
 .sidebar-logo img{width:40px;height:40px;border-radius:50%;box-shadow:0 0 15px rgba(168,85,247,.5)}
 .sidebar-logo span{font-size:20px;font-weight:800;background:linear-gradient(90deg,#c026d3,#22d3ee);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.sidebar-close{display:none;margin-left:auto;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:white;width:34px;height:34px;border-radius:50%;align-items:center;justify-content:center;cursor:pointer;font-size:14px;flex-shrink:0;-webkit-tap-highlight-color:transparent}
+.sidebar-close:active{background:rgba(239,68,68,.25)}
 .nav-item{display:flex;align-items:center;gap:12px;padding:12px 20px;color:var(--sec);text-decoration:none;font-size:14px;font-weight:500;transition:all .3s;border-left:3px solid transparent;margin:2px 0}
 .nav-item:hover,.nav-item.active{color:white;background:rgba(168,85,247,.08);border-left-color:#a855f7}
 .nav-item i{width:18px;text-align:center;font-size:15px}
@@ -49,9 +51,16 @@ body.tema-azul{
 .btn-cerrar:hover{background:rgba(239,68,68,.15);color:#ef4444}
 
 /* ── PANEL HISTORIAL ── */
-.panel{position:fixed;top:0;left:240px;width:260px;height:100vh;background:var(--pnl-bg);border-right:1px solid var(--pnl-brd);display:flex;flex-direction:column;z-index:99}
+.panel{position:fixed;top:0;left:240px;width:260px;height:100vh;background:var(--pnl-bg);border-right:1px solid var(--pnl-brd);display:flex;flex-direction:column;z-index:1090;transition:transform .35s ease}
+@media (max-width: 900px) {
+  .panel { background: #0d0d20; backdrop-filter: blur(20px); }
+  body.tema-azul .panel { background: #0f172a; }
+}
 .panel-hdr{padding:18px 14px 14px;border-bottom:1px solid var(--pnl-brd)}
-.panel-titulo{font-size:12px;font-weight:700;color:var(--sec);text-transform:uppercase;letter-spacing:1px;margin-bottom:11px}
+.panel-close{display:none;margin-left:auto;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:white;width:36px;height:36px;border-radius:50%;align-items:center;justify-content:center;cursor:pointer;font-size:15px;position:relative;z-index:5;-webkit-tap-highlight-color:transparent}
+.panel-close:active{background:rgba(239,68,68,.25)}
+.panel-hdr-row{display:flex;align-items:center;margin-bottom:11px}
+.panel-titulo{font-size:12px;font-weight:700;color:var(--sec);text-transform:uppercase;letter-spacing:1px}
 .btn-nueva{background:linear-gradient(135deg,#c026d3,#a855f7);color:white;border:none;border-radius:10px;padding:10px 14px;font-size:13px;font-weight:600;cursor:pointer;width:100%;transition:all .3s;display:flex;align-items:center;justify-content:center;gap:8px}
 .btn-nueva:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(192,38,211,.4)}
 .lista-conv{flex:1;overflow-y:auto;padding:8px 6px;scrollbar-width:thin;scrollbar-color:rgba(168,85,247,.2) transparent}
@@ -69,18 +78,30 @@ body.tema-azul{
 .btn-del-conv:hover{color:#ef4444;background:rgba(239,68,68,.1)}
 .sin-conv{display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--muted);padding:40px 16px;font-size:12px;text-align:center;gap:10px}
 
+.nav-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1050;opacity:0;visibility:hidden;transition:opacity .35s ease,visibility .35s ease}
+.nav-overlay.abierto{opacity:1;visibility:visible}
+
+.chat-menu-toggle,.history-menu-toggle{
+  display:none;background:rgba(168,85,247,.18);border:1px solid rgba(168,85,247,.5);color:white;
+  width:38px;height:38px;border-radius:11px;align-items:center;justify-content:center;
+  font-size:16px;cursor:pointer;flex-shrink:0;
+  -webkit-tap-highlight-color:transparent;
+}
+.chat-menu-toggle:active,.history-menu-toggle:active{background:rgba(168,85,247,.32);transform:scale(.94)}
+.hdr-toggles{display:none;gap:8px;flex-shrink:0}
+
 /* ── MAIN ── */
 .main{margin-left:500px;height:100vh;display:flex;flex-direction:column;flex:1;overflow:hidden}
 
 /* HEADER */
-.chat-hdr{display:flex;align-items:center;justify-content:space-between;padding:16px 22px;border-bottom:1px solid var(--pnl-brd);background:var(--hdr-bg);flex-shrink:0}
-.bot-wrap{position:relative;width:42px;height:42px}
+.chat-hdr{display:flex;align-items:center;justify-content:space-between;padding:16px 22px;border-bottom:1px solid var(--pnl-brd);background:var(--hdr-bg);flex-shrink:0;gap:10px;flex-wrap:wrap}
+.bot-wrap{position:relative;width:42px;height:42px;flex-shrink:0}
 .bot-avatar{width:42px;height:42px;border-radius:50%;border:2px solid rgba(168,85,247,.4);box-shadow:0 0 14px rgba(168,85,247,.25)}
 .bot-dot{position:absolute;bottom:1px;right:1px;width:10px;height:10px;background:#4ade80;border-radius:50%;border:2px solid #0f0f2d;animation:ping-verde 2s infinite}
 @keyframes ping-verde{0%,100%{box-shadow:0 0 0 0 rgba(74,222,128,.4)}50%{box-shadow:0 0 0 5px rgba(74,222,128,0)}}
-.hdr-left{display:flex;align-items:center;gap:12px}
-.hdr-name{font-size:16px;font-weight:700;background:linear-gradient(90deg,#c026d3,#22d3ee);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:2px}
-.hdr-sub{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:5px}
+.hdr-left{display:flex;align-items:center;gap:12px;min-width:0}
+.hdr-name{font-size:16px;font-weight:700;background:linear-gradient(90deg,#c026d3,#22d3ee);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:2px;white-space:nowrap}
+.hdr-sub{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:5px;white-space:nowrap}
 .ia-badge{font-size:11px;background:rgba(168,85,247,.2);border:1px solid rgba(168,85,247,.35);color:#c4b5fd;border-radius:20px;padding:2px 9px;margin-left:6px}
 .conv-badge{font-size:12px;color:var(--sec);background:var(--item-bg);border:1px solid var(--item-brd);border-radius:20px;padding:5px 13px;max-width:250px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
@@ -88,10 +109,10 @@ body.tema-azul{
 .ia-aviso{background:rgba(34,211,238,.07);border-bottom:1px solid rgba(34,211,238,.18);padding:9px 18px;font-size:12px;color:#67e8f9;display:flex;align-items:center;gap:9px;flex-shrink:0}
 
 /* BANNER INVITADO */
-.banner-inv{background:rgba(251,191,36,.07);border-bottom:1px solid rgba(251,191,36,.2);padding:9px 18px;font-size:12px;color:#fbbf24;display:none;flex-shrink:0;gap:10px;align-items:center}
+.banner-inv{background:rgba(251,191,36,.07);border-bottom:1px solid rgba(251,191,36,.2);padding:9px 18px;font-size:12px;color:#fbbf24;display:none;flex-shrink:0;gap:10px;align-items:center;flex-wrap:wrap}
 
 /* PANTALLA BIENVENIDA */
-.sin-chat{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;text-align:center}
+.sin-chat{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;text-align:center;overflow-y:auto}
 .sin-ico{width:88px;height:88px;border-radius:50%;background:var(--item-bg);border:2px solid var(--item-brd);display:flex;align-items:center;justify-content:center;font-size:40px;margin:0 auto 22px;animation:flotar 3s ease-in-out infinite}
 @keyframes flotar{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
 .sin-chat h3{font-size:22px;font-weight:800;margin-bottom:9px;background:linear-gradient(90deg,#c026d3,#22d3ee);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
@@ -180,8 +201,8 @@ body.tema-azul{
 /* SUGERENCIAS */
 .sugs-wrap{margin-bottom:13px;flex-shrink:0}
 .sugs-label{font-size:11px;color:var(--muted);margin-bottom:7px;text-transform:uppercase;letter-spacing:.5px}
-.sugs{display:flex;gap:7px;flex-wrap:wrap}
-.sug-btn{background:var(--item-bg);border:1px solid var(--item-brd);border-radius:20px;padding:6px 13px;font-size:12px;color:#c4b5fd;cursor:pointer;transition:all .25s;white-space:nowrap;font-family:'Segoe UI',sans-serif}
+.sugs{display:flex;gap:7px;flex-wrap:wrap;overflow-x:auto;padding-bottom:2px}
+.sug-btn{background:var(--item-bg);border:1px solid var(--item-brd);border-radius:20px;padding:6px 13px;font-size:12px;color:#c4b5fd;cursor:pointer;transition:all .25s;white-space:nowrap;font-family:'Segoe UI',sans-serif;flex-shrink:0}
 .sug-btn:hover{background:rgba(168,85,247,.18);border-color:#a855f7;color:white;transform:translateY(-1px)}
 
 /* INPUT */
@@ -199,15 +220,99 @@ kbd{background:rgba(255,255,255,.08);border-radius:4px;padding:1px 5px;font-size
 /* Cursor de escritura IA */
 .cursor-ia{display:inline-block;width:2px;height:14px;background:#a855f7;margin-left:2px;border-radius:1px;animation:blink .7s infinite;vertical-align:text-bottom}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+
+/* ===================== RESPONSIVE / MOBILE ===================== */
+
+html, body { overflow-x: hidden; max-width: 100vw; }
+
+@media (max-width: 900px) {
+  /* Sidebar e Historial pasan a ser drawers INDEPENDIENTES, cada uno
+     ocupa su propio ancho relativo a la pantalla (nunca se suman ni
+     se desbordan) y solo uno se muestra a la vez. */
+  .sidebar {
+    transform: translateX(-100%);
+    width: min(80vw, 280px);
+  }
+  .panel {
+    transform: translateX(-100%);
+    left: 0;                 /* antes: 240px -> se salía de pantalla */
+    width: min(85vw, 320px);
+  }
+  .sidebar.abierta, .panel.abierta { transform: translateX(0); }
+
+  .panel-close { display: flex; }
+  .sidebar-close { display: flex; }
+
+  .main { margin-left: 0; width: 100%; min-width: 0; }
+
+  .hdr-toggles { display: flex; }
+  .chat-menu-toggle, .history-menu-toggle { display: flex; }
+
+  .chat-hdr { padding: 10px 12px; flex-wrap: nowrap; gap: 8px; }
+  .hdr-left { gap: 8px; min-width: 0; flex: 1; }
+  .hdr-name { font-size: 14px; }
+  .bot-wrap { width: 34px; height: 34px; }
+  .bot-avatar { width: 34px; height: 34px; }
+  .conv-badge { max-width: 90px; font-size: 10.5px; padding: 4px 10px; flex-shrink: 0; }
+
+  .msg-body { max-width: 82%; }
+
+  #chatActivo { padding: 0 12px 12px; }
+  .ia-aviso, .banner-inv { padding: 8px 12px; }
+  .ia-aviso { font-size: 11px; }
+  .sin-chat { padding: 24px 16px; }
+  .sin-chat h3 { font-size: 19px; }
+  .sin-chat p { font-size: 13px; margin-bottom: 18px; }
+  .caps-grid { max-width: 100%; }
+  .msg-acciones { gap: 6px; }
+  .accion-link, .accion-sug { font-size: 11px; padding: 5px 11px; }
+
+  .inp-area { padding: 7px 8px 7px 14px; }
+  .chat-inp { font-size: 15px; max-height: 90px; } /* evita zoom automático en iOS */
+  .btn-enviar { width: 36px; height: 36px; }
+}
+
+@media (max-width: 560px) {
+  .caps-grid { grid-template-columns: 1fr; gap: 8px; }
+  .cap-item { padding: 10px 12px; font-size: 11.5px; }
+
+  .msg-body { max-width: 88%; }
+  .msg-burbuja { font-size: 13.5px; padding: 10px 14px; }
+  .msg-av { width: 28px; height: 28px; }
+
+  .hdr-sub { display: none; } /* ahorra espacio: solo queda el nombre + badge IA */
+  .conv-badge { display: none; } /* redundante con el título ya visible arriba de los mensajes */
+
+  .ia-aviso span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+  .banner-inv { flex-direction: column; align-items: flex-start; gap: 6px; }
+  .banner-inv a { margin-left: 0 !important; width: 100%; text-align: center; padding: 6px 0; }
+
+  .sugs-label { font-size: 10px; }
+  .sug-btn { font-size: 11px; padding: 5px 11px; }
+
+  .inp-hint { font-size: 10px; }
+  .inp-hint kbd { padding: 1px 4px; }
+}
+
+@media (max-width: 380px) {
+  .sin-ico { width: 68px; height: 68px; font-size: 30px; margin-bottom: 14px; }
+  .hdr-name { font-size: 13px; }
+  .ia-badge { font-size: 10px; padding: 1px 7px; }
+  .msg-body { max-width: 92%; }
+  .panel { width: min(88vw, 300px); }
+  .sidebar { width: min(82vw, 260px); }
+}
 </style>
 </head>
 <body class="tema-oscuro">
 
 <!-- SIDEBAR -->
-<div class="sidebar">
+<div class="sidebar" id="sidebar">
   <div class="sidebar-logo">
     <img src="../../images/logo.png" alt="FinanBot" onerror="this.style.display='none'">
     <span>FinanBot</span>
+    <button class="sidebar-close" id="sidebarClose" aria-label="Cerrar"><i class="fas fa-times"></i></button>
   </div>
   <a href="dashboard.html"       class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
   <a href="chat.html"            class="nav-item active"><i class="fas fa-robot"></i> Chat FinanBot</a>
@@ -224,9 +329,12 @@ kbd{background:rgba(255,255,255,.08);border-radius:4px;padding:1px 5px;font-size
 </div>
 
 <!-- PANEL HISTORIAL -->
-<div class="panel">
+<div class="panel" id="panel">
   <div class="panel-hdr">
-    <div class="panel-titulo">💬 Historial</div>
+    <div class="panel-hdr-row">
+      <div class="panel-titulo">💬 Historial</div>
+      <button class="panel-close" id="panelClose" aria-label="Cerrar" onclick="cerrarPanelMovil()"><i class="fas fa-times"></i></button>
+    </div>
     <button class="btn-nueva" onclick="nuevaConversacion()">
       <i class="fas fa-plus"></i> Nueva conversación
     </button>
@@ -238,6 +346,7 @@ kbd{background:rgba(255,255,255,.08);border-radius:4px;padding:1px 5px;font-size
     </div>
   </div>
 </div>
+<div class="nav-overlay" id="navOverlay"></div>
 
 <!-- MAIN -->
 <div class="main">
@@ -245,6 +354,10 @@ kbd{background:rgba(255,255,255,.08);border-radius:4px;padding:1px 5px;font-size
   <!-- HEADER -->
   <div class="chat-hdr">
     <div class="hdr-left">
+      <div class="hdr-toggles">
+        <button class="chat-menu-toggle" id="chatMenuToggle" aria-label="Abrir menú"><i class="fas fa-bars"></i></button>
+        <button class="history-menu-toggle" id="historyMenuToggle" aria-label="Abrir historial"><i class="fas fa-clock-rotate-left"></i></button>
+      </div>
       <div class="bot-wrap">
         <img src="../../images/logo.png" class="bot-avatar" alt="Bot" onerror="this.style.display='none'">
         <div class="bot-dot"></div>
@@ -330,6 +443,53 @@ kbd{background:rgba(255,255,255,.08);border-radius:4px;padding:1px 5px;font-size
    TEMA
 ═══════════════════════════════════════════════════ */
 (function(){ document.body.className='tema-'+(localStorage.getItem('finanbot_tema')||'oscuro'); })();
+
+/* ═══════════════════════════════════════════════════
+   MENÚ MÓVIL (sidebar e historial como drawers INDEPENDIENTES)
+═══════════════════════════════════════════════════ */
+const sidebarEl         = document.getElementById('sidebar');
+const panelEl           = document.getElementById('panel');
+const navOverlay        = document.getElementById('navOverlay');
+const chatMenuToggle    = document.getElementById('chatMenuToggle');
+const historyMenuToggle = document.getElementById('historyMenuToggle');
+const panelClose        = document.getElementById('panelClose');
+const sidebarClose      = document.getElementById('sidebarClose');
+
+function actualizarOverlay() {
+  const algoAbierto = sidebarEl.classList.contains('abierta') || panelEl.classList.contains('abierta');
+  navOverlay.classList.toggle('abierto', algoAbierto);
+}
+
+function abrirSidebarMovil() {
+  panelEl.classList.remove('abierta');   // solo un drawer visible a la vez
+  sidebarEl.classList.add('abierta');
+  actualizarOverlay();
+}
+function cerrarSidebarMovil() {
+  sidebarEl.classList.remove('abierta');
+  actualizarOverlay();
+}
+function abrirPanelMovil() {
+  sidebarEl.classList.remove('abierta'); // solo un drawer visible a la vez
+  panelEl.classList.add('abierta');
+  actualizarOverlay();
+}
+function cerrarPanelMovil() {
+  panelEl.classList.remove('abierta');
+  actualizarOverlay();
+}
+function cerrarNavMovil() {
+  sidebarEl.classList.remove('abierta');
+  panelEl.classList.remove('abierta');
+  actualizarOverlay();
+}
+
+chatMenuToggle.addEventListener('click', abrirSidebarMovil);
+historyMenuToggle.addEventListener('click', abrirPanelMovil);
+panelClose.addEventListener('click', cerrarPanelMovil);
+sidebarClose.addEventListener('click', cerrarSidebarMovil);
+navOverlay.addEventListener('click', cerrarNavMovil);
+document.querySelectorAll('.nav-item').forEach(a => a.addEventListener('click', cerrarSidebarMovil));
 
 /* ═══════════════════════════════════════════════════
    VARIABLES
@@ -676,6 +836,7 @@ async function selConv(id, titulo, event) {
   abrirChat(`💬 ${titulo}`);
   document.querySelectorAll('.conv-item').forEach(e=>e.classList.remove('activa'));
   event?.currentTarget?.classList.add('activa');
+  cerrarNavMovil();
   try {
     const r = await fetch(`${API}/chat-historial/mensajes/${id}`, {headers:{'Authorization':'Bearer '+token}});
     if (!r.ok) return;
@@ -709,6 +870,7 @@ function abrirChat(titulo) {
   document.getElementById('convBadge').textContent=titulo;
   document.getElementById('sugsWrap').style.display='block';
   document.getElementById('chatInp').focus();
+  cerrarNavMovil();
 }
 
 /* ═══════════════════════════════════════════════════

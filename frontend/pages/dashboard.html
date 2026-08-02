@@ -1,4 +1,3 @@
-Dashboard · HTML
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -48,9 +47,9 @@ Dashboard · HTML
             width: 240px; height: 100vh;
             background: var(--sidebar-bg);
             border-right: 1px solid var(--sidebar-border);
-            backdrop-filter: blur(20px); z-index: 100;
+            backdrop-filter: blur(20px); z-index: 1100;
             display: flex; flex-direction: column; padding: 25px 0;
-            transition: background 0.4s, border-color 0.4s;
+            transition: background 0.4s, border-color 0.4s, transform 0.35s ease;
         }
         .sidebar-logo {
             display: flex; align-items: center; gap: 12px;
@@ -63,6 +62,13 @@ Dashboard · HTML
             font-size: 20px; font-weight: 800;
             background: linear-gradient(90deg, #c026d3, #22d3ee);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .sidebar-close {
+            display: none;
+            margin-left: auto;
+            background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+            color: var(--secondary, #9ca3af); width: 30px; height: 30px; border-radius: 50%;
+            align-items: center; justify-content: center; cursor: pointer; font-size: 13px;
         }
         .nav-item {
             display: flex; align-items: center; gap: 12px;
@@ -87,6 +93,24 @@ Dashboard · HTML
             transition: all 0.3s; width: 100%; text-decoration: none;
         }
         .btn-cerrar:hover { background: rgba(239,68,68,0.15); color: #ef4444; }
+
+        .sidebar-overlay {
+            display: none;
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.55);
+            z-index: 1050;
+        }
+        .sidebar-overlay.abierto { display: block; }
+
+        /* Botón hamburguesa (solo visible en móvil) */
+        .menu-toggle {
+            display: none;
+            background: var(--card-bg, rgba(255,255,255,0.05));
+            border: 1px solid var(--card-border, rgba(168,85,247,0.2));
+            color: white; width: 42px; height: 42px; border-radius: 12px;
+            align-items: center; justify-content: center; font-size: 18px;
+            cursor: pointer; flex-shrink: 0;
+        }
  
         /* MAIN */
         .main { margin-left: 240px; padding: 30px; min-height: 100vh; }
@@ -94,11 +118,12 @@ Dashboard · HTML
         /* TOPBAR */
         .topbar {
             display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 28px;
+            margin-bottom: 28px; gap: 14px; flex-wrap: wrap;
         }
+        .topbar-left { display: flex; align-items: center; gap: 14px; }
         .topbar h1 { font-size: 24px; font-weight: 700; }
         .topbar p  { color: var(--secondary, #9ca3af); font-size: 14px; margin-top: 3px; }
-        .topbar-right { display: flex; align-items: center; gap: 14px; }
+        .topbar-right { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
  
         .btn-exportar {
             background: linear-gradient(135deg, #4ade80, #22d3ee);
@@ -279,11 +304,13 @@ Dashboard · HTML
             border: 1px solid var(--card-border);
             border-radius: 18px; padding: 24px;
             transition: background 0.4s, border-color 0.4s;
+            min-width: 0; /* evita overflow de canvas en grid */
         }
         .chart-title {
             font-size: 15px; font-weight: 600; color: #c4b5fd;
             margin-bottom: 18px; display: flex; align-items: center; gap: 8px;
         }
+        .chart-card canvas { max-width: 100%; }
  
         /* TRANSACCIONES */
         .trans-card {
@@ -308,9 +335,10 @@ Dashboard · HTML
         .trans-item {
             display: flex; align-items: center; justify-content: space-between;
             padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
+            gap: 10px;
         }
         .trans-item:last-child { border-bottom: none; }
-        .trans-left { display: flex; align-items: center; gap: 12px; }
+        .trans-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
         .trans-icon {
             width: 42px; height: 42px; border-radius: 12px;
             display: flex; align-items: center; justify-content: center;
@@ -319,8 +347,8 @@ Dashboard · HTML
         .trans-icon.gasto   { background: rgba(192,38,211,0.15); }
         .trans-icon.ingreso { background: rgba(34,211,238,0.15); }
         .trans-nombre { font-size: 14px; font-weight: 600; color: white; }
-        .trans-desc   { font-size: 12px; color: var(--muted, #6b7280); margin-top: 2px; }
-        .trans-monto  { font-size: 15px; font-weight: 700; }
+        .trans-desc   { font-size: 12px; color: var(--muted, #6b7280); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 55vw; }
+        .trans-monto  { font-size: 15px; font-weight: 700; flex-shrink: 0; }
         .trans-monto.gasto   { color: #f472b6; }
         .trans-monto.ingreso { color: #4ade80; }
         .trans-empty {
@@ -332,14 +360,71 @@ Dashboard · HTML
             from { opacity: 0; transform: translateY(-8px); }
             to   { opacity: 1; transform: translateY(0); }
         }
+
+        /* ===================== RESPONSIVE / MOBILE ===================== */
+
+        /* Tablets */
+        @media (max-width: 1100px) {
+            .accesos-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+
+        @media (max-width: 992px) {
+            .cards-grid { grid-template-columns: repeat(2, 1fr); }
+            .bottom-grid { grid-template-columns: 1fr; }
+            .resumen-semanal-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        /* Sidebar colapsable en móvil/tablet */
+        @media (max-width: 900px) {
+            .sidebar {
+                transform: translateX(-100%);
+                width: min(260px, 80%);
+            }
+            .sidebar.abierta { transform: translateX(0); }
+            .sidebar-close { display: flex; }
+
+            .main { margin-left: 0; padding: 20px 16px; }
+
+            .menu-toggle { display: flex; }
+        }
+
+        @media (max-width: 640px) {
+            .topbar h1 { font-size: 19px; }
+            .topbar p { font-size: 12px; }
+
+            .user-badge .user-name { display: none; } /* deja solo el avatar, ahorra espacio */
+            .user-badge { padding: 6px; }
+
+            .btn-exportar { padding: 9px 14px; font-size: 12px; }
+            .btn-exportar span.txt-exportar { display: none; } /* si se agrega texto envuelto, se puede ocultar */
+
+            .cards-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
+            .stat-card { padding: 16px; }
+            .stat-value { font-size: 18px; }
+            .stat-icon { font-size: 22px; margin-bottom: 8px; }
+
+            .accesos-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+            .acceso-card { padding: 14px; }
+
+            .resumen-semanal-grid { grid-template-columns: repeat(2, 1fr); }
+
+            .chart-card { padding: 16px; }
+
+            .trans-desc { max-width: 40vw; }
+        }
+
+        @media (max-width: 380px) {
+            .cards-grid { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 <body class="tema-oscuro">
  
-    <div class="sidebar">
+    <div class="sidebar" id="sidebar">
         <div class="sidebar-logo">
             <img src="../../images/logo.png" alt="FinanBot" onerror="this.style.display='none'">
             <span>FinanBot</span>
+            <button class="sidebar-close" id="sidebarClose" aria-label="Cerrar menú"><i class="fas fa-times"></i></button>
         </div>
         <a href="dashboard.html" class="nav-item active"><i class="fas fa-home"></i> Dashboard</a>
         <a href="chat.html"      class="nav-item"><i class="fas fa-robot"></i> Chat FinanBot</a>
@@ -354,18 +439,22 @@ Dashboard · HTML
             </a>
         </div>
     </div>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
  
     <div class="main">
  
         <!-- TOPBAR -->
         <div class="topbar">
-            <div>
-                <h1>¡Hola, <span id="nombreUsuario">Usuario</span>! 👋</h1>
-                <p id="fechaHoy"></p>
+            <div class="topbar-left">
+                <button class="menu-toggle" id="menuToggle" aria-label="Abrir menú"><i class="fas fa-bars"></i></button>
+                <div>
+                    <h1>¡Hola, <span id="nombreUsuario">Usuario</span>! 👋</h1>
+                    <p id="fechaHoy"></p>
+                </div>
             </div>
             <div class="topbar-right">
                 <button class="btn-exportar" onclick="exportarPDF(this)">
-                    <i class="fas fa-file-pdf"></i> Exportar PDF
+                    <i class="fas fa-file-pdf"></i> <span class="txt-exportar">Exportar PDF</span>
                 </button>
                 <div class="user-badge">
                     <div class="user-avatar" id="avatarLetra">U</div>
@@ -504,6 +593,26 @@ Dashboard · HTML
             const t = localStorage.getItem('finanbot_tema') || 'oscuro';
             document.body.className = 'tema-' + t;
         })();
+
+        // ── SIDEBAR MÓVIL ─────────────────────────────────
+        const sidebar        = document.getElementById('sidebar');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        const menuToggle      = document.getElementById('menuToggle');
+        const sidebarClose    = document.getElementById('sidebarClose');
+
+        function abrirSidebar() {
+            sidebar.classList.add('abierta');
+            sidebarOverlay.classList.add('abierto');
+        }
+        function cerrarSidebar() {
+            sidebar.classList.remove('abierta');
+            sidebarOverlay.classList.remove('abierto');
+        }
+        menuToggle.addEventListener('click', abrirSidebar);
+        sidebarClose.addEventListener('click', cerrarSidebar);
+        sidebarOverlay.addEventListener('click', cerrarSidebar);
+        // Cerrar sidebar al navegar (en móvil)
+        document.querySelectorAll('.nav-item').forEach(a => a.addEventListener('click', cerrarSidebar));
  
         // ── PREFERENCIAS ──────────────────────────────────
         function getPrefs() {
@@ -849,6 +958,7 @@ Dashboard · HTML
                 },
                 options: {
                     responsive: true,
+                    maintainAspectRatio: true,
                     plugins: {
                         legend: { labels:{ color:'#c4b5fd', font:{size:11} } },
                         tooltip: { callbacks:{ label: ctx => ` $${ctx.parsed.y.toLocaleString('es-CO')}` } }
@@ -885,7 +995,7 @@ Dashboard · HTML
                     }]
                 },
                 options: {
-                    responsive:true, cutout:'60%',
+                    responsive:true, maintainAspectRatio: true, cutout:'60%',
                     plugins: {
                         legend:{ position:'bottom', labels:{color:'#c4b5fd',font:{size:10},padding:12,boxWidth:12} },
                         tooltip:{ callbacks:{ label: ctx => ` $${ctx.parsed.toLocaleString('es-CO')}` } }

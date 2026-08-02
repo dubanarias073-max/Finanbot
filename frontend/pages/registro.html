@@ -194,6 +194,36 @@
         .link-login { margin-top: 20px; text-align: center; font-size: 13px; color: var(--muted); }
         .link-login a { color: var(--cyan); text-decoration: none; font-weight: 600; transition: color .3s; }
         .link-login a:hover { color: #67e8f9; }
+
+        /* ===================== RESPONSIVE / MOBILE ===================== */
+        @media (max-width: 480px) {
+            body { padding: 16px 12px; align-items: flex-start; padding-top: 30px; }
+
+            .card-registro {
+                padding: 30px 20px 26px;
+                border-radius: 20px;
+            }
+
+            .logo-img, .logo-fallback { width: 60px; height: 60px; margin-bottom: 10px; }
+            .titulo { font-size: 22px; }
+            .subtitulo { font-size: 12px; }
+
+            .campo-label { font-size: 10.5px; }
+            .campo-input, .campo-select { font-size: 15px; padding: 11px 12px; } /* evita zoom automático en iOS */
+            .campo-prefix { width: 38px; }
+
+            .reqs { gap: 5px; }
+            .req { font-size: 10px; padding: 3px 8px; }
+
+            .btn-registrar { font-size: 14px; padding: 13px; }
+
+            .sep { margin: 16px 0; }
+        }
+
+        @media (max-width: 360px) {
+            .titulo { font-size: 20px; }
+            .campo-prefix { width: 34px; font-size: 12px; }
+        }
     </style>
 </head>
 <body>
