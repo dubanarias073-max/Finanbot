@@ -49,6 +49,11 @@ Si prefieres usar Uvicorn directamente:
 uvicorn app:app --reload
 ```
 
+## ADVERTENCIA:
+si el chatbot se vuelve tonto es porque creaste la base de datos y reiniciaste el servidor de FastAPI,
+entonces control + c y vuelve a colocar :
+fastapi dev app.py o uvicorn app:app --reload
+
 ## 5. Abrir la interfaz
 
 Abre la carpeta frontend y ejecuta el archivo index.html.

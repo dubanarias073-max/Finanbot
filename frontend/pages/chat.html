@@ -950,7 +950,7 @@ async function enviarYRenderizar(msg) {
     }
   } catch(e) {
     quitarTyping();
-    addMsg('⚠️ **Sin conexión con el servidor.** Verifica que Flask esté ejecutándose en `http://127.0.0.1:8000`.','bot',[],null,false);
+    addMsg('⚠️ **No pude conectar con el servidor.** Verifica que FastAPI esté corriendo en http://127.0.0.1:8000 y vuelve a intentarlo.','bot',[],null,false);
   }
 
   enviando = false;

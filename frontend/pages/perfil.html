@@ -601,6 +601,13 @@
                                 <input type="number" class="form-control" id="ingresoMensual" placeholder="2.500.000" oninput="actualizarDist()">
                                 <span class="suffix-tag">COP</span>
                             </div>
+                            <div class="form-group" style="margin-top:10px;margin-bottom:0;">
+                                <label class="form-label">Día de pago mensual</label>
+                                <input type="number" class="form-control" id="diaPago" min="1" max="31" placeholder="Ej: 30">
+                                <div style="font-size:11px;color:var(--text-muted);margin-top:6px;line-height:1.5;">
+                                    FinanBot registrará tu salario automáticamente ese día, mes a mes (no se adelanta a meses futuros). Si cambias el día, los meses ya pasados no se modifican.
+                                </div>
+                            </div>
                             <!-- INFO BOX SALARIO -->
                             <div class="ingreso-info-box" id="ingresoInfoBox" style="display:none;">
                                 <i class="fas fa-info-circle"></i>
@@ -904,6 +911,17 @@ const token = localStorage.getItem('token');
     const esAutoSalario = t =>
         t.descripcion && t.descripcion.includes(TAG_SALARIO_AUTO);
 
+    // Calcula la fecha (YYYY-MM-DD) del día de pago para un mes dado,
+    // ajustando al último día del mes si éste tiene menos días que "dia".
+    function fechaSalarioParaMes(anioBase, mesBase, offsetMeses, dia) {
+        const ref = new Date(anioBase, mesBase + offsetMeses, 1);
+        const anio = ref.getFullYear();
+        const mes  = ref.getMonth();
+        const ultimoDia = new Date(anio, mes + 1, 0).getDate();
+        const diaFinal = Math.min(dia, ultimoDia);
+        return `${anio}-${String(mes + 1).padStart(2,'0')}-${String(diaFinal).padStart(2,'0')}`;
+    }
+
     // ── REGLA PERSONALIZABLE ──────────────────────────────
     const REGLA_KEY     = 'finanbot_regla_dist';
     const REGLA_DEFAULT = { nec: 50, des: 30, aho: 20, nombre: 'Estándar 50/30/20' };
@@ -1174,6 +1192,8 @@ const token = localStorage.getItem('token');
                 document.getElementById('correo').value        = u.correo;
                 document.getElementById('ingresoMensual').value = u.ingreso_mensual || '';
                 document.getElementById('metaAhorro').value    = u.meta_ahorro     || '';
+                const fechaSalario = u.fecha_salario ? new Date(u.fecha_salario) : null;
+                document.getElementById('diaPago').value = fechaSalario ? fechaSalario.getDate() : '';
                 actualizarDist();
                 localStorage.setItem('usuario', JSON.stringify(u));
             }
@@ -1303,7 +1323,20 @@ const token = localStorage.getItem('token');
         const nombre  = document.getElementById('nombre').value.trim();
         const ingreso = document.getElementById('ingresoMensual').value;
         const meta    = document.getElementById('metaAhorro').value;
+        const diaPagoStr = document.getElementById('diaPago').value;
         if (!nombre) { toast('⚠️','El nombre no puede estar vacío.'); return; }
+
+        let fechaSalario = null;
+        let diaPagoNum = null;
+        if (diaPagoStr) {
+            diaPagoNum = parseInt(diaPagoStr, 10);
+            if (!diaPagoNum || diaPagoNum < 1 || diaPagoNum > 31) {
+                toast('⚠️','El día de pago debe estar entre 1 y 31.');
+                return;
+            }
+            const hoy = new Date();
+            fechaSalario = fechaSalarioParaMes(hoy.getFullYear(), hoy.getMonth(), 0, diaPagoNum);
+        }
 
         const btn = document.getElementById('btnGuardarPerfil');
         btn.disabled = true;
@@ -1319,7 +1352,8 @@ const token = localStorage.getItem('token');
     body: JSON.stringify({
         nombre,
         ingreso_mensual: Number(ingreso),
-        meta_ahorro: Number(meta)
+        meta_ahorro: Number(meta),
+        fecha_salario: fechaSalario
     })
 });
 
@@ -1335,8 +1369,8 @@ if (res.ok) {
                 u.nombre = nombre; localStorage.setItem('usuario', JSON.stringify(u));
 
                 // ── SINCRONIZAR SALARIO AUTOMÁTICO ────────
-                if (ingreso && parseFloat(ingreso) > 0) {
-                    await sincronizarSalarioAuto(parseFloat(ingreso));
+                if (ingreso && parseFloat(ingreso) > 0 && diaPagoNum) {
+                    await sincronizarSalarioAuto(parseFloat(ingreso), diaPagoNum);
                 }
                 // ─────────────────────────────────────────
 
@@ -1354,10 +1388,14 @@ if (res.ok) {
     }
 
     // ── SALARIO AUTOMÁTICO ────────────────────────────────
-    // Usa el MISMO tag que onboarding.html (__auto_salario__) para que,
-    // sin importar desde dónde se creó/editó el salario, finanzas.html
-    // lo reconozca, lo oculte de la lista y lo siga sumando a los totales.
-    async function sincronizarSalarioAuto(monto) {
+    // Programa el salario SOLO para el mes actual, en el día de pago
+    // elegido. No se pre-generan meses futuros: cada mes se crea cuando
+    // el usuario efectivamente llega a él (ver asegurarSalarioMesActual
+    // en dashboard.html / finanzas.html). Aquí también se limpian
+    // registros futuros que hubieran quedado de versiones anteriores.
+    // Los salarios de meses YA PASADOS nunca se tocan, así que si el
+    // usuario cambia el día de pago, el historial anterior no cambia.
+    async function sincronizarSalarioAuto(monto, diaPago) {
         try {
             // 1. Obtener todas las transacciones
             const res = await fetch(API + '/transacciones/', {
@@ -1366,17 +1404,22 @@ if (res.ok) {
             if (!res.ok) return;
             const todas = await res.json();
 
-            // 2. Eliminar salario(s) auto previo(s) — evita duplicados
-            const autoAnteriores = todas.filter(t => esAutoSalario(t));
-            for (const t of autoAnteriores) {
+            // 2. Calcular el mes actual (frontera pasado/futuro)
+            const hoy = new Date();
+            const mesActualStr = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}`;
+
+            // 3. Borrar auto-salarios del mes actual en adelante
+            //    (incluye limpiar meses futuros que hubiera de antes)
+            const aReemplazar = todas.filter(t => esAutoSalario(t) && t.fecha && t.fecha.slice(0,7) >= mesActualStr);
+            for (const t of aReemplazar) {
                 await fetch(`${API}/transacciones/${t.id}`, {
                     method: 'DELETE',
                     headers: {'Authorization': `Bearer ${token}`}
                 });
             }
 
-            // 3. Crear nuevo salario auto con el mes actual
-            const hoy = new Date().toISOString().split('T')[0];
+            // 4. Crear SOLO el salario del mes actual con el nuevo día
+            const fechaMesActual = fechaSalarioParaMes(hoy.getFullYear(), hoy.getMonth(), 0, diaPago);
             await fetch(API + '/transacciones/', {
                 method: 'POST',
                 headers: {'Content-Type':'application/json','Authorization': `Bearer ${token}`},
@@ -1386,11 +1429,11 @@ if (res.ok) {
                     icono: '💼',
                     monto: monto,
                     descripcion: TAG_SALARIO_AUTO,   // tag oculto, no editable por el usuario
-                    fecha: hoy
+                    fecha: fechaMesActual
                 })
             });
 
-            toast('💼', `Salario de $${Math.round(monto).toLocaleString('es-CO')} sincronizado en Mis Finanzas`);
+            toast('💼', `Salario de $${Math.round(monto).toLocaleString('es-CO')} programado el día ${diaPago} de este mes`);
         } catch(e) {
             console.error('Error sincronizando salario auto:', e);
         }

@@ -15,12 +15,14 @@ class Usuario(Base):
     contrasena_hash = Column(String(255), nullable=False)
     ingreso_mensual = Column(Numeric(10, 2), default=0.00)
     meta_ahorro = Column(Numeric(10, 2), default=0.00)
+    fecha_salario = Column(Date, nullable=True)
     pregunta_seguridad = Column(String(255), nullable=True)
     respuesta_seguridad = Column(String(255), nullable=True)
     onboarding_completado = Column(Boolean, default=False)
     fecha_registro = Column(DateTime, default=datetime.utcnow)
 
     transacciones = relationship('Transaccion', back_populates='usuario')
+    periodos = relationship('PeriodoFinanciero', back_populates='usuario')
     metas = relationship('MetaAhorro', back_populates='usuario')
     simulaciones = relationship('Simulacion', back_populates='usuario')
     chats = relationship('Chat', back_populates='usuario')
@@ -52,6 +54,39 @@ class Transaccion(Base):
 
     usuario = relationship('Usuario', back_populates='transacciones')
     categoria = relationship('Categoria', back_populates='transacciones')
+
+
+class PeriodoFinanciero(Base):
+    __tablename__ = 'periodos_financieros'
+
+    id = Column(Integer, primary_key=True)
+    usuario_id = Column(Integer, ForeignKey('usuarios.id'), nullable=False)
+    anio = Column(Integer, nullable=False)
+    mes = Column(Integer, nullable=False)
+    activo = Column(Boolean, default=True, nullable=False)
+    ingresos_total = Column(Numeric(10, 2), default=0.00)
+    gastos_total = Column(Numeric(10, 2), default=0.00)
+    balance = Column(Numeric(10, 2), default=0.00)
+    fecha_creacion = Column(DateTime, default=datetime.utcnow)
+    fecha_cierre = Column(DateTime, nullable=True)
+
+    usuario = relationship('Usuario', back_populates='periodos')
+    transacciones = relationship('TransaccionPeriodo', back_populates='periodo', cascade='all, delete-orphan')
+
+
+class TransaccionPeriodo(Base):
+    __tablename__ = 'transacciones_periodo'
+
+    id = Column(Integer, primary_key=True)
+    periodo_id = Column(Integer, ForeignKey('periodos_financieros.id'), nullable=False)
+    tipo = Column(Enum('gasto', 'ingreso', name='tipo_transaccion_periodo_enum'), nullable=False)
+    monto = Column(Numeric(10, 2), nullable=False)
+    categoria = Column(String(80), nullable=False)
+    descripcion = Column(String(255))
+    fecha = Column(Date, nullable=False)
+    fecha_registro = Column(DateTime, default=datetime.utcnow)
+
+    periodo = relationship('PeriodoFinanciero', back_populates='transacciones')
 
 
 class MetaAhorro(Base):

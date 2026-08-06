@@ -83,7 +83,7 @@ def login(body: LoginSchema, db: Session = Depends(get_db)):
     if not verify_password(body.contrasena, usuario.contrasena_hash):
         raise HTTPException(status_code=401, detail='Correo o contraseña incorrectos')
 
-    token = create_access_token({"sub": str(usuario.id)})
+    token = create_access_token({"sub": usuario.correo, "user_id": usuario.id})
 
     return {
         'mensaje': '✅ Inicio de sesión exitoso!',

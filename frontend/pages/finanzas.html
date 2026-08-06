@@ -52,12 +52,24 @@
 
         /* MAIN */
         .main { margin-left: 240px; padding: 30px; min-height: 100vh; }
+
+        /* TOPBAR */
         .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; gap: 12px; flex-wrap: wrap; }
         .topbar-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
         .topbar h1 { font-size: 24px; font-weight: 700; }
         .topbar p { color: var(--secondary, #9ca3af); font-size: 14px; margin-top: 3px; }
-        .btn-accion { background: var(--card-bg); border: 1px solid var(--card-border); color: var(--secondary, #9ca3af); border-radius: 10px; padding: 9px 16px; font-size: 13px; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; gap: 7px; }
+        .topbar-actions { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+        .btn-accion { background: var(--card-bg); border: 1px solid var(--card-border); color: var(--secondary, #9ca3af); border-radius: 10px; padding: 9px 16px; font-size: 13px; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; gap: 7px; white-space: nowrap; }
         .btn-accion:hover { background: rgba(168,85,247,0.1); color: white; border-color: #a855f7; }
+
+        .btn-calendario {
+            display: flex; align-items: center; gap: 8px;
+            background: var(--card-bg); border: 1px solid var(--card-border);
+            color: white; border-radius: 50px; padding: 10px 18px;
+            font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.3s;
+        }
+        .btn-calendario:hover { background: rgba(168,85,247,0.12); border-color: #a855f7; }
+        .btn-calendario i { color: #fbbf24; }
 
         /* STATS */
         .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin-bottom: 26px; }
@@ -165,7 +177,32 @@
         .cat-bar-wrap { flex: 1; margin: 0 12px; height: 4px; border-radius: 4px; background: var(--item-border); overflow: hidden; }
         .cat-bar-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, #c026d3, #a855f7); }
 
-        /* MODAL EDITAR */
+        .resumen-mes-lista { display: grid; gap: 10px; }
+        .resumen-mes-item { background: var(--item-bg); border: 1px solid var(--item-border); border-radius: 14px; padding: 12px 14px; }
+        .resumen-mes-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 10px; }
+        .resumen-mes-title { font-size: 13px; font-weight: 700; color: white; text-transform: capitalize; }
+        .resumen-mes-balance { font-size: 13px; font-weight: 700; }
+        .resumen-mes-balance.positivo { color: #4ade80; }
+        .resumen-mes-balance.negativo { color: #f472b6; }
+        .resumen-mes-totales { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+        .resumen-mes-totales div { background: rgba(255,255,255,0.03); border-radius: 10px; padding: 8px 10px; }
+        .resumen-mes-totales span { display: block; font-size: 10px; color: var(--muted, #6b7280); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 3px; }
+        .resumen-mes-totales strong { font-size: 13px; color: #f0abfc; }
+        .resumen-mes-totales .gasto strong { color: #f472b6; }
+        .resumen-mes-totales .ingreso strong { color: #4ade80; }
+        .resumen-mes-dias { display: grid; gap: 8px; }
+        .resumen-dia { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 10px; padding: 8px 10px; }
+        .resumen-dia-top { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: white; margin-bottom: 6px; }
+        .resumen-dia-top span { color: var(--muted, #6b7280); font-size: 11px; }
+        .resumen-dia-mov { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-top: 4px; font-size: 12px; }
+        .resumen-dia-mov .tipo { font-size: 11px; padding: 3px 7px; border-radius: 999px; display: inline-block; margin-bottom: 3px; }
+        .resumen-dia-mov .tipo.gasto { background: rgba(192,38,211,0.16); color: #f0abfc; }
+        .resumen-dia-mov .tipo.ingreso { background: rgba(34,211,238,0.16); color: #67e8f9; }
+        .resumen-dia-mov strong { color: #f5f5f5; white-space: nowrap; }
+        .resumen-dia-detalle { flex: 1; min-width: 0; }
+        .resumen-dia-label { color: var(--secondary, #9ca3af); font-size: 11px; line-height: 1.4; word-break: break-word; }
+
+        /* MODAL EDITAR / CALENDARIO */
         .modal-overlay { display: none; position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.82); backdrop-filter: blur(6px); align-items: center; justify-content: center; padding: 20px; }
         .modal-overlay.visible { display: flex; }
         .modal-box { background: linear-gradient(145deg, #12103a, #0d0d2a); border: 1px solid rgba(168,85,247,0.3); border-radius: 24px; padding: 34px 32px; width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; position: relative; box-shadow: 0 30px 80px rgba(0,0,0,0.7); animation: modalIn .35s cubic-bezier(0.34,1.56,0.64,1); }
@@ -197,6 +234,64 @@
         .btn-modal-guardar:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
         .spinner { display: inline-block; width: 15px; height: 15px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin .7s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* CALENDARIO INTERACTIVO */
+        .calendario-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+        .calendario-nav button {
+            background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+            color: white; width: 32px; height: 32px; border-radius: 8px; cursor: pointer;
+        }
+        .calendario-nav span { font-size: 14px; font-weight: 700; color: #c4b5fd; text-transform: capitalize; }
+        .calendario-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 5px; margin-bottom: 16px; }
+        .cal-header-dia { text-align: center; font-size: 10px; color: var(--muted, #6b7280); font-weight: 700; text-transform: uppercase; padding-bottom: 4px; }
+        .cal-dia {
+            min-width: 0; aspect-ratio: 1; border-radius: 10px; background: var(--item-bg);
+            border: 1px solid var(--item-border); display: flex; flex-direction: column;
+            align-items: center; justify-content: center; font-size: 12px; cursor: pointer;
+            transition: all 0.2s; position: relative; color: white;
+        }
+        .cal-dia:hover { border-color: #a855f7; background: rgba(168,85,247,0.1); }
+        .cal-dia.vacio { visibility: hidden; cursor: default; }
+        .cal-dia.hoy { border-color: #fbbf24; }
+        .cal-dia.seleccionado { background: rgba(168,85,247,0.25); border-color: #a855f7; }
+        .cal-dia-dots { display: flex; gap: 2px; margin-top: 2px; }
+        .cal-dot { width: 5px; height: 5px; border-radius: 50%; }
+        .cal-dot.gasto { background: #f472b6; }
+        .cal-dot.ingreso { background: #4ade80; }
+
+        .cal-dia-panel { border-top: 1px solid var(--item-border); padding-top: 16px; }
+        .cal-dia-panel-titulo { font-size: 13px; font-weight: 700; color: #c4b5fd; margin-bottom: 10px; }
+        .cal-mov-item {
+            display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;
+            background: var(--item-bg); border: 1px solid var(--item-border);
+            border-radius: 10px; padding: 9px 12px; font-size: 12px; margin-bottom: 6px;
+        }
+        .cal-mov-titulo { font-weight: 600; color: white; }
+        .cal-mov-desc { font-size: 11px; color: var(--muted, #6b7280); margin-top: 2px; }
+        .cal-sin-datos { font-size: 12px; color: var(--muted, #6b7280); margin-bottom: 10px; text-align: center; padding: 10px 0; }
+        .cal-mov-item .monto.gasto { color: #f472b6; font-weight: 700; }
+        .cal-mov-item .monto.ingreso { color: #4ade80; font-weight: 700; }
+
+        .cal-form-tipo { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+        .cal-form-tipo button {
+            padding: 9px; border-radius: 10px; border: 2px solid transparent; cursor: pointer;
+            font-size: 12px; font-weight: 600; transition: all 0.3s;
+        }
+        .cal-form-tipo button.gasto { background: rgba(192,38,211,0.08); border-color: rgba(192,38,211,0.2); color: #f0abfc; }
+        .cal-form-tipo button.gasto.activo { background: rgba(192,38,211,0.2); border-color: #c026d3; }
+        .cal-form-tipo button.ingreso { background: rgba(34,211,238,0.08); border-color: rgba(34,211,238,0.2); color: #67e8f9; }
+        .cal-form-tipo button.ingreso.activo { background: rgba(34,211,238,0.2); border-color: #22d3ee; }
+        .cal-form input, .cal-form select {
+            width: 100%; background: rgba(255,255,255,0.04); border: 1.5px solid rgba(168,85,247,0.22);
+            border-radius: 10px; color: white; padding: 9px 12px; font-size: 13px; outline: none;
+            margin-bottom: 9px; font-family: inherit;
+        }
+        .cal-form select option { background: #1a0a3c; color: white; }
+        .btn-cal-guardar {
+            width: 100%; border: none; border-radius: 10px; padding: 11px; font-size: 13px;
+            font-weight: 700; color: white; cursor: pointer;
+            background: linear-gradient(135deg, #c026d3, #a855f7);
+        }
 
         /* SALARIO INFO BANNER (en lista vacía) */
         .salario-banner { display: flex; align-items: center; gap: 12px; background: rgba(74,222,128,0.05); border: 1px solid rgba(74,222,128,0.2); border-radius: 14px; padding: 14px 18px; margin-bottom: 16px; }
@@ -311,6 +406,22 @@
         </div>
     </div>
 
+    <!-- MODAL CALENDARIO -->
+    <div class="modal-overlay" id="modalCalendario">
+        <div class="modal-box">
+            <button class="modal-close" onclick="cerrarCalendario()">✕</button>
+            <div class="modal-titulo"><i class="fas fa-calendar-days" style="color:#fbbf24"></i> Calendario de movimientos</div>
+            <div class="modal-sub">Elige un día para ver los movimientos registrados</div>
+            <div class="calendario-nav">
+                <button onclick="cambiarMesCalendario(-1)"><i class="fas fa-chevron-left"></i></button>
+                <span id="calMesLabel"></span>
+                <button onclick="cambiarMesCalendario(1)"><i class="fas fa-chevron-right"></i></button>
+            </div>
+            <div class="calendario-grid" id="calendarioGrid"></div>
+            <div class="cal-dia-panel" id="calDiaPanel" style="display:none;"></div>
+        </div>
+    </div>
+
     <div class="nav-overlay" id="navOverlay"></div>
 
     <!-- SIDEBAR -->
@@ -344,7 +455,10 @@
                     <p>Registra y controla todos tus movimientos financieros</p>
                 </div>
             </div>
-            <div style="display:flex;gap:10px">
+            <div class="topbar-actions">
+                <button class="btn-calendario" onclick="abrirCalendario()">
+                    <i class="fas fa-calendar-days"></i> Ver calendario
+                </button>
                 <button class="btn-accion" onclick="location.href='chat.html'">
                     <i class="fas fa-robot"></i> Pedir ayuda al bot
                 </button>
@@ -381,6 +495,32 @@
                 <div class="stat-label">Transacciones</div>
                 <div class="stat-value amar" id="numTrans">0</div>
                 <div class="stat-sub" id="mayorGasto">Mayor categoría: —</div>
+            </div>
+        </div>
+
+        <div style="margin-bottom:18px; display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-start;">
+            <button class="btn-accion" id="btnVerResumenMensual" onclick="toggleResumenMensual()" type="button">
+                <i class="fas fa-calendar-alt"></i> Ver mis finanzas por mes
+            </button>
+        </div>
+
+        <div class="card" id="bloqueResumenMensual" style="display:none; margin-bottom:22px;">
+            <div class="card-title">
+                <i class="fas fa-calendar-alt" style="color:#fbbf24;"></i>
+                Resumen por mes
+            </div>
+            <div id="resumenMensual" class="resumen-mes-lista">
+                <div class="vacio" style="padding:18px 0;">
+                    <i class="fas fa-calendar"></i>
+                    <p>Cargando resumen mensual...</p>
+                </div>
+            </div>
+            <div style="margin-top:18px;">
+                <div class="card-title" style="margin-bottom:10px;">
+                    <i class="fas fa-chart-line" style="color:#22d3ee;"></i>
+                    Comparar meses
+                </div>
+                <div id="compararPeriodos" class="resumen-mes-lista"></div>
             </div>
         </div>
 
@@ -699,6 +839,7 @@
                     filtrarYRender();
                     actualizarStats();
                     renderCategorias();
+                    renderResumenMensual();
                     setTimeout(() => cerrarModal(), 1400);
                 } else {
                     mostrarModalError(data.mensaje || 'Error al actualizar.');
@@ -734,7 +875,11 @@
                     filtrarYRender();
                     actualizarStats();
                     renderCategorias();
+                    renderResumenMensual();
                     actualizarSalarioBanner();
+                    if (document.getElementById('modalCalendario').classList.contains('visible')) {
+                        renderCalendarioModal();
+                    }
                 }
             } catch(e) { console.error(e); }
         }
@@ -793,6 +938,164 @@
             const mayor = Object.entries(catMap).sort((a,b)=>b[1]-a[1])[0];
             document.getElementById('mayorGasto').textContent = mayor
                 ? `Mayor: ${getIcono(mayor[0],'gasto')} ${mayor[0]}` : 'Sin gastos';
+        }
+
+        function toggleResumenMensual() {
+            const bloque = document.getElementById('bloqueResumenMensual');
+            const btn = document.getElementById('btnVerResumenMensual');
+            const visible = bloque.style.display !== 'none';
+            bloque.style.display = visible ? 'none' : 'block';
+            btn.innerHTML = visible
+                ? '<i class="fas fa-calendar-alt"></i> Ver mis finanzas por mes'
+                : '<i class="fas fa-times"></i> Cerrar resumen mensual';
+            if (!visible) {
+                renderResumenMensual();
+                cargarPeriodos();
+            }
+        }
+
+        async function cargarPeriodos() {
+            const cont = document.getElementById('compararPeriodos');
+            if (!token) return;
+            try {
+                const res = await fetch('http://127.0.0.1:8000/api/transacciones/periodos', {
+                    headers: {'Authorization':'Bearer '+token}
+                });
+                if (!res.ok) throw new Error('No se pudieron cargar los periodos');
+                const periodos = await res.json();
+                if (!periodos.length) {
+                    cont.innerHTML = '<div class="vacio" style="padding:16px 0;"><i class="fas fa-calendar-days"></i><p>Aún no hay periodos mensuales guardados.</p></div>';
+                    return;
+                }
+
+                cont.innerHTML = `
+                    <div style="overflow-x:auto;">
+                        <table style="width:100%; border-collapse:collapse; font-size:13px;">
+                            <thead>
+                                <tr style="text-align:left; color:#c4b5fd; border-bottom:1px solid var(--item-border);">
+                                    <th style="padding:8px 6px;">Periodo</th>
+                                    <th style="padding:8px 6px;">Ingresos</th>
+                                    <th style="padding:8px 6px;">Gastos</th>
+                                    <th style="padding:8px 6px;">Balance</th>
+                                    <th style="padding:8px 6px;">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${periodos.map(p => `
+                                    <tr style="border-bottom:1px solid var(--item-border);">
+                                        <td style="padding:8px 6px;">${p.label} ${p.activo ? '(Actual)' : ''}</td>
+                                        <td style="padding:8px 6px; color:#4ade80;">$${Number(p.ingresos_total || 0).toLocaleString('es-CO')}</td>
+                                        <td style="padding:8px 6px; color:#f472b6;">$${Number(p.gastos_total || 0).toLocaleString('es-CO')}</td>
+                                        <td style="padding:8px 6px; color:${(p.balance || 0) >= 0 ? '#4ade80' : '#f472b6'};">${(p.balance || 0) >= 0 ? '+' : ''}$${Number(p.balance || 0).toLocaleString('es-CO')}</td>
+                                        <td style="padding:8px 6px;">
+                                            <button class="btn-trans-accion btn-eliminar-t" title="${p.activo ? 'Borrar el mes actual' : 'Borrar este mes'}" onclick="eliminarPeriodo(${p.id}, ${p.activo ? 'true' : 'false'})"><i class="fas fa-trash"></i></button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            } catch (e) {
+                cont.innerHTML = '<div class="vacio" style="padding:16px 0;"><i class="fas fa-triangle-exclamation"></i><p>No se pudo cargar la comparación mensual.</p></div>';
+            }
+        }
+
+        async function eliminarPeriodo(id, esActivo) {
+            const mensaje = esActivo
+                ? '¿Seguro que quieres borrar el mes actual y todos sus movimientos? Empezarás de cero.'
+                : '¿Seguro que quieres borrar este periodo y todos sus movimientos?';
+            if (!confirm(mensaje)) return;
+            try {
+                const res = await fetch(`http://127.0.0.1:8000/api/transacciones/periodos/${id}`, {
+                    method: 'DELETE',
+                    headers: {'Authorization':'Bearer '+token}
+                });
+                if (!res.ok) throw new Error('No se pudo borrar el periodo');
+                await cargarPeriodos();
+                if (esActivo) {
+                    await cargarTransacciones();
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        function renderResumenMensual() {
+            const buckets = {};
+            transacciones.forEach(t => {
+                const key = (t.fecha || '').slice(0, 7);
+                if (!key) return;
+                if (!buckets[key]) buckets[key] = { ingreso: 0, gasto: 0, items: [] };
+                buckets[key].items.push(t);
+                buckets[key][t.tipo] = (buckets[key][t.tipo] || 0) + Number(t.monto || 0);
+            });
+
+            const entries = Object.entries(buckets).sort((a, b) => b[0].localeCompare(a[0]));
+            const div = document.getElementById('resumenMensual');
+
+            if (!entries.length) {
+                div.innerHTML = '<div class="vacio" style="padding:18px 0;"><i class="fas fa-calendar"></i><p>Aún no hay movimientos para resumir por mes.</p></div>';
+                return;
+            }
+
+            div.innerHTML = entries.map(([key, data]) => {
+                const [year, month] = key.split('-');
+                const label = new Date(Number(year), Number(month) - 1).toLocaleDateString('es-CO', { month: 'long', year: 'numeric' });
+                const title = label.charAt(0).toUpperCase() + label.slice(1);
+                const balance = (data.ingreso || 0) - (data.gasto || 0);
+                const dias = Object.entries(groupByDate(data.items)).map(([fecha, items]) => {
+                    const total = items.reduce((sum, item) => sum + Number(item.monto || 0), 0);
+                    const lineas = items.map(item => {
+                        const categoria = item.categoria || (item.tipo === 'gasto' ? 'Gasto' : 'Ingreso');
+                        const detalle = item.descripcion ? ` · ${item.descripcion}` : '';
+                        return `
+                            <div class="resumen-dia-mov">
+                                <div class="resumen-dia-detalle">
+                                    <span class="tipo ${item.tipo}">${item.tipo === 'gasto' ? 'Gasto' : 'Ingreso'}</span>
+                                    <div class="resumen-dia-label">${categoria}${detalle}</div>
+                                </div>
+                                <strong>$${Number(item.monto || 0).toLocaleString('es-CO')}</strong>
+                            </div>`;
+                    }).join('');
+                    return `
+                        <div class="resumen-dia">
+                            <div class="resumen-dia-top">
+                                <strong>${formatFecha(fecha)}</strong>
+                                <span>$${total.toLocaleString('es-CO')}</span>
+                            </div>
+                            ${lineas}
+                        </div>`;
+                }).join('');
+
+                return `
+                    <div class="resumen-mes-item">
+                        <div class="resumen-mes-header">
+                            <div class="resumen-mes-title">${title}</div>
+                            <div class="resumen-mes-balance ${balance >= 0 ? 'positivo' : 'negativo'}">${balance >= 0 ? '+' : ''}$${balance.toLocaleString('es-CO')}</div>
+                        </div>
+                        <div class="resumen-mes-totales">
+                            <div class="ingreso">
+                                <span>Ingresos</span>
+                                <strong>$${(data.ingreso || 0).toLocaleString('es-CO')}</strong>
+                            </div>
+                            <div class="gasto">
+                                <span>Gastos</span>
+                                <strong>$${(data.gasto || 0).toLocaleString('es-CO')}</strong>
+                            </div>
+                        </div>
+                        <div class="resumen-mes-dias">${dias}</div>
+                    </div>`;
+            }).join('');
+        }
+
+        function groupByDate(items) {
+            return items.reduce((acc, item) => {
+                const fecha = item.fecha || 'Sin fecha';
+                if (!acc[fecha]) acc[fecha] = [];
+                acc[fecha].push(item);
+                return acc;
+            }, {});
         }
 
         // ── RESUMEN CATEGORÍAS ────────────────────────────
@@ -929,9 +1232,153 @@
             localStorage.removeItem('token'); localStorage.removeItem('usuario');
         }
 
+        // ════════════════════════════════════════════════
+        //  CALENDARIO INTERACTIVO
+        // ════════════════════════════════════════════════
+        let calFechaRef = new Date();
+        let calDiaSel = null;
+        let calTipoSel = 'gasto';
+
+        function abrirCalendario() {
+            calFechaRef = new Date();
+            calDiaSel = null;
+            document.getElementById('calDiaPanel').style.display = 'none';
+            renderCalendarioModal();
+            document.getElementById('modalCalendario').classList.add('visible');
+        }
+        function cerrarCalendario() {
+            document.getElementById('modalCalendario').classList.remove('visible');
+        }
+        document.getElementById('modalCalendario').addEventListener('click', function(e) {
+            if (e.target === this) cerrarCalendario();
+        });
+        function cambiarMesCalendario(delta) {
+            calFechaRef.setMonth(calFechaRef.getMonth() + delta);
+            calDiaSel = null;
+            document.getElementById('calDiaPanel').style.display = 'none';
+            renderCalendarioModal();
+        }
+
+        function renderCalendarioModal() {
+            const anio = calFechaRef.getFullYear();
+            const mes  = calFechaRef.getMonth();
+            const label = calFechaRef.toLocaleDateString('es-CO', { month: 'long', year: 'numeric' });
+            document.getElementById('calMesLabel').textContent = label.charAt(0).toUpperCase() + label.slice(1);
+
+            const porDia = {};
+            transacciones.forEach(t => {
+                if (!t.fecha) return;
+                if (!porDia[t.fecha]) porDia[t.fecha] = { gasto: false, ingreso: false };
+                porDia[t.fecha][t.tipo] = true;
+            });
+
+            const primerDia = new Date(anio, mes, 1);
+            const ultimoDia = new Date(anio, mes + 1, 0);
+            const primerIndex = (primerDia.getDay() + 6) % 7;
+            const totalDias = ultimoDia.getDate();
+            const hoyStr = new Date().toISOString().split('T')[0];
+
+            let html = ['D','L','M','X','J','V','S'].map(d => `<div class="cal-header-dia">${d}</div>`).join('');
+            for (let i = 0; i < primerIndex; i++) html += `<div class="cal-dia vacio"></div>`;
+            for (let d = 1; d <= totalDias; d++) {
+                const dateStr = `${anio}-${String(mes+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                const marcas = porDia[dateStr];
+                const clases = ['cal-dia'];
+                if (dateStr === hoyStr) clases.push('hoy');
+                if (dateStr === calDiaSel) clases.push('seleccionado');
+                html += `<div class="${clases.join(' ')}" onclick="seleccionarDiaCalendario('${dateStr}')">
+                    <span>${d}</span>
+                    ${marcas ? `<div class="cal-dia-dots">${marcas.gasto?'<span class="cal-dot gasto"></span>':''}${marcas.ingreso?'<span class="cal-dot ingreso"></span>':''}</div>` : ''}
+                </div>`;
+            }
+            document.getElementById('calendarioGrid').innerHTML = html;
+        }
+
+        function seleccionarDiaCalendario(dateStr) {
+            calDiaSel = dateStr;
+            renderCalendarioModal();
+
+            const movs = transacciones.filter(t => t.fecha === dateStr);
+            const fechaLegible = new Date(dateStr + 'T12:00:00').toLocaleDateString('es-CO', { weekday:'long', day:'numeric', month:'long' });
+
+            const movsHtml = movs.length ? movs.map(t => `
+                <div class="cal-mov-item">
+                    <div>
+                        <div class="cal-mov-titulo">${getIcono(t.categoria,t.tipo)} ${t.tipo === 'gasto' ? 'Gasto' : 'Ingreso'} · ${t.categoria}</div>
+                        <div class="cal-mov-desc">${descripcionMostrar(t)}</div>
+                    </div>
+                    <span class="monto ${t.tipo}">${t.tipo==='gasto'?'-':'+'}$${t.monto.toLocaleString('es-CO')}</span>
+                </div>`).join('') : `<div class="cal-sin-datos"><i class="fas fa-circle-info"></i> Sin datos registrados este día.</div>`;
+
+            document.getElementById('calDiaPanel').innerHTML = `
+                <div class="cal-dia-panel-titulo">${fechaLegible.charAt(0).toUpperCase()+fechaLegible.slice(1)}</div>
+                ${movsHtml}
+            `;
+            document.getElementById('calDiaPanel').style.display = 'block';
+        }
+
+        function descripcionMostrar(t) {
+            if (t.descripcion === '__auto_salario__') return 'Salario automático mensual';
+            return t.descripcion ? t.descripcion : 'Sin descripción';
+        }
+
+        // ════════════════════════════════════════════════
+        //  SALARIO AUTOMÁTICO — MES A MES
+        //  Crea el salario del mes actual si aún no existe (según el
+        //  día de pago guardado en el perfil) y limpia cualquier
+        //  salario auto que hubiera quedado programado en meses
+        //  futuros (de versiones anteriores). NUNCA toca meses pasados.
+        // ════════════════════════════════════════════════
+        async function asegurarSalarioMesActual() {
+            if (!token) return;
+            try {
+                const resPerfil = await fetch('http://127.0.0.1:8000/api/perfil/', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!resPerfil.ok) return;
+                const perfil = await resPerfil.json();
+                const ingreso = Number(perfil.ingreso_mensual) || 0;
+                if (ingreso <= 0 || !perfil.fecha_salario) return;
+                const diaPago = new Date(perfil.fecha_salario).getDate();
+
+                const resTrans = await fetch('http://127.0.0.1:8000/api/transacciones/', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!resTrans.ok) return;
+                const todas = await resTrans.json();
+
+                const hoy = new Date();
+                const mesActualStr = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}`;
+
+                // Limpiar salarios auto programados a futuro (no se generan por adelantado)
+                const futuros = todas.filter(t => esAutoSalario(t) && t.fecha && t.fecha.slice(0,7) > mesActualStr);
+                for (const t of futuros) {
+                    await fetch(`http://127.0.0.1:8000/api/transacciones/${t.id}`, {
+                        method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                }
+
+                // Crear el salario del mes actual solo si todavía no existe
+                const yaExiste = todas.some(t => esAutoSalario(t) && t.fecha && t.fecha.slice(0,7) === mesActualStr);
+                if (!yaExiste) {
+                    const ultimoDia = new Date(hoy.getFullYear(), hoy.getMonth()+1, 0).getDate();
+                    const diaFinal = Math.min(diaPago, ultimoDia);
+                    const fecha = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-${String(diaFinal).padStart(2,'0')}`;
+                    await fetch('http://127.0.0.1:8000/api/transacciones/', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                        body: JSON.stringify({ tipo: 'ingreso', categoria: 'Salario', icono: '💼', monto: ingreso, descripcion: '__auto_salario__', fecha })
+                    });
+                }
+            } catch(e) { console.error('Error verificando salario del mes:', e); }
+        }
+
         // ── INIT ──────────────────────────────────────────
         actualizarCategorias();
-        cargarTransacciones();
+        (async function initFinanzas() {
+            await asegurarSalarioMesActual();
+            cargarTransacciones();
+        })();
     </script>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

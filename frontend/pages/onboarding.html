@@ -631,6 +631,15 @@ body::before {
       <button class="qbtn" onclick="setIncome(8000000)">$8.000.000</button>
     </div>
 
+    <div class="fg">
+      <label class="flabel">¿Qué día del mes te pagan?</label>
+      <div class="finput-wrap">
+        <span class="fpfx">📅</span>
+        <input type="number" class="finput" id="payday" placeholder="30" min="1" max="31">
+      </div>
+      <div class="fhint" id="paydayHint">FinanBot registrará tu salario automáticamente cada mes en ese día — se verá en tu calendario.</div>
+    </div>
+
     <div class="btn-row">
       <button class="btn btn-back" onclick="ir(1)">←</button>
       <button class="btn btn-next" onclick="ir(3)">
@@ -720,7 +729,7 @@ body::before {
     <!-- Info salario automático -->
     <div class="salario-auto-info" id="salarioAutoInfo">
       <i class="fas fa-circle-info">ℹ️</i>
-      <span>Tu ingreso mensual se registrará automáticamente como <strong>Salario</strong> en Mis Finanzas. Podrás editarlo cuando quieras desde Mi Perfil.</span>
+      <span id="salarioAutoTexto">Tu ingreso mensual se registrará automáticamente como <strong>Salario</strong> en Mis Finanzas. Podrás editarlo cuando quieras desde Mi Perfil.</span>
     </div>
 
     <div class="sum-box">
@@ -735,6 +744,12 @@ body::before {
           <div class="sum-ico" style="background:rgba(34,211,238,0.1)">💵</div>Ingreso
         </div>
         <div class="sum-v money" id="sIngreso">—</div>
+      </div>
+      <div class="sum-row">
+        <div class="sum-k">
+          <div class="sum-ico" style="background:rgba(251,191,36,0.1)">📅</div>Día de pago
+        </div>
+        <div class="sum-v" id="sDiaPago">—</div>
       </div>
       <div class="sum-row">
         <div class="sum-k">
@@ -794,13 +809,24 @@ const API = 'http://127.0.0.1:8000/api';
 const token = localStorage.getItem('token');
 if(!token) window.location.href='login.html';
 
-const st = { perfil:'', ingreso:0, meta:0, objetivo:'' };
+const st = { perfil:'', ingreso:0, diaPago:null, meta:0, objetivo:'' };
 const LABELS = {
   estudiante:'🎓 Estudiante', empleado:'💼 Empleado',
   independiente:'🚀 Independiente', emprendedor:'💡 Emprendedor',
   emergencia:'🛡️ Fondo de emergencia', viajes:'✈️ Viajes',
   vivienda:'🏠 Vivienda propia', inversion:'📈 Inversión'
 };
+
+/* Calcula la fecha (YYYY-MM-DD) del día de pago para un mes dado,
+   ajustando al último día del mes si éste tiene menos días que "dia". */
+function fechaSalarioParaMes(anioBase, mesBase, offsetMeses, dia){
+  const ref = new Date(anioBase, mesBase + offsetMeses, 1);
+  const anio = ref.getFullYear();
+  const mes  = ref.getMonth();
+  const ultimoDia = new Date(anio, mes + 1, 0).getDate();
+  const diaFinal = Math.min(dia, ultimoDia);
+  return `${anio}-${String(mes+1).padStart(2,'0')}-${String(diaFinal).padStart(2,'0')}`;
+}
 
 /* ── Opciones ── */
 document.querySelectorAll('.opt[data-type]').forEach(b=>{
@@ -822,6 +848,9 @@ function setIncome(v){
 document.getElementById('income').addEventListener('input',e=>{
   st.ingreso=Number(e.target.value);
   updateMetaHint();
+});
+document.getElementById('payday').addEventListener('input',e=>{
+  st.diaPago=Number(e.target.value) || null;
 });
 document.getElementById('savingGoal').addEventListener('input',e=>{
   st.meta=Number(e.target.value);
@@ -888,11 +917,17 @@ function buildSummary(){
 
   document.getElementById('sPerfil').textContent  = LABELS[st.perfil]||'—';
   document.getElementById('sIngreso').textContent = '$'+st.ingreso.toLocaleString('es-CO');
+  document.getElementById('sDiaPago').textContent = st.diaPago ? `Día ${st.diaPago} de cada mes` : 'No definido';
   document.getElementById('sMeta').textContent    = '$'+(st.meta||0).toLocaleString('es-CO');
   document.getElementById('sObj').textContent     = LABELS[st.objetivo]||'—';
 
   // Ocultar el aviso de salario automático si no hay ingreso
   document.getElementById('salarioAutoInfo').style.display = st.ingreso > 0 ? 'flex' : 'none';
+  if (st.ingreso > 0) {
+    const diaTxt = st.diaPago ? `el día ${st.diaPago} de cada mes` : 'cada mes';
+    document.getElementById('salarioAutoTexto').innerHTML =
+      `Tu ingreso mensual se registrará automáticamente como <strong>Salario</strong> en Mis Finanzas ${diaTxt}. Podrás editarlo cuando quieras desde Mi Perfil.`;
+  }
 }
 
 /* ── Confetti con colores morado/cyan del proyecto ── */
@@ -941,10 +976,15 @@ async function finish(){
   btn.disabled=true;
   btn.innerHTML='<span class="sp"></span> Configurando...';
   try{
-    // 1. Guardar perfil (ingreso mensual, meta, onboarding completado)
+    const diaPago = st.diaPago || new Date().getDate();
+    const hoy = new Date();
+    const fechaSalario = st.ingreso > 0 ? fechaSalarioParaMes(hoy.getFullYear(), hoy.getMonth(), 0, diaPago) : null;
+
+    // 1. Guardar perfil (ingreso mensual, día de pago, meta, onboarding completado)
     await req('/perfil/','PUT',{
       ingreso_mensual:st.ingreso,
       meta_ahorro:st.meta,
+      fecha_salario:fechaSalario,
       onboarding_completado:true
     });
 
@@ -959,11 +999,13 @@ async function finish(){
 
     // 3. ── SALARIO AUTOMÁTICO ──────────────────────────
     // El ingreso mensual capturado en el onboarding se registra
-    // automáticamente como un ingreso "Salario" en Mis Finanzas.
-    // Queda oculto en la lista de transacciones (descripcion='__auto_salario__')
-    // pero SÍ cuenta en los totales de ingresos y balance.
+    // automáticamente como un ingreso "Salario" en Mis Finanzas, el
+    // día de pago elegido, para el mes actual y los próximos meses,
+    // así aparece programado en el calendario. Queda oculto en la
+    // lista de transacciones (descripcion='__auto_salario__') pero
+    // SÍ cuenta en los totales de ingresos y balance.
     if(st.ingreso>0){
-      await sincronizarSalarioAuto(st.ingreso);
+      await sincronizarSalarioAuto(st.ingreso, diaPago);
     }
     // ───────────────────────────────────────────────────
 
@@ -979,12 +1021,16 @@ async function finish(){
 }
 
 /* ── SALARIO AUTOMÁTICO ──────────────────────────────────
-   Crea (o reemplaza si ya existiera) una transacción de tipo
-   ingreso/Salario marcada con el tag oculto __auto_salario__.
-   Esta misma función se reutiliza en perfil.html cuando el
-   usuario edita su ingreso mensual después del onboarding.
+   Crea el salario del MES ACTUAL en el día de pago elegido (marcado
+   con el tag oculto __auto_salario__). Los meses futuros NO se
+   pre-generan aquí: cada mes se crea automáticamente cuando el
+   usuario efectivamente llega a él (ver asegurarSalarioMesActual en
+   dashboard.html / finanzas.html). Esta misma función se reutiliza
+   en perfil.html cuando el usuario edita su día de pago después del
+   onboarding — ahí solo se reemplaza el mes actual, sin tocar el
+   historial pasado.
 ──────────────────────────────────────────────────────── */
-async function sincronizarSalarioAuto(monto){
+async function sincronizarSalarioAuto(monto, diaPago){
   try{
     // 1. Obtener transacciones existentes
     const res = await fetch(API+'/transacciones/', {
@@ -1004,8 +1050,9 @@ async function sincronizarSalarioAuto(monto){
       });
     }
 
-    // 3. Crear el nuevo registro de salario con la fecha actual
-    const hoy = new Date().toISOString().split('T')[0];
+    // 3. Crear SOLO el salario del mes actual
+    const hoy = new Date();
+    const fecha = fechaSalarioParaMes(hoy.getFullYear(), hoy.getMonth(), 0, diaPago);
     await fetch(API+'/transacciones/', {
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
@@ -1015,7 +1062,7 @@ async function sincronizarSalarioAuto(monto){
         icono: '💼',
         monto: monto,
         descripcion: '__auto_salario__',   // tag oculto, no editable por el usuario
-        fecha: hoy
+        fecha: fecha
       })
     });
   }catch(e){

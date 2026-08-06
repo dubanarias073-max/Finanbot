@@ -124,6 +124,15 @@
         .topbar h1 { font-size: 24px; font-weight: 700; }
         .topbar p  { color: var(--secondary, #9ca3af); font-size: 14px; margin-top: 3px; }
         .topbar-right { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+
+        .btn-calendario {
+            display: flex; align-items: center; gap: 8px;
+            background: var(--card-bg); border: 1px solid var(--card-border);
+            color: white; border-radius: 50px; padding: 10px 18px;
+            font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.3s;
+        }
+        .btn-calendario:hover { background: rgba(168,85,247,0.12); border-color: #a855f7; }
+        .btn-calendario i { color: #fbbf24; }
  
         .btn-exportar {
             background: linear-gradient(135deg, #4ade80, #22d3ee);
@@ -132,6 +141,7 @@
             cursor: pointer; transition: all 0.3s;
             box-shadow: 0 4px 15px rgba(74,222,128,0.3);
             display: flex; align-items: center; gap: 7px;
+            white-space: nowrap;
         }
         .btn-exportar:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(74,222,128,0.5); }
         .btn-exportar:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
@@ -296,7 +306,7 @@
  
         /* GRÁFICAS */
         .bottom-grid {
-            display: grid; grid-template-columns: 1fr 1fr;
+            display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 20px; margin-bottom: 24px;
         }
         .chart-card {
@@ -361,6 +371,93 @@
             to   { opacity: 1; transform: translateY(0); }
         }
 
+        /* ══ MODAL CALENDARIO ══════════════════════ */
+        .modal-overlay {
+            display: none; position: fixed; inset: 0; z-index: 9999;
+            background: rgba(0,0,0,0.82); backdrop-filter: blur(6px);
+            align-items: center; justify-content: center; padding: 20px;
+        }
+        .modal-overlay.visible { display: flex; }
+        .modal-box {
+            background: linear-gradient(145deg, #12103a, #0d0d2a);
+            border: 1px solid rgba(168,85,247,0.3); border-radius: 24px;
+            padding: 30px 28px; width: 100%; max-width: 480px; max-height: 90vh;
+            overflow-y: auto; position: relative; box-shadow: 0 30px 80px rgba(0,0,0,0.7);
+        }
+        body.tema-azul .modal-box { background: linear-gradient(145deg, #060e1e, #0a1628); }
+        .modal-box::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+            background: linear-gradient(90deg, transparent, #c026d3, #a855f7, #22d3ee, transparent);
+            border-radius: 24px 24px 0 0;
+        }
+        .modal-close {
+            position: absolute; top: 16px; right: 18px;
+            background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1);
+            color: #9ca3af; width: 32px; height: 32px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; cursor: pointer;
+            font-size: 14px; transition: all 0.3s;
+        }
+        .modal-close:hover { background: rgba(239,68,68,0.2); color: #ef4444; }
+        .modal-titulo { font-size: 18px; font-weight: 800; color: white; margin-bottom: 4px; display: flex; align-items: center; gap: 9px; }
+        .modal-sub { font-size: 13px; color: #6b7280; margin-bottom: 18px; }
+
+        .calendario-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+        .calendario-nav button {
+            background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+            color: white; width: 32px; height: 32px; border-radius: 8px; cursor: pointer;
+        }
+        .calendario-nav span { font-size: 14px; font-weight: 700; color: #c4b5fd; text-transform: capitalize; }
+        .calendario-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 5px; margin-bottom: 16px; }
+        .cal-header-dia { text-align: center; font-size: 10px; color: var(--muted, #6b7280); font-weight: 700; text-transform: uppercase; padding-bottom: 4px; }
+        .cal-dia {
+            min-width: 0; aspect-ratio: 1; border-radius: 10px; background: var(--item-bg);
+            border: 1px solid var(--item-border); display: flex; flex-direction: column;
+            align-items: center; justify-content: center; font-size: 12px; cursor: pointer;
+            transition: all 0.2s; position: relative; color: white;
+        }
+        .cal-dia:hover { border-color: #a855f7; background: rgba(168,85,247,0.1); }
+        .cal-dia.vacio { visibility: hidden; cursor: default; }
+        .cal-dia.hoy { border-color: #fbbf24; }
+        .cal-dia.seleccionado { background: rgba(168,85,247,0.25); border-color: #a855f7; }
+        .cal-dia-dots { display: flex; gap: 2px; margin-top: 2px; }
+        .cal-dot { width: 5px; height: 5px; border-radius: 50%; }
+        .cal-dot.gasto { background: #f472b6; }
+        .cal-dot.ingreso { background: #4ade80; }
+
+        .cal-dia-panel { border-top: 1px solid var(--item-border); padding-top: 16px; }
+        .cal-dia-panel-titulo { font-size: 13px; font-weight: 700; color: #c4b5fd; margin-bottom: 10px; }
+        .cal-mov-item {
+            display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;
+            background: var(--item-bg); border: 1px solid var(--item-border);
+            border-radius: 10px; padding: 9px 12px; font-size: 12px; margin-bottom: 6px;
+        }
+        .cal-mov-titulo { font-weight: 600; color: white; }
+        .cal-mov-desc { font-size: 11px; color: var(--muted, #6b7280); margin-top: 2px; }
+        .cal-sin-datos { font-size: 12px; color: var(--muted, #6b7280); margin-bottom: 10px; text-align: center; padding: 10px 0; }
+        .cal-mov-item .monto.gasto { color: #f472b6; font-weight: 700; }
+        .cal-mov-item .monto.ingreso { color: #4ade80; font-weight: 700; }
+
+        .cal-form-tipo { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+        .cal-form-tipo button {
+            padding: 9px; border-radius: 10px; border: 2px solid transparent; cursor: pointer;
+            font-size: 12px; font-weight: 600; transition: all 0.3s;
+        }
+        .cal-form-tipo button.gasto { background: rgba(192,38,211,0.08); border-color: rgba(192,38,211,0.2); color: #f0abfc; }
+        .cal-form-tipo button.gasto.activo { background: rgba(192,38,211,0.2); border-color: #c026d3; }
+        .cal-form-tipo button.ingreso { background: rgba(34,211,238,0.08); border-color: rgba(34,211,238,0.2); color: #67e8f9; }
+        .cal-form-tipo button.ingreso.activo { background: rgba(34,211,238,0.2); border-color: #22d3ee; }
+        .cal-form input, .cal-form select {
+            width: 100%; background: rgba(255,255,255,0.04); border: 1.5px solid rgba(168,85,247,0.22);
+            border-radius: 10px; color: white; padding: 9px 12px; font-size: 13px; outline: none;
+            margin-bottom: 9px; font-family: inherit;
+        }
+        .cal-form select option { background: #1a0a3c; color: white; }
+        .btn-cal-guardar {
+            width: 100%; border: none; border-radius: 10px; padding: 11px; font-size: 13px;
+            font-weight: 700; color: white; cursor: pointer;
+            background: linear-gradient(135deg, #c026d3, #a855f7);
+        }
+
         /* ===================== RESPONSIVE / MOBILE ===================== */
 
         /* Tablets */
@@ -397,6 +494,7 @@
 
             .btn-exportar { padding: 9px 14px; font-size: 12px; }
             .btn-exportar span.txt-exportar { display: none; } /* si se agrega texto envuelto, se puede ocultar */
+            .btn-calendario span.txt-calendario { display: none; }
 
             .cards-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
             .stat-card { padding: 16px; }
@@ -453,6 +551,9 @@
                 </div>
             </div>
             <div class="topbar-right">
+                <button class="btn-calendario" onclick="abrirCalendario()">
+                    <i class="fas fa-calendar-days"></i> <span class="txt-calendario">Ver calendario</span>
+                </button>
                 <button class="btn-exportar" onclick="exportarPDF(this)">
                     <i class="fas fa-file-pdf"></i> <span class="txt-exportar">Exportar PDF</span>
                 </button>
@@ -550,17 +651,17 @@
         <div class="bottom-grid">
             <div class="chart-card">
                 <div class="chart-title">
-                    <i class="fas fa-chart-bar" style="color:#a855f7"></i>
-                    Ingresos vs Gastos por mes
+                    <i class="fas fa-chart-line" style="color:#c026d3"></i>
+                    Gastos por mes
                 </div>
-                <canvas id="chartBarras" height="220"></canvas>
+                <canvas id="chartGastos" height="240"></canvas>
             </div>
             <div class="chart-card">
                 <div class="chart-title">
-                    <i class="fas fa-chart-pie" style="color:#22d3ee"></i>
-                    Distribución por categoría
+                    <i class="fas fa-chart-line" style="color:#22d3ee"></i>
+                    Ingresos por mes
                 </div>
-                <canvas id="chartTorta" height="220"></canvas>
+                <canvas id="chartIngresos" height="240"></canvas>
             </div>
         </div>
  
@@ -581,12 +682,29 @@
         </div>
  
     </div><!-- /main -->
+
+    <!-- MODAL CALENDARIO -->
+    <div class="modal-overlay" id="modalCalendario">
+        <div class="modal-box">
+            <button class="modal-close" onclick="cerrarCalendario()">✕</button>
+            <div class="modal-titulo"><i class="fas fa-calendar-days" style="color:#fbbf24"></i> Calendario de movimientos</div>
+            <div class="modal-sub">Elige un día para ver los movimientos registrados</div>
+            <div class="calendario-nav">
+                <button onclick="cambiarMesCalendario(-1)"><i class="fas fa-chevron-left"></i></button>
+                <span id="calMesLabel"></span>
+                <button onclick="cambiarMesCalendario(1)"><i class="fas fa-chevron-right"></i></button>
+            </div>
+            <div class="calendario-grid" id="calendarioGrid"></div>
+            <div class="cal-dia-panel" id="calDiaPanel" style="display:none;"></div>
+        </div>
+    </div>
  
     <script>
         const token   = localStorage.getItem('token');
         const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
-        let chartBar  = null;
-        let chartPie  = null;
+        let chartGastos = null;
+        let chartIngresos = null;
+        let transaccionesCache = [];
  
         // ── TEMA ──────────────────────────────────────────
         (function() {
@@ -658,7 +776,7 @@
         function getIcono(cat, tipo) {
             return ICONOS[cat] || (tipo === 'ingreso' ? '💰' : '💸');
         }
- 
+
         function cerrarSesion() {
             localStorage.removeItem('token');
             localStorage.removeItem('usuario');
@@ -680,6 +798,7 @@
                 let todasTrans = [];
                 if (resTrans.ok) {
                     todasTrans = await resTrans.json();
+                    transaccionesCache = todasTrans;
                     const ingresos = todasTrans.filter(t => t.tipo === 'ingreso');
                     const gastos   = todasTrans.filter(t => t.tipo === 'gasto');
                     const totIng   = ingresos.reduce((s,t) => s + t.monto, 0);
@@ -698,8 +817,7 @@
                         balance > 0 ? '✅ Balance positivo' : balance < 0 ? '⚠️ Balance negativo' : 'Sin movimientos';
  
                     renderTransacciones(todasTrans.slice(0, 6));
-                    renderBarras(todasTrans);
-                    renderTorta(todasTrans);
+                    renderGraficas(todasTrans);
  
                     // ② RESUMEN SEMANAL
                     if (prefs.resumenSemanal) {
@@ -712,6 +830,11 @@
                     // ③ TIP FINANCIERO
                     if (prefs.tipsFinancieros) {
                         renderTip(todasTrans);
+                    }
+
+                    // Refrescar calendario si está abierto
+                    if (document.getElementById('modalCalendario').classList.contains('visible')) {
+                        renderCalendarioModal();
                     }
                 }
  
@@ -937,24 +1060,68 @@
         // ════════════════════════════════════════════════
         //  GRÁFICAS
         // ════════════════════════════════════════════════
-        function renderBarras(trans) {
+        function renderGraficas(trans) {
             const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-            const ing = Array(12).fill(0);
             const gas = Array(12).fill(0);
+            const ing = Array(12).fill(0);
+
             trans.forEach(t => {
-                const m = new Date(t.fecha).getMonth();
-                if (t.tipo === 'ingreso') ing[m] += t.monto;
-                else gas[m] += t.monto;
+                const fecha = new Date(t.fecha);
+                const m = Number.isNaN(fecha.getTime()) ? -1 : fecha.getMonth();
+                if (m < 0) return;
+                if (t.tipo === 'gasto') gas[m] += Number(t.monto || 0);
+                else ing[m] += Number(t.monto || 0);
             });
-            if (chartBar) chartBar.destroy();
-            chartBar = new Chart(document.getElementById('chartBarras'), {
-                type: 'bar',
+
+            if (chartGastos) chartGastos.destroy();
+            chartGastos = new Chart(document.getElementById('chartGastos'), {
+                type: 'line',
                 data: {
                     labels: meses,
-                    datasets: [
-                        { label:'Ingresos', data:ing, backgroundColor:'rgba(34,211,238,0.75)', borderRadius:6 },
-                        { label:'Gastos',   data:gas, backgroundColor:'rgba(192,38,211,0.75)', borderRadius:6 }
-                    ]
+                    datasets: [{
+                        label: 'Gastos',
+                        data: gas,
+                        borderColor: '#c026d3',
+                        backgroundColor: 'rgba(192,38,211,0.16)',
+                        fill: true,
+                        tension: 0.35,
+                        pointBackgroundColor: '#f0abfc',
+                        pointRadius: 4,
+                        pointHoverRadius: 5,
+                        borderWidth: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: { labels:{ color:'#c4b5fd', font:{size:11} } },
+                        tooltip: { callbacks:{ label: ctx => ` $${ctx.parsed.y.toLocaleString('es-CO')}` } }
+                    },
+                    scales: {
+                        x: { ticks:{color:'#9ca3af',font:{size:10}}, grid:{color:'rgba(255,255,255,0.04)'} },
+                        y: { ticks:{color:'#9ca3af',font:{size:10},callback:v=>'$'+(v/1000).toFixed(0)+'k'}, grid:{color:'rgba(255,255,255,0.04)'} }
+                    }
+                }
+            });
+
+            if (chartIngresos) chartIngresos.destroy();
+            chartIngresos = new Chart(document.getElementById('chartIngresos'), {
+                type: 'line',
+                data: {
+                    labels: meses,
+                    datasets: [{
+                        label: 'Ingresos',
+                        data: ing,
+                        borderColor: '#22d3ee',
+                        backgroundColor: 'rgba(34,211,238,0.16)',
+                        fill: true,
+                        tension: 0.35,
+                        pointBackgroundColor: '#67e8f9',
+                        pointRadius: 4,
+                        pointHoverRadius: 5,
+                        borderWidth: 3
+                    }]
                 },
                 options: {
                     responsive: true,
@@ -970,38 +1137,94 @@
                 }
             });
         }
- 
-        function renderTorta(trans) {
-            const catGas = {}, catIng = {};
-            trans.forEach(t => {
-                if (t.tipo==='gasto') catGas[t.categoria]=(catGas[t.categoria]||0)+t.monto;
-                else                  catIng[t.categoria]=(catIng[t.categoria]||0)+t.monto;
+
+        // ════════════════════════════════════════════════
+        //  CALENDARIO INTERACTIVO
+        // ════════════════════════════════════════════════
+        let calFechaRef = new Date();
+        let calDiaSel = null;
+
+        function abrirCalendario() {
+            calFechaRef = new Date();
+            calDiaSel = null;
+            document.getElementById('calDiaPanel').style.display = 'none';
+            renderCalendarioModal();
+            document.getElementById('modalCalendario').classList.add('visible');
+        }
+        function cerrarCalendario() {
+            document.getElementById('modalCalendario').classList.remove('visible');
+        }
+        document.getElementById('modalCalendario').addEventListener('click', function(e) {
+            if (e.target === this) cerrarCalendario();
+        });
+        function cambiarMesCalendario(delta) {
+            calFechaRef.setMonth(calFechaRef.getMonth() + delta);
+            calDiaSel = null;
+            document.getElementById('calDiaPanel').style.display = 'none';
+            renderCalendarioModal();
+        }
+
+        function renderCalendarioModal() {
+            const anio = calFechaRef.getFullYear();
+            const mes  = calFechaRef.getMonth();
+            const label = calFechaRef.toLocaleDateString('es-CO', { month: 'long', year: 'numeric' });
+            document.getElementById('calMesLabel').textContent = label.charAt(0).toUpperCase() + label.slice(1);
+
+            const porDia = {};
+            transaccionesCache.forEach(t => {
+                if (!t.fecha) return;
+                if (!porDia[t.fecha]) porDia[t.fecha] = { gasto: false, ingreso: false };
+                porDia[t.fecha][t.tipo] = true;
             });
-            const labels  = [...Object.keys(catGas).map(k=>'💸 '+k), ...Object.keys(catIng).map(k=>'💰 '+k)];
-            const data    = [...Object.values(catGas), ...Object.values(catIng)];
-            const colG    = ['rgba(192,38,211,0.85)','rgba(168,85,247,0.85)','rgba(236,72,153,0.85)','rgba(244,114,182,0.85)','rgba(139,92,246,0.85)','rgba(109,40,217,0.85)'];
-            const colI    = ['rgba(34,211,238,0.85)','rgba(74,222,128,0.85)','rgba(56,189,248,0.85)','rgba(16,185,129,0.85)'];
-            const colores = [...Object.keys(catGas).map((_,i)=>colG[i%colG.length]), ...Object.keys(catIng).map((_,i)=>colI[i%colI.length])];
- 
-            if (chartPie) chartPie.destroy();
-            chartPie = new Chart(document.getElementById('chartTorta'), {
-                type: 'doughnut',
-                data: {
-                    labels: labels.length ? labels : ['Sin datos'],
-                    datasets: [{
-                        data: data.length ? data : [1],
-                        backgroundColor: data.length ? colores : ['rgba(168,85,247,0.2)'],
-                        borderWidth:0, hoverOffset:6
-                    }]
-                },
-                options: {
-                    responsive:true, maintainAspectRatio: true, cutout:'60%',
-                    plugins: {
-                        legend:{ position:'bottom', labels:{color:'#c4b5fd',font:{size:10},padding:12,boxWidth:12} },
-                        tooltip:{ callbacks:{ label: ctx => ` $${ctx.parsed.toLocaleString('es-CO')}` } }
-                    }
-                }
-            });
+
+            const primerDia = new Date(anio, mes, 1);
+            const ultimoDia = new Date(anio, mes + 1, 0);
+            const primerIndex = (primerDia.getDay() + 6) % 7;
+            const totalDias = ultimoDia.getDate();
+            const hoyStr = new Date().toISOString().split('T')[0];
+
+            let html = ['D','L','M','X','J','V','S'].map(d => `<div class="cal-header-dia">${d}</div>`).join('');
+            for (let i = 0; i < primerIndex; i++) html += `<div class="cal-dia vacio"></div>`;
+            for (let d = 1; d <= totalDias; d++) {
+                const dateStr = `${anio}-${String(mes+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                const marcas = porDia[dateStr];
+                const clases = ['cal-dia'];
+                if (dateStr === hoyStr) clases.push('hoy');
+                if (dateStr === calDiaSel) clases.push('seleccionado');
+                html += `<div class="${clases.join(' ')}" onclick="seleccionarDiaCalendario('${dateStr}')">
+                    <span>${d}</span>
+                    ${marcas ? `<div class="cal-dia-dots">${marcas.gasto?'<span class="cal-dot gasto"></span>':''}${marcas.ingreso?'<span class="cal-dot ingreso"></span>':''}</div>` : ''}
+                </div>`;
+            }
+            document.getElementById('calendarioGrid').innerHTML = html;
+        }
+
+        function seleccionarDiaCalendario(dateStr) {
+            calDiaSel = dateStr;
+            renderCalendarioModal();
+
+            const movs = transaccionesCache.filter(t => t.fecha === dateStr);
+            const fechaLegible = new Date(dateStr + 'T12:00:00').toLocaleDateString('es-CO', { weekday:'long', day:'numeric', month:'long' });
+
+            const movsHtml = movs.length ? movs.map(t => `
+                <div class="cal-mov-item">
+                    <div>
+                        <div class="cal-mov-titulo">${getIcono(t.categoria,t.tipo)} ${t.tipo === 'gasto' ? 'Gasto' : 'Ingreso'} · ${t.categoria}</div>
+                        <div class="cal-mov-desc">${descripcionMostrar(t)}</div>
+                    </div>
+                    <span class="monto ${t.tipo}">${t.tipo==='gasto'?'-':'+'}$${t.monto.toLocaleString('es-CO')}</span>
+                </div>`).join('') : `<div class="cal-sin-datos"><i class="fas fa-circle-info"></i> Sin datos registrados este día.</div>`;
+
+            document.getElementById('calDiaPanel').innerHTML = `
+                <div class="cal-dia-panel-titulo">${fechaLegible.charAt(0).toUpperCase()+fechaLegible.slice(1)}</div>
+                ${movsHtml}
+            `;
+            document.getElementById('calDiaPanel').style.display = 'block';
+        }
+
+        function descripcionMostrar(t) {
+            if (t.descripcion === '__auto_salario__') return 'Salario automático mensual';
+            return t.descripcion ? t.descripcion : 'Sin descripción';
         }
  
         // ════════════════════════════════════════════════
@@ -1029,7 +1252,61 @@
             btn.disabled  = false;
         }
  
-        cargarDashboard();
+        // ════════════════════════════════════════════════
+        //  SALARIO AUTOMÁTICO — MES A MES
+        //  Crea el salario del mes actual si aún no existe (según el
+        //  día de pago guardado en el perfil) y limpia cualquier
+        //  salario auto que hubiera quedado programado en meses
+        //  futuros (de versiones anteriores). NUNCA toca meses pasados.
+        // ════════════════════════════════════════════════
+        async function asegurarSalarioMesActual() {
+            if (!token) return;
+            try {
+                const resPerfil = await fetch('http://127.0.0.1:8000/api/perfil/', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!resPerfil.ok) return;
+                const perfil = await resPerfil.json();
+                const ingreso = Number(perfil.ingreso_mensual) || 0;
+                if (ingreso <= 0 || !perfil.fecha_salario) return;
+                const diaPago = new Date(perfil.fecha_salario).getDate();
+
+                const resTrans = await fetch('http://127.0.0.1:8000/api/transacciones/', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!resTrans.ok) return;
+                const todas = await resTrans.json();
+
+                const hoy = new Date();
+                const mesActualStr = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}`;
+
+                // Limpiar salarios auto programados a futuro (no se generan por adelantado)
+                const futuros = todas.filter(t => t.descripcion === '__auto_salario__' && t.fecha && t.fecha.slice(0,7) > mesActualStr);
+                for (const t of futuros) {
+                    await fetch(`http://127.0.0.1:8000/api/transacciones/${t.id}`, {
+                        method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                }
+
+                // Crear el salario del mes actual solo si todavía no existe
+                const yaExiste = todas.some(t => t.descripcion === '__auto_salario__' && t.fecha && t.fecha.slice(0,7) === mesActualStr);
+                if (!yaExiste) {
+                    const ultimoDia = new Date(hoy.getFullYear(), hoy.getMonth()+1, 0).getDate();
+                    const diaFinal = Math.min(diaPago, ultimoDia);
+                    const fecha = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-${String(diaFinal).padStart(2,'0')}`;
+                    await fetch('http://127.0.0.1:8000/api/transacciones/', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                        body: JSON.stringify({ tipo: 'ingreso', categoria: 'Salario', icono: '💼', monto: ingreso, descripcion: '__auto_salario__', fecha })
+                    });
+                }
+            } catch(e) { console.error('Error verificando salario del mes:', e); }
+        }
+
+        (async function initDashboard() {
+            await asegurarSalarioMesActual();
+            cargarDashboard();
+        })();
     </script>
  
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
