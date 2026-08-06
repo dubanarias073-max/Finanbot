@@ -12,6 +12,25 @@ from extensions import obtener_usuario_id_opcional
 from finanbot_ia import FinanBotIA
 from models import Transaccion, MetaAhorro, Usuario, Categoria, Simulacion, Conversacion, Chat
 
+
+def obtener_o_crear_categoria(db: Session, nombre: str, tipo: str, icono: str | None = None):
+    nombre_limpio = (nombre or '').strip()
+    if not nombre_limpio:
+        nombre_limpio = 'Otros gastos' if tipo == 'gasto' else 'Otros ingresos'
+
+    categoria = db.query(Categoria).filter(Categoria.nombre.ilike(nombre_limpio), Categoria.tipo == tipo).first()
+    if categoria:
+        return categoria
+
+    categoria = db.query(Categoria).filter(Categoria.nombre.ilike(f'%{nombre_limpio}%'), Categoria.tipo == tipo).first()
+    if categoria:
+        return categoria
+
+    categoria = Categoria(nombre=nombre_limpio, tipo=tipo, icono=icono or ('💸' if tipo == 'gasto' else '💰'))
+    db.add(categoria)
+    db.flush()
+    return categoria
+
 router = APIRouter()
 sesiones   = {}
 _contextos = {}
@@ -219,13 +238,12 @@ def _resolver_contexto(msg: str, uid: int, ctx: dict, session_key: str, db: Sess
             cat  = extraer_categoria(msg, 'gasto')
             desc = extraer_descripcion(msg)
             try:
-                c = (db.query(Categoria).filter(Categoria.nombre.ilike(f'%{cat}%'), Categoria.tipo == 'gasto').first()
-                     or db.query(Categoria).filter_by(tipo='gasto').first())
-                t = Transaccion(usuario_id=uid, categoria_id=c.id if c else 1, tipo='gasto', monto=monto,
+                c = obtener_o_crear_categoria(db, cat, 'gasto', '🍔')
+                t = Transaccion(usuario_id=uid, categoria_id=c.id, tipo='gasto', monto=monto,
                                  descripcion=desc or 'Registrado por FinanBot', fecha=date.today())
                 db.add(t); db.commit()
                 _contextos[session_key] = {'esperando': None, 'ultimo_tipo': 'gasto_registrado', 'datos': {}}
-                return {'tipo': 'gasto_registrado', 'monto': monto, 'categoria': c.nombre if c else 'Otros', 'id': t.id}
+                return {'tipo': 'gasto_registrado', 'monto': monto, 'categoria': c.nombre, 'id': t.id}
             except Exception as e:
                 print(f'[FinanBot] Gasto contexto: {e}')
 
@@ -235,13 +253,12 @@ def _resolver_contexto(msg: str, uid: int, ctx: dict, session_key: str, db: Sess
             cat  = extraer_categoria(msg, 'ingreso')
             desc = extraer_descripcion(msg)
             try:
-                c = (db.query(Categoria).filter(Categoria.nombre.ilike(f'%{cat}%'), Categoria.tipo == 'ingreso').first()
-                     or db.query(Categoria).filter_by(tipo='ingreso').first())
-                t = Transaccion(usuario_id=uid, categoria_id=c.id if c else 1, tipo='ingreso', monto=monto,
+                c = obtener_o_crear_categoria(db, cat, 'ingreso', '💰')
+                t = Transaccion(usuario_id=uid, categoria_id=c.id, tipo='ingreso', monto=monto,
                                  descripcion=desc or 'Registrado por FinanBot', fecha=date.today())
                 db.add(t); db.commit()
                 _contextos[session_key] = {'esperando': None, 'ultimo_tipo': 'ingreso_registrado', 'datos': {}}
-                return {'tipo': 'ingreso_registrado', 'monto': monto, 'categoria': c.nombre if c else 'Salario', 'id': t.id}
+                return {'tipo': 'ingreso_registrado', 'monto': monto, 'categoria': c.nombre, 'id': t.id}
             except Exception as e:
                 print(f'[FinanBot] Ingreso contexto: {e}')
 
@@ -517,12 +534,11 @@ def ejecutar_accion(mensaje: str, uid: int, ctx: dict, db: Session):
             desc  = extraer_descripcion(mensaje)
             if monto and monto > 0:
                 try:
-                    c = (db.query(Categoria).filter(Categoria.nombre.ilike(f'%{cat}%'), Categoria.tipo == 'gasto').first()
-                         or db.query(Categoria).filter_by(tipo='gasto').first())
-                    t = Transaccion(usuario_id=uid, categoria_id=c.id if c else 1, tipo='gasto', monto=monto,
+                    c = obtener_o_crear_categoria(db, cat, 'gasto', '🍔')
+                    t = Transaccion(usuario_id=uid, categoria_id=c.id, tipo='gasto', monto=monto,
                                      descripcion=desc or 'Registrado por FinanBot', fecha=date.today())
                     db.add(t); db.commit()
-                    return {'tipo': 'gasto_registrado', 'monto': monto, 'categoria': c.nombre if c else 'Otros', 'id': t.id}
+                    return {'tipo': 'gasto_registrado', 'monto': monto, 'categoria': c.nombre, 'id': t.id}
                 except Exception as e:
                     print(f'[FinanBot] Gasto crear: {e}')
             return {'tipo': 'pide_monto', 'contexto': 'gasto'}
@@ -555,12 +571,11 @@ def ejecutar_accion(mensaje: str, uid: int, ctx: dict, db: Session):
             desc  = extraer_descripcion(mensaje)
             if monto and monto > 0:
                 try:
-                    c = (db.query(Categoria).filter(Categoria.nombre.ilike(f'%{cat}%'), Categoria.tipo == 'ingreso').first()
-                         or db.query(Categoria).filter_by(tipo='ingreso').first())
-                    t = Transaccion(usuario_id=uid, categoria_id=c.id if c else 1, tipo='ingreso', monto=monto,
+                    c = obtener_o_crear_categoria(db, cat, 'ingreso', '💰')
+                    t = Transaccion(usuario_id=uid, categoria_id=c.id, tipo='ingreso', monto=monto,
                                      descripcion=desc or 'Registrado por FinanBot', fecha=date.today())
                     db.add(t); db.commit()
-                    return {'tipo': 'ingreso_registrado', 'monto': monto, 'categoria': c.nombre if c else 'Salario', 'id': t.id}
+                    return {'tipo': 'ingreso_registrado', 'monto': monto, 'categoria': c.nombre, 'id': t.id}
                 except Exception as e:
                     print(f'[FinanBot] Ingreso crear: {e}')
             return {'tipo': 'pide_monto', 'contexto': 'ingreso'}

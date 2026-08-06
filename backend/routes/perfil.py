@@ -1,4 +1,5 @@
 # routes/perfil.py
+from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Body
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
@@ -19,6 +20,7 @@ class PerfilUpdate(BaseModel):
     nombre: Optional[str] = None
     ingreso_mensual: Optional[float] = None
     meta_ahorro: Optional[float] = None
+    fecha_salario: Optional[str] = None
     nueva_contrasena: Optional[str] = None
     contrasena_actual: Optional[str] = None
     onboarding_completado: Optional[bool] = None
@@ -45,6 +47,7 @@ def obtener_perfil(
         'correo': usuario.correo,
         'ingreso_mensual': float(usuario.ingreso_mensual or 0),
         'meta_ahorro': float(usuario.meta_ahorro or 0),
+        'fecha_salario': usuario.fecha_salario.strftime('%Y-%m-%d') if usuario.fecha_salario else None,
         'fecha_registro': usuario.fecha_registro.strftime('%d/%m/%Y'),
         'onboarding_completado': usuario.onboarding_completado,
     }
@@ -74,6 +77,9 @@ def actualizar_perfil(
 
     if body.meta_ahorro is not None:
         usuario.meta_ahorro = body.meta_ahorro
+
+    if body.fecha_salario is not None:
+        usuario.fecha_salario = datetime.strptime(body.fecha_salario, '%Y-%m-%d').date() if body.fecha_salario else None
 
     # ── CONTRASEÑA: requiere la actual ──────────────────────────
     if body.nueva_contrasena:

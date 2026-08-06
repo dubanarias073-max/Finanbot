@@ -332,6 +332,7 @@
     <a href="dashboard.html"       class="nav-item"><i class="fas fa-home"></i>          Dashboard</a>
     <a href="chat.html"            class="nav-item"><i class="fas fa-robot"></i>          Chat FinanBot</a>
     <a href="finanzas.html"        class="nav-item"><i class="fas fa-wallet"></i>         Mis Finanzas</a>
+    <a href="calendario.html"        class="nav-item"><i class="fas fa-calendar"></i>     Calendario</a>
     <a href="recomendaciones.html" class="nav-item active"><i class="fas fa-lightbulb"></i> Recomendaciones</a>
     <a href="simulador.html"       class="nav-item"><i class="fas fa-chart-line"></i>     Simulador</a>
     <a href="aprende.html"         class="nav-item"><i class="fas fa-graduation-cap"></i> Aprende</a>
@@ -350,7 +351,7 @@
             <button class="menu-toggle" id="menuToggle" aria-label="Abrir menú"><i class="fas fa-bars"></i></button>
             <div>
                 <h1><i class="fas fa-lightbulb" style="color:#a855f7;font-size:22px;"></i> <span class="grad">Recomendaciones</span></h1>
-                <p>Análisis financiero personalizado basado en tus datos reales</p>
+                <p>Análisis financiero personalizado basado en tus datos del mes</p>
             </div>
         </div>
         <div class="topbar-right">
@@ -395,9 +396,9 @@
 
     <!-- MÉTRICAS -->
     <div class="resumen-grid">
-        <div class="resumen-card"><div class="resumen-icon">💰</div><div class="resumen-label">Ingresos totales</div><div class="resumen-valor" id="resIngresos" style="color:#4ade80">$0</div><div class="resumen-sub" id="resIngresosN">0 registros</div></div>
-        <div class="resumen-card"><div class="resumen-icon">💸</div><div class="resumen-label">Gastos totales</div><div class="resumen-valor" id="resGastos" style="color:#f472b6">$0</div><div class="resumen-sub" id="resGastosN">0 registros</div></div>
-        <div class="resumen-card"><div class="resumen-icon">📊</div><div class="resumen-label">Balance actual</div><div class="resumen-valor" id="resBalance" style="color:#22d3ee">$0</div><div class="resumen-sub" id="resBalanceEstado">Sin movimientos</div></div>
+        <div class="resumen-card"><div class="resumen-icon">💰</div><div class="resumen-label">Ingresos del mes</div><div class="resumen-valor" id="resIngresos" style="color:#4ade80">$0</div><div class="resumen-sub" id="resIngresosN">0 registros</div></div>
+        <div class="resumen-card"><div class="resumen-icon">💸</div><div class="resumen-label">Gastos del mes</div><div class="resumen-valor" id="resGastos" style="color:#f472b6">$0</div><div class="resumen-sub" id="resGastosN">0 registros</div></div>
+        <div class="resumen-card"><div class="resumen-icon">📊</div><div class="resumen-label">Balance del mes</div><div class="resumen-valor" id="resBalance" style="color:#22d3ee">$0</div><div class="resumen-sub" id="resBalanceEstado">Sin movimientos</div></div>
         <div class="resumen-card"><div class="resumen-icon">🎯</div><div class="resumen-label">Ahorro potencial</div><div class="resumen-valor" id="resAhorro" style="color:#fbbf24">$0</div><div class="resumen-sub">Si aplicas los consejos</div></div>
     </div>
 
@@ -421,7 +422,7 @@
                 <div class="analisis-item-label">Capacidad de ahorro</div>
                 <div class="analisis-item-valor" id="capAhorro" style="color:#22d3ee">$0</div>
                 <div class="barra-track"><div class="barra-fill barra-cyan" id="barraCapAhorro" style="width:0%"></div></div>
-                <div class="analisis-nota" id="notaCapAhorro">Basado en tu balance actual</div>
+                <div class="analisis-nota" id="notaCapAhorro">Basado en tu balance del mes</div>
             </div>
         </div>
     </div>
@@ -585,6 +586,20 @@
     let filtroActual = 'todos';
     let datosFinancieros = null;
     let panelAbierto = false;
+
+    // ── MES ACTUAL ─────────────────────────────────────────
+    // Todas las métricas de esta página (ingresos/gastos/balance,
+    // % gastos-ingresos, capacidad de ahorro y las recomendaciones
+    // generadas) se calculan SOLO con las transacciones del mes en
+    // curso, para ser consistentes con Dashboard y Mis Finanzas.
+    function obtenerMesActualStr() {
+        const hoy = new Date();
+        return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}`;
+    }
+    function transaccionesDelMesActual(trans) {
+        const mesActual = obtenerMesActualStr();
+        return trans.filter(t => (t.fecha || '').slice(0, 7) === mesActual);
+    }
 
     // ════════════════════════════════════════════════════
     //  REGLA PERSONALIZABLE
@@ -815,7 +830,7 @@
     function cerrarSesion() { localStorage.removeItem('token'); localStorage.removeItem('usuario'); }
 
     // ════════════════════════════════════════════════════
-    //  CARGAR DATOS
+    //  CARGAR DATOS (mes actual)
     // ════════════════════════════════════════════════════
     async function cargarTodo() {
         if (!token) { window.location.href = 'login.html'; return; }
@@ -827,9 +842,12 @@
                 fetch('http://127.0.0.1:8000/api/perfil/',          { headers:{'Authorization':`Bearer ${token}`} }),
             ]);
 
-            const trans  = rT.ok ? await rT.json() : [];
+            const transTodas = rT.ok ? await rT.json() : [];
             const metas  = rM.ok ? await rM.json() : [];
             const perfil = rP.ok ? await rP.json() : {};
+
+            // Solo transacciones del mes en curso para todas las métricas
+            const trans = transaccionesDelMesActual(transTodas);
 
             const ingresos = trans.filter(t => t.tipo === 'ingreso');
             const gastos   = trans.filter(t => t.tipo === 'gasto');
@@ -1005,7 +1023,7 @@
         });
     }
 
-    // ── GENERADOR LOCAL ───────────────────────────────────
+    // ── GENERADOR LOCAL (basado en el mes actual) ─────────
     function generarRecomendaciones(d) {
         const recs = [];
         const { totIng, totGas, balance, trans, metas, catMap, catMayor, ingMensual, gastos, ingresos } = d;
@@ -1014,7 +1032,7 @@
 
         if (trans.length === 0) {
             recs.push({ tipo:'info', prioridad:'Alta', icono:'📝', titulo:'Empieza registrando tus finanzas',
-                descripcion:'No hay datos suficientes. Registra una semana de gastos e ingresos y FinanBot te dará un análisis completo.',
+                descripcion:'No hay datos suficientes este mes. Registra tus gastos e ingresos y FinanBot te dará un análisis completo.',
                 beneficios:['Visibilidad total de tu dinero','Recomendaciones precisas','Detección de gastos excesivos'],
                 dato_clave:'💡 Solo 5 minutos son suficientes para empezar.',
                 accion:'Registrar transacciones', link:'finanzas.html' });
@@ -1023,7 +1041,7 @@
         if (balance < 0) {
             recs.push({ tipo:'alerta', prioridad:'Alta', icono:'🚨',
                 titulo:'Balance negativo: estás gastando más de lo que ingresas',
-                descripcion:`Tu balance es -$${Math.abs(balance).toLocaleString('es-CO')}. Es la situación más urgente a corregir.`,
+                descripcion:`Tu balance de este mes es -$${Math.abs(balance).toLocaleString('es-CO')}. Es la situación más urgente a corregir.`,
                 beneficios:['Evitar deudas con intereses','Recuperar estabilidad en 1-3 meses','Reducir estrés financiero'],
                 dato_clave:`💡 Reduce gastos en $${Math.abs(Math.round(balance/3)).toLocaleString('es-CO')} durante 3 meses para equilibrar.`,
                 ahorro_potencial: Math.abs(balance), accion:'Revisar gastos', link:'finanzas.html' });
@@ -1053,7 +1071,7 @@
                 titulo:'No tienes metas de ahorro definidas',
                 descripcion:'Las personas con metas ahorran 3x más. Una meta da propósito a tu dinero.',
                 beneficios:['Motivación concreta','Progreso visible','Objetivos reales'],
-                dato_clave:`💡 Con tu balance, podrías acumular $${Math.round(balance*6).toLocaleString('es-CO')} en 6 meses.`,
+                dato_clave:`💡 Con tu balance de este mes, podrías acumular $${Math.round(balance*6).toLocaleString('es-CO')} en 6 meses.`,
                 accion:'Crear meta', link:'perfil.html' });
         }
         if (totIng > 0 && balance < totIng * 3) {

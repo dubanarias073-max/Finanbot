@@ -22,6 +22,85 @@ RUTAS = {
 }
 
 # ══════════════════════════════════════════════════════════════════
+#  CATEGORÍAS REALES DEL PROYECTO
+#  Estas son EXACTAMENTE las mismas categorías que aparecen en los
+#  selects de finanzas.html (CATS.gasto / CATS.ingreso). Mantenerlas
+#  sincronizadas aquí es lo que le permite a FinanBot "entender" en
+#  qué categoría cae cada gasto o ingreso, dar tips específicos por
+#  categoría, y detectar concentración de gasto real.
+# ══════════════════════════════════════════════════════════════════
+CATEGORIAS_GASTO = {
+    'Alimentación':    {'emoji': '🍔', 'tip': 'Cocinar en casa y planear el menú semanal puede bajar este gasto hasta un 30%.'},
+    'Transporte':      {'emoji': '🚌', 'tip': 'Combinar rutas o usar transporte público en trayectos frecuentes reduce mucho este gasto frente a apps de viaje.'},
+    'Arriendo':        {'emoji': '🏠', 'tip': 'Si el arriendo supera el 30% de tus ingresos, vale la pena buscar algo más ajustado o compartir gastos.'},
+    'Salud':           {'emoji': '💊', 'tip': 'Revisa si tu EPS cubre lo que estás pagando particular; muchos medicamentos tienen genéricos más baratos.'},
+    'Entretenimiento': {'emoji': '🎬', 'tip': 'Audita tus suscripciones activas (streaming, gym, apps) y cancela las que no uses seguido.'},
+    'Educación':       {'emoji': '📚', 'tip': 'Busca becas, descuentos por pronto pago o cursos gratuitos antes de pagar el valor completo.'},
+    'Ropa':            {'emoji': '👗', 'tip': 'Define un presupuesto fijo mensual para ropa y evita compras impulsivas en fechas de descuento.'},
+    'Servicios':       {'emoji': '⚡', 'tip': 'Pequeños cambios de hábito en el consumo de luz y agua bajan la factura sin sacrificar comodidad.'},
+    'Mascotas':        {'emoji': '🐾', 'tip': 'Comprar comida y accesorios al por mayor suele salir más barato que comprar cada semana.'},
+    'Regalos':         {'emoji': '🎁', 'tip': 'Define un tope anual para regalos y repártelo por mes para que diciembre no te tome por sorpresa.'},
+    'Viajes':          {'emoji': '✈️', 'tip': 'Crear una meta de ahorro específica para viajes evita que termines pagándolos con tarjeta de crédito.'},
+    'Otros gastos':    {'emoji': '📦', 'tip': 'Si esta categoría crece mucho, revisa qué hay adentro — a veces esconde gastos que merecen su propia categoría.'},
+}
+
+CATEGORIAS_INGRESO = {
+    'Salario':         {'emoji': '💼', 'tip': 'Automatiza tu ahorro el mismo día que recibes el salario, antes de que puedas gastarlo.'},
+    'Freelance':       {'emoji': '🧑‍💻', 'tip': 'Los ingresos freelance son variables — separa un % extra en meses buenos para cubrir los meses flojos.'},
+    'Inversión':       {'emoji': '📈', 'tip': 'Reinvertir parte de las ganancias acelera el interés compuesto en el largo plazo.'},
+    'Negocio':         {'emoji': '🏪', 'tip': 'Separa las finanzas del negocio de las personales; te da claridad real de cuánto ganas tú.'},
+    'Regalo':          {'emoji': '🎁', 'tip': 'Un ingreso inesperado es la oportunidad perfecta para reforzar tu fondo de emergencia.'},
+    'Otros ingresos':  {'emoji': '💵', 'tip': 'Aunque sea ocasional, registrar este ingreso te da una foto real de tu situación financiera.'},
+}
+
+# Palabras clave para AUTO-DETECTAR la categoría a partir de texto libre.
+# Esto es lo que le da a FinanBot la capacidad de "entender" en qué
+# categoría cae algo aunque el usuario no la mencione explícitamente
+# (ej. "gasté 20 mil en pizza" → Alimentación).
+KEYWORDS_GASTO = {
+    'Alimentación':    ['comida', 'almuerzo', 'desayuno', 'cena', 'pizza', 'restaurante', 'mercado',
+                         'supermercado', 'domicilio', 'hamburguesa', 'comer', 'panadería', 'tienda de barrio'],
+    'Transporte':      ['bus', 'transmilenio', 'metro', 'taxi', 'uber', 'didi', 'indriver', 'gasolina',
+                         'combustible', 'parqueadero', 'peaje', 'pasaje', 'transporte'],
+    'Arriendo':        ['arriendo', 'renta', 'alquiler', 'canon'],
+    'Salud':           ['medicina', 'medicamento', 'droguería', 'eps', 'médico', 'doctor', 'consulta médica',
+                         'odontólogo', 'dentista', 'salud', 'farmacia'],
+    'Entretenimiento': ['cine', 'netflix', 'spotify', 'disney', 'suscripción', 'streaming', 'salida',
+                         'discoteca', 'bar', 'concierto', 'gimnasio', 'gym', 'videojuego', 'juego'],
+    'Educación':       ['curso', 'matrícula', 'universidad', 'colegio', 'pensión educativa', 'libro',
+                         'certificación', 'diplomado', 'semestre'],
+    'Ropa':            ['ropa', 'zapatos', 'tenis', 'camisa', 'pantalón', 'vestido', 'chaqueta', 'zara', 'h&m'],
+    'Servicios':       ['luz', 'agua', 'gas', 'internet', 'wifi', 'celular', 'recibo', 'factura de servicios',
+                         'energía', 'acueducto'],
+    'Mascotas':        ['mascota', 'perro', 'gato', 'veterinario', 'concentrado', 'purina'],
+    'Regalos':         ['regalo', 'obsequio', 'cumpleaños de', 'detalle para'],
+    'Viajes':          ['viaje', 'vuelo', 'tiquete', 'hotel', 'hospedaje', 'vacaciones', 'turismo'],
+}
+KEYWORDS_INGRESO = {
+    'Salario':         ['salario', 'sueldo', 'nómina', 'quincena', 'pago mensual'],
+    'Freelance':       ['freelance', 'proyecto', 'trabajo independiente', 'cliente', 'honorarios'],
+    'Inversión':       ['dividendo', 'rendimiento', 'interés ganado', 'utilidad de inversión', 'cdt vencido'],
+    'Negocio':         ['venta', 'ventas', 'negocio', 'emprendimiento', 'utilidad del negocio'],
+    'Regalo':          ['regalo', 'me regalaron', 'obsequio recibido'],
+}
+
+def detectar_categoria_gasto(texto: str) -> str | None:
+    """Intenta adivinar la categoría de GASTO a partir de texto libre."""
+    msg = (texto or '').lower()
+    for categoria, palabras in KEYWORDS_GASTO.items():
+        if any(p in msg for p in palabras):
+            return categoria
+    return None
+
+def detectar_categoria_ingreso(texto: str) -> str | None:
+    """Intenta adivinar la categoría de INGRESO a partir de texto libre."""
+    msg = (texto or '').lower()
+    for categoria, palabras in KEYWORDS_INGRESO.items():
+        if any(p in msg for p in palabras):
+            return categoria
+    return None
+
+# ══════════════════════════════════════════════════════════════════
 #  PERSONALIDAD  ─  frases de variedad para respuestas
 # ══════════════════════════════════════════════════════════════════
 _OK   = ["¡Listo!", "¡Hecho!", "¡Perfecto!", "¡Excelente!", "Ahí está.", "¡Sin problema!"]
@@ -461,24 +540,41 @@ Tu empleador descuenta mensualmente un anticipo del impuesto de renta directamen
              ("👤 Ver mi perfil", RUTAS['perfil'])]
 },
 
+# ─── CATEGORÍAS DEL PROYECTO ─────────────────────────────────────
+"categorías|categorias|qué categorías|que categorias|en qué categoría|en que categoria|tipos de gasto|tipos de ingreso|categorías de gasto|categorias de gasto|categorías de ingreso|categorias de ingreso": {
+    "titulo": "🏷️ Categorías disponibles en FinanBot",
+    "cuerpo": """Estas son las categorías que puedes usar para registrar tus movimientos en **Mis Finanzas**:
+
+**💸 Categorías de GASTO:**
+🍔 Alimentación · 🚌 Transporte · 🏠 Arriendo · 💊 Salud · 🎬 Entretenimiento · 📚 Educación · 👗 Ropa · ⚡ Servicios · 🐾 Mascotas · 🎁 Regalos · ✈️ Viajes · 📦 Otros gastos
+
+**💰 Categorías de INGRESO:**
+💼 Salario · 🧑‍💻 Freelance · 📈 Inversión · 🏪 Negocio · 🎁 Regalo · 💵 Otros ingresos
+
+No necesitas indicarme la categoría exacta — si me dices algo como *"gasté 20 mil en pizza"* o *"me pagaron por un proyecto freelance"*, yo identifico la categoría correcta por ti.""",
+    "sug": "¿Quieres que te dé un tip específico de alguna categoría en particular?",
+    "btns": [("💸 Ir a mis finanzas", RUTAS['finanzas']),
+             ("📊 Ver mis gastos por categoría", RUTAS['dashboard'])]
+},
+
 # ─── SOBRE FINANBOT ──────────────────────────────────────────────
 "finanbot|qué es finanbot|que es finanbot|cómo funciona finanbot|como funciona finanbot|para qué sirve|para que sirve|proyecto sena": {
     "titulo": "🤖 ¿Qué es FinanBot?",
     "cuerpo": """**FinanBot** es tu asistente financiero personal inteligente, desarrollado como proyecto SENA (Ficha 3407184).
 
 **¿Qué puedes hacer?**
-• 💸 Registrar gastos e ingresos con lenguaje natural
+• 💸 Registrar gastos e ingresos con lenguaje natural (yo detecto la categoría automáticamente)
 • 🎯 Crear y dar seguimiento a metas de ahorro
 • 📈 Simular inversiones con interés compuesto
 • 🏷️ Calcular descuentos, IVA, repartos, aumentos
-• 📊 Ver tu balance y resumen financiero
+• 📊 Ver tu balance y resumen financiero por categoría
 • 🧮 Resolver cualquier cálculo matemático
 • 💡 Recibir consejos y respuestas sobre finanzas
 • 📄 Generar reportes PDF/Excel de tus finanzas
 • 👤 Actualizar tu perfil (nombre, salario, metas)
 
 **Cómo hablarme — ejemplos reales:**
-• *"Gasté $25.000 en el bus"* → registra el gasto
+• *"Gasté $25.000 en el bus"* → registra el gasto y detecta que es Transporte
 • *"$80.000 con 15% de descuento"* → calcula el precio
 • *"Simula $500.000 al 10% por 1 año"* → proyecta la inversión
 • *"¿Qué es un CDT?"* → te explico
@@ -498,7 +594,7 @@ No necesitas comandos exactos. Habla como le escribirías a un amigo.""",
     "cuerpo": """Aquí está todo lo que puedes pedirme:
 
 **💸 Transacciones:**
-• *"Gasté $30.000 en comida"* — registra gasto
+• *"Gasté $30.000 en comida"* — registra gasto (detecto que es Alimentación)
 • *"Recibí $2.000.000 de salario"* — registra ingreso
 • *"Borra el último gasto de transporte"* — elimina
 • *"Muéstrame mis gastos de esta semana"* — consulta
@@ -531,7 +627,8 @@ No necesitas comandos exactos. Habla como le escribirías a un amigo.""",
 • *"¿Qué es un CDT?"*
 • *"¿Cómo salgo de deudas?"*
 • *"¿Cuánto debo tener en fondo de emergencia?"*
-• *"¿Qué es el interés compuesto?"*""",
+• *"¿Qué es el interés compuesto?"*
+• *"¿Qué categorías puedo usar?"*""",
     "sug": "¿Con cuál empezamos?",
     "btns": [("💸 Mis finanzas", RUTAS['finanzas']),
              ("📈 Simulador", RUTAS['simulador']),
@@ -1143,6 +1240,7 @@ class FinanBotIA:
             'ultimo_balance': None,
             'resumen': [],
             'historial_reciente': [],
+            'categorias_mencionadas': [],
         }
 
     # ── API pública ───────────────────────────────────────────────
@@ -1301,11 +1399,17 @@ class FinanBotIA:
                     lineas.append(f"✅ *¡Excelente! Estás ahorrando el {pct}% de tus ingresos.*\n")
                 else:
                     lineas.append(f"💡 *Estás ahorrando el {pct}% de tus ingresos. La meta es llegar al 20%.*\n")
+
+            # Insight automático de categoría dominante (si viene en el resumen)
+            cat_mayor = resumen.get('categoria_mayor_gasto')
+            if cat_mayor and cat_mayor in CATEGORIAS_GASTO:
+                emoji_c = CATEGORIAS_GASTO[cat_mayor]['emoji']
+                lineas.append(f"🔎 *Tu mayor gasto está en {emoji_c} {cat_mayor}. Puedo darte un tip específico si quieres.*\n")
         else:
             lineas.append("\nAún no tienes movimientos registrados. ¡Empecemos ahora!\n")
 
         lineas.append("**¿Qué puedo hacer por ti?** 💡\n")
-        lineas.append("• 💸 Registrar gastos e ingresos  •  🎯 Crear metas de ahorro")
+        lineas.append("• 💸 Registrar gastos e ingresos (detecto la categoría automáticamente)  •  🎯 Crear metas de ahorro")
         lineas.append("• 📈 Simular inversiones  •  🏷️ Calcular descuentos e IVA")
         lineas.append("• 🧮 Resolver cálculos  •  💬 Responder dudas financieras")
         lineas.append("• 📄 Generar reportes  •  👤 Actualizar tu perfil\n")
@@ -1435,40 +1539,50 @@ class FinanBotIA:
 
     # ══════════════════════════════════════════════════════════════
     #  TRANSACCIONES
+    #  Usan CATEGORIAS_GASTO / CATEGORIAS_INGRESO (fuente única de
+    #  verdad, sincronizada con los selects de finanzas.html) para
+    #  el emoji Y para dar un tip contextual de esa categoría.
     # ══════════════════════════════════════════════════════════════
 
     def _gasto_reg(self, a, ctx):
         monto, cat = a['monto'], a['categoria']
-        emoji_cat = {
-            'Alimentación': '🍔', 'Transporte': '🚌', 'Arriendo': '🏠', 'Salud': '💊',
-            'Entretenimiento': '🎬', 'Educación': '📚', 'Ropa': '👗', 'Servicios': '⚡',
-            'Mascotas': '🐾', 'Regalos': '🎁', 'Viajes': '✈️', 'Otros gastos': '📦',
-        }.get(cat, '💸')
-        lineas = [f"{_ok()} Gasto registrado.\n\n{emoji_cat} **${monto:,.0f}** en **{cat}**\n"]
+        info = CATEGORIAS_GASTO.get(cat, {'emoji': '💸', 'tip': None})
+        lineas = [f"{_ok()} Gasto registrado.\n\n{info['emoji']} **${monto:,.0f}** en **{cat}**\n"]
         if ctx:
             bal  = ctx.get('balance', 0) - monto
             lineas.append(f"📊 Balance actualizado: **${bal:,.0f}**")
+
+            # Concentración de gasto en esta categoría (inteligencia real:
+            # compara cuánto pesa esta categoría sobre el total de gastos)
+            cats_ctx = ctx.get('gastos_por_categoria') or {}
+            total_gastos_ctx = ctx.get('total_gastos', 0) + monto
+            monto_cat = cats_ctx.get(cat, 0) + monto
+            if total_gastos_ctx > 0:
+                pct_cat = round(monto_cat / total_gastos_ctx * 100)
+                if pct_cat >= 35 and info.get('tip'):
+                    lineas.append(f"\n⚠️ {_tip()} El {pct_cat}% de tus gastos está en **{cat}**. {info['tip']}")
+
             meta_m = ctx.get('meta_ahorro_mensual', 0)
-            tot_g  = ctx.get('total_gastos', 0) + monto
-            if meta_m > 0 and tot_g > ctx.get('meta_ahorro_mensual', 0) * 3:
-                lineas.append(f"\n⚠️ {_tip()} Tus gastos registrados suman ${tot_g:,.0f}. ¡Ojo con el presupuesto!")
+            if meta_m > 0 and total_gastos_ctx > meta_m * 3:
+                lineas.append(f"\n⚠️ {_tip()} Tus gastos registrados suman ${total_gastos_ctx:,.0f}. ¡Ojo con el presupuesto!")
         return "\n".join(lineas)
 
     def _ingreso_reg(self, a, ctx):
         monto, cat = a['monto'], a['categoria']
-        emoji_cat = {
-            'Salario': '💼', 'Freelance': '💻', 'Otros ingresos': '💰',
-        }.get(cat, '💵')
-        lineas = [f"{_ok()} Ingreso registrado.\n\n{emoji_cat} **+${monto:,.0f}** en **{cat}**\n"]
+        info = CATEGORIAS_INGRESO.get(cat, {'emoji': '💵', 'tip': None})
+        lineas = [f"{_ok()} Ingreso registrado.\n\n{info['emoji']} **+${monto:,.0f}** en **{cat}**\n"]
         if ctx:
             bal = ctx.get('balance', 0) + monto
             lineas.append(f"📊 Balance actualizado: **${bal:,.0f}**")
             lineas.append(f"\n💡 *Regla del 20%: guarda **${int(monto*0.2):,.0f}** de este ingreso.*")
+            if info.get('tip'):
+                lineas.append(f"\n{_tip()} {info['tip']}")
         return "\n".join(lineas)
 
     def _eliminado(self, tipo_t, a):
         monto, cat = a['monto'], a['categoria']
-        ico = "💸" if tipo_t == 'gasto' else "💰"
+        info = (CATEGORIAS_GASTO if tipo_t == 'gasto' else CATEGORIAS_INGRESO).get(cat, {})
+        ico = info.get('emoji') or ("💸" if tipo_t == 'gasto' else "💰")
         return (f"🗑️ {tipo_t.capitalize()} eliminado.\n\n"
                 f"{ico} **${monto:,.0f}** en **{cat}** fue removido de tu historial.")
 
@@ -1504,6 +1618,9 @@ class FinanBotIA:
 
     # ══════════════════════════════════════════════════════════════
     #  CONSULTAS
+    #  _gastos, _ingresos y _resumen usan CATEGORIAS_GASTO/INGRESO
+    #  para mostrar emoji correcto de cada categoría y dar un tip
+    #  cuando una categoría concentra buena parte del gasto/ingreso.
     # ══════════════════════════════════════════════════════════════
 
     def _gastos(self, a):
@@ -1514,9 +1631,17 @@ class FinanBotIA:
         lineas = [f"💸 **Tus gastos**\n\nTotal: **${tot:,.0f}** en {n} movimiento(s).\n"]
         if cats:
             lineas.append("**Por categoría:**")
-            for cat, monto in sorted(cats.items(), key=lambda x: x[1], reverse=True)[:5]:
+            ordenadas = sorted(cats.items(), key=lambda x: x[1], reverse=True)
+            for cat, monto in ordenadas[:5]:
                 pct = round(monto / tot * 100) if tot > 0 else 0
-                lineas.append(f"  • {cat}: ${monto:,.0f} ({pct}%)")
+                emoji_c = CATEGORIAS_GASTO.get(cat, {}).get('emoji', '💸')
+                lineas.append(f"  • {emoji_c} {cat}: ${monto:,.0f} ({pct}%)")
+            # Tip inteligente sobre la categoría dominante
+            cat_top, monto_top = ordenadas[0]
+            pct_top = round(monto_top / tot * 100) if tot > 0 else 0
+            tip_top = CATEGORIAS_GASTO.get(cat_top, {}).get('tip')
+            if pct_top >= 30 and tip_top:
+                lineas.append(f"\n💡 {cat_top} concentra el {pct_top}% de tus gastos. {tip_top}")
         if rec:
             lineas.append("\n**Últimos movimientos:**")
             for t in rec[:4]:
@@ -1526,10 +1651,22 @@ class FinanBotIA:
     def _ingresos(self, a):
         tot = a.get('total_ingresos', 0)
         n   = a.get('num_ingresos', 0)
+        cats = a.get('ingresos_por_categoria', {})
         rec = a.get('recientes', [])
         lineas = [f"💰 **Tus ingresos**\n\nTotal: **${tot:,.0f}** en {n} movimiento(s).\n"]
+        if cats:
+            lineas.append("**Por categoría:**")
+            for cat, monto in sorted(cats.items(), key=lambda x: x[1], reverse=True)[:5]:
+                pct = round(monto / tot * 100) if tot > 0 else 0
+                emoji_c = CATEGORIAS_INGRESO.get(cat, {}).get('emoji', '💵')
+                lineas.append(f"  • {emoji_c} {cat}: ${monto:,.0f} ({pct}%)")
+            # Si el 100% del ingreso depende de una sola fuente, sugerir diversificar
+            if len(cats) == 1 and tot > 0:
+                unica_cat = next(iter(cats))
+                if unica_cat != 'Salario' or True:
+                    lineas.append(f"\n💡 Todo tu ingreso viene de **{unica_cat}**. Diversificar fuentes de ingreso reduce tu riesgo financiero.")
         if rec:
-            lineas.append("**Últimos ingresos:**")
+            lineas.append("\n**Últimos ingresos:**")
             for t in rec[:5]:
                 lineas.append(f"  • {t['categoria']}: ${t['monto']:,.0f} — {t['fecha']}")
         return "\n".join(lineas)
@@ -1556,7 +1693,12 @@ class FinanBotIA:
 
         if cats:
             mayor = max(cats, key=cats.get)
-            lineas.append(f"📌 *Mayor gasto: **{mayor}** (${cats[mayor]:,.0f})*\n")
+            emoji_m = CATEGORIAS_GASTO.get(mayor, {}).get('emoji', '📌')
+            pct_m = round(cats[mayor] / gas * 100) if gas > 0 else 0
+            lineas.append(f"📌 *Mayor gasto: **{emoji_m} {mayor}** (${cats[mayor]:,.0f}, {pct_m}% del total)*\n")
+            tip_m = CATEGORIAS_GASTO.get(mayor, {}).get('tip')
+            if pct_m >= 35 and tip_m:
+                lineas.append(f"💡 *{tip_m}*\n")
 
         if bal < 0:
             lineas.append("⚠️ *Balance negativo. ¿Hay ingresos sin registrar o gastos que puedas reducir?*")
@@ -1625,6 +1767,9 @@ class FinanBotIA:
             return 'inversion'
         if any(p in msg for p in ['gasto', 'ingreso', 'balance', 'finanzas', 'presupuesto']):
             return 'finanzas'
+        # Intenta detectar tema por categoría mencionada directamente
+        if detectar_categoria_gasto(msg) or detectar_categoria_ingreso(msg):
+            return 'finanzas'
         return 'general'
 
     def _actualizar_memoria(self, mensaje: str, ctx: dict | None) -> None:
@@ -1641,6 +1786,15 @@ class FinanBotIA:
         reciente = self.memoria.get('historial_reciente', [])
         reciente.append(mensaje.strip())
         self.memoria['historial_reciente'] = reciente[-8:]
+
+        # Recordar qué categorías se han mencionado en la conversación —
+        # ayuda a detectar patrones repetidos (ej. siempre habla de Transporte)
+        cat_g = detectar_categoria_gasto(mensaje)
+        cat_i = detectar_categoria_ingreso(mensaje)
+        if cat_g or cat_i:
+            cats_mem = self.memoria.get('categorias_mencionadas', [])
+            cats_mem.append(cat_g or cat_i)
+            self.memoria['categorias_mencionadas'] = cats_mem[-10:]
 
     def _frase_empatica(self, ctx: dict | None, tema: str) -> str:
         if ctx and ctx.get('balance', 0) < 0:
@@ -1661,6 +1815,7 @@ class FinanBotIA:
         ingresos = ctx.get('total_ingresos', 0)
         metas = ctx.get('metas', []) or []
         categoria_mayor = ctx.get('categoria_mayor_gasto')
+        cats_gasto = ctx.get('gastos_por_categoria') or {}
 
         if balance < 0:
             return 'Tu balance actual está negativo, así que hoy priorizaría registrar todos los gastos y revisar la categoría que más pesa.'
@@ -1677,7 +1832,16 @@ class FinanBotIA:
                 if faltante > 0:
                     return f'Tienes una meta activa: {meta_activa.get("nombre", "tu objetivo")}. Faltan ${faltante:,.0f} para completarla.'
 
+        # Usa el tip específico de la categoría real (no una frase genérica)
         if categoria_mayor:
+            tip_cat = CATEGORIAS_GASTO.get(categoria_mayor, {}).get('tip')
+            gastos_tot = ctx.get('total_gastos', 0)
+            monto_cat = cats_gasto.get(categoria_mayor, 0)
+            pct_cat = round(monto_cat / gastos_tot * 100) if gastos_tot > 0 else None
+            if tip_cat and pct_cat is not None:
+                return f'Veo que tu mayor gasto está en {categoria_mayor} ({pct_cat}% del total). {tip_cat}'
+            if tip_cat:
+                return f'Veo que tu mayor gasto está en {categoria_mayor}. {tip_cat}'
             return f'Veo que tu mayor gasto está en {categoria_mayor}; podemos buscar una forma sencilla de reducirlo sin afectar lo esencial.'
 
         return None
@@ -1720,6 +1884,14 @@ class FinanBotIA:
         if sugerencia:
             respuesta = f"{respuesta}\n\n💬 {sugerencia}"
 
+        # Patrón detectado: la misma categoría aparece repetida en la conversación
+        cats_mem = self.memoria.get('categorias_mencionadas', [])
+        if len(cats_mem) >= 3 and len(set(cats_mem[-3:])) == 1:
+            cat_repetida = cats_mem[-1]
+            info = CATEGORIAS_GASTO.get(cat_repetida) or CATEGORIAS_INGRESO.get(cat_repetida)
+            if info:
+                respuesta = f"{respuesta}\n\n🔁 Noto que **{cat_repetida}** ha salido varias veces en esta conversación — parece un patrón recurrente."
+
         if self.memoria.get('historial_reciente') and len(self.memoria['historial_reciente']) > 1:
             respuesta = f"{respuesta}\n\n🧠 Contexto reciente: {', '.join(self.memoria['historial_reciente'][-3:])}."
 
@@ -1739,6 +1911,17 @@ class FinanBotIA:
                 resultado = round((pct / 100) * base)
                 return f"🧮 El {int(pct) if float(pct).is_integer() else pct} porcentaje de {base:,.0f} es **{resultado:,.0f}**."
 
+        # Pregunta directa por en qué categoría cae un gasto/ingreso descrito
+        if any(p in msg for p in ['en qué categoría', 'en que categoria', 'qué categoría es', 'que categoria es']):
+            cat_g = detectar_categoria_gasto(msg)
+            cat_i = detectar_categoria_ingreso(msg)
+            if cat_g:
+                emoji_c = CATEGORIAS_GASTO[cat_g]['emoji']
+                return f"🏷️ Eso encajaría en la categoría de gasto **{emoji_c} {cat_g}**. ¿Quieres que lo registre así?"
+            if cat_i:
+                emoji_c = CATEGORIAS_INGRESO[cat_i]['emoji']
+                return f"🏷️ Eso encajaría en la categoría de ingreso **{emoji_c} {cat_i}**. ¿Quieres que lo registre así?"
+
         if any(p in msg for p in ['mejorar mis finanzas', 'mejorar finanzas', 'quiero mejorar', 'como mejorar', 'cómo mejorar', 'plan financiero', 'mejorar mi dinero']):
             balance = ctx.get('balance', 0) if ctx else 0
             lineas = [
@@ -1747,6 +1930,11 @@ class FinanBotIA:
                 "2️⃣ Segundo: separar un porcentaje fijo para ahorro automático.",
                 "3️⃣ Tercero: revisar gastos repetitivos y reducir lo que no aporta valor.",
             ]
+            if ctx and ctx.get('categoria_mayor_gasto'):
+                cat = ctx['categoria_mayor_gasto']
+                tip_cat = CATEGORIAS_GASTO.get(cat, {}).get('tip')
+                if tip_cat:
+                    lineas.append(f"4️⃣ En tu caso específico: tu mayor gasto es **{cat}**. {tip_cat}")
             if balance < 0:
                 lineas.append(f"Tu balance actual es ${balance:,.0f}, así que hoy priorizaría cortar gastos hormiga y revisar si hay ingresos sin registrar.")
             else:
@@ -1912,8 +2100,31 @@ class FinanBotIA:
                             gastos = ctx.get('total_gastos', 0)
                             if gastos > 0:
                                 resp += f"\n\n💡 **Tu situación:** Gastos registrados por **${gastos:,.0f}**. Podemos analizar dónde optimizar."
+
+                        if any(x in claves for x in ['categorías', 'categorias']):
+                            cats = ctx.get('gastos_por_categoria') or {}
+                            if cats:
+                                mayor = max(cats, key=cats.get)
+                                emoji_m = CATEGORIAS_GASTO.get(mayor, {}).get('emoji', '📌')
+                                resp += f"\n\n💡 **Tu situación:** Tu categoría con más movimiento es **{emoji_m} {mayor}**."
                     
                     return resp, []
+
+        # 1b. Detección de categoría mencionada en texto libre (aunque no
+        # coincida con la base de conocimiento) — es la IA "entendiendo"
+        # a qué categoría pertenece algo que el usuario describió.
+        cat_g = detectar_categoria_gasto(msg)
+        cat_i = detectar_categoria_ingreso(msg)
+        if (cat_g or cat_i) and self._extraer_monto(mensaje) is None:
+            if cat_g:
+                info = CATEGORIAS_GASTO[cat_g]
+                return (f"🏷️ Eso suena a un gasto de **{info['emoji']} {cat_g}**.\n\n"
+                        f"💡 {info['tip']}\n\n"
+                        f"Dime el monto y te lo registro."), _btns_finanzas()
+            info = CATEGORIAS_INGRESO[cat_i]
+            return (f"🏷️ Eso suena a un ingreso de **{info['emoji']} {cat_i}**.\n\n"
+                    f"💡 {info['tip']}\n\n"
+                    f"Dime el monto y te lo registro."), _btns_finanzas()
 
         # 2. Instrucciones de uso
         if any(p in msg for p in ['cómo registro','como registro','cómo agrego','como agrego',
@@ -1943,7 +2154,7 @@ class FinanBotIA:
                 "✅ Disponible 24/7 para responder dudas  ✅ Rápido en cálculos  ✅ Personalizado a tu contexto\n"
                 "⚠️ No reemplazo asesor financiero profesional  ⚠️ Mis consejos son educativos\n\n"
                 "**Puedo:**\n"
-                "• Registrar tus gastos e ingresos en lenguaje natural\n"
+                "• Registrar tus gastos e ingresos en lenguaje natural y detectar la categoría automáticamente\n"
                 "• Simular inversiones con interés compuesto\n"
                 "• Responder preguntas sobre CDT, deudas, ahorro, impuestos\n"
                 "• Calcular descuentos, IVA, repartos\n"
@@ -1956,6 +2167,7 @@ class FinanBotIA:
             bal   = ctx.get('balance', 0)
             mayor = ctx.get('categoria_mayor_gasto')
             ingresos = ctx.get('total_ingresos', 0)
+            cats_gasto = ctx.get('gastos_por_categoria') or {}
             
             lineas = [f"🤔 No estoy seguro de qué necesitas exactamente, pero puedo ayudarte analizando tu situación:\n"]
             
@@ -1970,8 +2182,14 @@ class FinanBotIA:
                     lineas.append("→ Meta: Aumentar a 20% mensual usando la regla 50/30/20")
             
             if mayor:
-                lineas.append(f"\n💸 **Mayor categoría de gasto:** {mayor}")
-                lineas.append("→ Podemos buscar formas de reducir estos gastos")
+                emoji_m = CATEGORIAS_GASTO.get(mayor, {}).get('emoji', '💸')
+                gastos_tot = ctx.get('total_gastos', 0)
+                pct_m = round(cats_gasto.get(mayor, 0) / gastos_tot * 100) if gastos_tot > 0 else None
+                pct_txt = f" ({pct_m}% del total)" if pct_m is not None else ""
+                lineas.append(f"\n{emoji_m} **Mayor categoría de gasto:** {mayor}{pct_txt}")
+                tip_m = CATEGORIAS_GASTO.get(mayor, {}).get('tip')
+                if tip_m:
+                    lineas.append(f"→ {tip_m}")
             
             lineas.append("\n💡 ¿Qué quieres lograr? (ahorrar más, pagar deudas, invertir, etc.)")
             return "\n".join(lineas), []
@@ -2010,8 +2228,8 @@ class FinanBotIA:
             "## 💬 Cómo hablarme\n\n"
             "Habla de forma natural, como con un amigo. Ejemplos:\n\n"
             "**Registrar:**\n"
-            "• *'Gasté $25.000 en el bus'*\n"
-            "• *'Recibí $2.000.000 de salario'*\n"
+            "• *'Gasté $25.000 en el bus'* → detecto Transporte automáticamente\n"
+            "• *'Recibí $2.000.000 de salario'* → detecto Salario automáticamente\n"
             "• *'Borra el último gasto de comida'*\n\n"
             "**Calcular:**\n"
             "• *'$80.000 con 20% de descuento'*\n"
@@ -2023,7 +2241,8 @@ class FinanBotIA:
             "**Preguntas:**\n"
             "• *'¿Qué es el interés compuesto?'*\n"
             "• *'¿Cómo salgo de deudas?'*\n"
-            "• *'¿Cómo funciona un CDT?'*\n\n"
+            "• *'¿Cómo funciona un CDT?'*\n"
+            "• *'¿Qué categorías puedo usar?'*\n\n"
             "**Perfil y reportes:**\n"
             "• *'Cambia mi nombre a Duban'*\n"
             "• *'Hazme un reporte PDF'*"
@@ -2097,7 +2316,9 @@ class FinanBotIA:
             lineas.append("• 📈 Empezar a invertir")
             lineas.append("• 📋 Organizar presupuesto")
             if ctx and ctx.get('categoria_mayor_gasto'):
-                lineas.append(f"\nVi que tu mayor gasto está en **{ctx['categoria_mayor_gasto']}**. Podemos optimizar ahí.")
+                cat = ctx['categoria_mayor_gasto']
+                emoji_c = CATEGORIAS_GASTO.get(cat, {}).get('emoji', '')
+                lineas.append(f"\nVi que tu mayor gasto está en **{emoji_c} {cat}**. Podemos optimizar ahí.")
         return "\n".join(lineas)
 
     def _resp_generica_mejorada(self, mensaje: str) -> str:

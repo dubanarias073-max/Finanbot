@@ -399,6 +399,7 @@
     <a href="dashboard.html"       class="nav-item"><i class="fas fa-home"></i>          Dashboard</a>
     <a href="chat.html"            class="nav-item"><i class="fas fa-robot"></i>          Chat FinanBot</a>
     <a href="finanzas.html"        class="nav-item"><i class="fas fa-wallet"></i>         Mis Finanzas</a>
+    <a href="calendario.html"        class="nav-item"><i class="fas fa-calendar"></i>     Calendario</a>
     <a href="recomendaciones.html" class="nav-item"><i class="fas fa-lightbulb"></i>      Recomendaciones</a>
     <a href="simulador.html"       class="nav-item"><i class="fas fa-chart-line"></i>     Simulador</a>
     <a href="aprende.html"         class="nav-item"><i class="fas fa-graduation-cap"></i> Aprende</a>
@@ -519,6 +520,24 @@
     </div>
 </div>
 
+<!-- MODAL CONFIRMAR REDUCCIÓN DE META -->
+<div class="modal-overlay" id="modalConfirmarReduccion">
+    <div class="modal-abonar-box" style="border-color: rgba(239,68,68,0.3);">
+        <button class="modal-close" onclick="cerrarConfirmarReduccion()" style="background:rgba(239,68,68,0.1);border-color:rgba(239,68,68,0.25);">✕</button>
+        <div style="font-size:28px;margin-bottom:8px;">⚠️</div>
+        <div class="modal-title" style="color:#f87171;">Vas a reducir tu ahorro</div>
+        <div style="font-size:13px;color:#9ca3af;margin-bottom:22px;line-height:1.6;" id="msgConfirmarReduccion"></div>
+        <div style="display:flex;gap:10px;">
+            <button class="btn-crear-modal" style="background:rgba(255,255,255,0.06);color:#9ca3af;flex:1;box-shadow:none;" onclick="cerrarConfirmarReduccion()">
+                Cancelar
+            </button>
+            <button class="btn-crear-modal" style="background:linear-gradient(135deg,#ef4444,#f87171);flex:1;" onclick="confirmarReduccionAbono()">
+                Sí, reducir
+            </button>
+        </div>
+    </div>
+</div>
+
 <div class="main">
     <div class="topbar">
         <button class="menu-toggle" id="menuToggle" aria-label="Abrir menú" style="margin-right:12px;"><i class="fas fa-bars"></i></button>
@@ -594,25 +613,23 @@
                         <div class="card-icon" style="background:rgba(251,191,36,0.15);">💰</div>
                         <div><div class="card-title">Información financiera</div><div class="card-subtitle">Tu salario se registra automáticamente en Mis Finanzas</div></div>
                     </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">Ingreso mensual (Salario)</label>
-                            <div class="input-suffix">
-                                <input type="number" class="form-control" id="ingresoMensual" placeholder="2.500.000" oninput="actualizarDist()">
-                                <span class="suffix-tag">COP</span>
-                            </div>
-                            <!-- INFO BOX SALARIO -->
-                            <div class="ingreso-info-box" id="ingresoInfoBox" style="display:none;">
-                                <i class="fas fa-info-circle"></i>
-                                <p>Este valor se registrará automáticamente como un <strong>ingreso de Salario</strong> en Mis Finanzas al guardar. Puedes editarlo aquí en cualquier momento.</p>
+                    <div class="form-group">
+                        <label class="form-label">Ingreso mensual (Salario)</label>
+                        <div class="input-suffix">
+                            <input type="number" class="form-control" id="ingresoMensual" placeholder="2.500.000" oninput="actualizarDist()">
+                            <span class="suffix-tag">COP</span>
+                        </div>
+                        <div class="form-group" style="margin-top:10px;margin-bottom:0;">
+                            <label class="form-label">Día de pago mensual</label>
+                            <input type="number" class="form-control" id="diaPago" min="1" max="31" placeholder="Ej: 30">
+                            <div style="font-size:11px;color:var(--text-muted);margin-top:6px;line-height:1.5;">
+                                FinanBot registrará tu salario automáticamente ese día, mes a mes (no se adelanta a meses futuros). Si cambias el día, los meses ya pasados no se modifican.
                             </div>
                         </div>
-                        <div class="form-group">
-                            <label class="form-label">Meta de ahorro mensual</label>
-                            <div class="input-suffix">
-                                <input type="number" class="form-control" id="metaAhorro" placeholder="500.000">
-                                <span class="suffix-tag">COP</span>
-                            </div>
+                        <!-- INFO BOX SALARIO -->
+                        <div class="ingreso-info-box" id="ingresoInfoBox" style="display:none;">
+                            <i class="fas fa-info-circle"></i>
+                            <p>Este valor se registrará automáticamente como un <strong>ingreso de Salario</strong> en Mis Finanzas al guardar. Puedes editarlo aquí en cualquier momento.</p>
                         </div>
                     </div>
 
@@ -756,24 +773,13 @@
                 <div class="config-item">
                     <div class="config-item-left">
                         <div class="config-item-icon" style="background:rgba(168,85,247,0.12);">🔔</div>
-                        <div class="config-item-text"><h4>Notificaciones de metas</h4><p>Alertas cuando te acerques a tu meta</p></div>
+                        <div class="config-item-text"><h4>Notificaciones de metas</h4><p>Alertas de progreso y de fecha límite en el dashboard</p></div>
                     </div>
                     <label class="toggle"><input type="checkbox" id="toggleMetas" checked onchange="guardarPreferencia('notifMetas',this.checked)"><span class="toggle-slider"></span></label>
                 </div>
                 <div class="notif-preview" id="previewMetas">
                     <span class="notif-preview-icon">🔔</span>
-                    <span>Activo — Verás alertas en el dashboard cuando una meta llegue al 75% o 100%.</span>
-                </div>
-                <div class="config-item" style="margin-top:6px;">
-                    <div class="config-item-left">
-                        <div class="config-item-icon" style="background:rgba(34,211,238,0.12);">📊</div>
-                        <div class="config-item-text"><h4>Resumen semanal</h4><p>Análisis de tus finanzas cada semana</p></div>
-                    </div>
-                    <label class="toggle"><input type="checkbox" id="toggleResumen" checked onchange="guardarPreferencia('resumenSemanal',this.checked)"><span class="toggle-slider"></span></label>
-                </div>
-                <div class="notif-preview" id="previewResumen">
-                    <span class="notif-preview-icon">📊</span>
-                    <span>Activo — El dashboard mostrará un resumen de la última semana.</span>
+                    <span>Activo — Verás alertas en el dashboard cuando una meta llegue al 75%/100%, o cuando su fecha límite esté cerca o vencida.</span>
                 </div>
                 <div class="config-item" style="margin-top:6px;">
                     <div class="config-item-left">
@@ -881,6 +887,7 @@
 const API = 'http://127.0.0.1:8000/api';
 const token = localStorage.getItem('token');
     let metaSeleccionada = null;
+    let montoOriginalAbono = 0;
     let emoji = '🏖️', catSel = 'viaje', prioSel = 'media';
 
     // ── MENÚ MÓVIL ────────────────────────────────────────
@@ -903,6 +910,17 @@ const token = localStorage.getItem('token');
     const TAG_SALARIO_AUTO = '__auto_salario__';
     const esAutoSalario = t =>
         t.descripcion && t.descripcion.includes(TAG_SALARIO_AUTO);
+
+    // Calcula la fecha (YYYY-MM-DD) del día de pago para un mes dado,
+    // ajustando al último día del mes si éste tiene menos días que "dia".
+    function fechaSalarioParaMes(anioBase, mesBase, offsetMeses, dia) {
+        const ref = new Date(anioBase, mesBase + offsetMeses, 1);
+        const anio = ref.getFullYear();
+        const mes  = ref.getMonth();
+        const ultimoDia = new Date(anio, mes + 1, 0).getDate();
+        const diaFinal = Math.min(dia, ultimoDia);
+        return `${anio}-${String(mes + 1).padStart(2,'0')}-${String(diaFinal).padStart(2,'0')}`;
+    }
 
     // ── REGLA PERSONALIZABLE ──────────────────────────────
     const REGLA_KEY     = 'finanbot_regla_dist';
@@ -1054,22 +1072,24 @@ const token = localStorage.getItem('token');
     }
 
     // ── PREFERENCIAS ──────────────────────────────────────
+    // "resumenSemanal" ya no se gestiona aquí (se retiró el toggle);
+    // si quedó guardado en localStorage de versiones anteriores no
+    // afecta nada porque el dashboard ya no lo consulta.
     const PREFS_KEY = 'finanbot_prefs';
     function cargarPreferencias() {
-        return Object.assign({ notifMetas: true, resumenSemanal: true, tipsFinancieros: true }, JSON.parse(localStorage.getItem(PREFS_KEY) || '{}'));
+        return Object.assign({ notifMetas: true, tipsFinancieros: true }, JSON.parse(localStorage.getItem(PREFS_KEY) || '{}'));
     }
     function guardarPreferencia(clave, valor) {
         const prefs = cargarPreferencias(); prefs[clave] = valor;
         localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
         actualizarPreviewToggle(clave, valor);
-        const nombres = { notifMetas:'Notificaciones de metas', resumenSemanal:'Resumen semanal', tipsFinancieros:'Tips financieros' };
+        const nombres = { notifMetas:'Notificaciones de metas', tipsFinancieros:'Tips financieros' };
         toast(valor ? '✅' : '🔕', `${nombres[clave]} ${valor ? 'activado' : 'desactivado'}`);
     }
     function actualizarPreviewToggle(clave, activo) {
         const map = {
-            notifMetas:      { id:'previewMetas',   txt:'Activo — Verás alertas en el dashboard cuando una meta llegue al 75% o 100%.' },
-            resumenSemanal:  { id:'previewResumen', txt:'Activo — El dashboard mostrará un resumen de la última semana.' },
-            tipsFinancieros: { id:'previewTips',    txt:'Activo — Se mostrarán tips basados en tus recomendaciones.' },
+            notifMetas:      { id:'previewMetas', txt:'Activo — Verás alertas en el dashboard cuando una meta llegue al 75%/100%, o cuando su fecha límite esté cerca o vencida.' },
+            tipsFinancieros: { id:'previewTips',   txt:'Activo — Se mostrarán tips basados en tus recomendaciones.' },
         };
         const p = map[clave]; if (!p) return;
         const el = document.getElementById(p.id);
@@ -1078,10 +1098,9 @@ const token = localStorage.getItem('token');
     }
     function aplicarPreferenciasGuardadas() {
         const prefs = cargarPreferencias();
-        document.getElementById('toggleMetas').checked   = prefs.notifMetas;
-        document.getElementById('toggleResumen').checked = prefs.resumenSemanal;
-        document.getElementById('toggleTips').checked    = prefs.tipsFinancieros;
-        ['notifMetas','resumenSemanal','tipsFinancieros'].forEach(k => actualizarPreviewToggle(k, prefs[k]));
+        document.getElementById('toggleMetas').checked = prefs.notifMetas;
+        document.getElementById('toggleTips').checked  = prefs.tipsFinancieros;
+        ['notifMetas','tipsFinancieros'].forEach(k => actualizarPreviewToggle(k, prefs[k]));
     }
 
     // ── TOAST ─────────────────────────────────────────────
@@ -1173,7 +1192,8 @@ const token = localStorage.getItem('token');
                 document.getElementById('nombre').value        = u.nombre;
                 document.getElementById('correo').value        = u.correo;
                 document.getElementById('ingresoMensual').value = u.ingreso_mensual || '';
-                document.getElementById('metaAhorro').value    = u.meta_ahorro     || '';
+                const fechaSalario = u.fecha_salario ? new Date(u.fecha_salario) : null;
+                document.getElementById('diaPago').value = fechaSalario ? fechaSalario.getDate() : '';
                 actualizarDist();
                 localStorage.setItem('usuario', JSON.stringify(u));
             }
@@ -1279,8 +1299,10 @@ const token = localStorage.getItem('token');
         } catch(e) { toast('❌','No se pudo conectar.'); }
     }
 
+    // ── ABONAR (solo permite aumentar; si reduce, pide confirmación) ──
     function abrirAbonar(id, actual) {
         metaSeleccionada = id;
+        montoOriginalAbono = actual;
         document.getElementById('abonarMonto').value = actual;
         document.getElementById('modalAbonar').classList.add('visible');
     }
@@ -1288,6 +1310,28 @@ const token = localStorage.getItem('token');
     async function confirmarAbono() {
         const monto = parseFloat(document.getElementById('abonarMonto').value);
         if (!monto || monto < 0) { toast('⚠️','Monto inválido.'); return; }
+
+        if (monto < montoOriginalAbono) {
+            document.getElementById('msgConfirmarReduccion').textContent =
+                `Estás a punto de bajar tu ahorro de $${Math.round(montoOriginalAbono).toLocaleString('es-CO')} a $${Math.round(monto).toLocaleString('es-CO')}. Una meta de ahorro debería solo ir en aumento. ¿Quieres continuar de todas formas?`;
+            document.getElementById('modalConfirmarReduccion').classList.add('visible');
+            return; // espera confirmación explícita del usuario
+        }
+
+        await guardarAbono(monto);
+    }
+
+    function cerrarConfirmarReduccion() {
+        document.getElementById('modalConfirmarReduccion').classList.remove('visible');
+    }
+
+    async function confirmarReduccionAbono() {
+        const monto = parseFloat(document.getElementById('abonarMonto').value);
+        cerrarConfirmarReduccion();
+        await guardarAbono(monto);
+    }
+
+    async function guardarAbono(monto) {
         try {
             const res = await fetch(`${API}/metas/${metaSeleccionada}`, {
                 method:'PUT',
@@ -1302,8 +1346,20 @@ const token = localStorage.getItem('token');
     async function guardarPerfil() {
         const nombre  = document.getElementById('nombre').value.trim();
         const ingreso = document.getElementById('ingresoMensual').value;
-        const meta    = document.getElementById('metaAhorro').value;
+        const diaPagoStr = document.getElementById('diaPago').value;
         if (!nombre) { toast('⚠️','El nombre no puede estar vacío.'); return; }
+
+        let fechaSalario = null;
+        let diaPagoNum = null;
+        if (diaPagoStr) {
+            diaPagoNum = parseInt(diaPagoStr, 10);
+            if (!diaPagoNum || diaPagoNum < 1 || diaPagoNum > 31) {
+                toast('⚠️','El día de pago debe estar entre 1 y 31.');
+                return;
+            }
+            const hoy = new Date();
+            fechaSalario = fechaSalarioParaMes(hoy.getFullYear(), hoy.getMonth(), 0, diaPagoNum);
+        }
 
         const btn = document.getElementById('btnGuardarPerfil');
         btn.disabled = true;
@@ -1319,7 +1375,7 @@ const token = localStorage.getItem('token');
     body: JSON.stringify({
         nombre,
         ingreso_mensual: Number(ingreso),
-        meta_ahorro: Number(meta)
+        fecha_salario: fechaSalario
     })
 });
 
@@ -1335,8 +1391,8 @@ if (res.ok) {
                 u.nombre = nombre; localStorage.setItem('usuario', JSON.stringify(u));
 
                 // ── SINCRONIZAR SALARIO AUTOMÁTICO ────────
-                if (ingreso && parseFloat(ingreso) > 0) {
-                    await sincronizarSalarioAuto(parseFloat(ingreso));
+                if (ingreso && parseFloat(ingreso) > 0 && diaPagoNum) {
+                    await sincronizarSalarioAuto(parseFloat(ingreso), diaPagoNum);
                 }
                 // ─────────────────────────────────────────
 
@@ -1354,10 +1410,14 @@ if (res.ok) {
     }
 
     // ── SALARIO AUTOMÁTICO ────────────────────────────────
-    // Usa el MISMO tag que onboarding.html (__auto_salario__) para que,
-    // sin importar desde dónde se creó/editó el salario, finanzas.html
-    // lo reconozca, lo oculte de la lista y lo siga sumando a los totales.
-    async function sincronizarSalarioAuto(monto) {
+    // Programa el salario SOLO para el mes actual, en el día de pago
+    // elegido. No se pre-generan meses futuros: cada mes se crea cuando
+    // el usuario efectivamente llega a él (ver asegurarSalarioMesActual
+    // en dashboard.html / finanzas.html). Aquí también se limpian
+    // registros futuros que hubieran quedado de versiones anteriores.
+    // Los salarios de meses YA PASADOS nunca se tocan, así que si el
+    // usuario cambia el día de pago, el historial anterior no cambia.
+    async function sincronizarSalarioAuto(monto, diaPago) {
         try {
             // 1. Obtener todas las transacciones
             const res = await fetch(API + '/transacciones/', {
@@ -1366,17 +1426,22 @@ if (res.ok) {
             if (!res.ok) return;
             const todas = await res.json();
 
-            // 2. Eliminar salario(s) auto previo(s) — evita duplicados
-            const autoAnteriores = todas.filter(t => esAutoSalario(t));
-            for (const t of autoAnteriores) {
+            // 2. Calcular el mes actual (frontera pasado/futuro)
+            const hoy = new Date();
+            const mesActualStr = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}`;
+
+            // 3. Borrar auto-salarios del mes actual en adelante
+            //    (incluye limpiar meses futuros que hubiera de antes)
+            const aReemplazar = todas.filter(t => esAutoSalario(t) && t.fecha && t.fecha.slice(0,7) >= mesActualStr);
+            for (const t of aReemplazar) {
                 await fetch(`${API}/transacciones/${t.id}`, {
                     method: 'DELETE',
                     headers: {'Authorization': `Bearer ${token}`}
                 });
             }
 
-            // 3. Crear nuevo salario auto con el mes actual
-            const hoy = new Date().toISOString().split('T')[0];
+            // 4. Crear SOLO el salario del mes actual con el nuevo día
+            const fechaMesActual = fechaSalarioParaMes(hoy.getFullYear(), hoy.getMonth(), 0, diaPago);
             await fetch(API + '/transacciones/', {
                 method: 'POST',
                 headers: {'Content-Type':'application/json','Authorization': `Bearer ${token}`},
@@ -1386,11 +1451,11 @@ if (res.ok) {
                     icono: '💼',
                     monto: monto,
                     descripcion: TAG_SALARIO_AUTO,   // tag oculto, no editable por el usuario
-                    fecha: hoy
+                    fecha: fechaMesActual
                 })
             });
 
-            toast('💼', `Salario de $${Math.round(monto).toLocaleString('es-CO')} sincronizado en Mis Finanzas`);
+            toast('💼', `Salario de $${Math.round(monto).toLocaleString('es-CO')} programado el día ${diaPago} de este mes`);
         } catch(e) {
             console.error('Error sincronizando salario auto:', e);
         }

@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinanBot - Calendario</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; min-height: 100vh; color: white; transition: background 0.4s; overflow-x: hidden; }
+        html { overflow-x: hidden; max-width: 100vw; }
+
+        body.tema-oscuro {
+            background: radial-gradient(ellipse at top, #1a1a4e 0%, #0f0f2d 50%, #000010 100%);
+            --card-bg: rgba(255,255,255,0.04); --card-border: rgba(168,85,247,0.15);
+            --item-bg: rgba(255,255,255,0.03); --item-border: rgba(255,255,255,0.06);
+            --muted: #6b7280; --secondary: #9ca3af;
+            --sidebar-bg: rgba(255,255,255,0.03); --sidebar-brd: rgba(168,85,247,0.2);
+        }
+        body.tema-azul {
+            background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #1e40af 100%);
+            --card-bg: rgba(30,58,95,0.6); --card-border: rgba(96,165,250,0.25);
+            --item-bg: rgba(30,58,95,0.4); --item-border: rgba(96,165,250,0.15);
+            --muted: #60a5fa; --secondary: #93c5fd;
+            --sidebar-bg: rgba(15,23,42,0.85); --sidebar-brd: rgba(96,165,250,0.25);
+        }
+
+        /* SIDEBAR */
+        .sidebar { position: fixed; top: 0; left: 0; width: 240px; height: 100vh; background: var(--sidebar-bg); border-right: 1px solid var(--sidebar-brd); backdrop-filter: blur(20px); z-index: 1100; display: flex; flex-direction: column; padding: 25px 0; transition: background 0.4s, transform .35s ease; }
+        .sidebar-logo { display: flex; align-items: center; gap: 12px; padding: 0 20px 25px; border-bottom: 1px solid rgba(168,85,247,0.15); margin-bottom: 20px; }
+        .sidebar-logo img { width: 40px; height: 40px; border-radius: 50%; box-shadow: 0 0 15px rgba(168,85,247,0.5); }
+        .sidebar-logo span { font-size: 20px; font-weight: 800; background: linear-gradient(90deg,#c026d3,#22d3ee); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .sidebar-close { display: none; margin-left: auto; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.15); color: white; width: 34px; height: 34px; border-radius: 50%; align-items: center; justify-content: center; cursor: pointer; font-size: 14px; flex-shrink: 0; -webkit-tap-highlight-color: transparent; }
+        .sidebar-close:active { background: rgba(239,68,68,.25); }
+        .nav-item { display: flex; align-items: center; gap: 12px; padding: 12px 20px; color: var(--secondary,#9ca3af); text-decoration: none; font-size: 14px; font-weight: 500; transition: all 0.3s; border-left: 3px solid transparent; margin: 2px 0; }
+        .nav-item:hover, .nav-item.active { color: white; background: rgba(168,85,247,0.08); border-left-color: #a855f7; }
+        .nav-item i { width: 18px; text-align: center; font-size: 15px; }
+        .nav-item.active i { color: #a855f7; }
+        .sidebar-bottom { margin-top: auto; padding: 20px; border-top: 1px solid rgba(168,85,247,0.15); }
+        .btn-cerrar { display: flex; align-items: center; gap: 10px; color: #ef4444; background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); border-radius: 10px; padding: 10px 15px; font-size: 13px; cursor: pointer; transition: all 0.3s; width: 100%; text-decoration: none; }
+        .btn-cerrar:hover { background: rgba(239,68,68,0.15); color: #ef4444; }
+
+        .nav-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 1050; opacity: 0; visibility: hidden; transition: opacity .35s ease, visibility .35s ease; }
+        .nav-overlay.abierto { opacity: 1; visibility: visible; }
+        .menu-toggle { display: none; background: rgba(168,85,247,.18); border: 1px solid rgba(168,85,247,.5); color: white; width: 40px; height: 40px; border-radius: 11px; align-items: center; justify-content: center; font-size: 17px; cursor: pointer; flex-shrink: 0; -webkit-tap-highlight-color: transparent; }
+        .menu-toggle:active { background: rgba(168,85,247,.32); transform: scale(.94); }
+
+        /* MAIN */
+        .main { margin-left: 240px; padding: 30px; min-height: 100vh; }
+
+        /* TOPBAR */
+        .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; gap: 14px; flex-wrap: wrap; }
+        .topbar-left { display: flex; align-items: center; gap: 14px; }
+        .topbar h1 { font-size: 24px; font-weight: 700; }
+        .topbar p  { color: var(--secondary, #9ca3af); font-size: 14px; margin-top: 3px; }
+        .topbar-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+
+        .btn-exportar { border: none; border-radius: 50px; padding: 10px 20px; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; gap: 7px; white-space: nowrap; }
+        .btn-exportar:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
+        .btn-exportar.pdf { background: linear-gradient(135deg, #f472b6, #ef4444); color: white; box-shadow: 0 4px 15px rgba(239,68,68,0.3); }
+        .btn-exportar.pdf:not(:disabled):hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(239,68,68,0.5); }
+        .btn-exportar.excel { background: linear-gradient(135deg, #4ade80, #22d3ee); color: #0f0f2d; box-shadow: 0 4px 15px rgba(74,222,128,0.3); }
+        .btn-exportar.excel:not(:disabled):hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(74,222,128,0.5); }
+
+        /* AVISO SIN TRANSACCIONES */
+        .aviso-vacio { display: none; align-items: center; gap: 14px; background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.3); border-radius: 14px; padding: 16px 20px; margin-bottom: 22px; font-size: 14px; color: #fde68a; }
+        .aviso-vacio.visible { display: flex; }
+        .aviso-vacio i { font-size: 20px; color: #fbbf24; flex-shrink: 0; }
+
+        /* RESUMEN DEL MES */
+        .resumen-mes-bar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 22px; }
+        .resumen-mes-item { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px; padding: 16px 20px; }
+        .resumen-mes-label { font-size: 11px; color: var(--secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+        .resumen-mes-valor { font-size: 20px; font-weight: 800; }
+
+        /* NAV DE MES */
+        .calendario-nav-grande { display: flex; align-items: center; justify-content: center; gap: 22px; margin-bottom: 22px; }
+        .calendario-nav-grande button { background: var(--card-bg); border: 1px solid var(--card-border); color: white; width: 44px; height: 44px; border-radius: 12px; cursor: pointer; font-size: 16px; transition: all 0.3s; }
+        .calendario-nav-grande button:hover { background: rgba(168,85,247,0.15); border-color: #a855f7; }
+        .calendario-nav-grande span { font-size: 22px; font-weight: 800; color: #c4b5fd; text-transform: capitalize; min-width: 220px; text-align: center; }
+
+        /* CALENDARIO GRANDE */
+        .calendario-grande-wrap { display: grid; grid-template-columns: 1fr 340px; gap: 20px; }
+        .calendario-grande { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 20px; padding: 22px; }
+        .cal-header-fila { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-bottom: 8px; }
+        .cal-header-dia-grande { text-align: center; font-size: 12px; color: var(--secondary); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; padding-bottom: 6px; }
+        .cal-grid-grande { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
+        .cal-dia-grande {
+            min-height: 96px; border-radius: 14px; background: var(--item-bg);
+            border: 1px solid var(--item-border); padding: 10px; cursor: pointer;
+            transition: all 0.2s; display: flex; flex-direction: column; gap: 6px;
+        }
+        .cal-dia-grande:hover { border-color: #a855f7; background: rgba(168,85,247,0.08); transform: translateY(-2px); }
+        .cal-dia-grande.vacio { visibility: hidden; cursor: default; }
+        .cal-dia-grande.hoy { border-color: #fbbf24; box-shadow: 0 0 0 1px rgba(251,191,36,0.3) inset; }
+        .cal-dia-grande.seleccionado { background: rgba(168,85,247,0.18); border-color: #a855f7; }
+        .cal-dia-num { font-size: 14px; font-weight: 700; color: white; }
+        .cal-dia-montos { display: flex; flex-direction: column; gap: 2px; margin-top: auto; }
+        .cal-dia-monto { font-size: 10.5px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .cal-dia-monto.ingreso { color: #4ade80; }
+        .cal-dia-monto.gasto { color: #f472b6; }
+
+        /* PANEL LATERAL DEL DÍA */
+        .panel-dia { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 20px; padding: 22px; height: fit-content; position: sticky; top: 30px; }
+        .panel-dia-titulo { font-size: 15px; font-weight: 700; color: #c4b5fd; margin-bottom: 4px; }
+        .panel-dia-sub { font-size: 12px; color: var(--muted); margin-bottom: 18px; }
+        .panel-mov-item { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; background: var(--item-bg); border: 1px solid var(--item-border); border-radius: 12px; padding: 11px 14px; font-size: 13px; margin-bottom: 8px; }
+        .panel-mov-titulo { font-weight: 600; color: white; }
+        .panel-mov-desc { font-size: 11px; color: var(--muted); margin-top: 2px; }
+        .panel-mov-monto.gasto { color: #f472b6; font-weight: 700; }
+        .panel-mov-monto.ingreso { color: #4ade80; font-weight: 700; }
+        .panel-sin-datos { text-align: center; color: var(--muted); padding: 30px 10px; font-size: 13px; }
+        .panel-sin-datos i { font-size: 30px; opacity: 0.3; display: block; margin-bottom: 10px; }
+        .panel-sin-seleccion { text-align: center; color: var(--muted); padding: 40px 10px; font-size: 13px; }
+
+        /* ===================== RESPONSIVE / MOBILE ===================== */
+        @media (max-width: 1100px) {
+            .calendario-grande-wrap { grid-template-columns: 1fr; }
+            .panel-dia { position: static; }
+        }
+        @media (max-width: 900px) {
+            .sidebar { transform: translateX(-100%); width: min(80vw, 280px); }
+            .sidebar.abierta { transform: translateX(0); }
+            .sidebar-close { display: flex; }
+            .main { margin-left: 0; padding: 18px 16px; width: 100%; }
+            .menu-toggle { display: flex; }
+
+            .topbar h1 { font-size: 20px; }
+            .resumen-mes-bar { grid-template-columns: 1fr; gap: 10px; }
+            .calendario-nav-grande span { font-size: 17px; min-width: 0; }
+            .cal-dia-grande { min-height: 70px; padding: 7px; }
+            .cal-dia-monto { font-size: 9px; }
+        }
+        @media (max-width: 480px) {
+            .cal-grid-grande, .cal-header-fila { gap: 4px; }
+            .cal-dia-grande { min-height: 58px; border-radius: 9px; }
+            .cal-dia-num { font-size: 12px; }
+            .cal-dia-monto { display: none; } /* en pantallas muy chicas solo se ve el número + punto */
+            .cal-dia-grande.tiene-datos::after { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #a855f7; margin-top: auto; }
+        }
+    </style>
+</head>
+<body class="tema-oscuro">
+
+<div class="nav-overlay" id="navOverlay"></div>
+
+<div class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+        <img src="../../images/logo.png" alt="FinanBot" onerror="this.style.display='none'">
+        <span>FinanBot</span>
+        <button class="sidebar-close" id="sidebarClose" aria-label="Cerrar"><i class="fas fa-times"></i></button>
+    </div>
+    <a href="dashboard.html"       class="nav-item"><i class="fas fa-home"></i>          Dashboard</a>
+    <a href="chat.html"            class="nav-item"><i class="fas fa-robot"></i>          Chat FinanBot</a>
+    <a href="finanzas.html"        class="nav-item"><i class="fas fa-wallet"></i>         Mis Finanzas</a>
+    <a href="calendario.html"      class="nav-item active"><i class="fas fa-calendar-days"></i> Calendario</a>
+    <a href="recomendaciones.html" class="nav-item"><i class="fas fa-lightbulb"></i>      Recomendaciones</a>
+    <a href="simulador.html"       class="nav-item"><i class="fas fa-chart-line"></i>     Simulador</a>
+    <a href="aprende.html"         class="nav-item"><i class="fas fa-graduation-cap"></i> Aprende</a>
+    <a href="perfil.html"          class="nav-item"><i class="fas fa-user-circle"></i>    Mi Perfil</a>
+    <div class="sidebar-bottom">
+        <a href="../index.html" class="btn-cerrar" onclick="cerrarSesion()">
+            <i class="fas fa-sign-out-alt"></i> Cerrar sesión
+        </a>
+    </div>
+</div>
+
+<div class="main">
+
+    <div class="topbar">
+        <div class="topbar-left">
+            <button class="menu-toggle" id="menuToggle" aria-label="Abrir menú"><i class="fas fa-bars"></i></button>
+            <div>
+                <h1><i class="fas fa-calendar-days" style="color:#a855f7;"></i> Calendario financiero</h1>
+                <p>Revisa cualquier mes y descarga su reporte en PDF o Excel</p>
+            </div>
+        </div>
+        <div class="topbar-right">
+            <button class="btn-exportar pdf" id="btnExportarPDF" onclick="exportarReporte('pdf', this)">
+                <i class="fas fa-file-pdf"></i> Exportar PDF
+            </button>
+            <button class="btn-exportar excel" id="btnExportarExcel" onclick="exportarReporte('excel', this)">
+                <i class="fas fa-file-excel"></i> Exportar Excel
+            </button>
+        </div>
+    </div>
+
+    <!-- AVISO: mes sin transacciones -->
+    <div class="aviso-vacio" id="avisoVacio">
+        <i class="fas fa-circle-info"></i>
+        <span>No hay transacciones registradas para este mes, así que todavía no hay nada que reportar.</span>
+    </div>
+
+    <!-- RESUMEN DEL MES -->
+    <div class="resumen-mes-bar">
+        <div class="resumen-mes-item">
+            <div class="resumen-mes-label">Ingresos del mes</div>
+            <div class="resumen-mes-valor" id="resIngresosMes" style="color:#4ade80">$0</div>
+        </div>
+        <div class="resumen-mes-item">
+            <div class="resumen-mes-label">Gastos del mes</div>
+            <div class="resumen-mes-valor" id="resGastosMes" style="color:#f472b6">$0</div>
+        </div>
+        <div class="resumen-mes-item">
+            <div class="resumen-mes-label">Balance del mes</div>
+            <div class="resumen-mes-valor" id="resBalanceMes" style="color:#22d3ee">$0</div>
+        </div>
+    </div>
+
+    <!-- NAVEGACIÓN DE MES -->
+    <div class="calendario-nav-grande">
+        <button onclick="cambiarMes(-1)"><i class="fas fa-chevron-left"></i></button>
+        <span id="calMesLabelGrande">—</span>
+        <button onclick="cambiarMes(1)"><i class="fas fa-chevron-right"></i></button>
+    </div>
+
+    <!-- CALENDARIO GRANDE + PANEL DEL DÍA -->
+    <div class="calendario-grande-wrap">
+        <div class="calendario-grande">
+            <div class="cal-header-fila">
+                <div class="cal-header-dia-grande">Dom</div>
+                <div class="cal-header-dia-grande">Lun</div>
+                <div class="cal-header-dia-grande">Mar</div>
+                <div class="cal-header-dia-grande">Mié</div>
+                <div class="cal-header-dia-grande">Jue</div>
+                <div class="cal-header-dia-grande">Vie</div>
+                <div class="cal-header-dia-grande">Sáb</div>
+            </div>
+            <div class="cal-grid-grande" id="calGridGrande"></div>
+        </div>
+
+        <div class="panel-dia">
+            <div id="panelDiaContenido">
+                <div class="panel-sin-seleccion">
+                    <i class="fas fa-hand-pointer" style="font-size:26px;opacity:0.3;display:block;margin-bottom:10px;"></i>
+                    Selecciona un día del calendario para ver sus movimientos.
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    const token = localStorage.getItem('token');
+
+    // ── TEMA ──────────────────────────────────────────────
+    (function() {
+        const t = localStorage.getItem('finanbot_tema') || 'oscuro';
+        document.body.className = 'tema-' + t;
+    })();
+
+    // ── MENÚ MÓVIL ────────────────────────────────────────
+    const sidebarEl   = document.getElementById('sidebar');
+    const navOverlay  = document.getElementById('navOverlay');
+    const menuToggle  = document.getElementById('menuToggle');
+    const sidebarClose = document.getElementById('sidebarClose');
+    function abrirSidebarMovil() { sidebarEl.classList.add('abierta'); navOverlay.classList.add('abierto'); }
+    function cerrarSidebarMovil() { sidebarEl.classList.remove('abierta'); navOverlay.classList.remove('abierto'); }
+    menuToggle.addEventListener('click', abrirSidebarMovil);
+    sidebarClose.addEventListener('click', cerrarSidebarMovil);
+    navOverlay.addEventListener('click', cerrarSidebarMovil);
+    document.querySelectorAll('.nav-item').forEach(a => a.addEventListener('click', cerrarSidebarMovil));
+
+    function cerrarSesion() { localStorage.removeItem('token'); localStorage.removeItem('usuario'); }
+
+    // ── ICONOS POR CATEGORÍA (mismo mapa que dashboard/finanzas) ──
+    const ICONOS = {
+        'Alimentación': '🍔', 'Transporte': '🚌', 'Arriendo': '🏠', 'Salud': '💊',
+        'Entretenimiento': '🎬', 'Educación': '📚', 'Ropa': '👗', 'Servicios': '⚡',
+        'Mascotas': '🐾', 'Regalos': '🎁', 'Viajes': '✈️', 'Otros gastos': '📦',
+        'Salario': '💼', 'Freelance': '🧑‍💻', 'Inversión': '📈', 'Negocio': '🏪',
+        'Regalo': '🎁', 'Otros ingresos': '💵',
+    };
+    function getIcono(cat, tipo) { return ICONOS[cat] || (tipo === 'ingreso' ? '💰' : '💸'); }
+
+    const DIAS  = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+    const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+
+    // ── ESTADO ────────────────────────────────────────────
+    const hoy = new Date();
+    let anioActual = hoy.getFullYear();
+    let mesActual  = hoy.getMonth() + 1; // 1-12
+    let diaSeleccionado = null;
+    let movimientosMes = [];
+    let hayTransaccionesMes = false;
+
+    function cambiarMes(delta) {
+        mesActual += delta;
+        if (mesActual > 12) { mesActual = 1; anioActual++; }
+        if (mesActual < 1)  { mesActual = 12; anioActual--; }
+        diaSeleccionado = null;
+        cargarMes();
+    }
+
+    // ── CARGAR DATOS DEL MES (calendario.py) ──────────────
+    async function cargarMes() {
+        document.getElementById('calMesLabelGrande').textContent =
+            `${MESES[mesActual - 1].charAt(0).toUpperCase() + MESES[mesActual - 1].slice(1)} ${anioActual}`;
+
+        if (!token) return;
+        try {
+            const res = await fetch(`http://127.0.0.1:8000/api/calendario/${anioActual}/${mesActual}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!res.ok) throw new Error('No se pudo cargar el mes');
+            const data = await res.json();
+
+            movimientosMes = data.movimientos || [];
+            hayTransaccionesMes = data.hay_transacciones;
+
+            document.getElementById('resIngresosMes').textContent = '$' + Math.round(data.total_ingresos).toLocaleString('es-CO');
+            document.getElementById('resGastosMes').textContent   = '$' + Math.round(data.total_gastos).toLocaleString('es-CO');
+            const balEl = document.getElementById('resBalanceMes');
+            balEl.textContent = '$' + Math.abs(Math.round(data.balance)).toLocaleString('es-CO');
+            balEl.style.color = data.balance >= 0 ? '#4ade80' : '#f472b6';
+
+            document.getElementById('avisoVacio').classList.toggle('visible', !hayTransaccionesMes);
+            document.getElementById('btnExportarPDF').disabled = !hayTransaccionesMes;
+            document.getElementById('btnExportarExcel').disabled = !hayTransaccionesMes;
+
+            renderCalendarioGrande();
+            if (diaSeleccionado) seleccionarDia(diaSeleccionado);
+            else renderPanelVacio();
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    // ── RENDER DEL CALENDARIO GRANDE ──────────────────────
+    function renderCalendarioGrande() {
+        const primerDia = new Date(anioActual, mesActual - 1, 1);
+        const ultimoDia = new Date(anioActual, mesActual, 0);
+        const primerIndex = primerDia.getDay(); // 0=domingo
+        const totalDias = ultimoDia.getDate();
+        const hoyStr = new Date().toISOString().split('T')[0];
+
+        const porDia = {};
+        movimientosMes.forEach(m => {
+            if (!porDia[m.fecha]) porDia[m.fecha] = { ingreso: 0, gasto: 0 };
+            porDia[m.fecha][m.tipo] += m.monto;
+        });
+
+        let html = '';
+        for (let i = 0; i < primerIndex; i++) html += `<div class="cal-dia-grande vacio"></div>`;
+
+        for (let d = 1; d <= totalDias; d++) {
+            const dateStr = `${anioActual}-${String(mesActual).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+            const datosDia = porDia[dateStr];
+            const clases = ['cal-dia-grande'];
+            if (dateStr === hoyStr) clases.push('hoy');
+            if (dateStr === diaSeleccionado) clases.push('seleccionado');
+            if (datosDia) clases.push('tiene-datos');
+
+            let montosHtml = '';
+            if (datosDia) {
+                montosHtml = '<div class="cal-dia-montos">';
+                if (datosDia.ingreso > 0) montosHtml += `<div class="cal-dia-monto ingreso">+$${Math.round(datosDia.ingreso).toLocaleString('es-CO')}</div>`;
+                if (datosDia.gasto > 0)   montosHtml += `<div class="cal-dia-monto gasto">-$${Math.round(datosDia.gasto).toLocaleString('es-CO')}</div>`;
+                montosHtml += '</div>';
+            }
+
+            html += `<div class="${clases.join(' ')}" onclick="seleccionarDia('${dateStr}')">
+                <div class="cal-dia-num">${d}</div>
+                ${montosHtml}
+            </div>`;
+        }
+        document.getElementById('calGridGrande').innerHTML = html;
+    }
+
+    // ── PANEL LATERAL DEL DÍA ─────────────────────────────
+    function seleccionarDia(dateStr) {
+        diaSeleccionado = dateStr;
+        renderCalendarioGrande();
+
+        const movs = movimientosMes.filter(m => m.fecha === dateStr);
+        const fechaLegible = new Date(dateStr + 'T12:00:00').toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' });
+
+        let ingresosDia = 0, gastosDia = 0;
+        movs.forEach(m => { if (m.tipo === 'ingreso') ingresosDia += m.monto; else gastosDia += m.monto; });
+
+        const movsHtml = movs.length ? movs.map(m => `
+            <div class="panel-mov-item">
+                <div>
+                    <div class="panel-mov-titulo">${getIcono(m.categoria, m.tipo)} ${m.tipo === 'gasto' ? 'Gasto' : 'Ingreso'} · ${m.categoria}</div>
+                    <div class="panel-mov-desc">${m.descripcion === '__auto_salario__' ? 'Salario automático mensual' : (m.descripcion || 'Sin descripción')}</div>
+                </div>
+                <span class="panel-mov-monto ${m.tipo}">${m.tipo === 'gasto' ? '-' : '+'}$${Math.round(m.monto).toLocaleString('es-CO')}</span>
+            </div>`).join('')
+            : `<div class="panel-sin-datos"><i class="fas fa-circle-info"></i>Sin movimientos registrados este día.</div>`;
+
+        document.getElementById('panelDiaContenido').innerHTML = `
+            <div class="panel-dia-titulo">${fechaLegible.charAt(0).toUpperCase() + fechaLegible.slice(1)}</div>
+            <div class="panel-dia-sub">${movs.length} movimiento${movs.length !== 1 ? 's' : ''} · Balance: $${(ingresosDia - gastosDia).toLocaleString('es-CO')}</div>
+            ${movsHtml}
+        `;
+    }
+
+    function renderPanelVacio() {
+        document.getElementById('panelDiaContenido').innerHTML = `
+            <div class="panel-sin-seleccion">
+                <i class="fas fa-hand-pointer" style="font-size:26px;opacity:0.3;display:block;margin-bottom:10px;"></i>
+                Selecciona un día del calendario para ver sus movimientos.
+            </div>`;
+    }
+
+    // ── EXPORTAR REPORTE MENSUAL (calendario.py) ──────────
+    async function exportarReporte(formato, btn) {
+        if (!hayTransaccionesMes) return; // el botón ya está disabled, doble seguro
+
+        const orig = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando...';
+        btn.disabled = true;
+
+        try {
+            const res = await fetch(
+                `http://127.0.0.1:8000/api/calendario/reporte/${anioActual}/${mesActual}?formato=${formato}`,
+                { headers: { 'Authorization': `Bearer ${token}` } }
+            );
+
+            if (res.status === 404) {
+                // El backend confirma que no hay transacciones este mes
+                document.getElementById('avisoVacio').classList.add('visible');
+            } else if (res.ok) {
+                const blob = await res.blob();
+                const url  = window.URL.createObjectURL(blob);
+                const a    = document.createElement('a');
+                const ext  = formato === 'excel' ? 'xlsx' : 'pdf';
+                a.href = url;
+                a.download = `FinanBot_${MESES[mesActual - 1]}_${anioActual}.${ext}`;
+                document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+            } else {
+                alert('No se pudo generar el reporte. Intenta de nuevo.');
+            }
+        } catch (e) {
+            console.error(e);
+            alert('No se pudo conectar con el servidor.');
+        }
+
+        btn.innerHTML = orig;
+        btn.disabled = !hayTransaccionesMes;
+    }
+
+    // ── INIT ──────────────────────────────────────────────
+    cargarMes();
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="tema.js"></script>
+</body>
+</html>
