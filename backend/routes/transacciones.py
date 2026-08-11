@@ -4,71 +4,13 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
+from sqlalchemy import extract
 
 from database import get_db
 from extensions import obtener_usuario_id_requerido
-from models import Transaccion, Categoria, PeriodoFinanciero, TransaccionPeriodo
+from models import Transaccion, Categoria
 
 router = APIRouter()
-
-
-def actualizar_totales_periodo(periodo: PeriodoFinanciero | None, db: Session):
-    if not periodo:
-        return
-
-    if periodo.activo:
-        registros = db.query(Transaccion).filter_by(usuario_id=periodo.usuario_id).all()
-    else:
-        registros = periodo.transacciones
-
-    ingresos = sum(float(r.monto) for r in registros if getattr(r, 'tipo', None) == 'ingreso')
-    gastos = sum(float(r.monto) for r in registros if getattr(r, 'tipo', None) == 'gasto')
-    periodo.ingresos_total = ingresos
-    periodo.gastos_total = gastos
-    periodo.balance = ingresos - gastos
-
-
-def gestionar_periodo_mensual(usuario_id: int, db: Session):
-    hoy = datetime.now().date()
-    periodo_actual = (
-        db.query(PeriodoFinanciero)
-        .filter_by(usuario_id=usuario_id, anio=hoy.year, mes=hoy.month, activo=True)
-        .order_by(PeriodoFinanciero.id.desc())
-        .first()
-    )
-
-    if periodo_actual:
-        return periodo_actual
-
-    periodos_abiertos = (
-        db.query(PeriodoFinanciero)
-        .filter_by(usuario_id=usuario_id, activo=True)
-        .all()
-    )
-
-    if periodos_abiertos:
-        for periodo in periodos_abiertos:
-            transacciones = db.query(Transaccion).filter_by(usuario_id=usuario_id).all()
-            if transacciones:
-                for t in transacciones:
-                    db.add(TransaccionPeriodo(
-                        periodo_id=periodo.id,
-                        tipo=t.tipo,
-                        monto=t.monto,
-                        categoria=t.categoria.nombre if t.categoria else 'Otros',
-                        descripcion=t.descripcion,
-                        fecha=t.fecha,
-                    ))
-                db.query(Transaccion).filter_by(usuario_id=usuario_id).delete(synchronize_session=False)
-
-            periodo.activo = False
-            periodo.fecha_cierre = datetime.utcnow()
-            actualizar_totales_periodo(periodo, db)
-
-    nuevo_periodo = PeriodoFinanciero(usuario_id=usuario_id, anio=hoy.year, mes=hoy.month, activo=True)
-    db.add(nuevo_periodo)
-    db.flush()
-    return nuevo_periodo
 
 
 # =========================================================
@@ -94,6 +36,10 @@ class TransaccionUpdate(BaseModel):
 
 # =========================================================
 # OBTENER TODAS
+# Ya NO gestiona ni borra "períodos". Simplemente devuelve las
+# transacciones del usuario. Cada mes existe solo porque tiene
+# transacciones con esa fecha — nada se archiva ni se elimina
+# automáticamente al cambiar de mes.
 # =========================================================
 
 @router.get('/')
@@ -102,7 +48,6 @@ def obtener_transacciones(
     db: Session = Depends(get_db),
 ):
     uid = int(usuario_id)
-    gestionar_periodo_mensual(uid, db)
     transacciones = (db.query(Transaccion).filter_by(usuario_id=uid)
                       .order_by(Transaccion.fecha.desc()).all())
 
@@ -132,7 +77,6 @@ def crear_transaccion(
     db: Session = Depends(get_db),
 ):
     uid = int(usuario_id)
-    gestionar_periodo_mensual(uid, db)
 
     categoria = db.query(Categoria).filter_by(nombre=body.categoria).first()
     if not categoria:
@@ -151,8 +95,6 @@ def crear_transaccion(
 
     db.add(nueva)
     db.commit()
-    actualizar_totales_periodo(gestionar_periodo_mensual(uid, db), db)
-    db.commit()
 
     return {'mensaje': '✅ Transacción guardada!', 'id': nueva.id}
 
@@ -169,7 +111,6 @@ def editar_transaccion(
     db: Session = Depends(get_db),
 ):
     uid = int(usuario_id)
-    gestionar_periodo_mensual(uid, db)
 
     transaccion = db.query(Transaccion).filter_by(id=id, usuario_id=uid).first()
     if not transaccion:
@@ -202,8 +143,6 @@ def editar_transaccion(
             raise HTTPException(status_code=400, detail='Formato de fecha inválido. Usa YYYY-MM-DD')
 
     db.commit()
-    actualizar_totales_periodo(gestionar_periodo_mensual(uid, db), db)
-    db.commit()
 
     return {
         'mensaje': '✅ Transacción actualizada!',
@@ -218,7 +157,10 @@ def editar_transaccion(
 
 
 # =========================================================
-# ELIMINAR
+# PERIODOS (Comparar meses) — calculados al vuelo desde
+# Transaccion.fecha. Ya no se archiva ni se borra nada solo:
+# un mes "existe" en esta lista porque tiene transacciones con
+# esa fecha, punto. Ningún mes desaparece por sí solo.
 # =========================================================
 
 @router.get('/periodos')
@@ -227,52 +169,30 @@ def obtener_periodos(
     db: Session = Depends(get_db),
 ):
     uid = int(usuario_id)
-    gestionar_periodo_mensual(uid, db)
+    hoy = datetime.now().date()
 
-    periodos = (
-        db.query(PeriodoFinanciero)
-        .filter_by(usuario_id=uid)
-        .order_by(PeriodoFinanciero.anio.desc(), PeriodoFinanciero.mes.desc())
-        .all()
-    )
+    transacciones = db.query(Transaccion).filter_by(usuario_id=uid).all()
+
+    buckets = {}
+    for t in transacciones:
+        key = (t.fecha.year, t.fecha.month)
+        b = buckets.setdefault(key, {'ingresos': 0.0, 'gastos': 0.0})
+        if t.tipo == 'ingreso':
+            b['ingresos'] += float(t.monto)
+        elif t.tipo == 'gasto':
+            b['gastos'] += float(t.monto)
 
     resultado = []
-    for periodo in periodos:
-        registros = []
-        if periodo.activo:
-            registros = [
-                {
-                    'id': t.id,
-                    'tipo': t.tipo,
-                    'categoria': t.categoria.nombre if t.categoria else 'Otros',
-                    'monto': float(t.monto),
-                    'descripcion': t.descripcion or '',
-                    'fecha': str(t.fecha),
-                }
-                for t in db.query(Transaccion).filter_by(usuario_id=uid).order_by(Transaccion.fecha.desc()).all()
-            ]
-        else:
-            registros = [
-                {
-                    'id': t.id,
-                    'tipo': t.tipo,
-                    'categoria': t.categoria,
-                    'monto': float(t.monto),
-                    'descripcion': t.descripcion or '',
-                    'fecha': str(t.fecha),
-                }
-                for t in periodo.transacciones
-            ]
+    for (anio, mes), datos in sorted(buckets.items(), reverse=True):
         resultado.append({
-            'id': periodo.id,
-            'anio': periodo.anio,
-            'mes': periodo.mes,
-            'activo': periodo.activo,
-            'label': f'{periodo.mes:02d}/{periodo.anio}',
-            'ingresos_total': float(periodo.ingresos_total or 0),
-            'gastos_total': float(periodo.gastos_total or 0),
-            'balance': float(periodo.balance or 0),
-            'transacciones': registros,
+            'id': anio * 100 + mes,  # identificador estable (ej. 202608)
+            'anio': anio,
+            'mes': mes,
+            'activo': (anio == hoy.year and mes == hoy.month),
+            'label': f'{mes:02d}/{anio}',
+            'ingresos_total': datos['ingresos'],
+            'gastos_total': datos['gastos'],
+            'balance': datos['ingresos'] - datos['gastos'],
         })
 
     return resultado
@@ -283,15 +203,21 @@ def reset_periodo_actual(
     usuario_id: str = Depends(obtener_usuario_id_requerido),
     db: Session = Depends(get_db),
 ):
+    """Borra SOLO las transacciones del mes actual. Los meses pasados
+    nunca se tocan."""
     uid = int(usuario_id)
-    periodo = gestionar_periodo_mensual(uid, db)
-    transacciones = db.query(Transaccion).filter_by(usuario_id=uid).all()
-    for transaccion in transacciones:
-        db.delete(transaccion)
+    hoy = datetime.now().date()
+
+    borradas = (
+        db.query(Transaccion)
+        .filter(Transaccion.usuario_id == uid)
+        .filter(extract('year', Transaccion.fecha) == hoy.year)
+        .filter(extract('month', Transaccion.fecha) == hoy.month)
+        .delete(synchronize_session=False)
+    )
     db.commit()
-    actualizar_totales_periodo(periodo, db)
-    db.commit()
-    return {'mensaje': '✅ Mes reiniciado', 'periodo_id': periodo.id}
+
+    return {'mensaje': f'✅ Mes actual reiniciado ({borradas} movimientos eliminados)'}
 
 
 @router.delete('/periodos/{id}')
@@ -300,15 +226,31 @@ def eliminar_periodo(
     usuario_id: str = Depends(obtener_usuario_id_requerido),
     db: Session = Depends(get_db),
 ):
+    """id viene como anio*100+mes (ej. 202608 = agosto 2026). Borra
+    SOLO las transacciones de ese año/mes puntual; el resto de meses
+    queda intacto."""
     uid = int(usuario_id)
-    periodo = db.query(PeriodoFinanciero).filter_by(id=id, usuario_id=uid).first()
-    if not periodo:
-        raise HTTPException(status_code=404, detail='Periodo no encontrado')
+    anio, mes = divmod(id, 100)
+    if mes < 1 or mes > 12:
+        raise HTTPException(status_code=400, detail='Identificador de periodo inválido')
 
-    db.delete(periodo)
+    borradas = (
+        db.query(Transaccion)
+        .filter(Transaccion.usuario_id == uid)
+        .filter(extract('year', Transaccion.fecha) == anio)
+        .filter(extract('month', Transaccion.fecha) == mes)
+        .delete(synchronize_session=False)
+    )
+    if borradas == 0:
+        raise HTTPException(status_code=404, detail='No hay movimientos en ese periodo')
     db.commit()
+
     return {'mensaje': '✅ Periodo eliminado'}
 
+
+# =========================================================
+# ELIMINAR TRANSACCIÓN
+# =========================================================
 
 @router.delete('/{id}')
 def eliminar_transaccion(
@@ -317,7 +259,6 @@ def eliminar_transaccion(
     db: Session = Depends(get_db),
 ):
     uid = int(usuario_id)
-    gestionar_periodo_mensual(uid, db)
     transaccion = db.query(Transaccion).filter_by(id=id, usuario_id=uid).first()
 
     if not transaccion:

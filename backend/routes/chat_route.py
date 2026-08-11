@@ -56,6 +56,107 @@ def _normalizar(texto: str) -> str:
 
 
 # ══════════════════════════════════════════════════════════════════
+#  TIPOS QUE SE RESPONDEN LOCALMENTE (sin pasar por FinanBotIA)
+#  Son las preguntas de ayuda y los "¿cuál de estos?" que necesitan
+#  texto exacto ligado a los datos que ya extrajimos aquí.
+# ══════════════════════════════════════════════════════════════════
+_TIPOS_RESPUESTA_LOCAL = {
+    'ayuda_accion', 'pide_categoria', 'pide_nombre_meta',
+    'confirmar_editar_gasto', 'confirmar_editar_ingreso', 'confirmar_editar_meta',
+}
+
+def _fmt(monto) -> str:
+    try:
+        return f"${int(monto):,}".replace(',', '.')
+    except (TypeError, ValueError):
+        return str(monto)
+
+def _texto_ayuda(entidad: str, accion: str) -> str:
+    nombre_entidad = {'gasto': 'un gasto', 'ingreso': 'un ingreso', 'meta': 'una meta'}[entidad]
+
+    if accion == 'crear':
+        if entidad == 'meta':
+            return (
+                "Para crear una meta de ahorro dime:\n\n"
+                "• 🎯 **Nombre** de la meta (ej. \"viaje\", \"tecnología\")\n"
+                "• 💰 **Monto objetivo**\n"
+                "• Si la quieres **automática**, dime también el aporte mensual y el día del mes\n\n"
+                "Ejemplo: _\"crea una meta para viajar de $2.000.000\"_.\n"
+                "Si te falta algún dato, yo te lo pregunto."
+            )
+        ejemplo = '"gasté $50.000 en comida"' if entidad == 'gasto' else '"recibí $1.200.000 de freelance"'
+        cats = ('Alimentación, Transporte, Arriendo, Salud, Entretenimiento, Educación, Ropa, '
+                'Servicios, Mascotas, Regalos, Viajes u Otros gastos') if entidad == 'gasto' else \
+               'Salario, Freelance, Inversión, Negocio, Regalo u Otros ingresos'
+        return (
+            f"Para registrar {nombre_entidad} dime:\n\n"
+            "• 💰 **Monto** (obligatorio)\n"
+            f"• 🏷️ **Categoría** — una de: {cats} (si no la menciono, te la pregunto)\n"
+            "• 📝 **Descripción** (opcional, solo si quieres)\n\n"
+            f"Ejemplo: _{ejemplo}_"
+        )
+
+    if accion == 'editar':
+        if entidad == 'meta':
+            return (
+                "Para editar una meta dime el nombre y el nuevo monto.\n\n"
+                "Ejemplo: _\"cambia el monto de mi meta viaje a $500.000\"_.\n"
+                "Si solo quieres sumar (sin reemplazar el total), usa \"abona\" en vez de \"cambia\"."
+            )
+        ejemplo = '"cambia mi gasto de comida a $30.000"' if entidad == 'gasto' else '"cambia mi ingreso de salario a $1.500.000"'
+        return (
+            f"Para editar {nombre_entidad} dime la categoría y el nuevo monto.\n\n"
+            f"Ejemplo: _{ejemplo}_.\n"
+            "Si tengo varios que coinciden, te pregunto cuál es antes de cambiarlo."
+        )
+
+    # eliminar
+    if entidad == 'meta':
+        return "Para eliminar una meta dime su nombre.\n\nEjemplo: _\"elimina mi meta de viaje\"_"
+    ejemplo = '"elimina mi gasto de comida"' if entidad == 'gasto' else '"elimina mi ingreso de freelance"'
+    return (
+        f"Para eliminar {nombre_entidad} dime el monto o la categoría.\n\n"
+        f"Ejemplo: _{ejemplo}_.\n"
+        "Si no encuentro uno exacto, te muestro los últimos para que elijas."
+    )
+
+def _texto_respuesta_local(accion: dict) -> str:
+    tipo = accion.get('tipo')
+
+    if tipo == 'ayuda_accion':
+        return _texto_ayuda(accion['entidad'], accion['accion'])
+
+    if tipo == 'pide_categoria':
+        entidad = accion.get('contexto')
+        sujeto = 'ese gasto' if entidad == 'gasto' else 'ese ingreso'
+        opciones = ('Alimentación, Transporte, Arriendo, Salud, Entretenimiento, Educación, '
+                    'Ropa, Servicios, Mascotas, Regalos, Viajes u Otros gastos') if entidad == 'gasto' else \
+                   'Salario, Freelance, Inversión, Negocio, Regalo u Otros ingresos'
+        return (f"¡Listo, {_fmt(accion.get('monto'))}! ¿En qué categoría va {sujeto}?\n\n"
+                f"Puede ser: {opciones}.")
+
+    if tipo == 'pide_nombre_meta':
+        return f"¡Perfecto, {_fmt(accion.get('monto'))}! ¿Cómo quieres llamar esta meta?"
+
+    if tipo in ('confirmar_editar_gasto', 'confirmar_editar_ingreso'):
+        entidad = 'gasto' if tipo == 'confirmar_editar_gasto' else 'ingreso'
+        lista = accion.get('gastos') or accion.get('ingresos') or []
+        if not lista:
+            return f"No encontré {entidad}s para editar."
+        opciones = '\n'.join(f"• {t['categoria']} — {_fmt(t['monto'])}" for t in lista)
+        return f"Tengo varios {entidad}s recientes, ¿cuál quieres editar?\n\n{opciones}"
+
+    if tipo == 'confirmar_editar_meta':
+        metas = accion.get('metas', [])
+        if not metas:
+            return "No encontré metas para editar."
+        opciones = '\n'.join(f"• {m['nombre']} — {_fmt(m['objetivo'])}" for m in metas)
+        return f"Tienes varias metas, ¿cuál quieres editar?\n\n{opciones}"
+
+    return "¿Puedes darme un poco más de información?"
+
+
+# ══════════════════════════════════════════════════════════════════
 #  ENDPOINT
 # ══════════════════════════════════════════════════════════════════
 
@@ -92,8 +193,15 @@ def mensaje(
     if uid:
         _actualizar_contexto(session_key, accion, msg_usuario)
 
-    respuesta, acciones_ui = bot.responder_con_acciones(msg_usuario, ctx, accion)
-    respuesta = _agregar_disclaimers_si_necesario(respuesta, msg_usuario)
+    if accion and accion.get('tipo') in _TIPOS_RESPUESTA_LOCAL:
+        # Preguntas de ayuda y "¿cuál de estos?" se responden aquí mismo,
+        # con el texto exacto ligado a los datos que ya extrajimos —
+        # no dependen de FinanBotIA.
+        respuesta = _texto_respuesta_local(accion)
+        acciones_ui = []
+    else:
+        respuesta, acciones_ui = bot.responder_con_acciones(msg_usuario, ctx, accion)
+        respuesta = _agregar_disclaimers_si_necesario(respuesta, msg_usuario)
 
     if uid:
         try:
@@ -144,7 +252,55 @@ def _actualizar_contexto(session_key: str, accion, msg: str):
         _contextos[session_key] = {
             'esperando': 'monto',
             'accion_pendiente': accion.get('contexto', ''),
-            'datos': ctx_actual.get('datos', {}),
+            'datos': {
+                **ctx_actual.get('datos', {}),
+                'id_objetivo': accion.get('id_objetivo'),
+                'categoria_objetivo': accion.get('categoria_objetivo'),
+            },
+        }
+    elif tipo == 'pide_categoria':
+        _contextos[session_key] = {
+            'esperando': 'categoria',
+            'accion_pendiente': accion.get('contexto', ''),
+            'datos': {'monto': accion.get('monto'), 'descripcion': accion.get('descripcion')},
+        }
+    elif tipo == 'pide_nombre_meta':
+        _contextos[session_key] = {
+            'esperando': 'nombre_meta',
+            'accion_pendiente': 'meta',
+            'datos': {
+                'monto': accion.get('monto'), 'modo': accion.get('modo'),
+                'monto_automatico': accion.get('monto_automatico'),
+                'dia_automatico': accion.get('dia_automatico'),
+            },
+        }
+    elif tipo in ('confirmar_eliminar_gasto', 'confirmar_eliminar_ingreso'):
+        entidad = 'gasto' if tipo == 'confirmar_eliminar_gasto' else 'ingreso'
+        lista = accion.get('gastos') if entidad == 'gasto' else accion.get('ingresos')
+        _contextos[session_key] = {
+            'esperando': 'cual_transaccion',
+            'accion_pendiente': f'{entidad}_eliminar',
+            'datos': {'candidatos': lista or []},
+        }
+    elif tipo == 'confirmar_eliminar_meta':
+        _contextos[session_key] = {
+            'esperando': 'cual_meta',
+            'accion_pendiente': 'meta_eliminar',
+            'datos': {'candidatos': accion.get('metas', [])},
+        }
+    elif tipo in ('confirmar_editar_gasto', 'confirmar_editar_ingreso'):
+        entidad = 'gasto' if tipo == 'confirmar_editar_gasto' else 'ingreso'
+        lista = accion.get('gastos') if entidad == 'gasto' else accion.get('ingresos')
+        _contextos[session_key] = {
+            'esperando': 'cual_transaccion',
+            'accion_pendiente': f'{entidad}_editar',
+            'datos': {'candidatos': lista or [], 'monto': accion.get('monto')},
+        }
+    elif tipo == 'confirmar_editar_meta':
+        _contextos[session_key] = {
+            'esperando': 'cual_meta',
+            'accion_pendiente': 'meta_editar',
+            'datos': {'candidatos': accion.get('metas', []), 'monto': accion.get('monto')},
         }
     elif tipo == 'simulacion_realizada':
         _contextos[session_key] = {
@@ -184,6 +340,153 @@ def _resolver_contexto(msg: str, uid: int, ctx: dict, session_key: str, db: Sess
             return {'tipo': 'consulta_metas', 'metas': ctx.get('metas', [])}
         return None
 
+    # ── El usuario acaba de decir la CATEGORÍA de un gasto/ingreso que
+    # ya tenía monto y descripción listos, esperando solo esto. ───────
+    if esperando == 'categoria' and accion_pendiente in ('gasto', 'ingreso'):
+        monto = datos_previos.get('monto')
+        desc  = datos_previos.get('descripcion')
+        cat_texto = re.sub(
+            r'^(es|en|la categoria es|la categoría es|ser[ií]a|sería|de)\s+',
+            '', msg.strip(), flags=re.IGNORECASE
+        ).strip()
+        # Preferir siempre una de las categorías reales del selector de la
+        # app (GASTO_CATS/ING_CATS) antes que crear una categoría nueva
+        # con el texto tal cual lo escribió el usuario.
+        cats_reales = GASTO_CATS if accion_pendiente == 'gasto' else ING_CATS
+        cat_normalizada = next(
+            (nombre for nombre in cats_reales if nombre.lower() == cat_texto.lower()),
+            None
+        ) or _detectar_categoria(cat_texto, accion_pendiente)
+        if cat_normalizada:
+            cat_texto = cat_normalizada
+        if monto and monto > 0 and cat_texto:
+            try:
+                icono = '🍔' if accion_pendiente == 'gasto' else '💰'
+                c = obtener_o_crear_categoria(db, cat_texto, accion_pendiente, icono)
+                t = Transaccion(usuario_id=uid, categoria_id=c.id, tipo=accion_pendiente, monto=monto,
+                                 descripcion=desc or 'Registrado por FinanBot', fecha=date.today())
+                db.add(t); db.commit()
+                _contextos[session_key] = {
+                    'esperando': None, 'ultimo_tipo': f'{accion_pendiente}_registrado',
+                    'datos': {'monto': monto, 'categoria': c.nombre}
+                }
+                return {'tipo': f'{accion_pendiente}_registrado', 'monto': monto, 'categoria': c.nombre, 'id': t.id}
+            except Exception as e:
+                print(f'[FinanBot] {accion_pendiente} categoria contexto: {e}')
+        return None
+
+    # ── El usuario acaba de decir el NOMBRE de la meta que ya tenía
+    # monto (y modo automático, si aplica) listos. ───────────────────
+    if esperando == 'nombre_meta' and accion_pendiente == 'meta':
+        nombre = msg.strip()[:50]
+        monto  = datos_previos.get('monto')
+        if nombre and monto and monto > 0:
+            try:
+                modo       = datos_previos.get('modo') or 'manual'
+                monto_auto = datos_previos.get('monto_automatico')
+                dia_auto   = datos_previos.get('dia_automatico')
+                m = MetaAhorro(usuario_id=uid, nombre=nombre.capitalize(), monto_objetivo=monto, monto_actual=0,
+                                modo=modo,
+                                monto_automatico=monto_auto if modo == 'automatico' else None,
+                                dia_automatico=dia_auto if modo == 'automatico' else None)
+                db.add(m); db.commit()
+                _contextos[session_key] = {'esperando': None, 'ultimo_tipo': 'meta',
+                                            'datos': {'nombre': m.nombre, 'monto': monto}}
+                return {'tipo': 'meta_creada', 'nombre': m.nombre, 'monto': monto, 'id': m.id,
+                        'modo': modo, 'monto_automatico': monto_auto, 'dia_automatico': dia_auto}
+            except Exception as e:
+                print(f'[FinanBot] Meta nombre contexto: {e}')
+        return None
+
+    # ── El usuario ya eligió CUÁL gasto/ingreso quiere editar/eliminar
+    # de la lista que se le mostró. ──────────────────────────────────
+    if esperando == 'cual_transaccion' and accion_pendiente in (
+        'gasto_eliminar', 'ingreso_eliminar', 'gasto_editar', 'ingreso_editar'
+    ):
+        entidad, sub = accion_pendiente.split('_')
+        candidatos = datos_previos.get('candidatos', [])
+        elegido = _buscar_trans(msg_l, candidatos, extraer_monto(msg), tipo_cat=entidad)
+        if not elegido:
+            pos = _extraer_ordinal(msg_l)
+            if pos is not None and pos < len(candidatos):
+                elegido = candidatos[pos]
+        if not elegido:
+            return None
+        try:
+            t = db.query(Transaccion).get(elegido['id'])
+            if not t or t.usuario_id != uid:
+                return None
+            if sub == 'eliminar':
+                db.delete(t); db.commit()
+                _contextos[session_key] = {'esperando': None, 'ultimo_tipo': f'{entidad}_eliminado', 'datos': {}}
+                return {'tipo': f'{entidad}_eliminado', 'monto': elegido['monto'], 'categoria': elegido['categoria']}
+            else:
+                nuevo_monto = extraer_monto(msg) or datos_previos.get('monto')
+                if not (nuevo_monto and nuevo_monto > 0):
+                    return None
+                anterior = float(t.monto)
+                t.monto = nuevo_monto
+                db.commit()
+                _contextos[session_key] = {'esperando': None, 'ultimo_tipo': f'{entidad}_editado', 'datos': {}}
+                return {'tipo': f'{entidad}_editado', 'categoria': elegido['categoria'],
+                        'monto': nuevo_monto, 'monto_anterior': anterior, 'id': t.id}
+        except Exception as e:
+            print(f'[FinanBot] {accion_pendiente} contexto: {e}')
+        return None
+
+    # ── El usuario ya eligió CUÁL meta quiere editar/eliminar. ───────
+    if esperando == 'cual_meta' and accion_pendiente in ('meta_eliminar', 'meta_editar'):
+        candidatos = datos_previos.get('candidatos', [])
+        elegida = _buscar_meta(msg_l, candidatos)
+        if not elegida:
+            pos = _extraer_ordinal(msg_l)
+            if pos is not None and pos < len(candidatos):
+                elegida = candidatos[pos]
+        if not elegida:
+            return None
+        try:
+            m = db.query(MetaAhorro).get(elegida['id'])
+            if not m or m.usuario_id != uid:
+                return None
+            if accion_pendiente == 'meta_eliminar':
+                nombre_m = m.nombre
+                db.delete(m); db.commit()
+                _contextos[session_key] = {'esperando': None, 'ultimo_tipo': 'meta_eliminada', 'datos': {}}
+                return {'tipo': 'meta_eliminada', 'nombre': nombre_m}
+            else:
+                nuevo_monto = extraer_monto(msg) or datos_previos.get('monto')
+                if not (nuevo_monto and nuevo_monto > 0):
+                    return None
+                m.monto_actual = nuevo_monto
+                if nuevo_monto >= float(m.monto_objetivo):
+                    m.completada = True
+                db.commit()
+                _contextos[session_key] = {'esperando': None, 'ultimo_tipo': 'meta', 'datos': {}}
+                return {'tipo': 'meta_actualizada', 'nombre': elegida['nombre'], 'nuevo_monto': nuevo_monto}
+        except Exception as e:
+            print(f'[FinanBot] meta contexto: {e}')
+        return None
+
+    # ── Está esperando el MONTO para terminar de editar un gasto/ingreso
+    # puntual ya identificado (id_objetivo guardado). ────────────────
+    if esperando == 'monto' and accion_pendiente in ('gasto_editar', 'ingreso_editar'):
+        entidad = accion_pendiente.split('_')[0]
+        nuevo_monto = extraer_monto(msg)
+        id_obj = datos_previos.get('id_objetivo')
+        if nuevo_monto and nuevo_monto > 0 and id_obj:
+            try:
+                t = db.query(Transaccion).get(id_obj)
+                if t and t.usuario_id == uid:
+                    anterior = float(t.monto)
+                    t.monto = nuevo_monto
+                    db.commit()
+                    _contextos[session_key] = {'esperando': None, 'ultimo_tipo': f'{entidad}_editado', 'datos': {}}
+                    return {'tipo': f'{entidad}_editado', 'categoria': datos_previos.get('categoria_objetivo', ''),
+                            'monto': nuevo_monto, 'monto_anterior': anterior, 'id': t.id}
+            except Exception as e:
+                print(f'[FinanBot] {entidad} editar contexto: {e}')
+        return None
+
     if esperando == 'monto' and accion_pendiente == 'simulacion':
         datos = dict(datos_previos)
         monto = extraer_monto(msg) or datos.get('monto')
@@ -219,24 +522,45 @@ def _resolver_contexto(msg: str, uid: int, ctx: dict, session_key: str, db: Sess
             return {'tipo': 'pide_monto', 'contexto': 'simulacion'}
 
     if esperando == 'monto' and accion_pendiente == 'meta':
-        monto  = extraer_monto(msg)
+        montos = extraer_todos_montos(msg)
+        monto  = (montos[0] if montos else extraer_monto(msg))
         nombre = extraer_nombre_meta(msg) or datos_previos.get('nombre')
         if monto and monto > 0:
+            es_automatica = _t(msg_l, AUTOMATICA_KW)
+            dia_auto   = extraer_dia_mes(msg) if es_automatica else None
+            monto_auto = montos[1] if (es_automatica and len(montos) > 1) else None
+            modo = 'automatico' if (es_automatica and monto_auto and dia_auto) else 'manual'
+            if not nombre:
+                _contextos[session_key] = {
+                    'esperando': 'nombre_meta', 'accion_pendiente': 'meta',
+                    'datos': {'monto': monto, 'modo': modo, 'monto_automatico': monto_auto, 'dia_automatico': dia_auto}
+                }
+                return {'tipo': 'pide_nombre_meta', 'monto': monto}
             try:
                 m = MetaAhorro(usuario_id=uid, nombre=nombre or '🎯 Meta de ahorro',
-                                monto_objetivo=monto, monto_actual=0)
+                                monto_objetivo=monto, monto_actual=0,
+                                modo=modo,
+                                monto_automatico=monto_auto if modo == 'automatico' else None,
+                                dia_automatico=dia_auto if modo == 'automatico' else None)
                 db.add(m); db.commit()
                 _contextos[session_key] = {'esperando': None, 'ultimo_tipo': 'meta',
                                             'datos': {'nombre': m.nombre, 'monto': monto}}
-                return {'tipo': 'meta_creada', 'nombre': m.nombre, 'monto': monto, 'id': m.id}
+                return {'tipo': 'meta_creada', 'nombre': m.nombre, 'monto': monto, 'id': m.id,
+                        'modo': modo, 'monto_automatico': monto_auto, 'dia_automatico': dia_auto}
             except Exception as e:
                 print(f'[FinanBot] Meta contexto: {e}')
 
     if esperando == 'monto' and accion_pendiente == 'gasto':
         monto = extraer_monto(msg)
         if monto and monto > 0:
-            cat  = extraer_categoria(msg, 'gasto')
             desc = extraer_descripcion(msg)
+            cat  = _detectar_categoria(msg, 'gasto')
+            if not cat:
+                _contextos[session_key] = {
+                    'esperando': 'categoria', 'accion_pendiente': 'gasto',
+                    'datos': {'monto': monto, 'descripcion': desc}
+                }
+                return {'tipo': 'pide_categoria', 'contexto': 'gasto', 'monto': monto, 'descripcion': desc}
             try:
                 c = obtener_o_crear_categoria(db, cat, 'gasto', '🍔')
                 t = Transaccion(usuario_id=uid, categoria_id=c.id, tipo='gasto', monto=monto,
@@ -250,8 +574,14 @@ def _resolver_contexto(msg: str, uid: int, ctx: dict, session_key: str, db: Sess
     if esperando == 'monto' and accion_pendiente == 'ingreso':
         monto = extraer_monto(msg)
         if monto and monto > 0:
-            cat  = extraer_categoria(msg, 'ingreso')
             desc = extraer_descripcion(msg)
+            cat  = _detectar_categoria(msg, 'ingreso')
+            if not cat:
+                _contextos[session_key] = {
+                    'esperando': 'categoria', 'accion_pendiente': 'ingreso',
+                    'datos': {'monto': monto, 'descripcion': desc}
+                }
+                return {'tipo': 'pide_categoria', 'contexto': 'ingreso', 'monto': monto, 'descripcion': desc}
             try:
                 c = obtener_o_crear_categoria(db, cat, 'ingreso', '💰')
                 t = Transaccion(usuario_id=uid, categoria_id=c.id, tipo='ingreso', monto=monto,
@@ -324,6 +654,9 @@ def _cargar_contexto(uid: int, db: Session):
                 'actual': float(m.monto_actual),
                 'porcentaje': min(round(float(m.monto_actual)/float(m.monto_objetivo)*100), 100) if m.monto_objetivo > 0 else 0,
                 'completada': m.completada,
+                'modo': getattr(m, 'modo', 'manual') or 'manual',
+                'monto_automatico': float(m.monto_automatico) if getattr(m, 'monto_automatico', None) is not None else None,
+                'dia_automatico': getattr(m, 'dia_automatico', None),
             } for m in metas],
             'transacciones_recientes': [{
                 'id': t.id, 'tipo': t.tipo, 'monto': float(t.monto),
@@ -344,7 +677,7 @@ def _cargar_contexto(uid: int, db: Session):
 
 
 # ══════════════════════════════════════════════════════════════════
-#  PALABRAS CLAVE  (idénticas, sin cambios)
+#  PALABRAS CLAVE  (idénticas + nuevas para editar/abonar/ayuda)
 # ══════════════════════════════════════════════════════════════════
 CREAR = ['crea','crear','agrega','agregar','añade','añadir','añademe','agregame','hazme','haz',
          'ponme','pon','registra','registrar','registrame','nueva','nuevo','generame','genera','ingresa','ingresame']
@@ -352,8 +685,19 @@ ELIMINAR = ['elimina','eliminar','borra','borrar','eliminame','quita','quitar','
             'suprimir','remueve','remover','bota','botar','bórralo','bórrala']
 ACTUALIZAR = ['actualiza','actualizar','cambia','cambiar','modifica','modificar','edita','editar',
               'cambiame','actualizame','modificame','pon que','ahora es','ahora son','ya es','ya son',
-              'corrige','corregir','abona','abonar','cambia a','cambiar a','ponme de','llámame','llamame',
+              'corrige','corregir','cambia a','cambiar a','ponme de','llámame','llamame',
               'mi nombre es','mi correo es']
+# Palabras que indican SOLO SUMAR a una meta (nunca reemplazan el total).
+# Antes estaban mezcladas con ACTUALIZAR — se separan porque "editar el
+# monto" (reemplaza, puede bajar) y "abonar/añadir" (solo suma) son
+# acciones distintas desde que perfil.html las diferencia.
+ABONAR_KW = ['añade','añadir','agrega','agregar','suma','sumar','abona','abonar']
+# Frases que indican que en realidad se está pidiendo CREAR una meta
+# nueva, aunque el mensaje use alguna palabra de ABONAR_KW (ej. "agrega
+# una meta de $500.000" no es un abono, es una meta nueva).
+META_NUEVA_KW = ['una meta', 'la meta', 'meta nueva', 'nueva meta', 'crea', 'crear']
+# Indica que la meta que se está creando debe quedar en modo automático.
+AUTOMATICA_KW = ['automática', 'automatica', 'automático', 'automatico']
 CONSULTAR = ['cuantos','cuántos','cuanto','cuánto','revisa','revisar','revisame','muestra','mostrar',
              'muestrame','dime','cual','cuál','ver','verifica','verifique','hay','tengo','lista','listar',
              'detalle','detalles','muéstrame']
@@ -381,6 +725,17 @@ BIENVENIDA_KW= ['hola','buenos dias','buenos días','buenas tardes','buenas noch
 BALANCE_KW   = ['balance','resumen','estado financiero','como estoy','cómo estoy','cuanto tengo','cuánto tengo',
                 'mis finanzas','como van mis','cómo van mis']
 
+# Verbos en primera persona ("cómo elimino...", "cómo edito...") usados
+# SOLO para detectar preguntas de ayuda — no se mezclan con CREAR/
+# ACTUALIZAR/ELIMINAR porque esas listas están afinadas para órdenes
+# directas ("elimina", "edita"), no para preguntas.
+AYUDA_CREAR_KW    = ['creo', 'crear', 'registro', 'registrar', 'agrego', 'agregar',
+                      'añado', 'añadir', 'pongo', 'hago']
+AYUDA_EDITAR_KW   = ['edito', 'editar', 'cambio', 'cambiar', 'modifico', 'modificar',
+                      'actualizo', 'actualizar']
+AYUDA_ELIMINAR_KW = ['elimino', 'eliminar', 'borro', 'borrar', 'quito', 'quitar',
+                      'remuevo', 'remover']
+
 
 def _t(msg: str, lista: list) -> bool:
     return any(p in msg for p in lista)
@@ -390,6 +745,43 @@ def _crear_implicito(msg: str) -> bool:
         return True
     return bool(re.search(r'(gast[eé]|compr[eé]|pagu[eé]|cobr[eé]|gan[eé]|recib[ií])\b', msg))
 
+def _detectar_ayuda(msg: str) -> dict | None:
+    """Detecta preguntas tipo '¿cómo creo/edito/elimino un gasto/ingreso/
+    meta?' para responder con una explicación en vez de intentar
+    ejecutar la acción. Las preguntas genéricas ('¿qué puedes hacer?')
+    ya las cubre BIENVENIDA_KW."""
+    if not msg.startswith(('como', 'cómo', 'de que forma', 'de qué forma', 'de que manera', 'de qué manera')):
+        return None
+    if not _t(msg, META_KW + GASTO_KW + INGRESO_KW):
+        return None
+
+    entidad = 'meta' if _t(msg, META_KW) else ('gasto' if _t(msg, GASTO_KW) else 'ingreso')
+
+    if _t(msg, AYUDA_ELIMINAR_KW):
+        accion = 'eliminar'
+    elif _t(msg, AYUDA_EDITAR_KW):
+        accion = 'editar'
+    elif _t(msg, AYUDA_CREAR_KW):
+        accion = 'crear'
+    else:
+        return None
+
+    return {'entidad': entidad, 'accion': accion}
+
+_ORDINALES = {
+    'primero': 0, 'primera': 0, 'uno': 0, '1': 0,
+    'segundo': 1, 'segunda': 1, 'dos': 1, '2': 1,
+    'tercero': 2, 'tercera': 2, 'tres': 2, '3': 2,
+    'cuarto': 3, 'cuarta': 3, 'cuatro': 3, '4': 3,
+    'quinto': 4, 'quinta': 4, 'cinco': 4, '5': 4,
+}
+
+def _extraer_ordinal(msg: str) -> int | None:
+    for palabra, pos in _ORDINALES.items():
+        if re.search(rf'\b{palabra}\b', msg):
+            return pos
+    return None
+
 
 # ══════════════════════════════════════════════════════════════════
 #  ORQUESTADOR
@@ -397,6 +789,10 @@ def _crear_implicito(msg: str) -> bool:
 
 def ejecutar_accion(mensaje: str, uid: int, ctx: dict, db: Session):
     msg = mensaje.lower().strip()
+
+    ayuda = _detectar_ayuda(msg)
+    if ayuda:
+        return {'tipo': 'ayuda_accion', **ayuda}
 
     if _t(msg, BIENVENIDA_KW):
         return {'tipo': 'bienvenida', 'nombre': ctx.get('nombre', 'Usuario'),
@@ -477,21 +873,70 @@ def ejecutar_accion(mensaje: str, uid: int, ctx: dict, db: Session):
                     return {'tipo': 'meta_mensual_actualizada', 'nuevo_monto': monto}
                 except Exception as e: print(f'[FinanBot] Meta mensual: {e}')
 
+    # ── METAS ────────────────────────────────────────────────────
     if _t(msg, META_KW):
-        if _t(msg, CREAR):
-            monto  = extraer_monto(mensaje)
-            nombre = extraer_nombre_meta(mensaje)
+        parece_creacion = _t(msg, META_NUEVA_KW)
+
+        # 1) ABONAR (solo suma) — se revisa ANTES que crear/actualizar,
+        # porque "añade"/"agrega" también aparecen en CREAR y había
+        # ambigüedad: "añade $50.000 a mi meta de viajes" es un abono,
+        # no una meta nueva.
+        if _t(msg, ABONAR_KW) and not parece_creacion:
+            metas = ctx.get('metas', [])
+            if not metas:
+                return {'tipo': 'sin_datos', 'contexto': 'metas'}
+            monto = extraer_monto(mensaje)
             if monto and monto > 0:
+                meta = _buscar_meta(msg, metas) or metas[0]
+                try:
+                    m = db.query(MetaAhorro).get(meta['id'])
+                    if m and m.usuario_id == uid:
+                        nuevo_total = float(m.monto_actual) + monto
+                        m.monto_actual = nuevo_total
+                        if nuevo_total >= float(m.monto_objetivo):
+                            m.completada = True
+                        db.commit()
+                        return {'tipo': 'meta_abonada', 'nombre': meta['nombre'],
+                                'monto_abonado': monto, 'nuevo_total': nuevo_total, 'id': m.id}
+                except Exception as e:
+                    print(f'[FinanBot] Meta abonar: {e}')
+            return {'tipo': 'pide_monto', 'contexto': 'meta'}
+
+        # 2) CREAR (manual o automática) — si falta el nombre, se
+        # pregunta antes de crear (no se usa el nombre genérico salvo
+        # que el usuario, al preguntársele, no dé uno usable).
+        if _t(msg, CREAR):
+            montos = extraer_todos_montos(mensaje)
+            monto  = montos[0] if montos else extraer_monto(mensaje)
+            nombre = extraer_nombre_meta(mensaje)
+            es_automatica = _t(msg, AUTOMATICA_KW)
+            dia_auto   = extraer_dia_mes(mensaje) if es_automatica else None
+            # El "aporte mensual" es un segundo monto distinto al objetivo
+            # total — ej. "meta automática de $2.000.000 ... $200.000 el
+            # día 5". Si el usuario solo dio un monto, no hay suficiente
+            # información para el modo automático y se crea manual.
+            monto_auto = montos[1] if (es_automatica and len(montos) > 1) else None
+            modo = 'automatico' if (es_automatica and monto_auto and dia_auto) else 'manual'
+
+            if monto and monto > 0:
+                if not nombre:
+                    return {'tipo': 'pide_nombre_meta', 'monto': monto, 'modo': modo,
+                            'monto_automatico': monto_auto, 'dia_automatico': dia_auto}
                 try:
                     m = MetaAhorro(usuario_id=uid, nombre=nombre or '🎯 Meta de ahorro',
-                                    monto_objetivo=monto, monto_actual=0)
+                                    monto_objetivo=monto, monto_actual=0,
+                                    modo=modo,
+                                    monto_automatico=monto_auto if modo == 'automatico' else None,
+                                    dia_automatico=dia_auto if modo == 'automatico' else None)
                     db.add(m); db.commit()
-                    return {'tipo': 'meta_creada', 'nombre': m.nombre, 'monto': monto, 'id': m.id}
+                    return {'tipo': 'meta_creada', 'nombre': m.nombre, 'monto': monto, 'id': m.id,
+                            'modo': modo, 'monto_automatico': monto_auto, 'dia_automatico': dia_auto}
                 except Exception as e:
                     print(f'[FinanBot] Meta crear: {e}')
                     return {'tipo': 'error', 'mensaje': 'No pude crear la meta.'}
             return {'tipo': 'pide_monto', 'contexto': 'meta'}
 
+        # 3) ELIMINAR
         if _t(msg, ELIMINAR):
             metas = ctx.get('metas', [])
             if not metas:
@@ -508,11 +953,19 @@ def ejecutar_accion(mensaje: str, uid: int, ctx: dict, db: Session):
             except Exception as e:
                 print(f'[FinanBot] Meta eliminar: {e}')
 
+        # 4) ACTUALIZAR (reemplaza el total — puede subir o bajar). Si
+        # hay más de una meta y no se identifica cuál, se pregunta en
+        # vez de asumir la primera.
         if _t(msg, ACTUALIZAR):
             monto = extraer_monto(mensaje)
             metas = ctx.get('metas', [])
             if monto and metas:
-                meta = _buscar_meta(msg, metas) or metas[0]
+                meta = _buscar_meta(msg, metas)
+                if not meta:
+                    if len(metas) == 1:
+                        meta = metas[0]
+                    else:
+                        return {'tipo': 'confirmar_editar_meta', 'metas': metas, 'monto': monto}
                 try:
                     m = db.query(MetaAhorro).get(meta['id'])
                     if m and m.usuario_id == uid:
@@ -524,15 +977,48 @@ def ejecutar_accion(mensaje: str, uid: int, ctx: dict, db: Session):
                 except Exception as e:
                     print(f'[FinanBot] Meta update: {e}')
 
+        # 5) CONSULTAR
         if _t(msg, CONSULTAR):
             return {'tipo': 'consulta_metas', 'metas': ctx.get('metas', [])}
 
+    # ── GASTOS ───────────────────────────────────────────────────
     if _t(msg, GASTO_KW):
+        # Editar se revisa ANTES de crear: "pon" (crear) y "ponme de"
+        # (editar) se pisaban entre sí; ahora "cambia/edita/actualiza"
+        # siempre gana si aparece. Si hay más de un gasto y no se
+        # identifica cuál, se pregunta en vez de tomar el primero.
+        if _t(msg, ACTUALIZAR):
+            gastos = [t for t in ctx.get('transacciones_recientes', []) if t['tipo'] == 'gasto']
+            if not gastos:
+                return {'tipo': 'sin_datos', 'contexto': 'gastos'}
+            nuevo_monto = extraer_monto(mensaje)
+            g = _buscar_trans(msg, gastos, None, tipo_cat='gasto')
+            if not g:
+                if len(gastos) == 1:
+                    g = gastos[0]
+                else:
+                    return {'tipo': 'confirmar_editar_gasto', 'gastos': gastos[:5], 'monto': nuevo_monto}
+            if nuevo_monto and nuevo_monto > 0:
+                try:
+                    t = db.query(Transaccion).get(g['id'])
+                    if t and t.usuario_id == uid:
+                        anterior = float(t.monto)
+                        t.monto = nuevo_monto
+                        db.commit()
+                        return {'tipo': 'gasto_editado', 'categoria': g['categoria'],
+                                'monto': nuevo_monto, 'monto_anterior': anterior, 'id': t.id}
+                except Exception as e:
+                    print(f'[FinanBot] Gasto editar: {e}')
+            return {'tipo': 'pide_monto', 'contexto': 'gasto_editar',
+                    'id_objetivo': g['id'], 'categoria_objetivo': g['categoria']}
+
         if _crear_implicito(msg):
             monto = extraer_monto(mensaje)
-            cat   = extraer_categoria(mensaje, 'gasto')
             desc  = extraer_descripcion(mensaje)
             if monto and monto > 0:
+                cat = _detectar_categoria(mensaje, 'gasto')
+                if not cat:
+                    return {'tipo': 'pide_categoria', 'contexto': 'gasto', 'monto': monto, 'descripcion': desc}
                 try:
                     c = obtener_o_crear_categoria(db, cat, 'gasto', '🍔')
                     t = Transaccion(usuario_id=uid, categoria_id=c.id, tipo='gasto', monto=monto,
@@ -547,7 +1033,7 @@ def ejecutar_accion(mensaje: str, uid: int, ctx: dict, db: Session):
             gastos = [t for t in ctx.get('transacciones_recientes', []) if t['tipo'] == 'gasto']
             if not gastos:
                 return {'tipo': 'sin_datos', 'contexto': 'gastos'}
-            g = _buscar_trans(msg, gastos, extraer_monto(mensaje))
+            g = _buscar_trans(msg, gastos, extraer_monto(mensaje), tipo_cat='gasto')
             if not g:
                 return {'tipo': 'confirmar_eliminar_gasto', 'mensaje': 'No encontré ese gasto. ¿Elimino el más reciente?', 'gastos': gastos[:5]}
             try:
@@ -564,12 +1050,40 @@ def ejecutar_accion(mensaje: str, uid: int, ctx: dict, db: Session):
                     'gastos_por_categoria': ctx.get('gastos_por_categoria', {}),
                     'recientes': [t for t in ctx.get('transacciones_recientes', []) if t['tipo'] == 'gasto'][:5]}
 
+    # ── INGRESOS ─────────────────────────────────────────────────
     if _t(msg, INGRESO_KW):
+        if _t(msg, ACTUALIZAR):
+            ingresos = [t for t in ctx.get('transacciones_recientes', []) if t['tipo'] == 'ingreso']
+            if not ingresos:
+                return {'tipo': 'sin_datos', 'contexto': 'ingresos'}
+            nuevo_monto = extraer_monto(mensaje)
+            i = _buscar_trans(msg, ingresos, None, tipo_cat='ingreso')
+            if not i:
+                if len(ingresos) == 1:
+                    i = ingresos[0]
+                else:
+                    return {'tipo': 'confirmar_editar_ingreso', 'ingresos': ingresos[:5], 'monto': nuevo_monto}
+            if nuevo_monto and nuevo_monto > 0:
+                try:
+                    t = db.query(Transaccion).get(i['id'])
+                    if t and t.usuario_id == uid:
+                        anterior = float(t.monto)
+                        t.monto = nuevo_monto
+                        db.commit()
+                        return {'tipo': 'ingreso_editado', 'categoria': i['categoria'],
+                                'monto': nuevo_monto, 'monto_anterior': anterior, 'id': t.id}
+                except Exception as e:
+                    print(f'[FinanBot] Ingreso editar: {e}')
+            return {'tipo': 'pide_monto', 'contexto': 'ingreso_editar',
+                    'id_objetivo': i['id'], 'categoria_objetivo': i['categoria']}
+
         if _crear_implicito(msg):
             monto = extraer_monto(mensaje)
-            cat   = extraer_categoria(mensaje, 'ingreso')
             desc  = extraer_descripcion(mensaje)
             if monto and monto > 0:
+                cat = _detectar_categoria(mensaje, 'ingreso')
+                if not cat:
+                    return {'tipo': 'pide_categoria', 'contexto': 'ingreso', 'monto': monto, 'descripcion': desc}
                 try:
                     c = obtener_o_crear_categoria(db, cat, 'ingreso', '💰')
                     t = Transaccion(usuario_id=uid, categoria_id=c.id, tipo='ingreso', monto=monto,
@@ -584,7 +1098,7 @@ def ejecutar_accion(mensaje: str, uid: int, ctx: dict, db: Session):
             ingresos = [t for t in ctx.get('transacciones_recientes', []) if t['tipo'] == 'ingreso']
             if not ingresos:
                 return {'tipo': 'sin_datos', 'contexto': 'ingresos'}
-            i = _buscar_trans(msg, ingresos, extraer_monto(mensaje))
+            i = _buscar_trans(msg, ingresos, extraer_monto(mensaje), tipo_cat='ingreso')
             if not i:
                 return {'tipo': 'confirmar_eliminar_ingreso', 'mensaje': 'No encontré ese ingreso. ¿Elimino el más reciente?', 'ingresos': ingresos[:5]}
             try:
@@ -692,11 +1206,23 @@ def _buscar_meta(msg: str, metas: list) -> dict | None:
             return m
     return None
 
-def _buscar_trans(msg: str, lista: list, monto: int | None) -> dict | None:
+def _buscar_trans(msg: str, lista: list, monto: int | None, tipo_cat: str | None = None) -> dict | None:
+    # 1) match exacto por monto (útil para borrar, donde el usuario suele
+    # dar el monto original)
     if monto:
         for t in lista:
             if abs(t['monto'] - monto) < 1:
                 return t
+    # 2) match por categoría DETECTADA a partir de palabras clave del
+    # mensaje (ej. "comida" -> Alimentación) — más confiable que buscar
+    # el nombre exacto de la categoría dentro del texto, que casi nunca
+    # coincide literalmente.
+    if tipo_cat:
+        cat = extraer_categoria(msg, tipo_cat)
+        coincidencias = [t for t in lista if t['categoria'] == cat]
+        if coincidencias:
+            return coincidencias[0]
+    # 3) fallback: nombre literal de la categoría dentro del mensaje
     for t in lista:
         if t['categoria'].lower() in msg:
             return t
@@ -725,6 +1251,38 @@ def extraer_monto(texto: str) -> int | None:
             if 'millon' in t and v < 1_000:  return int(v * 1_000_000)
             if 'mil'    in t and v < 10_000: return int(v * 1_000)
             return int(v)
+    return None
+
+def extraer_todos_montos(texto: str) -> list:
+    """Devuelve TODOS los montos en pesos mencionados en el texto, en el
+    orden en que aparecen (a diferencia de extraer_monto, que solo da
+    uno). Se usa para metas automáticas, donde el mensaje trae DOS
+    montos: el objetivo total y el aporte mensual — ej. 'meta
+    automática de $2.000.000 ... $200.000 el día 5' → [2000000, 200000].
+    """
+    n = re.sub(r'(\d)[\.,](\d{3})\b', r'\1\2', texto)
+    montos = []
+    for m in re.finditer(r'\$\s*(\d+(?:\.\d+)?)\s*(millones?|mil|k)?', n, re.IGNORECASE):
+        v = float(m.group(1))
+        suf = (m.group(2) or '').lower()
+        if 'millon' in suf:
+            v *= 1_000_000
+        elif suf in ('mil', 'k'):
+            v *= 1_000
+        montos.append(int(v))
+    if not montos:
+        solo = extraer_monto(texto)
+        if solo:
+            montos = [solo]
+    return montos
+
+def extraer_dia_mes(texto: str) -> int | None:
+    """Extrae un día del mes (1-31) de frases como 'el día 5', 'día 20
+    de cada mes'. Se usa para el aporte automático de una meta."""
+    m = re.search(r'd[ií]a\s+(\d{1,2})', texto, re.IGNORECASE)
+    if m:
+        d = int(m.group(1))
+        return d if 1 <= d <= 31 else None
     return None
 
 def extraer_porcentaje(texto: str) -> float | None:
@@ -804,32 +1362,49 @@ def extraer_descripcion(texto: str) -> str | None:
     m = re.search(r'\b(?:en|para)\s+([a-záéíóúüñA-ZÁÉÍÓÚÜÑ][^$\d]{3,60})', texto, re.IGNORECASE)
     return m.group(1).strip()[:100] if m else None
 
-def extraer_categoria(texto: str, tipo: str) -> str:
-    GASTO_CATS = {
-        'Alimentación':  ['comida','aliment','almuerzo','desayuno','cena','restaurante',
-                          'mercado','supermercado','frutas','snack','café','cafe','tinto','empanada'],
-        'Transporte':    ['bus','taxi','uber','gasolina','transporte','metro','transmilenio',
-                          'pasaje','moto','carro','sitp','peaje'],
-        'Entretenimiento': ['cine','netflix','spotify','juego','salida','fiesta','bar',
-                            'concierto','streaming','disney','prime'],
-        'Salud':         ['médico','medico','farmacia','medicina','salud','doctor',
-                          'clinica','hospital','pastilla','examen','eps','odontólogo'],
-        'Educación':     ['curso','libro','educacion','estudio','universidad','colegio',
-                          'clase','capacitacion','sena','matricula'],
-        'Servicios':     ['luz','agua','gas','internet','telefono','teléfono','wifi',
-                          'celular','epm','codensa','claro','tigo','movistar'],
-        'Ropa':          ['ropa','zapatos','vestido','camisa','pantalon','tenis',
-                          'zapatillas','jean','chaqueta'],
-        'Mascotas':      ['mascota','mascotas','perro','gato','alimento para mascota','veterinario'],
-        'Regalos':       ['regalo','regalos','cumpleaños','aniversario','navidad'],
-        'Viajes':        ['viaje','viajes','hotel','pasaje aéreo','pasaje aereo','vuelo','tour'],
-        'Otros gastos':  [],
-    }
-    ING_CATS = {
-        'Salario':       ['salario','sueldo','pago','pagaron','quincena','trabajo','nomina'],
-        'Freelance':     ['freelance','trabajo extra','proyecto','cliente','contrato','honorarios'],
-        'Otros ingresos': [],
-    }
+# Diccionarios de categorías a nivel de módulo (antes vivían dentro de
+# extraer_categoria) para poder reutilizarlos desde _detectar_categoria
+# sin duplicar las palabras clave. Las categorías (nombres y orden)
+# coinciden EXACTO con el selector "Selecciona categoría..." de
+# finanzas.html/perfil.html, para que el chat nunca invente una
+# categoría distinta a las que ya existen en el desplegable.
+GASTO_CATS = {
+    'Alimentación':  ['comida','aliment','almuerzo','desayuno','cena','restaurante',
+                      'mercado','supermercado','frutas','snack','café','cafe','tinto','empanada'],
+    'Transporte':    ['bus','taxi','uber','gasolina','transporte','metro','transmilenio',
+                      'pasaje','moto','carro','sitp','peaje'],
+    'Arriendo':      ['arriendo','arrendo','alquiler','canon','renta del apartamento',
+                      'renta de la casa','arriendo del apto'],
+    'Salud':         ['médico','medico','farmacia','medicina','salud','doctor',
+                      'clinica','hospital','pastilla','examen','eps','odontólogo'],
+    'Entretenimiento': ['cine','netflix','spotify','juego','salida','fiesta','bar',
+                        'concierto','streaming','disney','prime'],
+    'Educación':     ['curso','libro','educacion','estudio','universidad','colegio',
+                      'clase','capacitacion','sena','matricula'],
+    'Ropa':          ['ropa','zapatos','vestido','camisa','pantalon','tenis',
+                      'zapatillas','jean','chaqueta'],
+    'Servicios':     ['luz','agua','gas','internet','telefono','teléfono','wifi',
+                      'celular','epm','codensa','claro','tigo','movistar'],
+    'Mascotas':      ['mascota','mascotas','perro','gato','alimento para mascota','veterinario'],
+    'Regalos':       ['regalo','regalos','cumpleaños','aniversario','navidad'],
+    'Viajes':        ['viaje','viajes','hotel','pasaje aéreo','pasaje aereo','vuelo','tour'],
+    'Otros gastos':  [],
+}
+ING_CATS = {
+    'Salario':       ['salario','sueldo','pago','pagaron','quincena','nomina'],
+    'Freelance':     ['freelance','trabajo extra','proyecto','cliente','contrato','honorarios'],
+    'Inversión':     ['invert','inversion','inversión','cdt','acciones','dividendos',
+                      'rendimiento de mi inversion','fondo de inversion'],
+    'Negocio':       ['negocio','ventas','venta','emprendimiento','mi negocio','clientes del negocio'],
+    'Regalo':        ['me regalaron','regalo','obsequio'],
+    'Otros ingresos': [],
+}
+
+def _detectar_categoria(texto: str, tipo: str) -> str | None:
+    """Igual que extraer_categoria pero devuelve None cuando no hay
+    ninguna palabra clave reconocida, en vez de forzar 'Otros gastos' /
+    'Otros ingresos'. Se usa para decidir si hay que PREGUNTARLE la
+    categoría al usuario en vez de asumirla."""
     cats  = GASTO_CATS if tipo == 'gasto' else ING_CATS
     t     = texto.lower()
     score = defaultdict(int)
@@ -837,9 +1412,10 @@ def extraer_categoria(texto: str, tipo: str) -> str:
         for kw in kws:
             if kw in t:
                 score[cat] += 1
-    if score:
-        return max(score, key=score.get)
-    return 'Otros gastos' if tipo == 'gasto' else 'Otros ingresos'
+    return max(score, key=score.get) if score else None
+
+def extraer_categoria(texto: str, tipo: str) -> str:
+    return _detectar_categoria(texto, tipo) or ('Otros gastos' if tipo == 'gasto' else 'Otros ingresos')
 
 
 # ══════════════════════════════════════════════════════════════════

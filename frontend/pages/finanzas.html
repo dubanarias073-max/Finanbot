@@ -618,13 +618,6 @@
                         <button class="filter-chip tipo-gasto"   id="chip-gasto"   onclick="setFiltro('gasto',this)">Gastos</button>
                     </div>
 
-                    <div style="display:flex;gap:8px;margin-bottom:14px;align-items:center;flex-wrap:wrap;">
-                        <span style="font-size:12px;color:var(--muted,#6b7280);">Ordenar por:</span>
-                        <button class="monto-btn activo" id="ord-fecha" onclick="setOrden('fecha',this)">📅 Fecha</button>
-                        <button class="monto-btn" id="ord-monto"        onclick="setOrden('monto',this)">💲 Monto</button>
-                        <button class="monto-btn" id="ord-cat"          onclick="setOrden('categoria',this)">🏷️ Categoría</button>
-                    </div>
-
                     <div id="listaTransacciones">
                         <div class="vacio">
                             <i class="fas fa-inbox"></i>
@@ -1143,6 +1136,7 @@ function transaccionesDelMesActual() {
 
         function setOrden(o, btn) {
             ordenActivo = o;
+            paginaActual = 1;
             document.querySelectorAll('.monto-btn[id^="ord-"]').forEach(b=>b.classList.remove('activo'));
             btn.classList.add('activo'); filtrarYRender();
         }
@@ -1176,48 +1170,71 @@ function transaccionesDelMesActual() {
             renderPaginacion(totalPags);
         }
 
+        // Fila individual de una transacción (reutilizada en ambos modos
+        // de render: agrupado por fecha, o lista plana ordenada).
+        function filaTransaccion(t, mostrarFechaCorta) {
+            const fechaTag = (mostrarFechaCorta && t.fecha)
+                ? ` <span style="opacity:.6;">· ${formatFechaCorta(t.fecha)}</span>`
+                : '';
+            return `
+                <div class="trans-item">
+                    <div class="trans-icon ${t.tipo}">${getIcono(t.categoria,t.tipo)}</div>
+                    <div class="trans-info">
+                        <div class="trans-nombre">${t.categoria}</div>
+                        <div class="trans-detalle">${t.descripcion||'Sin descripción'}${fechaTag}</div>
+                    </div>
+                    <div class="trans-right">
+                        <div class="trans-monto ${t.tipo}">
+                            ${t.tipo==='gasto'?'-':'+'}$${t.monto.toLocaleString('es-CO')}
+                        </div>
+                        <button class="btn-trans-accion btn-editar-t"
+                                onclick="abrirEditar(${t.id})" title="Editar">
+                            <i class="fas fa-pen"></i>
+                        </button>
+                        <button class="btn-trans-accion btn-eliminar-t"
+                                onclick="eliminarTransaccion(${t.id})" title="Eliminar">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>`;
+        }
+
         function renderLista(pagina, todosFiltrados) {
             const div = document.getElementById('listaTransacciones');
             if (!todosFiltrados.length) {
                 div.innerHTML='<div class="vacio"><i class="fas fa-inbox"></i><p>No hay transacciones que coincidan.</p></div>';
                 return;
             }
-            const grupos = {};
-            pagina.forEach(t => {
-                const d = t.fecha||'Sin fecha';
-                if (!grupos[d]) grupos[d]=[];
-                grupos[d].push(t);
-            });
-            div.innerHTML = Object.entries(grupos).map(([fecha,items]) => {
-                const fl = formatFecha(fecha);
-                const filas = items.map(t => `
-                    <div class="trans-item">
-                        <div class="trans-icon ${t.tipo}">${getIcono(t.categoria,t.tipo)}</div>
-                        <div class="trans-info">
-                            <div class="trans-nombre">${t.categoria}</div>
-                            <div class="trans-detalle">${t.descripcion||'Sin descripción'}</div>
-                        </div>
-                        <div class="trans-right">
-                            <div class="trans-monto ${t.tipo}">
-                                ${t.tipo==='gasto'?'-':'+'}$${t.monto.toLocaleString('es-CO')}
-                            </div>
-                            <button class="btn-trans-accion btn-editar-t"
-                                    onclick="abrirEditar(${t.id})" title="Editar">
-                                <i class="fas fa-pen"></i>
-                            </button>
-                            <button class="btn-trans-accion btn-eliminar-t"
-                                    onclick="eliminarTransaccion(${t.id})" title="Eliminar">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                    </div>`).join('');
-                return `<div class="fecha-separador">${fl}</div>${filas}`;
-            }).join('');
+
+            if (ordenActivo === 'fecha') {
+                // Orden por fecha: se agrupa visualmente por día (comportamiento original).
+                const grupos = {};
+                pagina.forEach(t => {
+                    const d = t.fecha||'Sin fecha';
+                    if (!grupos[d]) grupos[d]=[];
+                    grupos[d].push(t);
+                });
+                div.innerHTML = Object.entries(grupos).map(([fecha,items]) => {
+                    const fl = formatFecha(fecha);
+                    const filas = items.map(t => filaTransaccion(t, false)).join('');
+                    return `<div class="fecha-separador">${fl}</div>${filas}`;
+                }).join('');
+            } else {
+                // Orden por monto o categoría: lista plana ya ordenada, SIN
+                // agrupar por fecha (agrupar rompía visualmente el orden
+                // elegido). Se muestra la fecha corta en cada fila.
+                div.innerHTML = pagina.map(t => filaTransaccion(t, true)).join('');
+            }
         }
 
         function formatFecha(f) {
             if (!f||f==='Sin fecha') return 'Sin fecha';
             try { return new Date(f+'T12:00:00').toLocaleDateString('es-CO',{weekday:'long',year:'numeric',month:'long',day:'numeric'}); }
+            catch { return f; }
+        }
+
+        function formatFechaCorta(f) {
+            try { return new Date(f+'T12:00:00').toLocaleDateString('es-CO',{day:'numeric',month:'short'}); }
             catch { return f; }
         }
 
@@ -1289,7 +1306,7 @@ function transaccionesDelMesActual() {
             const totalDias = ultimoDia.getDate();
             const hoyStr = new Date().toISOString().split('T')[0];
 
-            let html = ['D','L','M','X','J','V','S'].map(d => `<div class="cal-header-dia">${d}</div>`).join('');
+            let html = ['D','L','M','M','J','V','S'].map(d => `<div class="cal-header-dia">${d}</div>`).join('');
             for (let i = 0; i < primerIndex; i++) html += `<div class="cal-dia vacio"></div>`;
             for (let d = 1; d <= totalDias; d++) {
                 const dateStr = `${anio}-${String(mes+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
@@ -1350,7 +1367,13 @@ function transaccionesDelMesActual() {
                 const perfil = await resPerfil.json();
                 const ingreso = Number(perfil.ingreso_mensual) || 0;
                 if (ingreso <= 0 || !perfil.fecha_salario) return;
-                const diaPago = new Date(perfil.fecha_salario).getDate();
+                function diaDeFechaStr(fechaStr) {
+                if (!fechaStr) return null;
+                const partes = fechaStr.split('-');
+                return partes.length >= 3 ? parseInt(partes[2], 10) : null;
+                }
+                const diaPago = diaDeFechaStr(perfil.fecha_salario);
+                if (!diaPago) return;
 
                 const resTrans = await fetch('http://127.0.0.1:8000/api/transacciones/', {
                     headers: { 'Authorization': `Bearer ${token}` }

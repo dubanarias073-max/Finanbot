@@ -268,6 +268,25 @@ body::before {
 .opt-sub { font-size:11px; color:rgba(255,255,255,0.3); line-height:1.4; }
 
 /* ═══════════════════════════════════════
+   MODO DE AHORRO DE LA META (manual / automático)
+═══════════════════════════════════════ */
+.modo-toggle { display:flex; gap:10px; margin-bottom:4px; }
+.modo-btn {
+  flex:1; background:rgba(255,255,255,0.03);
+  border:1.5px solid rgba(255,255,255,0.07); border-radius:14px;
+  padding:12px 10px; color:var(--secondary);
+  font-size:13px; font-weight:800; cursor:pointer; text-align:center;
+  transition:all .3s cubic-bezier(.34,1.56,.64,1);
+  font-family:'Segoe UI',sans-serif;
+}
+.modo-btn:hover { border-color:rgba(168,85,247,.4); color:white; transform:translateY(-2px); }
+.modo-btn.sel {
+  border-color:var(--purple); background:rgba(168,85,247,0.08); color:white;
+  box-shadow:0 0 20px rgba(168,85,247,0.15);
+}
+.modo-hint { margin-top:7px; margin-bottom:18px; font-size:12px; color:rgba(255,255,255,0.25); padding-left:2px; }
+
+/* ═══════════════════════════════════════
    ATAJOS DE MONTO
 ═══════════════════════════════════════ */
 .quick-btns { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px; }
@@ -382,6 +401,16 @@ body::before {
 .salario-auto-info i { font-size:16px; flex-shrink:0; }
 .salario-auto-info strong { color:#4ade80; }
 
+/* Info aporte automático de meta */
+.meta-auto-info {
+  display:flex; align-items:center; gap:10px;
+  background:rgba(34,211,238,0.06); border:1px solid rgba(34,211,238,0.2);
+  border-radius:14px; padding:12px 16px; margin-bottom:18px;
+  font-size:12px; color:#a5f3fc; line-height:1.5;
+}
+.meta-auto-info i { font-size:16px; flex-shrink:0; }
+.meta-auto-info strong { color:#22d3ee; }
+
 /* ═══════════════════════════════════════
    BOTONES
 ═══════════════════════════════════════ */
@@ -482,6 +511,9 @@ body::before {
   .finput { font-size: 17px; padding: 13px 16px 13px 36px; }
   .flabel { font-size: 10px; }
 
+  .modo-toggle { gap: 8px; }
+  .modo-btn { font-size: 12px; padding: 11px 8px; }
+
   .quick-btns { gap: 7px; margin-bottom: 18px; }
   .qbtn { padding: 8px 12px; font-size: 11px; }
 
@@ -493,7 +525,7 @@ body::before {
   .sum-v { font-size: 13px; }
   .sum-v.money { font-size: 15px; }
 
-  .salario-auto-info { font-size: 11px; padding: 11px 14px; }
+  .salario-auto-info, .meta-auto-info { font-size: 11px; padding: 11px 14px; }
 
   /* Botones: apilar y garantizar buen tamaño de toque (mín. 48px) */
   .btn-row { gap: 8px; }
@@ -659,12 +691,39 @@ body::before {
     <div class="err" id="e3">⚠️ &nbsp;Selecciona un objetivo para continuar.</div>
 
     <div class="fg">
-      <label class="flabel">Meta de ahorro mensual</label>
+      <label class="flabel">¿Cuánto quieres juntar en total?</label>
+      <div class="finput-wrap">
+        <span class="fpfx">$</span>
+        <input type="number" class="finput" id="metaObjetivoTotal" placeholder="2.000.000" min="0">
+      </div>
+      <div class="fhint">El monto total que quieres alcanzar en esta meta.</div>
+    </div>
+
+    <div class="fg" id="aporteMensualWrap" style="display:none;">
+      <label class="flabel">¿Cuánto vas a abonar cada mes?</label>
       <div class="finput-wrap">
         <span class="fpfx">$</span>
         <input type="number" class="finput" id="savingGoal" placeholder="500.000" min="0">
       </div>
       <div class="fhint" id="metaHint">Sugerido: 20% de tu ingreso — $0</div>
+    </div>
+
+    <div class="fg">
+      <label class="flabel">¿Cómo quieres ahorrar para esta meta?</label>
+      <div class="modo-toggle">
+        <button type="button" class="modo-btn sel" id="modoBtnManual" onclick="selModoMeta('manual')">✋ Manual</button>
+        <button type="button" class="modo-btn" id="modoBtnAuto" onclick="selModoMeta('automatico')">🔄 Automático</button>
+      </div>
+      <div class="modo-hint" id="modoHint">Tú decides cuándo abonar a esta meta desde Mi Perfil.</div>
+    </div>
+
+    <div class="fg" id="diaAutoWrap" style="display:none;">
+      <label class="flabel">Día del mes para el aporte automático</label>
+      <div class="finput-wrap">
+        <span class="fpfx">📅</span>
+        <input type="number" class="finput" id="metaDiaAuto" placeholder="5" min="1" max="31">
+      </div>
+      <div class="fhint">Ese día, FinanBot descontará el monto de arriba de tu sueldo (como un gasto) y lo sumará automáticamente a esta meta.</div>
     </div>
 
     <div class="opts">
@@ -732,6 +791,12 @@ body::before {
       <span id="salarioAutoTexto">Tu ingreso mensual se registrará automáticamente como <strong>Salario</strong> en Mis Finanzas. Podrás editarlo cuando quieras desde Mi Perfil.</span>
     </div>
 
+    <!-- Info aporte automático de meta -->
+    <div class="meta-auto-info" id="metaAutoInfo" style="display:none;">
+      <i class="fas fa-circle-info">🔄</i>
+      <span id="metaAutoTexto"></span>
+    </div>
+
     <div class="sum-box">
       <div class="sum-row">
         <div class="sum-k">
@@ -753,9 +818,21 @@ body::before {
       </div>
       <div class="sum-row">
         <div class="sum-k">
-          <div class="sum-ico" style="background:rgba(74,222,128,0.1)">🎯</div>Meta mensual
+          <div class="sum-ico" style="background:rgba(74,222,128,0.1)">🎯</div>Objetivo total
+        </div>
+        <div class="sum-v money" id="sObjetivoTotal">—</div>
+      </div>
+      <div class="sum-row">
+        <div class="sum-k">
+          <div class="sum-ico" style="background:rgba(74,222,128,0.1)">💵</div>Aporte mensual
         </div>
         <div class="sum-v money" id="sMeta">—</div>
+      </div>
+      <div class="sum-row">
+        <div class="sum-k">
+          <div class="sum-ico" style="background:rgba(34,211,238,0.1)">🔄</div>Ahorro de meta
+        </div>
+        <div class="sum-v" id="sModoMeta">—</div>
       </div>
       <div class="sum-row">
         <div class="sum-k">
@@ -809,7 +886,7 @@ const API = 'http://127.0.0.1:8000/api';
 const token = localStorage.getItem('token');
 if(!token) window.location.href='login.html';
 
-const st = { perfil:'', ingreso:0, diaPago:null, meta:0, objetivo:'' };
+const st = { perfil:'', ingreso:0, diaPago:null, meta:0, objetivoTotal:0, objetivo:'', modoMeta:'manual', diaMetaAuto:null };
 const LABELS = {
   estudiante:'🎓 Estudiante', empleado:'💼 Empleado',
   independiente:'🚀 Independiente', emprendedor:'💡 Emprendedor',
@@ -839,6 +916,32 @@ document.querySelectorAll('.opt[data-type]').forEach(b=>{
   });
 });
 
+/* ── Modo de ahorro de la meta (manual / automático) ──
+   Manual: el usuario abona a la meta cuando quiera desde Mi Perfil.
+   Automático: cada mes, en el día indicado, FinanBot descuenta el
+   monto de "Meta de ahorro mensual" de su sueldo (como gasto) y lo
+   suma directo a esta meta. */
+function selModoMeta(modo){
+  st.modoMeta = modo;
+  document.getElementById('modoBtnManual').classList.toggle('sel', modo==='manual');
+  document.getElementById('modoBtnAuto').classList.toggle('sel', modo==='automatico');
+  document.getElementById('diaAutoWrap').style.display = modo==='automatico' ? 'block' : 'none';
+  document.getElementById('aporteMensualWrap').style.display = modo==='automatico' ? 'block' : 'none';
+  document.getElementById('modoHint').textContent = modo==='automatico'
+    ? 'FinanBot aportará por ti cada mes, descontando el monto de tu sueldo.'
+    : 'Tú decides cuándo abonar a esta meta desde Mi Perfil.';
+  if(modo==='manual'){
+    // En manual no hace falta un aporte mensual fijo — se limpia para
+    // que no quede un valor sin usar.
+    document.getElementById('savingGoal').value = '';
+    st.meta = 0;
+  }
+  if(navigator.vibrate) navigator.vibrate(20);
+}
+document.getElementById('metaDiaAuto').addEventListener('input', e=>{
+  st.diaMetaAuto = Number(e.target.value) || null;
+});
+
 /* ── Income ── */
 function setIncome(v){
   document.getElementById('income').value=v;
@@ -854,6 +957,9 @@ document.getElementById('payday').addEventListener('input',e=>{
 });
 document.getElementById('savingGoal').addEventListener('input',e=>{
   st.meta=Number(e.target.value);
+});
+document.getElementById('metaObjetivoTotal').addEventListener('input',e=>{
+  st.objetivoTotal=Number(e.target.value) || 0;
 });
 function updateMetaHint(){
   const sug=Math.round(st.ingreso*.2);
@@ -886,6 +992,18 @@ function ir(n){
   // Validar
   if(n===2&&!st.perfil){ show('e1'); return; }
   if(n===3&&st.ingreso<10000){ show('e2'); return; }
+  if(n===4&&st.objetivoTotal>0&&st.modoMeta==='automatico'&&st.meta<=0){
+    const e3=document.getElementById('e3');
+    e3.innerHTML='⚠️ &nbsp;Indica cuánto vas a abonar cada mes en modo automático.';
+    show('e3');
+    return;
+  }
+  if(n===4&&st.objetivoTotal>0&&st.modoMeta==='automatico'&&(!st.diaMetaAuto||st.diaMetaAuto<1||st.diaMetaAuto>31)){
+    const e3=document.getElementById('e3');
+    e3.innerHTML='⚠️ &nbsp;Indica un día del mes válido (1-31) para el aporte automático.';
+    show('e3');
+    return;
+  }
 
   // Ocultar todo
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
@@ -901,7 +1019,12 @@ function ir(n){
 }
 function omitirMeta(){
   st.meta = 0;
+  st.objetivoTotal = 0;
   st.objetivo = '';
+  selModoMeta('manual');
+  st.diaMetaAuto = null;
+  document.getElementById('metaDiaAuto').value = '';
+  document.getElementById('metaObjetivoTotal').value = '';
   ir(4);
 }
 function show(id){ document.getElementById(id).classList.add('show'); }
@@ -918,7 +1041,14 @@ function buildSummary(){
   document.getElementById('sPerfil').textContent  = LABELS[st.perfil]||'—';
   document.getElementById('sIngreso').textContent = '$'+st.ingreso.toLocaleString('es-CO');
   document.getElementById('sDiaPago').textContent = st.diaPago ? `Día ${st.diaPago} de cada mes` : 'No definido';
-  document.getElementById('sMeta').textContent    = '$'+(st.meta||0).toLocaleString('es-CO');
+  document.getElementById('sObjetivoTotal').textContent = '$'+(st.objetivoTotal||0).toLocaleString('es-CO');
+  if (st.objetivoTotal > 0) {
+    document.getElementById('sModoMeta').textContent = st.modoMeta==='automatico' ? `🔄 Automático · día ${st.diaMetaAuto}` : '✋ Manual';
+    document.getElementById('sMeta').textContent = st.modoMeta==='automatico' ? '$'+(st.meta||0).toLocaleString('es-CO') : 'No aplica';
+  } else {
+    document.getElementById('sModoMeta').textContent = '—';
+    document.getElementById('sMeta').textContent = '—';
+  }
   document.getElementById('sObj').textContent     = LABELS[st.objetivo]||'—';
 
   // Ocultar el aviso de salario automático si no hay ingreso
@@ -927,6 +1057,16 @@ function buildSummary(){
     const diaTxt = st.diaPago ? `el día ${st.diaPago} de cada mes` : 'cada mes';
     document.getElementById('salarioAutoTexto').innerHTML =
       `Tu ingreso mensual se registrará automáticamente como <strong>Salario</strong> en Mis Finanzas ${diaTxt}. Podrás editarlo cuando quieras desde Mi Perfil.`;
+  }
+
+  // Aviso del aporte automático de la meta
+  const metaAutoBox = document.getElementById('metaAutoInfo');
+  if (st.meta > 0 && st.modoMeta === 'automatico') {
+    metaAutoBox.style.display = 'flex';
+    document.getElementById('metaAutoTexto').innerHTML =
+      `Cada mes, el día <strong>${st.diaMetaAuto}</strong>, FinanBot descontará <strong>$${st.meta.toLocaleString('es-CO')}</strong> de tu sueldo y los sumará automáticamente a tu meta.`;
+  } else {
+    metaAutoBox.style.display = 'none';
   }
 }
 
@@ -989,11 +1129,17 @@ async function finish(){
     });
 
     // 2. Crear meta de ahorro si el usuario definió un objetivo
-    if(st.meta>0){
+    //    (modo manual: el usuario la abona cuando quiera desde Mi Perfil;
+    //     modo automático: incluye monto_automatico y dia_automatico para
+    //     que FinanBot descuente ese aporte del sueldo cada mes)
+    if(st.objetivoTotal>0){
       await req('/metas/','POST',{
         nombre:LABELS[st.objetivo],
-        monto_objetivo:st.meta*6,
-        monto_actual:0
+        monto_objetivo:st.objetivoTotal,
+        monto_actual:0,
+        modo: st.modoMeta,
+        monto_automatico: st.modoMeta==='automatico' ? st.meta : null,
+        dia_automatico: st.modoMeta==='automatico' ? st.diaMetaAuto : null
       });
     }
 

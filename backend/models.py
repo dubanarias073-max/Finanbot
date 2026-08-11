@@ -100,6 +100,12 @@ class MetaAhorro(Base):
     fecha_limite = Column(Date)
     completada = Column(Boolean, default=False)
     fecha_creacion = Column(DateTime, default=datetime.utcnow)
+    # Modo de ahorro: 'manual' (el usuario abona cuando quiera) o
+    # 'automatico' (FinanBot descuenta monto_automatico del sueldo cada
+    # mes, el día dia_automatico, y lo suma solo a esta meta).
+    modo = Column(Enum('manual', 'automatico', name='modo_meta_enum'), nullable=False, default='manual')
+    monto_automatico = Column(Numeric(10, 2), nullable=True)
+    dia_automatico = Column(Integer, nullable=True)
 
     usuario = relationship('Usuario', back_populates='metas')
 

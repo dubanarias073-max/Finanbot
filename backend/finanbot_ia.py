@@ -4,6 +4,7 @@ from datetime import datetime
 from collections import deque
 import random
 import re
+import unicodedata
 
 # ══════════════════════════════════════════════════════════════════
 #  RUTAS REALES DEL PROYECTO  (usadas en los botones de acción)
@@ -17,9 +18,121 @@ RUTAS = {
     'aprende':        'aprende.html',
     'perfil':         'perfil.html',
     'chat':           'chat.html',
+    'calendario':     'calendario.html',
     'exportar_pdf':   'exportar.html',
     'exportar_excel': 'exportar.html',
 }
+
+# ══════════════════════════════════════════════════════════════════
+#  EJEMPLOS DE USO
+#  Frases cortas que se muestran al usuario después de crear, editar
+#  o borrar algo (gasto, ingreso o meta), para que aprenda cómo
+#  pedirlo la próxima vez sin tener que adivinar. También se usan
+#  como respuesta cuando el usuario claramente quiere editar/borrar
+#  algo pero no dio suficiente información para hacerlo.
+# ══════════════════════════════════════════════════════════════════
+EJEMPLOS = {
+    'crear_gasto':      '💬 Ejemplo: *"Gasté $30.000 en comida"* o *"Registra un gasto de $50.000 en Educación"*',
+    'crear_ingreso':    '💬 Ejemplo: *"Recibí $2.000.000 de salario"* o *"Registra un ingreso de $300.000 en Freelance"*',
+    'editar_gasto':     '💬 Ejemplo: *"Cambia mi último gasto de comida a $40.000"* o *"Edita el gasto de Transporte a $25.000"*',
+    'editar_ingreso':   '💬 Ejemplo: *"Cambia mi ingreso de salario a $2.500.000"*',
+    'borrar_gasto':     '💬 Ejemplo: *"Borra el último gasto de comida"* o *"Elimina el gasto de Transporte de hoy"*',
+    'borrar_ingreso':   '💬 Ejemplo: *"Borra el ingreso de Freelance"*',
+    'crear_meta_manual':'💬 Ejemplo: *"Crea una meta de $1.000.000 para viajes"* (la abonas cuando quieras desde Mi Perfil)',
+    'crear_meta_auto':  '💬 Ejemplo: *"Crea una meta automática de $2.000.000 para vivienda, aportando $200.000 el día 5 de cada mes"*',
+    'abonar_meta':      '💬 Ejemplo: *"Añade $50.000 a mi meta de viajes"* (esto solo suma, nunca resta)',
+    'editar_meta_monto':'💬 Ejemplo: *"Pon mi meta de viajes en $300.000"* (esto reemplaza el total, puede subir o bajar)',
+    'borrar_meta':      '💬 Ejemplo: *"Elimina mi meta de viajes"*',
+}
+
+
+def _con_ejemplo(texto: str, clave: str) -> str:
+    """Agrega al final de una respuesta el ejemplo de uso correspondiente,
+    en letra pequeña de contexto, para que el usuario aprenda el patrón."""
+    ejemplo = EJEMPLOS.get(clave)
+    if not ejemplo:
+        return texto
+    return f"{texto}\n\n{ejemplo}"
+
+
+# ══════════════════════════════════════════════════════════════════
+#  CONSTANTES FINANCIERAS DEL PROYECTO
+#  El IVA general en Colombia es 19% — se usa como valor por defecto
+#  cuando el usuario no especifica una tasa distinta. Todo porcentaje
+#  en este archivo se aplica SIEMPRE dividiendo entre 100 (nunca entre
+#  otro número) — _aplicar_porcentaje() es el único punto donde se
+#  hace esa división, para que quede centralizado y no se repita mal
+#  en ningún cálculo nuevo que se agregue.
+# ══════════════════════════════════════════════════════════════════
+IVA_COLOMBIA = 19
+PORCENTAJE_BASE = 100
+
+def _aplicar_porcentaje(base: float, porcentaje: float) -> float:
+    """base * (porcentaje / 100), redondeado a 2 decimales."""
+    return round(base * porcentaje / PORCENTAJE_BASE, 2)
+
+MESES_ES = [
+    '', 'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+    'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'
+]
+
+
+def _sin_tildes(texto: str) -> str:
+    if not texto:
+        return ''
+    nfkd = unicodedata.normalize('NFKD', texto)
+    return ''.join(c for c in nfkd if not unicodedata.combining(c))
+
+
+def _mes_actual_num_anio():
+    hoy = datetime.now()
+    return hoy.month, hoy.year
+
+
+def _mes_actual_label() -> str:
+    mes, anio = _mes_actual_num_anio()
+    return f"{MESES_ES[mes]} {anio}"
+
+
+def _referencia_mes_pasado(mensaje: str) -> bool:
+    """Detecta si el usuario está hablando de un mes que NO es el
+    actual (mes pasado, mes anterior, o el nombre de otro mes con o
+    sin año). Se usa para bloquear crear/editar/eliminar gastos,
+    ingresos o metas fuera del mes en curso — esos meses ya cerraron
+    y solo se consultan (de solo lectura) desde el Calendario."""
+    msg = _sin_tildes(mensaje.lower())
+    if any(p in msg for p in ['mes pasado', 'mes anterior', 'el mes que paso', 'meses atras', 'meses anteriores']):
+        return True
+
+    mes_actual, anio_actual = _mes_actual_num_anio()
+    nombre_mes_actual = _sin_tildes(MESES_ES[mes_actual])
+
+    for i, nombre_mes in enumerate(MESES_ES):
+        if i == 0:
+            continue
+        nombre_sin_tildes = _sin_tildes(nombre_mes)
+        if nombre_sin_tildes in msg and nombre_sin_tildes != nombre_mes_actual:
+            return True
+        # Mismo nombre de mes pero con un año explícito distinto al actual
+        if nombre_sin_tildes == nombre_mes_actual and nombre_sin_tildes in msg:
+            m = re.search(r'\b(20\d{2})\b', msg)
+            if m and int(m.group(1)) != anio_actual:
+                return True
+    return False
+
+
+def _mensaje_bloqueo_mes_pasado() -> tuple[str, list[dict]]:
+    label = _mes_actual_label()
+    texto = (
+        f"✋ Solo puedo crear, editar o eliminar gastos, ingresos y metas del **mes en curso ({label})**.\n\n"
+        "Los meses ya cerrados quedan fijos — no se modifican, ni siquiera desde aquí. "
+        "Si quieres consultarlos o descargar su reporte, ve al **Calendario** y elige ese mes."
+    )
+    return texto, [
+        {'tipo': 'link', 'texto': '📅 Ir al Calendario', 'link': RUTAS['calendario']},
+        {'tipo': 'link', 'texto': '💸 Ver mis finanzas', 'link': RUTAS['finanzas']},
+    ]
+
 
 # ══════════════════════════════════════════════════════════════════
 #  CATEGORÍAS REALES DEL PROYECTO
@@ -53,7 +166,7 @@ CATEGORIAS_INGRESO = {
     'Otros ingresos':  {'emoji': '💵', 'tip': 'Aunque sea ocasional, registrar este ingreso te da una foto real de tu situación financiera.'},
 }
 
-# Palabras clave para AUTO-DETECTAR la categoría a partir de texto libre.
+# Palabras clave para DETECTAR la categoría a partir de texto libre.
 # Esto es lo que le da a FinanBot la capacidad de "entender" en qué
 # categoría cae algo aunque el usuario no la mencione explícitamente
 # (ej. "gasté 20 mil en pizza" → Alimentación).
@@ -84,16 +197,39 @@ KEYWORDS_INGRESO = {
     'Regalo':          ['regalo', 'me regalaron', 'obsequio recibido'],
 }
 
+
+def _match_categoria_exacta(texto: str, categorias: dict) -> str | None:
+    """Si el usuario menciona el NOMBRE EXACTO de una categoría (con o
+    sin tildes, sin importar mayúsculas), esa gana siempre sobre
+    cualquier detección por palabra clave — es lo más directo que
+    puede pedir: 'registra un gasto de Educación por 50000' debe ser
+    Educación, no otra cosa por coincidencia de palabras."""
+    msg = _sin_tildes(texto.lower())
+    for nombre in categorias:
+        if _sin_tildes(nombre.lower()) in msg:
+            return nombre
+    return None
+
+
 def detectar_categoria_gasto(texto: str) -> str | None:
-    """Intenta adivinar la categoría de GASTO a partir de texto libre."""
+    """Adivina la categoría de GASTO a partir de texto libre. Prioridad:
+    1) nombre exacto de categoría mencionado, 2) palabras clave."""
+    exacta = _match_categoria_exacta(texto, CATEGORIAS_GASTO)
+    if exacta:
+        return exacta
     msg = (texto or '').lower()
     for categoria, palabras in KEYWORDS_GASTO.items():
         if any(p in msg for p in palabras):
             return categoria
     return None
 
+
 def detectar_categoria_ingreso(texto: str) -> str | None:
-    """Intenta adivinar la categoría de INGRESO a partir de texto libre."""
+    """Adivina la categoría de INGRESO a partir de texto libre. Prioridad:
+    1) nombre exacto de categoría mencionado, 2) palabras clave."""
+    exacta = _match_categoria_exacta(texto, CATEGORIAS_INGRESO)
+    if exacta:
+        return exacta
     msg = (texto or '').lower()
     for categoria, palabras in KEYWORDS_INGRESO.items():
         if any(p in msg for p in palabras):
@@ -136,6 +272,27 @@ BASE = {
     "btns": [("🎯 Crear meta de ahorro", RUTAS['finanzas']),
              ("📊 Ver mi balance", RUTAS['dashboard']),
              ("📚 Aprende más", RUTAS['aprende'])]
+},
+
+# ─── METAS AUTOMÁTICAS VS MANUALES ───────────────────────────────
+"meta automática|meta automatica|meta manual|abonar meta|aportar a mi meta|añadir ahorro|agregar ahorro|cómo funciona una meta|como funciona una meta|diferencia entre meta manual y automática": {
+    "titulo": "🎯 Metas de ahorro — Manual vs Automática",
+    "cuerpo": """Cuando creas una meta de ahorro, eliges cómo quieres alimentarla:
+
+**✋ Meta Manual:**
+Tú decides cuándo y cuánto abonar. Nadie te descuenta nada solo — vas agregando plata cuando quieras desde Mi Perfil (o pidiéndomelo a mí por chat).
+
+**🔄 Meta Automática:**
+Defines un aporte mensual fijo y un día del mes. Ese día, se descuenta automáticamente de tu sueldo (como un gasto real) y se suma solo a la meta — sin que tengas que hacer nada.
+
+**Sobre los abonos:**
+• **Añadir ahorro** → solo SUMA, nunca resta. Es la forma normal de abonar.
+• **Editar monto** → reemplaza el total completo, así que sí puede bajar (por ejemplo si retiras plata de la meta). Si retiras algo que ahorraste este mismo mes, se descuenta de tus gastos; si es de un mes anterior, se te devuelve como ingreso — para que esa plata nunca "desaparezca".
+
+Todo abono, automático o manual, queda registrado en el **Calendario** con la fecha y el monto exacto — es tu historial completo de aportes.""",
+    "sug": "¿Quieres crear una meta ahora? Dime si la quieres manual o automática.",
+    "btns": [("🎯 Ir a mis metas", RUTAS['metas']),
+             ("📅 Ver calendario", RUTAS['calendario'])]
 },
 
 # ─── CDT ─────────────────────────────────────────────────────────
@@ -508,7 +665,7 @@ Baja liquidez — no puedes vender rápidamente si necesitas dinero.""",
 # ─── IMPUESTOS / DIAN ────────────────────────────────────────────
 "impuestos|renta|declaración de renta|declaracion de renta|dian|iva|retención|retencion|tributar|tributos|uvt": {
     "titulo": "🧾 Impuestos en Colombia — Lo esencial",
-    "cuerpo": """Los impuestos no tienen por qué ser un dolor de cabeza si sabes lo básico.
+    "cuerpo": f"""Los impuestos no tienen por qué ser un dolor de cabeza si sabes lo básico.
 
 **Impuesto de renta — ¿quién declara?**
 Para 2024 (vigencia 2023) debes declarar si:
@@ -528,7 +685,7 @@ Tu empleador descuenta mensualmente un anticipo del impuesto de renta directamen
 ✅ Dependientes económicos
 
 **IVA en Colombia:**
-• Tasa general: 19%
+• Tasa general: **{IVA_COLOMBIA}%** (uso este valor por defecto en mis cálculos si no me das otro)
 • Canasta básica, medicamentos, libros: 0% o exentos
 • Algunos servicios: 5%
 
@@ -551,7 +708,7 @@ Tu empleador descuenta mensualmente un anticipo del impuesto de renta directamen
 **💰 Categorías de INGRESO:**
 💼 Salario · 🧑‍💻 Freelance · 📈 Inversión · 🏪 Negocio · 🎁 Regalo · 💵 Otros ingresos
 
-No necesitas indicarme la categoría exacta — si me dices algo como *"gasté 20 mil en pizza"* o *"me pagaron por un proyecto freelance"*, yo identifico la categoría correcta por ti.""",
+Si mencionas el **nombre exacto** de una categoría, uso siempre esa — sin adivinar. Y si no la mencionas, igual puedo identificarla por lo que describas (ej. *"gasté 20 mil en pizza"* → Alimentación).""",
     "sug": "¿Quieres que te dé un tip específico de alguna categoría en particular?",
     "btns": [("💸 Ir a mis finanzas", RUTAS['finanzas']),
              ("📊 Ver mis gastos por categoría", RUTAS['dashboard'])]
@@ -563,23 +720,29 @@ No necesitas indicarme la categoría exacta — si me dices algo como *"gasté 2
     "cuerpo": """**FinanBot** es tu asistente financiero personal inteligente, desarrollado como proyecto SENA (Ficha 3407184).
 
 **¿Qué puedes hacer?**
-• 💸 Registrar gastos e ingresos con lenguaje natural (yo detecto la categoría automáticamente)
-• 🎯 Crear y dar seguimiento a metas de ahorro
+• 💸 Registrar, **editar** y **borrar** gastos e ingresos con lenguaje natural (yo detecto la categoría automáticamente, o uso la exacta si la nombras)
+• 🎯 Crear metas de ahorro **manuales** o **automáticas**, añadir ahorro, editar el monto y darles seguimiento
 • 📈 Simular inversiones con interés compuesto
-• 🏷️ Calcular descuentos, IVA, repartos, aumentos
+• 🏷️ Calcular descuentos, IVA (19% por defecto), repartos, aumentos
 • 📊 Ver tu balance y resumen financiero por categoría
 • 🧮 Resolver cualquier cálculo matemático
 • 💡 Recibir consejos y respuestas sobre finanzas
-• 📄 Generar reportes PDF/Excel de tus finanzas
+• 📄 Generar reportes — del **mes actual** o el **histórico completo**, en PDF o Excel
+• 📅 Consultar el Calendario para ver o descargar el reporte de meses anteriores
 • 👤 Actualizar tu perfil (nombre, salario, metas)
+
+**Una regla importante:** solo puedo crear, editar o eliminar gastos, ingresos y metas del **mes en curso**. Los meses ya cerrados se consultan (de solo lectura) desde el Calendario.
 
 **Cómo hablarme — ejemplos reales:**
 • *"Gasté $25.000 en el bus"* → registra el gasto y detecta que es Transporte
+• *"Cambia mi gasto de comida a $40.000"* → lo edita
+• *"Borra el último gasto de transporte"* → lo elimina
+• *"Crea una meta automática de $2.000.000 para vivienda, $200.000/mes el día 5"* → crea la meta
 • *"$80.000 con 15% de descuento"* → calcula el precio
 • *"Simula $500.000 al 10% por 1 año"* → proyecta la inversión
 • *"¿Qué es un CDT?"* → te explico
 • *"Cambia mi nombre a Juan"* → actualiza tu perfil
-• *"Hazme un reporte"* → genera el PDF
+• *"Hazme un reporte de este mes"* → genera el PDF/Excel del mes actual
 
 No necesitas comandos exactos. Habla como le escribirías a un amigo.""",
     "sug": "¿Por dónde quieres empezar?",
@@ -593,15 +756,19 @@ No necesitas comandos exactos. Habla como le escribirías a un amigo.""",
     "titulo": "🤖 Todo lo que puedo hacer por ti",
     "cuerpo": """Aquí está todo lo que puedes pedirme:
 
-**💸 Transacciones:**
+**💸 Transacciones (solo del mes actual):**
 • *"Gasté $30.000 en comida"* — registra gasto (detecto que es Alimentación)
 • *"Recibí $2.000.000 de salario"* — registra ingreso
+• *"Cambia mi último gasto de comida a $40.000"* — edita
 • *"Borra el último gasto de transporte"* — elimina
 • *"Muéstrame mis gastos de esta semana"* — consulta
 
-**🎯 Metas de ahorro:**
-• *"Crea una meta de $1.000.000 para viajes"*
-• *"Actualiza mi meta de viajes a $400.000"*
+**🎯 Metas de ahorro (solo del mes actual):**
+• *"Crea una meta de $1.000.000 para viajes"* — manual, la abonas cuando quieras
+• *"Crea una meta automática de $2.000.000 para vivienda, $200.000/mes el día 5"* — automática
+• *"Añade $50.000 a mi meta de viajes"* — abono manual (solo suma)
+• *"Pon mi meta de viajes en $300.000"* — edita el total (puede subir o bajar)
+• *"Elimina mi meta de viajes"*
 • *"Ver todas mis metas"*
 
 **📈 Simulaciones:**
@@ -610,7 +777,7 @@ No necesitas comandos exactos. Habla como le escribirías a un amigo.""",
 
 **🧮 Calculadora financiera:**
 • *"$80.000 con 20% de descuento"*
-• *"$50.000 más IVA"*
+• *"$50.000 más IVA"* (uso 19% si no me das otra tasa)
 • *"Divide $150.000 entre 3 personas"*
 • *"¿Cuánto es 350 por 12?"*
 • *"¿Qué porcentaje es $30.000 de $200.000?"*
@@ -621,14 +788,19 @@ No necesitas comandos exactos. Habla como le escribirías a un amigo.""",
 • *"Mi correo es nuevo@email.com"*
 
 **📄 Reportes:**
-• *"Hazme un reporte"* → genera PDF o Excel descargable
+• *"Hazme un reporte de este mes"* → PDF/Excel solo del mes actual
+• *"Hazme un reporte completo"* → PDF/Excel con todo el histórico
+
+**📅 Meses anteriores:**
+• *"Quiero ver julio"* / *"Reporte de julio"* → te llevo al Calendario (ahí sí puedes consultarlos y descargarlos, pero no editarlos)
 
 **💡 Preguntas financieras:**
 • *"¿Qué es un CDT?"*
 • *"¿Cómo salgo de deudas?"*
 • *"¿Cuánto debo tener en fondo de emergencia?"*
 • *"¿Qué es el interés compuesto?"*
-• *"¿Qué categorías puedo usar?"*""",
+• *"¿Qué categorías puedo usar?"*
+• *"¿Cuál es la diferencia entre meta manual y automática?"*""",
     "sug": "¿Con cuál empezamos?",
     "btns": [("💸 Mis finanzas", RUTAS['finanzas']),
              ("📈 Simulador", RUTAS['simulador']),
@@ -1232,6 +1404,16 @@ Cuántos meses puedes mantener tu estilo de vida sin ingresos.
 class FinanBotIA:
     MAX_HISTORIAL = 20
 
+    # Acciones que MODIFICAN datos (crear/editar/eliminar) — a estas
+    # se les aplica el bloqueo de "solo el mes actual" antes que
+    # cualquier otra cosa.
+    _TIPOS_QUE_MODIFICAN = {
+        'gasto_registrado', 'ingreso_registrado',
+        'gasto_editado', 'ingreso_editado',
+        'gasto_eliminado', 'ingreso_eliminado',
+        'meta_creada', 'meta_actualizada', 'meta_abonada', 'meta_eliminada',
+    }
+
     def __init__(self):
         self.historial: deque = deque(maxlen=self.MAX_HISTORIAL)
         self.memoria = {
@@ -1254,6 +1436,14 @@ class FinanBotIA:
         ts = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         self.historial.append({'rol': 'usuario', 'msg': mensaje, 'timestamp': ts})
         self._actualizar_memoria(mensaje, ctx)
+
+        # Bloqueo: no se crea/edita/elimina nada fuera del mes actual.
+        if accion is not None and accion.get('tipo') in self._TIPOS_QUE_MODIFICAN:
+            if _referencia_mes_pasado(mensaje):
+                respuesta, acciones_ui = _mensaje_bloqueo_mes_pasado()
+                self.historial.append({'rol': 'bot', 'msg': respuesta[:200], 'timestamp': ts})
+                return respuesta, acciones_ui
+
         respuesta, acciones_ui = self._generar(mensaje, ctx, accion)
         respuesta = self._personalizar_respuesta(respuesta, mensaje, ctx)
         self.historial.append({'rol': 'bot', 'msg': respuesta[:200], 'timestamp': ts})
@@ -1288,11 +1478,16 @@ class FinanBotIA:
         if tipo in mapa_calc:
             return mapa_calc[tipo](accion), _btns_calc()
 
-        # Transacciones
+        # Transacciones (mes actual — el bloqueo de mes pasado ya se
+        # evaluó antes de llegar aquí, en responder_con_acciones)
         if tipo == 'gasto_registrado':
-            return self._gasto_reg(accion, ctx), _btns_trans()
+            return self._gasto_reg(accion, ctx, mensaje), _btns_trans()
         if tipo == 'ingreso_registrado':
-            return self._ingreso_reg(accion, ctx), _btns_trans()
+            return self._ingreso_reg(accion, ctx, mensaje), _btns_trans()
+        if tipo == 'gasto_editado':
+            return self._editado('gasto', accion), _btns_trans()
+        if tipo == 'ingreso_editado':
+            return self._editado('ingreso', accion), _btns_trans()
         if tipo == 'gasto_eliminado':
             return self._eliminado('gasto', accion), _btns_trans()
         if tipo == 'ingreso_eliminado':
@@ -1303,8 +1498,10 @@ class FinanBotIA:
             return self._meta_creada(accion, ctx), _btns_metas()
         if tipo == 'meta_actualizada':
             return self._meta_actualizada(accion), _btns_metas()
+        if tipo == 'meta_abonada':
+            return self._meta_abonada(accion), _btns_metas()
         if tipo == 'meta_eliminada':
-            return f"🗑️ Meta **{accion['nombre']}** eliminada correctamente.", _btns_metas()
+            return _con_ejemplo(f"🗑️ Meta **{accion['nombre']}** eliminada correctamente.", 'crear_meta_manual'), _btns_metas()
         if tipo == 'consulta_metas':
             return self._consulta_metas(accion), _btns_metas()
 
@@ -1337,10 +1534,11 @@ class FinanBotIA:
             }
             return msgs.get(campo, f"✅ Perfil actualizado: {campo} → {valor}"), _btns_perfil()
 
-        # Reporte
+        # Reporte (mensual o completo)
         if tipo == 'reporte':
             fmt = accion.get('formato', 'pdf')
-            return self._reporte(fmt), _btns_reporte(fmt)
+            alcance = accion.get('alcance') or ('mes' if self._es_solicitud_reporte_mensual(mensaje) else 'completo')
+            return self._reporte(fmt, alcance), _btns_reporte(fmt, alcance)
 
         # Estados especiales
         if tipo in ('confirmar_eliminar_meta', 'confirmar_eliminar_gasto',
@@ -1378,7 +1576,7 @@ class FinanBotIA:
         lineas = [
             f"{saludo}, **{nombre}**! {emoji} Soy **FinanBot** 🤖, tu asistente financiero inteligente.\n",
             "**Soy una IA** (Inteligencia Artificial) entrenada para ayudarte con tus finanzas.\n",
-            "✅ Puedo registrar, calcular y analizar  |  ⚠️ Mis consejos son orientativos, no una asesoría legal\n"
+            f"✅ Puedo registrar, editar, borrar y calcular el mes en curso ({_mes_actual_label()})  |  ⚠️ Mis consejos son orientativos, no una asesoría legal\n"
         ]
 
         n_trans = resumen.get('num_transacciones', 0)
@@ -1400,19 +1598,18 @@ class FinanBotIA:
                 else:
                     lineas.append(f"💡 *Estás ahorrando el {pct}% de tus ingresos. La meta es llegar al 20%.*\n")
 
-            # Insight automático de categoría dominante (si viene en el resumen)
             cat_mayor = resumen.get('categoria_mayor_gasto')
             if cat_mayor and cat_mayor in CATEGORIAS_GASTO:
                 emoji_c = CATEGORIAS_GASTO[cat_mayor]['emoji']
                 lineas.append(f"🔎 *Tu mayor gasto está en {emoji_c} {cat_mayor}. Puedo darte un tip específico si quieres.*\n")
         else:
-            lineas.append("\nAún no tienes movimientos registrados. ¡Empecemos ahora!\n")
+            lineas.append("\nAún no tienes movimientos registrados este mes. ¡Empecemos ahora!\n")
 
         lineas.append("**¿Qué puedo hacer por ti?** 💡\n")
-        lineas.append("• 💸 Registrar gastos e ingresos (detecto la categoría automáticamente)  •  🎯 Crear metas de ahorro")
-        lineas.append("• 📈 Simular inversiones  •  🏷️ Calcular descuentos e IVA")
+        lineas.append("• 💸 Registrar, **editar** y **borrar** gastos e ingresos (detecto la categoría, o uso la exacta si la nombras)  •  🎯 Crear metas manuales o automáticas")
+        lineas.append("• 📈 Simular inversiones  •  🏷️ Calcular descuentos e IVA (19% por defecto)")
         lineas.append("• 🧮 Resolver cálculos  •  💬 Responder dudas financieras")
-        lineas.append("• 📄 Generar reportes  •  👤 Actualizar tu perfil\n")
+        lineas.append("• 📄 Generar reportes (de este mes o completos)  •  👤 Actualizar tu perfil\n")
         lineas.append("*Habla conmigo de forma natural. No necesitas comandos exactos.* 😊\n")
         lineas.append("_🔒 Tus datos están protegidos. Confidencialidad garantizada._")
 
@@ -1420,6 +1617,8 @@ class FinanBotIA:
 
     # ══════════════════════════════════════════════════════════════
     #  CALCULADORA FINANCIERA  ─  respuestas con tabla
+    #  Todos los porcentajes se aplican con _aplicar_porcentaje(), que
+    #  siempre divide entre 100 — nunca entre otra base.
     # ══════════════════════════════════════════════════════════════
 
     def _descuento(self, a):
@@ -1435,23 +1634,33 @@ class FinanBotIA:
         )
 
     def _iva(self, a):
+        tasa_default_usada = 'tasa_iva' not in a or a.get('tasa_iva') is None
         if a['tipo'] == 'iva_sumado':
-            base, tasa, iva, tot = a['base'], a['tasa_iva'], a['valor_iva'], a['total']
+            base = a['base']
+            tasa = a.get('tasa_iva', IVA_COLOMBIA)
+            iva  = a.get('valor_iva', _aplicar_porcentaje(base, tasa))
+            tot  = a.get('total', round(base + iva, 2))
+            nota = f" (usé el {IVA_COLOMBIA}% general de Colombia porque no me diste otra tasa)" if tasa_default_usada else ""
             return (
                 f"🧾 **Precio con IVA del {tasa}%**\n\n"
                 f"| | Valor |\n|---|---|\n"
                 f"| Base sin IVA | ${base:,.0f} |\n"
                 f"| IVA ({tasa}%) | +${iva:,.0f} |\n"
                 f"| **Total con IVA** | **${tot:,.0f}** |\n\n"
-                f"📌 *IVA general en Colombia: 19%. Se usó {tasa}%.*"
+                f"📌 *IVA general en Colombia: {IVA_COLOMBIA}%{nota}.*"
             )
-        tot, tasa, base, iva = a['valor_con_iva'], a['tasa_iva'], a['base_sin_iva'], a['valor_iva']
+        tot  = a['valor_con_iva']
+        tasa = a.get('tasa_iva', IVA_COLOMBIA)
+        base = a.get('base_sin_iva', round(tot / (1 + tasa / PORCENTAJE_BASE), 2))
+        iva  = a.get('valor_iva', round(tot - base, 2))
+        nota = f" (usé el {IVA_COLOMBIA}% general de Colombia porque no me diste otra tasa)" if tasa_default_usada else ""
         return (
             f"🧾 **Precio sin IVA ({tasa}%)**\n\n"
             f"| | Valor |\n|---|---|\n"
             f"| Precio con IVA | ${tot:,.0f} |\n"
             f"| IVA incluido ({tasa}%) | −${iva:,.0f} |\n"
-            f"| **Base sin IVA** | **${base:,.0f}** |"
+            f"| **Base sin IVA** | **${base:,.0f}** |\n\n"
+            f"📌 *IVA general en Colombia: {IVA_COLOMBIA}%{nota}.*"
         )
 
     def _propina(self, a):
@@ -1539,52 +1748,95 @@ class FinanBotIA:
 
     # ══════════════════════════════════════════════════════════════
     #  TRANSACCIONES
-    #  Usan CATEGORIAS_GASTO / CATEGORIAS_INGRESO (fuente única de
-    #  verdad, sincronizada con los selects de finanzas.html) para
-    #  el emoji Y para dar un tip contextual de esa categoría.
+    #  Usan CATEGORIAS_GASTO / CATEGORIAS_INGRESO para el emoji y el
+    #  tip contextual. Si el mensaje original menciona el nombre
+    #  EXACTO de una categoría distinta a la que trae "accion", se
+    #  avisa (por si la detección automática de otro lado difirió).
+    #  Cada acción (crear, editar, borrar) termina mostrando un
+    #  ejemplo de cómo pedirla la próxima vez, para que el usuario
+    #  aprenda el patrón sin tener que preguntarlo.
     # ══════════════════════════════════════════════════════════════
 
-    def _gasto_reg(self, a, ctx):
+    def _gasto_reg(self, a, ctx, mensaje=''):
         monto, cat = a['monto'], a['categoria']
         info = CATEGORIAS_GASTO.get(cat, {'emoji': '💸', 'tip': None})
         lineas = [f"{_ok()} Gasto registrado.\n\n{info['emoji']} **${monto:,.0f}** en **{cat}**\n"]
+
+        cat_exacta = _match_categoria_exacta(mensaje, CATEGORIAS_GASTO) if mensaje else None
+        if cat_exacta and cat_exacta != cat:
+            lineas.append(f"\n💡 Nota: mencionaste **{cat_exacta}**, así que registré esa categoría exacta.")
+
         if ctx:
             bal  = ctx.get('balance', 0) - monto
             lineas.append(f"📊 Balance actualizado: **${bal:,.0f}**")
 
-            # Concentración de gasto en esta categoría (inteligencia real:
-            # compara cuánto pesa esta categoría sobre el total de gastos)
             cats_ctx = ctx.get('gastos_por_categoria') or {}
             total_gastos_ctx = ctx.get('total_gastos', 0) + monto
             monto_cat = cats_ctx.get(cat, 0) + monto
             if total_gastos_ctx > 0:
                 pct_cat = round(monto_cat / total_gastos_ctx * 100)
                 if pct_cat >= 35 and info.get('tip'):
-                    lineas.append(f"\n⚠️ {_tip()} El {pct_cat}% de tus gastos está en **{cat}**. {info['tip']}")
+                    lineas.append(f"\n⚠️ {_tip()} El {pct_cat}% de tus gastos de este mes está en **{cat}**. {info['tip']}")
 
             meta_m = ctx.get('meta_ahorro_mensual', 0)
             if meta_m > 0 and total_gastos_ctx > meta_m * 3:
-                lineas.append(f"\n⚠️ {_tip()} Tus gastos registrados suman ${total_gastos_ctx:,.0f}. ¡Ojo con el presupuesto!")
+                lineas.append(f"\n⚠️ {_tip()} Tus gastos de este mes suman ${total_gastos_ctx:,.0f}. ¡Ojo con el presupuesto!")
+
+        lineas.append(f"\n\n📝 *¿Te equivocaste? Puedo editarlo o borrarlo:*")
+        lineas.append(EJEMPLOS['editar_gasto'])
+        lineas.append(EJEMPLOS['borrar_gasto'])
         return "\n".join(lineas)
 
-    def _ingreso_reg(self, a, ctx):
+    def _ingreso_reg(self, a, ctx, mensaje=''):
         monto, cat = a['monto'], a['categoria']
         info = CATEGORIAS_INGRESO.get(cat, {'emoji': '💵', 'tip': None})
         lineas = [f"{_ok()} Ingreso registrado.\n\n{info['emoji']} **+${monto:,.0f}** en **{cat}**\n"]
+
+        cat_exacta = _match_categoria_exacta(mensaje, CATEGORIAS_INGRESO) if mensaje else None
+        if cat_exacta and cat_exacta != cat:
+            lineas.append(f"\n💡 Nota: mencionaste **{cat_exacta}**, así que registré esa categoría exacta.")
+
         if ctx:
             bal = ctx.get('balance', 0) + monto
             lineas.append(f"📊 Balance actualizado: **${bal:,.0f}**")
             lineas.append(f"\n💡 *Regla del 20%: guarda **${int(monto*0.2):,.0f}** de este ingreso.*")
             if info.get('tip'):
                 lineas.append(f"\n{_tip()} {info['tip']}")
+
+        lineas.append(f"\n\n📝 *¿Te equivocaste? Puedo editarlo o borrarlo:*")
+        lineas.append(EJEMPLOS['editar_ingreso'])
+        lineas.append(EJEMPLOS['borrar_ingreso'])
         return "\n".join(lineas)
+
+    def _editado(self, tipo_t, a):
+        """Formatea la respuesta de una edición de gasto/ingreso ya
+        aplicada (la ejecución real vive fuera de este archivo)."""
+        cat = a.get('categoria')
+        monto = a.get('monto')
+        anterior = a.get('monto_anterior')
+        cats = CATEGORIAS_GASTO if tipo_t == 'gasto' else CATEGORIAS_INGRESO
+        info = cats.get(cat, {})
+        ico = info.get('emoji') or ("💸" if tipo_t == 'gasto' else "💰")
+
+        lineas = [f"✏️ {tipo_t.capitalize()} actualizado.\n"]
+        if anterior is not None and monto is not None:
+            lineas.append(f"\n{ico} **{cat}**: ${anterior:,.0f} → **${monto:,.0f}**")
+        elif monto is not None:
+            lineas.append(f"\n{ico} **{cat}**: ahora **${monto:,.0f}**")
+        else:
+            lineas.append(f"\n{ico} **{cat}** actualizado.")
+
+        clave = 'editar_gasto' if tipo_t == 'gasto' else 'editar_ingreso'
+        return _con_ejemplo("\n".join(lineas), clave)
 
     def _eliminado(self, tipo_t, a):
         monto, cat = a['monto'], a['categoria']
         info = (CATEGORIAS_GASTO if tipo_t == 'gasto' else CATEGORIAS_INGRESO).get(cat, {})
         ico = info.get('emoji') or ("💸" if tipo_t == 'gasto' else "💰")
-        return (f"🗑️ {tipo_t.capitalize()} eliminado.\n\n"
-                f"{ico} **${monto:,.0f}** en **{cat}** fue removido de tu historial.")
+        texto = (f"🗑️ {tipo_t.capitalize()} eliminado.\n\n"
+                 f"{ico} **${monto:,.0f}** en **{cat}** fue removido de tu historial de este mes.")
+        clave = 'borrar_gasto' if tipo_t == 'gasto' else 'borrar_ingreso'
+        return _con_ejemplo(texto, clave)
 
     # ══════════════════════════════════════════════════════════════
     #  METAS
@@ -1592,35 +1844,65 @@ class FinanBotIA:
 
     def _meta_creada(self, a, ctx):
         nombre, monto = a['nombre'], a['monto']
+        modo = a.get('modo', 'manual')
+        monto_auto = a.get('monto_automatico')
+        dia_auto = a.get('dia_automatico')
+
         lineas = [f"🎯 ¡Meta creada!\n\n**{nombre}** — objetivo: ${monto:,.0f}\n"]
-        if ctx:
-            meta_m = ctx.get('meta_ahorro_mensual', 0)
-            if meta_m > 0:
-                meses = round(monto / meta_m)
-                lineas.append(f"📅 Ahorrando **${meta_m:,.0f}/mes**, la alcanzas en **{meses} meses**.")
-        lineas.append("\n💡 Cuéntame cuando quieras actualizar tu progreso.")
+
+        if modo == 'automatico' and monto_auto and dia_auto:
+            lineas.append(
+                f"\n🔄 Modo **Automático**: cada mes, el día **{dia_auto}**, te voy a descontar "
+                f"**${monto_auto:,.0f}** de tu sueldo y sumarlos solo a esta meta."
+            )
+            faltante = monto
+            if monto_auto > 0:
+                meses = round(faltante / monto_auto)
+                lineas.append(f"📅 A ese ritmo, la alcanzas en **{meses} meses**.")
+        else:
+            lineas.append(f"\n✋ Modo **Manual**: la abonas cuando quieras desde Mi Perfil o pidiéndomelo por aquí.")
+            if ctx:
+                meta_m = ctx.get('meta_ahorro_mensual', 0)
+                if meta_m > 0:
+                    meses = round(monto / meta_m)
+                    lineas.append(f"📅 Ahorrando **${meta_m:,.0f}/mes**, la alcanzarías en **{meses} meses**.")
+            lineas.append(f"\n{EJEMPLOS['abonar_meta']}")
+
         return "\n".join(lineas)
 
     def _meta_actualizada(self, a):
         nombre, nuevo = a['nombre'], a['nuevo_monto']
-        return f"✅ Meta actualizada.\n\n**{nombre}** → progreso: **${nuevo:,.0f}**"
+        texto = f"✅ Meta actualizada.\n\n**{nombre}** → nuevo total: **${nuevo:,.0f}**"
+        return _con_ejemplo(texto, 'editar_meta_monto')
+
+    def _meta_abonada(self, a):
+        """Abono manual ('Añadir ahorro') — solo suma, nunca resta."""
+        nombre = a['nombre']
+        monto_abonado = a.get('monto_abonado', a.get('monto', 0))
+        nuevo_total = a.get('nuevo_total')
+        lineas = [f"➕ ¡Abono registrado!\n\n**{nombre}**: +${monto_abonado:,.0f}"]
+        if nuevo_total is not None:
+            lineas.append(f"\n💰 Nuevo total ahorrado: **${nuevo_total:,.0f}**")
+        return _con_ejemplo("\n".join(lineas), 'abonar_meta')
 
     def _consulta_metas(self, a):
         metas = a.get('metas', [])
         if not metas:
-            return "📭 Aún no tienes metas. ¿Quieres crear una? Dime el monto y el objetivo."
+            return _con_ejemplo("📭 Aún no tienes metas.", 'crear_meta_manual')
         lineas = ["🎯 **Tus metas de ahorro:**\n"]
         for m in metas:
             barra  = self._barra(m['porcentaje'])
             estado = "✅ Completada" if m['completada'] else f"{m['porcentaje']}%"
-            lineas.append(f"**{m['nombre']}**\n  {barra} {estado}\n  ${m['actual']:,.0f} de ${m['objetivo']:,.0f}\n")
+            modo_tag = ""
+            if m.get('modo') == 'automatico' and m.get('dia_automatico'):
+                modo_tag = f" · 🔄 Automática (día {m['dia_automatico']})"
+            elif m.get('modo'):
+                modo_tag = " · ✋ Manual"
+            lineas.append(f"**{m['nombre']}**{modo_tag}\n  {barra} {estado}\n  ${m['actual']:,.0f} de ${m['objetivo']:,.0f}\n")
         return "\n".join(lineas)
 
     # ══════════════════════════════════════════════════════════════
     #  CONSULTAS
-    #  _gastos, _ingresos y _resumen usan CATEGORIAS_GASTO/INGRESO
-    #  para mostrar emoji correcto de cada categoría y dar un tip
-    #  cuando una categoría concentra buena parte del gasto/ingreso.
     # ══════════════════════════════════════════════════════════════
 
     def _gastos(self, a):
@@ -1628,7 +1910,7 @@ class FinanBotIA:
         n    = a.get('num_gastos', 0)
         cats = a.get('gastos_por_categoria', {})
         rec  = a.get('recientes', [])
-        lineas = [f"💸 **Tus gastos**\n\nTotal: **${tot:,.0f}** en {n} movimiento(s).\n"]
+        lineas = [f"💸 **Tus gastos de {_mes_actual_label()}**\n\nTotal: **${tot:,.0f}** en {n} movimiento(s).\n"]
         if cats:
             lineas.append("**Por categoría:**")
             ordenadas = sorted(cats.items(), key=lambda x: x[1], reverse=True)
@@ -1636,7 +1918,6 @@ class FinanBotIA:
                 pct = round(monto / tot * 100) if tot > 0 else 0
                 emoji_c = CATEGORIAS_GASTO.get(cat, {}).get('emoji', '💸')
                 lineas.append(f"  • {emoji_c} {cat}: ${monto:,.0f} ({pct}%)")
-            # Tip inteligente sobre la categoría dominante
             cat_top, monto_top = ordenadas[0]
             pct_top = round(monto_top / tot * 100) if tot > 0 else 0
             tip_top = CATEGORIAS_GASTO.get(cat_top, {}).get('tip')
@@ -1646,6 +1927,7 @@ class FinanBotIA:
             lineas.append("\n**Últimos movimientos:**")
             for t in rec[:4]:
                 lineas.append(f"  • {t['categoria']}: ${t['monto']:,.0f} — {t['fecha']}")
+        lineas.append(f"\n📅 *¿Necesitas un mes anterior? Consúltalo en el [Calendario]({RUTAS['calendario']}) — ahí puedes verlo y descargar su reporte.*")
         return "\n".join(lineas)
 
     def _ingresos(self, a):
@@ -1653,18 +1935,16 @@ class FinanBotIA:
         n   = a.get('num_ingresos', 0)
         cats = a.get('ingresos_por_categoria', {})
         rec = a.get('recientes', [])
-        lineas = [f"💰 **Tus ingresos**\n\nTotal: **${tot:,.0f}** en {n} movimiento(s).\n"]
+        lineas = [f"💰 **Tus ingresos de {_mes_actual_label()}**\n\nTotal: **${tot:,.0f}** en {n} movimiento(s).\n"]
         if cats:
             lineas.append("**Por categoría:**")
             for cat, monto in sorted(cats.items(), key=lambda x: x[1], reverse=True)[:5]:
                 pct = round(monto / tot * 100) if tot > 0 else 0
                 emoji_c = CATEGORIAS_INGRESO.get(cat, {}).get('emoji', '💵')
                 lineas.append(f"  • {emoji_c} {cat}: ${monto:,.0f} ({pct}%)")
-            # Si el 100% del ingreso depende de una sola fuente, sugerir diversificar
             if len(cats) == 1 and tot > 0:
                 unica_cat = next(iter(cats))
-                if unica_cat != 'Salario' or True:
-                    lineas.append(f"\n💡 Todo tu ingreso viene de **{unica_cat}**. Diversificar fuentes de ingreso reduce tu riesgo financiero.")
+                lineas.append(f"\n💡 Todo tu ingreso de este mes viene de **{unica_cat}**. Diversificar fuentes de ingreso reduce tu riesgo financiero.")
         if rec:
             lineas.append("\n**Últimos ingresos:**")
             for t in rec[:5]:
@@ -1681,7 +1961,7 @@ class FinanBotIA:
         ico  = "📈" if bal >= 0 else "📉"
 
         lineas = [
-            f"{ico} **Resumen financiero**\n",
+            f"{ico} **Resumen financiero — {_mes_actual_label()}**\n",
             f"| Concepto | Valor |",
             f"|---|---|",
             f"| 💰 Ingresos | ${ing:,.0f} |",
@@ -1734,17 +2014,36 @@ class FinanBotIA:
         )
 
     # ══════════════════════════════════════════════════════════════
-    #  REPORTE
+    #  REPORTE — mensual (calendario.py) vs completo (exportar.py)
     # ══════════════════════════════════════════════════════════════
 
-    def _reporte(self, fmt):
-        if fmt == 'excel':
-            return ("📊 **Reporte Excel listo para descargar.**\n\n"
-                    "Incluye: ingresos, gastos por categoría, metas, simulaciones y balance.\n"
-                    "Haz clic en el botón ↓")
-        return ("📄 **Reporte PDF listo para descargar.**\n\n"
-                "Incluye: resumen financiero, gráficos de gastos, metas y análisis.\n"
-                "Haz clic en el botón ↓")
+    def _es_solicitud_reporte_mensual(self, mensaje: str) -> bool:
+        msg = _sin_tildes((mensaje or '').lower())
+        return any(p in msg for p in [
+            'de este mes', 'del mes', 'mensual', 'este mes',
+            'reporte del mes actual', 'reporte mensual',
+        ])
+
+    def _reporte(self, fmt, alcance='completo'):
+        formato_txt = 'Excel' if fmt == 'excel' else 'PDF'
+        if alcance == 'mes':
+            return (
+                f"📅 **Reporte de {_mes_actual_label()} listo.**\n\n"
+                f"Este es el reporte **mensual** — solo incluye los movimientos de este mes "
+                f"(ingresos, gastos por categoría, resumen semana a semana y detalle día a día).\n\n"
+                f"Ve al Calendario y descárgalo en {formato_txt} desde ahí ↓"
+            )
+        detalle = (
+            "ingresos, gastos por categoría, metas, simulaciones y balance"
+            if fmt == 'excel' else
+            "resumen financiero, gráficos de gastos, metas y análisis"
+        )
+        return (
+            f"📄 **Reporte {formato_txt} completo listo para descargar.**\n\n"
+            f"Este es el reporte **histórico completo** — incluye {detalle} de todas tus transacciones.\n"
+            f"Si prefieres solo el mes actual, dime *\"reporte de este mes\"*.\n\n"
+            "Haz clic en el botón ↓"
+        )
 
     # ══════════════════════════════════════════════════════════════
     #  MOTOR DE CONOCIMIENTO  ─  responde CUALQUIER pregunta
@@ -1767,7 +2066,6 @@ class FinanBotIA:
             return 'inversion'
         if any(p in msg for p in ['gasto', 'ingreso', 'balance', 'finanzas', 'presupuesto']):
             return 'finanzas'
-        # Intenta detectar tema por categoría mencionada directamente
         if detectar_categoria_gasto(msg) or detectar_categoria_ingreso(msg):
             return 'finanzas'
         return 'general'
@@ -1787,8 +2085,6 @@ class FinanBotIA:
         reciente.append(mensaje.strip())
         self.memoria['historial_reciente'] = reciente[-8:]
 
-        # Recordar qué categorías se han mencionado en la conversación —
-        # ayuda a detectar patrones repetidos (ej. siempre habla de Transporte)
         cat_g = detectar_categoria_gasto(mensaje)
         cat_i = detectar_categoria_ingreso(mensaje)
         if cat_g or cat_i:
@@ -1818,12 +2114,12 @@ class FinanBotIA:
         cats_gasto = ctx.get('gastos_por_categoria') or {}
 
         if balance < 0:
-            return 'Tu balance actual está negativo, así que hoy priorizaría registrar todos los gastos y revisar la categoría que más pesa.'
+            return 'Tu balance de este mes está negativo, así que hoy priorizaría registrar todos los gastos y revisar la categoría que más pesa.'
 
         if ingresos > 0:
             ahorro_pct = round(balance / ingresos * 100) if ingresos else 0
             if ahorro_pct < 20 and tema in {'ahorro', 'finanzas'}:
-                return f'Con tus ingresos actuales, un siguiente paso útil sería ahorrar al menos el 20 porcentaje mensual y dejarlo automático.'
+                return 'Con tus ingresos actuales, un siguiente paso útil sería ahorrar al menos el 20 porcentaje mensual y dejarlo automático.'
 
         if metas:
             meta_activa = next((m for m in metas if not m.get('completada')), None)
@@ -1832,14 +2128,13 @@ class FinanBotIA:
                 if faltante > 0:
                     return f'Tienes una meta activa: {meta_activa.get("nombre", "tu objetivo")}. Faltan ${faltante:,.0f} para completarla.'
 
-        # Usa el tip específico de la categoría real (no una frase genérica)
         if categoria_mayor:
             tip_cat = CATEGORIAS_GASTO.get(categoria_mayor, {}).get('tip')
             gastos_tot = ctx.get('total_gastos', 0)
             monto_cat = cats_gasto.get(categoria_mayor, 0)
             pct_cat = round(monto_cat / gastos_tot * 100) if gastos_tot > 0 else None
             if tip_cat and pct_cat is not None:
-                return f'Veo que tu mayor gasto está en {categoria_mayor} ({pct_cat}% del total). {tip_cat}'
+                return f'Veo que tu mayor gasto este mes está en {categoria_mayor} ({pct_cat}% del total). {tip_cat}'
             if tip_cat:
                 return f'Veo que tu mayor gasto está en {categoria_mayor}. {tip_cat}'
             return f'Veo que tu mayor gasto está en {categoria_mayor}; podemos buscar una forma sencilla de reducirlo sin afectar lo esencial.'
@@ -1884,7 +2179,6 @@ class FinanBotIA:
         if sugerencia:
             respuesta = f"{respuesta}\n\n💬 {sugerencia}"
 
-        # Patrón detectado: la misma categoría aparece repetida en la conversación
         cats_mem = self.memoria.get('categorias_mencionadas', [])
         if len(cats_mem) >= 3 and len(set(cats_mem[-3:])) == 1:
             cat_repetida = cats_mem[-1]
@@ -1898,20 +2192,70 @@ class FinanBotIA:
         respuesta = f"{intro}\n\n{respuesta}"
         return self._normalizar_respuesta(respuesta)
 
+    def _detectar_intencion_edicion_borrado(self, msg: str) -> str | None:
+        """Cuando el usuario claramente quiere editar o borrar un gasto,
+        ingreso o meta, pero todavía no llegó una 'accion' ya resuelta
+        (el parser externo no encontró suficiente info: falta monto,
+        categoría o cuál meta), responde con guía + ejemplo en vez de
+        caer en la respuesta genérica de "no entendí"."""
+        quiere_editar = any(p in msg for p in ['edita', 'editar', 'cambia', 'cambiar', 'modifica', 'modificar', 'actualiza', 'actualizar', 'corrige', 'corregir', 'pon mi meta', 'sube mi', 'baja mi'])
+        quiere_borrar = any(p in msg for p in ['borra', 'borrar', 'elimina', 'eliminar', 'quita', 'quitar'])
+        quiere_abonar = any(p in msg for p in ['añade', 'anade', 'agrega', 'suma', 'abona', 'abonar'])
+
+        es_meta = 'meta' in msg
+        es_gasto = ('gasto' in msg) or (not es_meta and detectar_categoria_gasto(msg) and 'ingreso' not in msg)
+        es_ingreso = ('ingreso' in msg) or (not es_meta and detectar_categoria_ingreso(msg) and 'gasto' not in msg)
+
+        if es_meta:
+            if quiere_abonar:
+                return f"➕ Puedo abonar a una meta, solo dime cuál y cuánto.\n\n{EJEMPLOS['abonar_meta']}"
+            if quiere_editar:
+                return f"✏️ Puedo cambiar el monto total de una meta, solo dime cuál y el nuevo valor.\n\n{EJEMPLOS['editar_meta_monto']}"
+            if quiere_borrar:
+                return f"🗑️ Puedo borrar una meta, solo dime cuál.\n\n{EJEMPLOS['borrar_meta']}"
+            return None
+
+        if quiere_editar and (es_gasto or es_ingreso):
+            tipo = 'gasto' if es_gasto else 'ingreso'
+            ejemplo = EJEMPLOS['editar_gasto'] if tipo == 'gasto' else EJEMPLOS['editar_ingreso']
+            return f"✏️ Puedo editar un {tipo} del mes actual, pero dime claramente cuál (categoría) y el nuevo monto.\n\n{ejemplo}"
+
+        if quiere_borrar and (es_gasto or es_ingreso):
+            tipo = 'gasto' if es_gasto else 'ingreso'
+            ejemplo = EJEMPLOS['borrar_gasto'] if tipo == 'gasto' else EJEMPLOS['borrar_ingreso']
+            return f"🗑️ Puedo borrar un {tipo} del mes actual, pero dime cuál exactamente (categoría y/o monto).\n\n{ejemplo}"
+
+        return None
+
     def _respuesta_inteligente_contextual(self, mensaje: str, ctx: dict | None) -> str | None:
         msg = mensaje.lower().strip()
         if not msg:
             return None
+
+        # Reporte de un mes DISTINTO al actual → Calendario (solo lectura)
+        if any(p in msg for p in ['reporte', 'descargar', 'exportar', 'pdf', 'excel']) and _referencia_mes_pasado(msg):
+            return (
+                "📅 Para reportes de meses anteriores usa el **Calendario**: elige el mes que quieras "
+                "y descárgalo en PDF o Excel desde ahí. Esos meses ya están cerrados, así que solo se consultan, no se editan."
+            )
+
+        # Reporte del mes actual, sin pasar por 'accion' del backend
+        if self._es_solicitud_reporte_mensual(msg) and any(p in msg for p in ['reporte', 'descargar', 'exportar']):
+            return self._reporte('pdf', 'mes')
+
+        # Intención clara de editar/borrar/abonar sin datos suficientes
+        intencion = self._detectar_intencion_edicion_borrado(msg)
+        if intencion:
+            return intencion
 
         if re.search(r'(\d+(?:[.,]\d+)?)\s*%\s*(?:de|del|de los|de las)?\s*(\d+(?:[.,]\d+)?)', msg):
             match = re.search(r'(\d+(?:[.,]\d+)?)\s*%\s*(?:de|del|de los|de las)?\s*(\d+(?:[.,]\d+)?)', msg)
             if match:
                 pct = float(match.group(1).replace(',', '.'))
                 base = float(match.group(2).replace(',', '.'))
-                resultado = round((pct / 100) * base)
+                resultado = round(_aplicar_porcentaje(base, pct))
                 return f"🧮 El {int(pct) if float(pct).is_integer() else pct} porcentaje de {base:,.0f} es **{resultado:,.0f}**."
 
-        # Pregunta directa por en qué categoría cae un gasto/ingreso descrito
         if any(p in msg for p in ['en qué categoría', 'en que categoria', 'qué categoría es', 'que categoria es']):
             cat_g = detectar_categoria_gasto(msg)
             cat_i = detectar_categoria_ingreso(msg)
@@ -1999,8 +2343,21 @@ class FinanBotIA:
         valor = self._extraer_monto(mensaje)
         pct = self._extraer_porcentaje(mensaje)
 
+        if valor is not None and ('iva' in msg) and pct is None:
+            # "$50.000 más IVA" sin tasa explícita → usa el 19% general
+            iva = _aplicar_porcentaje(valor, IVA_COLOMBIA)
+            total = round(valor + iva, 2)
+            return (
+                f"🧾 **Precio con IVA del {IVA_COLOMBIA}%**\n\n"
+                f"Base sin IVA: **${valor:,.0f}**\n"
+                f"IVA ({IVA_COLOMBIA}%): **+${iva:,.0f}**\n"
+                f"**Total con IVA: ${total:,.0f}**\n\n"
+                f"📌 *Usé el {IVA_COLOMBIA}% general de Colombia porque no me diste otra tasa.*",
+                _btns_calc(),
+            )
+
         if valor is not None and pct is not None and ('descuento' in msg or 'rebaja' in msg or 'oferta' in msg):
-            desc = round(valor * pct / 100, 2)
+            desc = _aplicar_porcentaje(valor, pct)
             final = round(valor - desc, 2)
             return (
                 f"🏷️ **Descuento aplicado**\n\n"
@@ -2014,7 +2371,7 @@ class FinanBotIA:
 
         if valor is not None and pct is not None and ('interés compuesto' in msg or 'interes compuesto' in msg):
             plazo = self._extraer_plazo(mensaje) or 12
-            tasa_mensual = pct / 100 / 12
+            tasa_mensual = pct / PORCENTAJE_BASE / 12
             final = round(valor * ((1 + tasa_mensual) ** plazo), 2)
             ganancia = round(final - valor, 2)
             return (
@@ -2029,7 +2386,7 @@ class FinanBotIA:
 
         if valor is not None and pct is not None and ('interés simple' in msg or 'interes simple' in msg):
             plazo = self._extraer_plazo(mensaje) or 12
-            interes = round(valor * (pct / 100) * (plazo / 12), 2)
+            interes = round(valor * (pct / PORCENTAJE_BASE) * (plazo / 12), 2)
             total = round(valor + interes, 2)
             return (
                 f"💵 **Interés simple**\n\n"
@@ -2072,22 +2429,19 @@ class FinanBotIA:
         for claves, contenido in BASE.items():
             for clave in claves.split('|'):
                 if clave.strip() and clave.strip() in msg:
-                    # Agregar contexto personalizado según el tema
                     resp = f"## {contenido['titulo']}\n\n"
-                    
-                    # Preámbulo inteligente según el tema
+
                     if any(x in claves for x in ['invertir', 'inversión', 'cdt', 'finca raíz', 'criptomonedas']):
                         resp += ("🤖 *Como IA, te doy información educativa. Consulta con un asesor financiero antes de invertir.*\n\n")
-                    
+
                     if any(x in claves for x in ['deuda', 'tarjeta', 'gota a gota']):
                         resp += ("⚠️ *Si estás en crisis de deudas, busca ayuda profesional o contacta a Asobancaria.*\n\n")
-                    
+
                     resp += f"{contenido['cuerpo']}"
-                    
+
                     if contenido.get('sug'):
                         resp += f"\n\n---\n💬 *{contenido['sug']}*"
-                    
-                    # Agregar contexto personal del usuario
+
                     if ctx and ctx.get('num_transacciones', 0) > 0:
                         if any(x in claves for x in ['ahorrar', 'ahorro', 'presupuesto']):
                             bal = ctx.get('balance', 0)
@@ -2095,7 +2449,7 @@ class FinanBotIA:
                                 resp += f"\n\n💡 **Tu situación:** Balance actual de **${bal:,.0f}**. ¿Quieres crear una meta específica?"
                             else:
                                 resp += f"\n\n💡 **Tu situación:** Balance en **${bal:,.0f}**. Prioriza registrar todos tus ingresos."
-                        
+
                         if any(x in claves for x in ['deuda', 'tarjeta', 'salir de deudas']):
                             gastos = ctx.get('total_gastos', 0)
                             if gastos > 0:
@@ -2107,12 +2461,12 @@ class FinanBotIA:
                                 mayor = max(cats, key=cats.get)
                                 emoji_m = CATEGORIAS_GASTO.get(mayor, {}).get('emoji', '📌')
                                 resp += f"\n\n💡 **Tu situación:** Tu categoría con más movimiento es **{emoji_m} {mayor}**."
-                    
+
                     return resp, []
 
-        # 1b. Detección de categoría mencionada en texto libre (aunque no
-        # coincida con la base de conocimiento) — es la IA "entendiendo"
-        # a qué categoría pertenece algo que el usuario describió.
+        # 1b. Detección de categoría exacta o por palabras clave en texto
+        # libre que no tiene 'accion' todavía (es la IA "entendiendo" a
+        # qué categoría pertenece algo que el usuario describió).
         cat_g = detectar_categoria_gasto(msg)
         cat_i = detectar_categoria_ingreso(msg)
         if (cat_g or cat_i) and self._extraer_monto(mensaje) is None:
@@ -2120,14 +2474,15 @@ class FinanBotIA:
                 info = CATEGORIAS_GASTO[cat_g]
                 return (f"🏷️ Eso suena a un gasto de **{info['emoji']} {cat_g}**.\n\n"
                         f"💡 {info['tip']}\n\n"
-                        f"Dime el monto y te lo registro."), _btns_finanzas()
+                        f"Dime el monto y te lo registro en el mes actual."), _btns_finanzas()
             info = CATEGORIAS_INGRESO[cat_i]
             return (f"🏷️ Eso suena a un ingreso de **{info['emoji']} {cat_i}**.\n\n"
                     f"💡 {info['tip']}\n\n"
-                    f"Dime el monto y te lo registro."), _btns_finanzas()
+                    f"Dime el monto y te lo registro en el mes actual."), _btns_finanzas()
 
         # 2. Instrucciones de uso
         if any(p in msg for p in ['cómo registro','como registro','cómo agrego','como agrego',
+                                   'cómo edito','como edito','cómo borro','como borro',
                                    'cómo uso','como uso','qué comandos','que comandos']):
             return self._como_usar(), []
 
@@ -2146,7 +2501,7 @@ class FinanBotIA:
                 "🤖 ¡Estoy para servir! ¿Otra pregunta?",
             ]), []
 
-        # 5. Identidad - MEJORADO CON MÁS CLARIDAD
+        # 5. Identidad
         if any(p in msg for p in ['quién eres','quien eres','qué eres','que eres','cómo te llamas','como te llamas']):
             return (
                 "Soy **FinanBot** 🤖, una **IA (Inteligencia Artificial)** creada como proyecto SENA para ayudarte con finanzas personales.\n\n"
@@ -2154,11 +2509,12 @@ class FinanBotIA:
                 "✅ Disponible 24/7 para responder dudas  ✅ Rápido en cálculos  ✅ Personalizado a tu contexto\n"
                 "⚠️ No reemplazo asesor financiero profesional  ⚠️ Mis consejos son educativos\n\n"
                 "**Puedo:**\n"
-                "• Registrar tus gastos e ingresos en lenguaje natural y detectar la categoría automáticamente\n"
+                "• Registrar, **editar** y **borrar** gastos e ingresos del mes actual en lenguaje natural, detectando la categoría exacta\n"
+                "• Crear, abonar, editar y borrar metas de ahorro **manuales** o **automáticas**\n"
                 "• Simular inversiones con interés compuesto\n"
-                "• Responder preguntas sobre CDT, deudas, ahorro, impuestos\n"
+                "• Responder preguntas sobre CDT, deudas, ahorro, impuestos (IVA 19% por defecto)\n"
                 "• Calcular descuentos, IVA, repartos\n"
-                "• Crear metas financieras y generar reportes\n\n"
+                "• Generar reportes del mes actual o el histórico completo\n\n"
                 "¡Cuéntame qué necesitas! 💬"
             ), []
 
@@ -2168,10 +2524,9 @@ class FinanBotIA:
             mayor = ctx.get('categoria_mayor_gasto')
             ingresos = ctx.get('total_ingresos', 0)
             cats_gasto = ctx.get('gastos_por_categoria') or {}
-            
-            lineas = [f"🤔 No estoy seguro de qué necesitas exactamente, pero puedo ayudarte analizando tu situación:\n"]
-            
-            # Razonamiento contextual
+
+            lineas = [f"🤔 No estoy seguro de qué necesitas exactamente, pero puedo ayudarte analizando tu mes actual ({_mes_actual_label()}):\n"]
+
             if bal < 0:
                 lineas.append(f"\n📊 **Balance negativo:** ${bal:,.0f}")
                 lineas.append("→ Sugerencia: Revisa si hay ingresos sin registrar o gastos a eliminar.")
@@ -2180,7 +2535,7 @@ class FinanBotIA:
                 lineas.append(f"\n📊 **Estás ahorrando:** {ahorro_pct}% de tus ingresos")
                 if ahorro_pct < 20:
                     lineas.append("→ Meta: Aumentar a 20% mensual usando la regla 50/30/20")
-            
+
             if mayor:
                 emoji_m = CATEGORIAS_GASTO.get(mayor, {}).get('emoji', '💸')
                 gastos_tot = ctx.get('total_gastos', 0)
@@ -2190,62 +2545,49 @@ class FinanBotIA:
                 tip_m = CATEGORIAS_GASTO.get(mayor, {}).get('tip')
                 if tip_m:
                     lineas.append(f"→ {tip_m}")
-            
+
             lineas.append("\n💡 ¿Qué quieres lograr? (ahorrar más, pagar deudas, invertir, etc.)")
             return "\n".join(lineas), []
 
-        # 7. Respuesta genérica inteligente - MEJORADA
+        # 7. Respuesta genérica inteligente
         return self._resp_generica_mejorada(mensaje), []
-
-    def _resp_generica(self, mensaje: str) -> str:
-        """Intenta dar una respuesta útil aunque no haya coincidencia exacta."""
-        msg = mensaje.lower()
-
-        # Detectar preguntas con "qué es" o "cómo funciona"
-        if re.search(r'qu[eé]\s+es\s+(\w+)', msg) or re.search(r'c[oó]mo\s+funciona\s+(\w+)', msg):
-            return (
-                "🤔 No tengo información específica sobre ese tema en mi base de conocimiento.\n\n"
-                "Pero puedo responder preguntas sobre:\n"
-                "• CDT, inflación, interés compuesto, fondo de emergencia\n"
-                "• Cómo ahorrar, invertir, salir de deudas\n"
-                "• Tarjetas de crédito, pensión, impuestos, criptomonedas\n"
-                "• Presupuesto, regla 50/30/20, diversificación\n\n"
-                "¿Cuál de estos temas te interesa? 💬"
-            )
-
-        return (
-            "🤔 No estoy seguro de entender completamente tu mensaje. Puedo ayudarte con:\n\n"
-            "• 💸 *'Gasté $30.000 en comida'* — registrar gasto\n"
-            "• 🏷️ *'$80.000 con 15% de descuento'* — calcular precio\n"
-            "• 📈 *'Simula $500.000 al 10% por 1 año'* — proyectar inversión\n"
-            "• 💡 *'¿Qué es un CDT?'* — respuesta educativa\n"
-            "• 📊 *'¿Cómo están mis finanzas?'* — ver tu balance\n\n"
-            "Reformula tu pregunta y con gusto te ayudo. 😊"
-        )
 
     def _como_usar(self):
         return (
             "## 💬 Cómo hablarme\n\n"
             "Habla de forma natural, como con un amigo. Ejemplos:\n\n"
-            "**Registrar:**\n"
+            "**Registrar (siempre en el mes actual):**\n"
             "• *'Gasté $25.000 en el bus'* → detecto Transporte automáticamente\n"
-            "• *'Recibí $2.000.000 de salario'* → detecto Salario automáticamente\n"
-            "• *'Borra el último gasto de comida'*\n\n"
+            "• *'Gasté $50.000 en Educación'* → uso Educación tal cual la nombraste\n"
+            "• *'Recibí $2.000.000 de salario'* → detecto Salario automáticamente\n\n"
+            "**Editar:**\n"
+            "• *'Cambia mi último gasto de comida a $40.000'*\n"
+            "• *'Actualiza mi ingreso de salario a $2.500.000'*\n\n"
+            "**Borrar:**\n"
+            "• *'Borra el último gasto de comida'*\n"
+            "• *'Elimina el ingreso de Freelance'*\n\n"
             "**Calcular:**\n"
             "• *'$80.000 con 20% de descuento'*\n"
-            "• *'¿Cuánto es $50.000 más IVA?'*\n"
+            "• *'¿Cuánto es $50.000 más IVA?'* (uso 19% si no me dices otra tasa)\n"
             "• *'Divide $180.000 entre 3 personas'*\n\n"
-            "**Metas y simulaciones:**\n"
-            "• *'Crea una meta de $1.000.000 para viajes'*\n"
+            "**Metas (manuales o automáticas) y simulaciones:**\n"
+            "• *'Crea una meta de $1.000.000 para viajes'* → manual\n"
+            "• *'Crea una meta automática de $2.000.000 para vivienda, $200.000/mes el día 5'*\n"
+            "• *'Añade $50.000 a mi meta de viajes'* → solo suma\n"
+            "• *'Pon mi meta de viajes en $300.000'* → reemplaza el total\n"
             "• *'Simula $500.000 al 12% por 6 meses'*\n\n"
+            "**Reportes:**\n"
+            "• *'Reporte de este mes'* → PDF/Excel solo del mes actual\n"
+            "• *'Reporte completo'* → PDF/Excel con todo el histórico\n"
+            "• *'Quiero ver julio'* → te llevo al Calendario\n\n"
             "**Preguntas:**\n"
             "• *'¿Qué es el interés compuesto?'*\n"
             "• *'¿Cómo salgo de deudas?'*\n"
             "• *'¿Cómo funciona un CDT?'*\n"
-            "• *'¿Qué categorías puedo usar?'*\n\n"
-            "**Perfil y reportes:**\n"
-            "• *'Cambia mi nombre a Duban'*\n"
-            "• *'Hazme un reporte PDF'*"
+            "• *'¿Qué categorías puedo usar?'*\n"
+            "• *'¿Cuál es la diferencia entre meta manual y automática?'*\n\n"
+            "**Perfil:**\n"
+            "• *'Cambia mi nombre a Duban'*"
         )
 
     def _ensenar_razonamiento(self, msg, ctx):
@@ -2276,6 +2618,7 @@ class FinanBotIA:
                 "5️⃣ Revisa progreso cada domingo\n",
                 "**💡 Razón:** El dinero 'accidental' se gasta en gastos hormiga.",
                 "**Ejemplo:** $50.000 diarios en café × 30 días = $1.500.000/mes gastado sin pensar\n",
+                "**En FinanBot:** justo esto es lo que hace una meta **automática** — tú defines el monto y el día, y yo me encargo de descontarlo cada mes.",
             ]
         elif any(p in msg for p in ['invertir','inversión','inversion','cdt']):
             lineas += [
@@ -2291,7 +2634,7 @@ class FinanBotIA:
                 "2️⃣ Fondo conservador 8-10% → Riesgo bajo-medio, flexible",
                 "3️⃣ Acciones BVC 10-15% → Riesgo medio-alto, largo plazo",
                 "4️⃣ Criptomonedas → Alto riesgo, solo si entiendes bien\n",
-                "**⚠️ Regla de oro:** No inviertas en algo que no entiendas. Consuma asesor.",
+                "**⚠️ Regla de oro:** No inviertas en algo que no entiendas. Consulta asesor.",
             ]
         elif any(p in msg for p in ['presupuesto','gastos','organizar']):
             lineas += [
@@ -2315,6 +2658,7 @@ class FinanBotIA:
             lineas.append("• 💳 Pagar deudas")
             lineas.append("• 📈 Empezar a invertir")
             lineas.append("• 📋 Organizar presupuesto")
+            lineas.append("• 🎯 Crear o entender mis metas")
             if ctx and ctx.get('categoria_mayor_gasto'):
                 cat = ctx['categoria_mayor_gasto']
                 emoji_c = CATEGORIAS_GASTO.get(cat, {}).get('emoji', '')
@@ -2325,24 +2669,24 @@ class FinanBotIA:
         """Intenta dar una respuesta útil aunque no haya coincidencia exacta."""
         msg = mensaje.lower()
 
-        # Detectar preguntas con "qué es" o "cómo funciona"
         if re.search(r'qu[eé]\s+es\s+(\w+)', msg) or re.search(r'c[oó]mo\s+funciona\s+(\w+)', msg):
             return (
                 "🤖 No tengo esa información específica en mi base, pero puedo enseñarte sobre:\n\n"
                 "**Inversiones:** CDT • Fondos • Acciones • Criptomonedas\n"
                 "**Deudas:** Tarjeta de crédito • Préstamos • Salir de deudas\n"
-                "**Ahorro:** Fondo de emergencia • Metas • Presupuesto\n"
-                "**Conceptos:** Inflación • Interés compuesto • Diversificación • Impuestos\n\n"
+                "**Ahorro:** Fondo de emergencia • Metas manuales/automáticas • Presupuesto\n"
+                "**Conceptos:** Inflación • Interés compuesto • Diversificación • Impuestos (IVA 19%)\n\n"
                 "¿Cuál de estos temas te interesa? 💬"
             )
 
         return (
             "🤔 No estoy 100% seguro qué necesitas, pero puedo ayudarte con esto:\n\n"
-            "**📝 Registrar:**  *'Gasté $30.000 en comida'* o *'Recibí $2M de salario'*\n"
+            "**📝 Registrar/editar/borrar (mes actual):**  *'Gasté $30.000 en comida'*, *'edita mi gasto de comida a $40.000'*, *'borra el ingreso de Freelance'*\n"
             "**🧮 Calcular:**  *'$80.000 con 20% descuento'* o *'$50.000 más IVA'*\n"
             "**📈 Simular:**  *'Simula $500.000 al 10% por 1 año'*\n"
             "**💡 Preguntar:**  *'¿Qué es un CDT?'* o *'¿Cómo ahorrar más?'*\n"
-            "**🎯 Metas:**  *'Crea meta de $1M para viajes'*\n\n"
+            "**🎯 Metas:**  *'Crea meta de $1M para viajes'* o *'crea una meta automática de $2M, $200.000/mes el día 5'*\n"
+            "**📄 Reportes:**  *'Reporte de este mes'* o *'Reporte completo'*\n\n"
             "Reformula así tu pregunta o cuéntame qué necesitas lograr financieramente 😊"
         )
 
@@ -2433,7 +2777,12 @@ def _btns_perfil():
         _btn('📊 Dashboard', RUTAS['dashboard']),
     ]
 
-def _btns_reporte(fmt='pdf'):
+def _btns_reporte(fmt='pdf', alcance='completo'):
+    if alcance == 'mes':
+        return [
+            _btn('📅 Ir al Calendario', RUTAS['calendario']),
+            _btn('👤 Ver mi perfil', RUTAS['perfil']),
+        ]
     url = RUTAS['exportar_excel'] if fmt == 'excel' else RUTAS['exportar_pdf']
     icono = '📊 Descargar Excel' if fmt == 'excel' else '📄 Descargar PDF'
     return [

@@ -141,6 +141,10 @@ CREATE TABLE chats (
         ON DELETE CASCADE
 );
 
+ALTER TABLE metas_ahorro
+  ADD COLUMN modo VARCHAR(20) DEFAULT 'manual',
+  ADD COLUMN monto_automatico DECIMAL(12,2) NULL,
+  ADD COLUMN dia_automatico INT NULL;
 -- =========================================================
 -- INDICES
 -- =========================================================

@@ -12,9 +12,37 @@ from .reporte_mensual import (
     generar_reporte_pdf_mensual,
     generar_reporte_excel_mensual,
     MESES_ES,
+    ICONOS,
 )
 
 router = APIRouter(tags=["Calendario"])
+
+
+def _get_cat(t):
+    """La categoría puede venir como string o como objeto relacionado
+    (con .nombre) según el modelo — se soporta ambos casos, igual que
+    en exportar.py y excel.py."""
+    cat = getattr(t, 'categoria', None)
+    if cat is None:
+        return 'Sin categoría'
+    if isinstance(cat, str):
+        return cat
+    nombre = getattr(cat, 'nombre', None)
+    return nombre if nombre else str(cat)
+
+
+def _get_icono(t, cat_nombre):
+    """Prioriza el icono propio de la transacción si existe; si no,
+    usa el icono asociado a la categoría (objeto relacionado); si
+    tampoco, cae al mapa ICONOS por nombre de categoría."""
+    icono_directo = getattr(t, 'icono', None)
+    if icono_directo:
+        return icono_directo
+    cat = getattr(t, 'categoria', None)
+    icono_cat = getattr(cat, 'icono', None) if cat is not None and not isinstance(cat, str) else None
+    if icono_cat:
+        return icono_cat
+    return ICONOS.get(cat_nombre, '💸')
 
 
 def _transacciones_del_mes(db: Session, usuario_id: int, anio: int, mes: int):
@@ -47,6 +75,19 @@ def obtener_mes(
     ingresos = [t for t in trans if t.tipo == 'ingreso']
     gastos   = [t for t in trans if t.tipo == 'gasto']
 
+    movimientos = []
+    for t in trans:
+        cat_nombre = _get_cat(t)
+        movimientos.append({
+            "id": t.id,
+            "fecha": t.fecha.strftime('%Y-%m-%d') if hasattr(t.fecha, 'strftime') else str(t.fecha),
+            "tipo": t.tipo,
+            "categoria": cat_nombre,
+            "icono": _get_icono(t, cat_nombre),
+            "descripcion": t.descripcion,
+            "monto": t.monto,
+        })
+
     return {
         "anio": anio,
         "mes": mes,
@@ -56,18 +97,7 @@ def obtener_mes(
         "total_gastos": sum(t.monto for t in gastos),
         "balance": sum(t.monto for t in ingresos) - sum(t.monto for t in gastos),
         "num_movimientos": len(trans),
-        "movimientos": [
-            {
-                "id": t.id,
-                "fecha": t.fecha.strftime('%Y-%m-%d') if hasattr(t.fecha, 'strftime') else str(t.fecha),
-                "tipo": t.tipo,
-                "categoria": t.categoria,
-                "icono": getattr(t, 'icono', None),
-                "descripcion": t.descripcion,
-                "monto": t.monto,
-            }
-            for t in trans
-        ],
+        "movimientos": movimientos,
     }
 
 

@@ -1130,7 +1130,7 @@
             const totalDias = ultimoDia.getDate();
             const hoyStr = new Date().toISOString().split('T')[0];
 
-            let html = ['D','L','M','X','J','V','S'].map(d => `<div class="cal-header-dia">${d}</div>`).join('');
+            let html = ['D','L','M','M','J','V','S'].map(d => `<div class="cal-header-dia">${d}</div>`).join('');
             for (let i = 0; i < primerIndex; i++) html += `<div class="cal-dia vacio"></div>`;
             for (let d = 1; d <= totalDias; d++) {
                 const dateStr = `${anio}-${String(mes+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
@@ -1216,7 +1216,13 @@
                 const perfil = await resPerfil.json();
                 const ingreso = Number(perfil.ingreso_mensual) || 0;
                 if (ingreso <= 0 || !perfil.fecha_salario) return;
-                const diaPago = new Date(perfil.fecha_salario).getDate();
+                function diaDeFechaStr(fechaStr) {
+                if (!fechaStr) return null;
+                const partes = fechaStr.split('-');
+                return partes.length >= 3 ? parseInt(partes[2], 10) : null;
+                }
+                const diaPago = diaDeFechaStr(perfil.fecha_salario);
+                if (!diaPago) return;
 
                 const resTrans = await fetch('http://127.0.0.1:8000/api/transacciones/', {
                     headers: { 'Authorization': `Bearer ${token}` }

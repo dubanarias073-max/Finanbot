@@ -244,6 +244,7 @@
 
 <script>
     const token = localStorage.getItem('token');
+    const API = 'http://127.0.0.1:8000/api';
 
     // ── TEMA ──────────────────────────────────────────────
     (function() {
@@ -271,12 +272,68 @@
         'Entretenimiento': '🎬', 'Educación': '📚', 'Ropa': '👗', 'Servicios': '⚡',
         'Mascotas': '🐾', 'Regalos': '🎁', 'Viajes': '✈️', 'Otros gastos': '📦',
         'Salario': '💼', 'Freelance': '🧑‍💻', 'Inversión': '📈', 'Negocio': '🏪',
-        'Regalo': '🎁', 'Otros ingresos': '💵',
+        'Regalo': '🎁', 'Otros ingresos': '💵', 'Ahorro automático': '🎯', 'Aporte manual a meta': '🎯',
+        'Ajuste de meta': '🎯', 'Retiro de ahorro': '🎯',
+        'Ajuste de meta (aumento)': '🎯', 'Ajuste de meta (retiro)': '↩️',
     };
     function getIcono(cat, tipo) { return ICONOS[cat] || (tipo === 'ingreso' ? '💰' : '💸'); }
 
     const DIAS  = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
     const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+
+    // ── ETIQUETAS AMIGABLES PARA MOVIMIENTOS AUTOMÁTICOS ──
+    // __auto_salario__       -> salario automático (perfil.html)
+    // __auto_meta_<id>__     -> aporte automático a una meta de ahorro (perfil.html)
+    // __manual_meta_<id>__   -> abono manual a una meta ("Añadir ahorro" en perfil.html)
+    // __ajuste_meta_<id>__   -> ajuste de "Editar monto" (gasto si subió, ingreso si bajó)
+    // Se cargan los nombres de las metas una vez al iniciar, para poder
+    // mostrar "Aporte automático a 'Vacaciones'" en vez del tag interno.
+    let metasCache = {};
+    const RE_AUTO_META    = /^__auto_meta_(\d+)__$/;
+    const RE_MANUAL_META  = /^__manual_meta_(\d+)__$/;
+    const RE_AJUSTE_META  = /^__ajuste_meta_(\d+)__$/;
+
+    async function cargarMetasCache() {
+        if (!token) return;
+        try {
+            const res = await fetch(`${API}/metas/`, { headers: { 'Authorization': `Bearer ${token}` } });
+            if (res.ok) {
+                const metas = await res.json();
+                metasCache = {};
+                metas.forEach(m => { metasCache[m.id] = m.nombre; });
+            }
+        } catch (e) { console.error('Error cargando nombres de metas:', e); }
+    }
+
+    function descripcionAmigable(m) {
+        if (m.descripcion === '__auto_salario__') return 'Salario automático mensual';
+
+        const matchAuto = m.descripcion && m.descripcion.match(RE_AUTO_META);
+        if (matchAuto) {
+            const nombreMeta = metasCache[parseInt(matchAuto[1], 10)];
+            return nombreMeta ? `Aporte automático a "${nombreMeta}"` : 'Aporte automático (meta ya eliminada)';
+        }
+
+        const matchManual = m.descripcion && m.descripcion.match(RE_MANUAL_META);
+        if (matchManual) {
+            const nombreMeta = metasCache[parseInt(matchManual[1], 10)];
+            return nombreMeta ? `Abono manual a "${nombreMeta}"` : 'Abono manual (meta ya eliminada)';
+        }
+
+        const matchAjuste = m.descripcion && m.descripcion.match(RE_AJUSTE_META);
+        if (matchAjuste) {
+            const nombreMeta = metasCache[parseInt(matchAjuste[1], 10)];
+            // Puede llegar como 'ingreso' (retiro de ahorro de meses
+            // anteriores) o como 'gasto' con signo (aumento positivo,
+            // retiro del mismo mes negativo).
+            let etiqueta;
+            if (m.tipo === 'ingreso') etiqueta = 'Retiro de ahorro de';
+            else etiqueta = m.monto < 0 ? 'Retiro de' : 'Ajuste (aumento) de';
+            return nombreMeta ? `${etiqueta} "${nombreMeta}"` : `${etiqueta} meta ya eliminada`;
+        }
+
+        return m.descripcion || 'Sin descripción';
+    }
 
     // ── ESTADO ────────────────────────────────────────────
     const hoy = new Date();
@@ -301,7 +358,7 @@
 
         if (!token) return;
         try {
-            const res = await fetch(`http://127.0.0.1:8000/api/calendario/${anioActual}/${mesActual}`, {
+            const res = await fetch(`${API}/calendario/${anioActual}/${mesActual}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (!res.ok) throw new Error('No se pudo cargar el mes');
@@ -339,7 +396,12 @@
         const porDia = {};
         movimientosMes.forEach(m => {
             if (!porDia[m.fecha]) porDia[m.fecha] = { ingreso: 0, gasto: 0 };
-            porDia[m.fecha][m.tipo] += m.monto;
+            // Un "gasto" con monto NEGATIVO es un ajuste que devuelve plata
+            // (ej. retiro de una meta) — se muestra del lado de ingreso,
+            // no como un gasto en rojo, para reflejar el efecto real.
+            const efectivo = m.tipo === 'gasto' ? -m.monto : m.monto;
+            if (efectivo >= 0) porDia[m.fecha].ingreso += efectivo;
+            else porDia[m.fecha].gasto += -efectivo;
         });
 
         let html = '';
@@ -377,17 +439,33 @@
         const movs = movimientosMes.filter(m => m.fecha === dateStr);
         const fechaLegible = new Date(dateStr + 'T12:00:00').toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' });
 
-        let ingresosDia = 0, gastosDia = 0;
-        movs.forEach(m => { if (m.tipo === 'ingreso') ingresosDia += m.monto; else gastosDia += m.monto; });
+        // "Efectivo": cuánto suma o resta cada movimiento al balance real.
+        // Un 'gasto' con monto negativo (ej. retiro de una meta) en la
+        // práctica devuelve plata, así que cuenta como positivo aquí.
+        const efectivoDe = m => m.tipo === 'gasto' ? -m.monto : m.monto;
 
-        const movsHtml = movs.length ? movs.map(m => `
+        let ingresosDia = 0, gastosDia = 0;
+        movs.forEach(m => {
+            const efectivo = efectivoDe(m);
+            if (efectivo >= 0) ingresosDia += efectivo; else gastosDia += -efectivo;
+        });
+
+        const movsHtml = movs.length ? movs.map(m => {
+            const efectivo = efectivoDe(m);
+            const esIngreso = efectivo >= 0;
+            const etiquetaTipo = esIngreso ? 'Ingreso' : 'Gasto';
+            const claseColor = esIngreso ? 'ingreso' : 'gasto';
+            const signo = esIngreso ? '+' : '-';
+            const montoAbs = Math.abs(efectivo);
+            return `
             <div class="panel-mov-item">
                 <div>
-                    <div class="panel-mov-titulo">${getIcono(m.categoria, m.tipo)} ${m.tipo === 'gasto' ? 'Gasto' : 'Ingreso'} · ${m.categoria}</div>
-                    <div class="panel-mov-desc">${m.descripcion === '__auto_salario__' ? 'Salario automático mensual' : (m.descripcion || 'Sin descripción')}</div>
+                    <div class="panel-mov-titulo">${getIcono(m.categoria, m.tipo)} ${etiquetaTipo} · ${m.categoria}</div>
+                    <div class="panel-mov-desc">${descripcionAmigable(m)}</div>
                 </div>
-                <span class="panel-mov-monto ${m.tipo}">${m.tipo === 'gasto' ? '-' : '+'}$${Math.round(m.monto).toLocaleString('es-CO')}</span>
-            </div>`).join('')
+                <span class="panel-mov-monto ${claseColor}">${signo}$${Math.round(montoAbs).toLocaleString('es-CO')}</span>
+            </div>`;
+        }).join('')
             : `<div class="panel-sin-datos"><i class="fas fa-circle-info"></i>Sin movimientos registrados este día.</div>`;
 
         document.getElementById('panelDiaContenido').innerHTML = `
@@ -415,7 +493,7 @@
 
         try {
             const res = await fetch(
-                `http://127.0.0.1:8000/api/calendario/reporte/${anioActual}/${mesActual}?formato=${formato}`,
+                `${API}/calendario/reporte/${anioActual}/${mesActual}?formato=${formato}`,
                 { headers: { 'Authorization': `Bearer ${token}` } }
             );
 
@@ -444,7 +522,10 @@
     }
 
     // ── INIT ──────────────────────────────────────────────
-    cargarMes();
+    (async function initCalendario() {
+        await cargarMetasCache();
+        await cargarMes();
+    })();
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
