@@ -349,7 +349,70 @@
             to   { opacity: 1; transform: translateY(0); }
         }
 
-        /* ══ MODAL CALENDARIO ══════════════════════ */
+        /* ══ TOTALES HISTÓRICOS (acumulado, nunca se reinicia) ══ */
+        .totales-historicos {
+            background: var(--card-bg); border: 1px solid var(--card-border);
+            border-radius: 16px; padding: 18px 22px; margin-bottom: 24px;
+        }
+        .totales-historicos-label {
+            font-size: 11px; color: var(--secondary,#9ca3af); text-transform: uppercase;
+            letter-spacing: 0.5px; margin-bottom: 14px; display: flex; align-items: center; gap: 7px;
+        }
+        .totales-historicos-label i { color: #a855f7; }
+        .totales-historicos-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+        .totales-item { display: flex; flex-direction: column; gap: 4px; }
+        .totales-item-label { font-size: 11px; color: var(--muted,#6b7280); }
+        .totales-item-val { font-size: 18px; font-weight: 800; }
+        .totales-item.ing .totales-item-val { color: #4ade80; }
+        .totales-item.gas .totales-item-val { color: #f472b6; }
+        .totales-item.bal .totales-item-val { color: #22d3ee; }
+
+        /* ══ BOTONES "VER POR CATEGORÍA" (arriba de las gráficas) ══ */
+        .categorias-toolbar {
+            display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 20px; margin-bottom: 18px;
+        }
+        .btn-ver-categorias {
+            display: flex; align-items: center; justify-content: center; gap: 12px;
+            border: none; color: white; border-radius: 18px; padding: 20px 24px;
+            font-size: 16px; font-weight: 800; cursor: pointer; transition: all 0.3s;
+            letter-spacing: 0.2px;
+        }
+        .btn-ver-categorias i {
+            font-size: 22px;
+        }
+        .btn-ver-categorias.gastos {
+            background: linear-gradient(135deg, #c026d3, #a855f7);
+            box-shadow: 0 8px 24px rgba(192,38,211,0.35);
+        }
+        .btn-ver-categorias.gastos:hover {
+            transform: translateY(-3px); box-shadow: 0 14px 34px rgba(192,38,211,0.55);
+        }
+        .btn-ver-categorias.ingresos {
+            background: linear-gradient(135deg, #0891b2, #22d3ee);
+            box-shadow: 0 8px 24px rgba(34,211,238,0.35);
+        }
+        .btn-ver-categorias.ingresos:hover {
+            transform: translateY(-3px); box-shadow: 0 14px 34px rgba(34,211,238,0.55);
+        }
+
+        /* ══ MODAL CATEGORÍAS ══ */
+        .cat-lista { margin-top: 18px; display: flex; flex-direction: column; gap: 8px; }
+        .cat-item {
+            display: flex; align-items: center; justify-content: space-between; gap: 10px;
+            background: var(--item-bg); border: 1px solid var(--item-border);
+            border-radius: 12px; padding: 10px 14px;
+        }
+        .cat-item-izq { display: flex; align-items: center; gap: 10px; min-width: 0; }
+        .cat-item-icono { font-size: 18px; flex-shrink: 0; }
+        .cat-item-nombre { font-size: 13px; font-weight: 600; color: white; }
+        .cat-item-pct { font-size: 11px; color: var(--muted, #6b7280); }
+        .cat-item-monto { font-size: 14px; font-weight: 700; flex-shrink: 0; }
+        .cat-item-monto.gasto { color: #f472b6; }
+        .cat-item-monto.ingreso { color: #4ade80; }
+        .cat-sin-datos { text-align: center; color: var(--muted, #6b7280); padding: 20px; font-size: 13px; }
+
+        /* MODAL CALENDARIO */
         .modal-overlay {
             display: none; position: fixed; inset: 0; z-index: 9999;
             background: rgba(0,0,0,0.82); backdrop-filter: blur(6px);
@@ -484,6 +547,10 @@
             .chart-card { padding: 16px; }
 
             .trans-desc { max-width: 40vw; }
+
+            .categorias-toolbar { grid-template-columns: 1fr; }
+            .btn-ver-categorias { justify-content: center; }
+            .totales-historicos-grid { grid-template-columns: 1fr; gap: 10px; }
         }
 
         @media (max-width: 380px) {
@@ -581,6 +648,25 @@
                 <div class="stat-sub" id="numMetas">Sin metas creadas</div>
             </div>
         </div>
+
+        <!-- TOTALES HISTÓRICOS (acumulado de siempre, NUNCA se reinicia) -->
+        <div class="totales-historicos">
+            <div class="totales-historicos-label"><i class="fas fa-infinity"></i> Acumulado total</div>
+            <div class="totales-historicos-grid">
+                <div class="totales-item ing">
+                    <span class="totales-item-label">Ingresos totales</span>
+                    <span class="totales-item-val" id="totalIngresosHistorico">$0</span>
+                </div>
+                <div class="totales-item gas">
+                    <span class="totales-item-label">Gastos totales</span>
+                    <span class="totales-item-val" id="totalGastosHistorico">$0</span>
+                </div>
+                <div class="totales-item bal">
+                    <span class="totales-item-label">Balance total</span>
+                    <span class="totales-item-val" id="balanceHistorico">$0</span>
+                </div>
+            </div>
+        </div>
  
         <!-- ACCESOS RÁPIDOS -->
         <div class="accesos-grid">
@@ -590,6 +676,16 @@
             <a href="perfil.html"    class="acceso-card"><div class="acceso-icon">👤</div><div class="acceso-texto">Mi Perfil</div></a>
             <a href="perfil.html#tab-metas" class="acceso-card"><div class="acceso-icon">🎯</div><div class="acceso-texto">Crear meta</div></a>
             <a href="aprende.html"   class="acceso-card"><div class="acceso-icon">🎓</div><div class="acceso-texto">Aprender</div></a>
+        </div>
+
+        <!-- BOTONES: VER GASTOS/INGRESOS POR CATEGORÍA -->
+        <div class="categorias-toolbar">
+            <button class="btn-ver-categorias gastos" onclick="abrirCategorias('gasto')">
+                <i class="fas fa-chart-simple gastos-icon"></i> Gastos por categoría
+            </button>
+            <button class="btn-ver-categorias ingresos" onclick="abrirCategorias('ingreso')">
+                <i class="fas fa-chart-simple ingresos-icon"></i> Ingresos por categoría
+            </button>
         </div>
  
         <!-- GRÁFICAS -->
@@ -628,6 +724,17 @@
  
     </div><!-- /main -->
 
+    <!-- MODAL CATEGORÍAS -->
+    <div class="modal-overlay" id="modalCategorias">
+        <div class="modal-box">
+            <button class="modal-close" onclick="cerrarCategorias()">✕</button>
+            <div class="modal-titulo" id="catModalTitulo"><i class="fas fa-chart-simple" style="color:#a855f7"></i> Por categoría</div>
+            <div class="modal-sub" id="catModalSub">Monto acumulado por categoría</div>
+            <canvas id="chartCategorias" height="220"></canvas>
+            <div class="cat-lista" id="catLista"></div>
+        </div>
+    </div>
+
     <!-- MODAL CALENDARIO -->
     <div class="modal-overlay" id="modalCalendario">
         <div class="modal-box">
@@ -649,6 +756,7 @@
         const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
         let chartGastos = null;
         let chartIngresos = null;
+        let chartCategorias = null;
         let transaccionesCache = [];
  
         // ── TEMA ──────────────────────────────────────────
@@ -728,15 +836,23 @@
         // Las 4 tarjetas de arriba (Ingresos/Gastos/Balance/Metas) y el
         // tip financiero reflejan SOLO el mes en curso: al llegar un mes
         // nuevo vuelven a $0 automáticamente. El histórico completo
-        // (transaccionesCache) se sigue usando en las gráficas de 12
-        // meses y el calendario.
+        // (transaccionesCache) se sigue usando en el calendario.
         function obtenerMesActualStr() {
             const hoy = new Date();
             return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}`;
         }
+        function hoyStr() {
+            const h = new Date();
+            return `${h.getFullYear()}-${String(h.getMonth()+1).padStart(2,'0')}-${String(h.getDate()).padStart(2,'0')}`;
+        }
+        // Una transacción con fecha futura (mayor a hoy) NO cuenta todavía
+        // en ningún total ni gráfica — sea salario automático o un gasto/
+        // ingreso que el usuario haya registrado con fecha adelantada.
+        // Se queda "en espera" y solo empieza a contar el día que llega.
         function transaccionesDelMesActual(trans) {
             const mesActual = obtenerMesActualStr();
-            return trans.filter(t => (t.fecha || '').slice(0, 7) === mesActual);
+            const hoy = hoyStr();
+            return trans.filter(t => (t.fecha || '').slice(0, 7) === mesActual && (t.fecha || '') <= hoy);
         }
 
         function cerrarSesion() {
@@ -774,6 +890,18 @@
                     document.getElementById('totalGastos').textContent   = '$' + totGas.toLocaleString('es-CO');
                     document.getElementById('numIngresos').textContent   = ingresos.length + ' registro' + (ingresos.length !== 1 ? 's' : '');
                     document.getElementById('numGastos').textContent     = gastos.length  + ' registro' + (gastos.length  !== 1 ? 's' : '');
+
+                    // Totales HISTÓRICOS: todo lo registrado desde siempre,
+                    // sin filtrar por mes (nunca se reinicia), pero SIN
+                    // contar transacciones con fecha futura (aún no llegan).
+                    const hoy_ = hoyStr();
+                    const historico = todasTrans.filter(t => (t.fecha || '') <= hoy_);
+                    const totIngHist = historico.filter(t => t.tipo === 'ingreso').reduce((s,t) => s + t.monto, 0);
+                    const totGasHist = historico.filter(t => t.tipo === 'gasto').reduce((s,t) => s + t.monto, 0);
+                    const balHist    = totIngHist - totGasHist;
+                    document.getElementById('totalIngresosHistorico').textContent = '$' + Math.round(totIngHist).toLocaleString('es-CO');
+                    document.getElementById('totalGastosHistorico').textContent   = '$' + Math.round(totGasHist).toLocaleString('es-CO');
+                    document.getElementById('balanceHistorico').textContent       = (balHist >= 0 ? '$' : '-$') + Math.abs(Math.round(balHist)).toLocaleString('es-CO');
  
                     const balEl = document.getElementById('balanceActual');
                     balEl.textContent = '$' + Math.abs(balance).toLocaleString('es-CO');
@@ -1011,8 +1139,10 @@
             const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
             const gas = Array(12).fill(0);
             const ing = Array(12).fill(0);
+            const hoy = hoyStr();
 
             trans.forEach(t => {
+                if ((t.fecha || '') > hoy) return; // fecha futura: aún no cuenta, queda en espera
                 const fecha = new Date(t.fecha);
                 const m = Number.isNaN(fecha.getTime()) ? -1 : fecha.getMonth();
                 if (m < 0) return;
@@ -1084,6 +1214,96 @@
                 }
             });
         }
+
+        // ════════════════════════════════════════════════
+        //  GASTOS/INGRESOS POR CATEGORÍA (modal + gráfica de barras)
+        //  Usa el histórico completo (transaccionesCache), igual que
+        //  las gráficas de línea y el calendario.
+        // ════════════════════════════════════════════════
+        function abrirCategorias(tipo) {
+            const esGasto = tipo === 'gasto';
+
+            document.getElementById('catModalTitulo').innerHTML =
+                `<i class="fas fa-chart-simple" style="color:${esGasto ? '#c026d3' : '#22d3ee'}"></i> ${esGasto ? 'Gastos' : 'Ingresos'} por categoría`;
+            document.getElementById('catModalSub').textContent =
+                `Monto total acumulado por cada categoría de ${esGasto ? 'gasto' : 'ingreso'}`;
+
+            const porCategoria = {};
+            transaccionesCache
+                .filter(t => t.tipo === tipo && (t.fecha || '') <= hoyStr())
+                .forEach(t => {
+                    porCategoria[t.categoria] = (porCategoria[t.categoria] || 0) + Number(t.monto || 0);
+                });
+
+            const entradas = Object.entries(porCategoria).sort((a,b) => b[1]-a[1]);
+            const total = entradas.reduce((s,[,monto]) => s + monto, 0);
+
+            const colorBarra = esGasto ? '#c026d3' : '#22d3ee';
+            const colorPunto = esGasto ? '#f0abfc' : '#67e8f9';
+            const colorMonto = esGasto ? 'gasto' : 'ingreso';
+
+            if (chartCategorias) chartCategorias.destroy();
+
+            if (!entradas.length) {
+                document.getElementById('chartCategorias').style.display = 'none';
+                document.getElementById('catLista').innerHTML =
+                    `<div class="cat-sin-datos"><i class="fas fa-circle-info"></i> Aún no hay ${esGasto ? 'gastos' : 'ingresos'} registrados.</div>`;
+            } else {
+                document.getElementById('chartCategorias').style.display = 'block';
+                chartCategorias = new Chart(document.getElementById('chartCategorias'), {
+                    type: 'bar',
+                    data: {
+                        labels: entradas.map(([cat]) => cat),
+                        datasets: [{
+                            label: esGasto ? 'Gastos' : 'Ingresos',
+                            data: entradas.map(([,monto]) => monto),
+                            backgroundColor: colorBarra + '55',
+                            borderColor: colorBarra,
+                            borderWidth: 2,
+                            borderRadius: 6,
+                            hoverBackgroundColor: colorPunto,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { callbacks: { label: ctx => ` $${ctx.parsed.y.toLocaleString('es-CO')}` } }
+                        },
+                        scales: {
+                            x: { ticks:{color:'#9ca3af',font:{size:10}}, grid:{display:false} },
+                            y: { ticks:{color:'#9ca3af',font:{size:10},callback:v=>'$'+(v/1000).toFixed(0)+'k'}, grid:{color:'rgba(255,255,255,0.04)'} }
+                        }
+                    }
+                });
+
+                document.getElementById('catLista').innerHTML = entradas.map(([cat, monto]) => {
+                    const pct = total > 0 ? Math.round(monto / total * 100) : 0;
+                    return `
+                        <div class="cat-item">
+                            <div class="cat-item-izq">
+                                <span class="cat-item-icono">${getIcono(cat, tipo)}</span>
+                                <div>
+                                    <div class="cat-item-nombre">${cat}</div>
+                                    <div class="cat-item-pct">${pct}% del total</div>
+                                </div>
+                            </div>
+                            <span class="cat-item-monto ${colorMonto}">$${monto.toLocaleString('es-CO')}</span>
+                        </div>`;
+                }).join('');
+            }
+
+            document.getElementById('modalCategorias').classList.add('visible');
+        }
+
+        function cerrarCategorias() {
+            document.getElementById('modalCategorias').classList.remove('visible');
+        }
+
+        document.getElementById('modalCategorias').addEventListener('click', function(e) {
+            if (e.target === this) cerrarCategorias();
+        });
 
         // ════════════════════════════════════════════════
         //  CALENDARIO INTERACTIVO (histórico completo)
@@ -1242,10 +1462,13 @@
                 }
 
                 // Crear el salario del mes actual solo si todavía no existe
+                // Y solo si el día de pago YA LLEGÓ (o pasó) este mes — nunca
+                // se adelanta el dinero a una fecha futura dentro del mismo mes.
                 const yaExiste = todas.some(t => t.descripcion === '__auto_salario__' && t.fecha && t.fecha.slice(0,7) === mesActualStr);
                 if (!yaExiste) {
                     const ultimoDia = new Date(hoy.getFullYear(), hoy.getMonth()+1, 0).getDate();
                     const diaFinal = Math.min(diaPago, ultimoDia);
+                    if (hoy.getDate() < diaFinal) return; // aún no llega el día de pago este mes
                     const fecha = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-${String(diaFinal).padStart(2,'0')}`;
                     await fetch('http://127.0.0.1:8000/api/transacciones/', {
                         method: 'POST',

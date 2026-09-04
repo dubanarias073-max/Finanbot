@@ -979,6 +979,15 @@ const token = localStorage.getItem('token');
         return `${h.getFullYear()}-${String(h.getMonth()+1).padStart(2,'0')}-${String(h.getDate()).padStart(2,'0')}`;
     }
 
+    // Mismo patrón que dashboard.html/finanzas.html: identifica el mes en
+    // curso para contar solo las transacciones (gastos e ingresos) que se
+    // registraron este mes. El resto del resumen financiero (Ingresos,
+    // Gastos, Balance) sigue siendo histórico y NO se reinicia.
+    function obtenerMesActualStr() {
+        const hoy = new Date();
+        return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}`;
+    }
+
     // Al retirar plata de una meta ("Editar monto" hacia abajo), calcula
     // cuánto de ese retiro sale de aportes hechos ESTE MISMO MES (se puede
     // deshacer restando de Gastos, sin tocar Ingresos) y cuánto viene de
@@ -1336,11 +1345,19 @@ const token = localStorage.getItem('token');
             if (r1.ok) {
                 const ts = await r1.json();
                 transaccionesCache = ts;
-                // No contar el salario auto (tag unificado __auto_salario__) en el contador del avatar
-                const visibles = ts.filter(x => !esAutoSalario(x));
-                document.getElementById('totalTrans').textContent = visibles.length;
-                const ing = ts.filter(x=>x.tipo==='ingreso').reduce((s,x)=>s+x.monto,0);
-                const gas = ts.filter(x=>x.tipo==='gasto').reduce((s,x)=>s+x.monto,0);
+                const hoy_ = fechaHoyStr();
+                // "Transacciones" del avatar: SOLO cuenta los gastos e
+                // ingresos puestos ESTE mes (no el histórico), sin contar
+                // el salario auto, y sin contar fechas futuras (aún no llegan).
+                const mesActual = obtenerMesActualStr();
+                const visiblesMes = ts.filter(x => !esAutoSalario(x) && (x.fecha || '').slice(0,7) === mesActual && (x.fecha || '') <= hoy_);
+                document.getElementById('totalTrans').textContent = visiblesMes.length;
+                // Ingresos / Gastos / Balance de "Balance actual" SÍ siguen
+                // siendo el histórico completo (nunca se reinician), pero
+                // tampoco cuentan las de fecha futura hasta que lleguen.
+                const historico = ts.filter(x => (x.fecha || '') <= hoy_);
+                const ing = historico.filter(x=>x.tipo==='ingreso').reduce((s,x)=>s+x.monto,0);
+                const gas = historico.filter(x=>x.tipo==='gasto').reduce((s,x)=>s+x.monto,0);
                 const bal = ing - gas;
                 document.getElementById('resIngresos').textContent = '$'+Math.round(ing).toLocaleString('es-CO');
                 document.getElementById('resGastos').textContent   = '$'+Math.round(gas).toLocaleString('es-CO');
@@ -1820,7 +1837,17 @@ if (res.ok) {
                 });
             }
 
-            // 4. Crear SOLO el salario del mes actual con el nuevo día
+            // 4. Crear el salario del mes actual con el nuevo día — SOLO si
+            //    ese día ya llegó (o pasó). Si todavía no llega, no se
+            //    adelanta el dinero: dashboard.html/finanzas.html lo crearán
+            //    automáticamente el día que corresponda.
+            const ultimoDiaMes = new Date(hoy.getFullYear(), hoy.getMonth()+1, 0).getDate();
+            const diaFinal = Math.min(diaPago, ultimoDiaMes);
+            if (hoy.getDate() < diaFinal) {
+                toast('💼', `Tu salario quedó programado para el día ${diaPago}. Empezará a contar ese día.`);
+                return;
+            }
+
             const fechaMesActual = fechaSalarioParaMes(hoy.getFullYear(), hoy.getMonth(), 0, diaPago);
             await fetch(API + '/transacciones/', {
                 method: 'POST',
