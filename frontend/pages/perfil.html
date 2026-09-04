@@ -210,6 +210,8 @@
         .btn-danger-sm:hover { background: rgba(239,68,68,0.18); transform: translateY(-1px); }
         .btn-outline-sm { background: rgba(255,255,255,0.03); color: var(--text-secondary,#9ca3af); border: 1px solid var(--item-border); border-radius: 9px; padding: 7px 14px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.3s; display: inline-flex; align-items: center; gap: 5px; }
         .btn-outline-sm:hover { background: rgba(168,85,247,0.1); border-color: rgba(168,85,247,0.3); color: white; }
+        .btn-retirar { background: linear-gradient(135deg,#059669,#4ade80); color: #0f2d1a; border: none; border-radius: 9px; padding: 7px 14px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.3s; display: inline-flex; align-items: center; gap: 5px; box-shadow: 0 4px 14px rgba(74,222,128,0.25); }
+        .btn-retirar:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(74,222,128,0.45); }
 
         /* ALERTAS */
         .alerta { border-radius: 12px; font-size: 13px; padding: 12px 16px; margin-bottom: 16px; display: none; align-items: center; gap: 10px; }
@@ -550,6 +552,20 @@
         </div>
         <button class="btn-crear-modal" style="background:linear-gradient(135deg,#059669,#4ade80);color:#0f2d1a;" onclick="confirmarAnadir()">
             <i class="fas fa-plus me-2"></i> Añadir a la meta
+        </button>
+    </div>
+</div>
+
+<!-- MODAL RETIRAR DINERO (solo para metas ya completadas) -->
+<div class="modal-overlay" id="modalRetirar">
+    <div class="modal-abonar-box">
+        <button class="modal-close" onclick="cerrarModalRetirar()" style="background:rgba(74,222,128,0.1);border-color:rgba(74,222,128,0.2);">✕</button>
+        <div style="font-size:28px;margin-bottom:8px;">💸</div>
+        <div class="modal-title">Retirar dinero de tu meta</div>
+        <div style="font-size:13px;color:#6b7280;margin-bottom:10px;">Esta meta ya está completada 🎉 Al retirar se te devuelve <strong id="retirarMontoTexto" style="color:#4ade80;">$0</strong> a tu sueldo/balance, y como ya cumplió su propósito, la meta se elimina.</div>
+        <div style="font-size:12px;color:#9ca3af;margin-bottom:22px;">Si prefieres seguir ahorrando en ella en vez de retirar, cierra esto y usa "Editar monto".</div>
+        <button class="btn-crear-modal" style="background:linear-gradient(135deg,#059669,#4ade80);color:#0f2d1a;" onclick="confirmarRetiro()">
+            <i class="fas fa-hand-holding-dollar me-2"></i> Retirar y eliminar meta
         </button>
     </div>
 </div>
@@ -924,6 +940,9 @@ const token = localStorage.getItem('token');
     let metaSeleccionada = null;
     let montoOriginalAbono = 0;
     let metaObjetivoAbono = 0;
+    let metaRetirarId = null;
+    let metaRetirarActual = 0;
+    let metaRetirarObjetivo = 0;
     let emoji = '🏖️', catSel = 'viaje', prioSel = 'media', modoSel = 'manual';
     let transaccionesCache = [];
 
@@ -977,6 +996,15 @@ const token = localStorage.getItem('token');
     function fechaHoyStr() {
         const h = new Date();
         return `${h.getFullYear()}-${String(h.getMonth()+1).padStart(2,'0')}-${String(h.getDate()).padStart(2,'0')}`;
+    }
+
+    // Mismo patrón que dashboard.html/finanzas.html: identifica el mes en
+    // curso para contar solo las transacciones (gastos e ingresos) que se
+    // registraron este mes. El resto del resumen financiero (Ingresos,
+    // Gastos, Balance) sigue siendo histórico y NO se reinicia.
+    function obtenerMesActualStr() {
+        const hoy = new Date();
+        return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}`;
     }
 
     // Al retirar plata de una meta ("Editar monto" hacia abajo), calcula
@@ -1336,11 +1364,19 @@ const token = localStorage.getItem('token');
             if (r1.ok) {
                 const ts = await r1.json();
                 transaccionesCache = ts;
-                // No contar el salario auto (tag unificado __auto_salario__) en el contador del avatar
-                const visibles = ts.filter(x => !esAutoSalario(x));
-                document.getElementById('totalTrans').textContent = visibles.length;
-                const ing = ts.filter(x=>x.tipo==='ingreso').reduce((s,x)=>s+x.monto,0);
-                const gas = ts.filter(x=>x.tipo==='gasto').reduce((s,x)=>s+x.monto,0);
+                const hoy_ = fechaHoyStr();
+                // "Transacciones" del avatar: SOLO cuenta los gastos e
+                // ingresos puestos ESTE mes (no el histórico), sin contar
+                // el salario auto, y sin contar fechas futuras (aún no llegan).
+                const mesActual = obtenerMesActualStr();
+                const visiblesMes = ts.filter(x => !esAutoSalario(x) && (x.fecha || '').slice(0,7) === mesActual && (x.fecha || '') <= hoy_);
+                document.getElementById('totalTrans').textContent = visiblesMes.length;
+                // Ingresos / Gastos / Balance de "Balance actual" SÍ siguen
+                // siendo el histórico completo (nunca se reinician), pero
+                // tampoco cuentan las de fecha futura hasta que lleguen.
+                const historico = ts.filter(x => (x.fecha || '') <= hoy_);
+                const ing = historico.filter(x=>x.tipo==='ingreso').reduce((s,x)=>s+x.monto,0);
+                const gas = historico.filter(x=>x.tipo==='gasto').reduce((s,x)=>s+x.monto,0);
                 const bal = ing - gas;
                 document.getElementById('resIngresos').textContent = '$'+Math.round(ing).toLocaleString('es-CO');
                 document.getElementById('resGastos').textContent   = '$'+Math.round(gas).toLocaleString('es-CO');
@@ -1472,6 +1508,7 @@ const token = localStorage.getItem('token');
                 </div>
                 <div class="meta-acciones">
                     ${!m.completada ? `<button class="btn-success" onclick="abrirAnadir(${m.id},${m.monto_actual})"><i class="fas fa-plus"></i> Añadir ahorro</button>` : ''}
+                    ${m.completada ? `<button class="btn-retirar" onclick="abrirRetirar(${m.id},${m.monto_actual},${m.monto_objetivo})"><i class="fas fa-hand-holding-dollar"></i> Retirar dinero</button>` : ''}
                     <button class="btn-outline-sm" onclick="abrirAbonar(${m.id},${m.monto_actual},${m.monto_objetivo})"><i class="fas fa-pen"></i> Editar monto</button>
                     <button class="btn-danger-sm" onclick="eliminarMeta(${m.id})"><i class="fas fa-trash"></i> Eliminar</button>
                 </div>
@@ -1597,6 +1634,52 @@ const token = localStorage.getItem('token');
                 await cargarStats();
                 await cargarMetas(false);
                 toast('➕',`$${Math.round(monto).toLocaleString('es-CO')} añadidos a tu meta`);
+            }
+        } catch(e) { toast('❌','No se pudo conectar.'); }
+    }
+
+    // ── RETIRAR DINERO (solo disponible en metas ya completadas) ──────
+    // A diferencia de "Editar monto" (que requiere confirmar cualquier
+    // reducción como si fuera un ajuste), este botón es la vía directa y
+    // explícita para cobrar el ahorro de una meta cumplida, si el usuario
+    // así lo quiere. Reutiliza el mismo cálculo de "parteEsteMes /
+    // parteMesesAnteriores" que usa "Editar monto" al bajar un valor.
+    function abrirRetirar(id, actual, objetivo) {
+        metaRetirarId = id;
+        metaRetirarActual = actual;
+        metaRetirarObjetivo = objetivo || 0;
+        document.getElementById('retirarMontoTexto').textContent = '$' + Math.round(actual).toLocaleString('es-CO');
+        document.getElementById('modalRetirar').classList.add('visible');
+    }
+
+    function cerrarModalRetirar() {
+        document.getElementById('modalRetirar').classList.remove('visible');
+    }
+
+    document.getElementById('modalRetirar').addEventListener('click', function(e) {
+        if (e.target === this) cerrarModalRetirar();
+    });
+
+    // Retirar = devolver TODO el dinero ahorrado a tu sueldo/balance Y
+    // eliminar la meta (ya cumplió su propósito, no queda nada más que
+    // hacer con ella). Reutiliza limpiarTransaccionesDeMeta, que borra los
+    // gastos que se habían descontado para esta meta — al desaparecer esos
+    // gastos, esa plata vuelve a contar en tu balance de cada mes en que
+    // se había descontado, exactamente como un retiro completo.
+    async function confirmarRetiro() {
+        try {
+            await limpiarTransaccionesDeMeta(metaRetirarId);
+            const res = await fetch(`${API}/metas/${metaRetirarId}`, {
+                method:'DELETE',
+                headers:{'Authorization':`Bearer ${token}`}
+            });
+            if (res.ok) {
+                cerrarModalRetirar();
+                await cargarStats();
+                await cargarMetas(false);
+                toast('💸', `$${Math.round(metaRetirarActual).toLocaleString('es-CO')} devueltos a tu sueldo — meta eliminada`);
+            } else {
+                toast('❌','No se pudo retirar el dinero.');
             }
         } catch(e) { toast('❌','No se pudo conectar.'); }
     }
@@ -1820,7 +1903,17 @@ if (res.ok) {
                 });
             }
 
-            // 4. Crear SOLO el salario del mes actual con el nuevo día
+            // 4. Crear el salario del mes actual con el nuevo día — SOLO si
+            //    ese día ya llegó (o pasó). Si todavía no llega, no se
+            //    adelanta el dinero: dashboard.html/finanzas.html lo crearán
+            //    automáticamente el día que corresponda.
+            const ultimoDiaMes = new Date(hoy.getFullYear(), hoy.getMonth()+1, 0).getDate();
+            const diaFinal = Math.min(diaPago, ultimoDiaMes);
+            if (hoy.getDate() < diaFinal) {
+                toast('💼', `Tu salario quedó programado para el día ${diaPago}. Empezará a contar ese día.`);
+                return;
+            }
+
             const fechaMesActual = fechaSalarioParaMes(hoy.getFullYear(), hoy.getMonth(), 0, diaPago);
             await fetch(API + '/transacciones/', {
                 method: 'POST',

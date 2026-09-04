@@ -73,6 +73,24 @@
 
         /* STATS */
         .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin-bottom: 26px; }
+
+        /* ══ TOTALES HISTÓRICOS (acumulado, nunca se reinicia) ══ */
+        .totales-historicos {
+            background: var(--card-bg); border: 1px solid var(--card-border);
+            border-radius: 16px; padding: 18px 22px; margin-bottom: 26px;
+        }
+        .totales-historicos-label {
+            font-size: 11px; color: var(--secondary,#9ca3af); text-transform: uppercase;
+            letter-spacing: 0.5px; margin-bottom: 14px; display: flex; align-items: center; gap: 7px;
+        }
+        .totales-historicos-label i { color: #a855f7; }
+        .totales-historicos-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+        .totales-item { display: flex; flex-direction: column; gap: 4px; }
+        .totales-item-label { font-size: 11px; color: var(--muted,#6b7280); }
+        .totales-item-val { font-size: 18px; font-weight: 800; }
+        .totales-item.ing .totales-item-val { color: #4ade80; }
+        .totales-item.gas .totales-item-val { color: #f472b6; }
+        .totales-item.bal .totales-item-val { color: #22d3ee; }
         .stat-card { background: var(--card-bg); border-radius: 18px; padding: 22px; border: 1px solid var(--card-border); position: relative; overflow: hidden; transition: all 0.3s; }
         .stat-card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 3px; }
         .stat-card.ingresos::before { background: linear-gradient(90deg, #22d3ee, #38bdf8); }
@@ -320,6 +338,7 @@
             .stat-card { padding: 16px; border-radius: 14px; }
             .stat-icon-wrap { width: 36px; height: 36px; font-size: 17px; margin-bottom: 10px; }
             .stat-value { font-size: 18px; }
+            .totales-historicos-grid { grid-template-columns: 1fr; gap: 10px; }
 
             .card { padding: 18px; border-radius: 16px; }
 
@@ -466,11 +485,11 @@
             </div>
         </div>
 
-        <!-- STATS -->
+        <!-- STATS (mes actual) -->
         <div class="stats-row">
             <div class="stat-card ingresos">
                 <div class="stat-icon-wrap" style="background:rgba(34,211,238,0.12);">💰</div>
-                <div class="stat-label">Ingresos totales</div>
+                <div class="stat-label">Ingresos del mes</div>
                 <div class="stat-value positivo" id="totalIngresos">$0</div>
                 <div class="stat-sub" id="numIngresos">0 registros</div>
                 <!-- Salario pill — aparece si hay salario auto -->
@@ -481,13 +500,13 @@
             </div>
             <div class="stat-card gastos">
                 <div class="stat-icon-wrap" style="background:rgba(192,38,211,0.12);">💸</div>
-                <div class="stat-label">Gastos totales</div>
+                <div class="stat-label">Gastos del mes</div>
                 <div class="stat-value negativo" id="totalGastos">$0</div>
                 <div class="stat-sub" id="numGastos">0 registros</div>
             </div>
             <div class="stat-card balance">
                 <div class="stat-icon-wrap" style="background:rgba(74,222,128,0.12);">📊</div>
-                <div class="stat-label">Balance</div>
+                <div class="stat-label">Balance del mes</div>
                 <div class="stat-value neutro" id="balance">$0</div>
                 <div class="stat-sub" id="estadoBalance">Sin movimientos</div>
             </div>
@@ -496,6 +515,25 @@
                 <div class="stat-label">Transacciones</div>
                 <div class="stat-value amar" id="numTrans">0</div>
                 <div class="stat-sub" id="mayorGasto">Mayor categoría: —</div>
+            </div>
+        </div>
+
+        <!-- TOTALES HISTÓRICOS (acumulado de siempre, NUNCA se reinicia) -->
+        <div class="totales-historicos">
+            <div class="totales-historicos-label"><i class="fas fa-infinity"></i> Acumulado total</div>
+            <div class="totales-historicos-grid">
+                <div class="totales-item ing">
+                    <span class="totales-item-label">Ingresos totales</span>
+                    <span class="totales-item-val" id="totalIngresosHistorico">$0</span>
+                </div>
+                <div class="totales-item gas">
+                    <span class="totales-item-label">Gastos totales</span>
+                    <span class="totales-item-val" id="totalGastosHistorico">$0</span>
+                </div>
+                <div class="totales-item bal">
+                    <span class="totales-item-label">Balance total</span>
+                    <span class="totales-item-val" id="balanceHistorico">$0</span>
+                </div>
             </div>
         </div>
 
@@ -663,7 +701,7 @@
         let filtroActivo = 'todos';
         let ordenActivo  = 'fecha';
         let paginaActual = 1;
-        const POR_PAGINA = 8;
+        const POR_PAGINA = 10;
 
         let editandoId = null;
         let editTipo   = 'gasto';
@@ -681,9 +719,17 @@
     const hoy = new Date();
     return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}`;
 }
+function hoyStr() {
+    const h = new Date();
+    return `${h.getFullYear()}-${String(h.getMonth()+1).padStart(2,'0')}-${String(h.getDate()).padStart(2,'0')}`;
+}
+// Una transacción con fecha futura (mayor a hoy) NO cuenta todavía —
+// se queda "en espera" hasta que llegue esa fecha, sea salario auto o
+// un gasto/ingreso registrado con fecha adelantada.
 function transaccionesDelMesActual() {
     const mesActual = obtenerMesActualStr();
-    return transacciones.filter(t => (t.fecha || '').slice(0, 7) === mesActual);
+    const hoy = hoyStr();
+    return transacciones.filter(t => (t.fecha || '').slice(0, 7) === mesActual && (t.fecha || '') <= hoy);
 }
 
         // ── CATEGORÍAS ────────────────────────────────────
@@ -877,6 +923,7 @@ function transaccionesDelMesActual() {
                     transacciones = await res.json();
                     filtrarYRender();
                     actualizarStats();
+                    actualizarTotalesHistoricos();
                     renderCategorias();
                     renderResumenMensual();
                     actualizarSalarioBanner();
@@ -885,6 +932,21 @@ function transaccionesDelMesActual() {
                     }
                 }
             } catch(e) { console.error(e); }
+        }
+
+        // ── TOTALES HISTÓRICOS (acumulado de siempre, nunca se reinicia) ──
+        // A diferencia de actualizarStats() (que solo mira el mes en
+        // curso), esto suma TODAS las transacciones desde siempre, pero
+        // sigue excluyendo las de fecha futura (aún no cuentan).
+        function actualizarTotalesHistoricos() {
+            const hoy = hoyStr();
+            const historico = transacciones.filter(t => (t.fecha || '') <= hoy);
+            const totIngHist = historico.filter(t => t.tipo === 'ingreso').reduce((s,t) => s + t.monto, 0);
+            const totGasHist = historico.filter(t => t.tipo === 'gasto').reduce((s,t) => s + t.monto, 0);
+            const balHist    = totIngHist - totGasHist;
+            document.getElementById('totalIngresosHistorico').textContent = '$' + Math.round(totIngHist).toLocaleString('es-CO');
+            document.getElementById('totalGastosHistorico').textContent   = '$' + Math.round(totGasHist).toLocaleString('es-CO');
+            document.getElementById('balanceHistorico').textContent       = (balHist >= 0 ? '$' : '-$') + Math.abs(Math.round(balHist)).toLocaleString('es-CO');
         }
 
         // ── MOSTRAR BANNER E INFO DEL SALARIO AUTO ────────
@@ -1393,10 +1455,13 @@ function transaccionesDelMesActual() {
                 }
 
                 // Crear el salario del mes actual solo si todavía no existe
+                // Y solo si el día de pago YA LLEGÓ (o pasó) este mes — nunca
+                // se adelanta el dinero a una fecha futura dentro del mismo mes.
                 const yaExiste = todas.some(t => esAutoSalario(t) && t.fecha && t.fecha.slice(0,7) === mesActualStr);
                 if (!yaExiste) {
                     const ultimoDia = new Date(hoy.getFullYear(), hoy.getMonth()+1, 0).getDate();
                     const diaFinal = Math.min(diaPago, ultimoDia);
+                    if (hoy.getDate() < diaFinal) return; // aún no llega el día de pago este mes
                     const fecha = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-${String(diaFinal).padStart(2,'0')}`;
                     await fetch('http://127.0.0.1:8000/api/transacciones/', {
                         method: 'POST',

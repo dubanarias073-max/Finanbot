@@ -260,6 +260,24 @@
         .notif-panel-footer { margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 11px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
         .notif-panel-footer a { color: #a855f7; text-decoration: none; }
 
+        /* ══ TOTALES HISTÓRICOS (acumulado, nunca se reinicia) ══ */
+        .totales-historicos {
+            background: var(--card-bg); border: 1px solid var(--card-border);
+            border-radius: 16px; padding: 18px 22px; margin-bottom: 22px;
+        }
+        .totales-historicos-label {
+            font-size: 11px; color: var(--secondary,#9ca3af); text-transform: uppercase;
+            letter-spacing: 0.5px; margin-bottom: 14px; display: flex; align-items: center; gap: 7px;
+        }
+        .totales-historicos-label i { color: #a855f7; }
+        .totales-historicos-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+        .totales-item { display: flex; flex-direction: column; gap: 4px; }
+        .totales-item-label { font-size: 11px; color: var(--muted,#6b7280); }
+        .totales-item-val { font-size: 18px; font-weight: 800; }
+        .totales-item.ing .totales-item-val { color: #4ade80; }
+        .totales-item.gas .totales-item-val { color: #f472b6; }
+        .totales-item.bal .totales-item-val { color: #22d3ee; }
+
         /* ===================== RESPONSIVE / MOBILE ===================== */
         @media (max-width: 900px) {
             .sidebar { transform: translateX(-100%); width: min(80vw, 280px); }
@@ -294,6 +312,7 @@
 
             .presets-row { gap: 6px; }
             .preset-btn { font-size: 11px; padding: 5px 10px; }
+            .totales-historicos-grid { grid-template-columns: 1fr; gap: 10px; }
         }
 
         @media (max-width: 560px) {
@@ -400,6 +419,25 @@
         <div class="resumen-card"><div class="resumen-icon">💸</div><div class="resumen-label">Gastos del mes</div><div class="resumen-valor" id="resGastos" style="color:#f472b6">$0</div><div class="resumen-sub" id="resGastosN">0 registros</div></div>
         <div class="resumen-card"><div class="resumen-icon">📊</div><div class="resumen-label">Balance del mes</div><div class="resumen-valor" id="resBalance" style="color:#22d3ee">$0</div><div class="resumen-sub" id="resBalanceEstado">Sin movimientos</div></div>
         <div class="resumen-card"><div class="resumen-icon">🎯</div><div class="resumen-label">Ahorro potencial</div><div class="resumen-valor" id="resAhorro" style="color:#fbbf24">$0</div><div class="resumen-sub">Si aplicas los consejos</div></div>
+    </div>
+
+    <!-- TOTALES HISTÓRICOS (acumulado de siempre, NUNCA se reinicia) -->
+    <div class="totales-historicos">
+        <div class="totales-historicos-label"><i class="fas fa-infinity"></i> Acumulado histórico — no se reinicia cada mes</div>
+        <div class="totales-historicos-grid">
+            <div class="totales-item ing">
+                <span class="totales-item-label">Ingresos totales</span>
+                <span class="totales-item-val" id="totalIngresosHistorico">$0</span>
+            </div>
+            <div class="totales-item gas">
+                <span class="totales-item-label">Gastos totales</span>
+                <span class="totales-item-val" id="totalGastosHistorico">$0</span>
+            </div>
+            <div class="totales-item bal">
+                <span class="totales-item-label">Balance total</span>
+                <span class="totales-item-val" id="balanceHistorico">$0</span>
+            </div>
+        </div>
     </div>
 
     <!-- ANÁLISIS VISUAL -->
@@ -596,9 +634,17 @@
         const hoy = new Date();
         return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}`;
     }
+    function hoyStr() {
+        const h = new Date();
+        return `${h.getFullYear()}-${String(h.getMonth()+1).padStart(2,'0')}-${String(h.getDate()).padStart(2,'0')}`;
+    }
+    // Una transacción con fecha futura no cuenta todavía — se queda "en
+    // espera" hasta que llegue esa fecha (mismo criterio que dashboard/
+    // finanzas/perfil).
     function transaccionesDelMesActual(trans) {
         const mesActual = obtenerMesActualStr();
-        return trans.filter(t => (t.fecha || '').slice(0, 7) === mesActual);
+        const hoy = hoyStr();
+        return trans.filter(t => (t.fecha || '').slice(0, 7) === mesActual && (t.fecha || '') <= hoy);
     }
 
     // ════════════════════════════════════════════════════
@@ -858,14 +904,25 @@
             gastos.forEach(t => { catMap[t.categoria] = (catMap[t.categoria] || 0) + t.monto; });
             const catMayor = Object.entries(catMap).sort((a,b) => b[1]-a[1])[0];
 
+            // Movimientos con fecha futura: aún no cuentan en ningún total,
+            // se quedan "en espera" hasta que llegue esa fecha (salario
+            // automático, aportes automáticos a metas, etc.)
+            const hoy_ = hoyStr();
+            const futuras = transTodas.filter(t => (t.fecha || '') > hoy_);
+            const futurasPendientes = {
+                cantidad: futuras.length,
+                total: futuras.reduce((s,t) => s + (t.tipo === 'ingreso' ? t.monto : -t.monto), 0),
+            };
+
             datosFinancieros = {
                 totIng, totGas, balance, trans, metas, ingresos, gastos,
-                catMap, catMayor,
+                catMap, catMayor, futurasPendientes,
                 ingMensual:  perfil.ingreso_mensual || 0,
                 metaMensual: perfil.meta_ahorro     || 0,
             };
 
             actualizarResumen();
+            actualizarTotalesHistoricos(transTodas);
             actualizarAnalisis();
             actualizarRegla();
 
@@ -907,6 +964,18 @@
         document.getElementById('resBalance').style.color   = balance >= 0 ? '#4ade80' : '#f472b6';
         document.getElementById('resBalanceEstado').textContent = balance > 0 ? '✅ Balance positivo' : balance < 0 ? '⚠️ Balance negativo' : 'Sin movimientos';
         animarValor('resAhorro', Math.max(0, balance * 0.2));
+    }
+
+    // ── TOTALES HISTÓRICOS (acumulado de siempre, nunca se reinicia) ──
+    function actualizarTotalesHistoricos(transTodas) {
+        const hoy = hoyStr();
+        const historico = transTodas.filter(t => (t.fecha || '') <= hoy);
+        const totIngHist = historico.filter(t => t.tipo === 'ingreso').reduce((s,t) => s + t.monto, 0);
+        const totGasHist = historico.filter(t => t.tipo === 'gasto').reduce((s,t) => s + t.monto, 0);
+        const balHist    = totIngHist - totGasHist;
+        document.getElementById('totalIngresosHistorico').textContent = '$' + Math.round(totIngHist).toLocaleString('es-CO');
+        document.getElementById('totalGastosHistorico').textContent   = '$' + Math.round(totGasHist).toLocaleString('es-CO');
+        document.getElementById('balanceHistorico').textContent       = (balHist >= 0 ? '$' : '-$') + Math.abs(Math.round(balHist)).toLocaleString('es-CO');
     }
 
     // ── ANÁLISIS ──────────────────────────────────────────
@@ -1026,9 +1095,32 @@
     // ── GENERADOR LOCAL (basado en el mes actual) ─────────
     function generarRecomendaciones(d) {
         const recs = [];
-        const { totIng, totGas, balance, trans, metas, catMap, catMayor, ingMensual, gastos, ingresos } = d;
+        const { totIng, totGas, balance, trans, metas, catMap, catMayor, ingMensual, gastos, ingresos, futurasPendientes } = d;
         const pct = totIng > 0 ? Math.round(totGas / totIng * 100) : 0;
         const r   = getRegla();
+
+        // ── Metas completadas: recuérdale que puede retirar el dinero ──
+        const completadas = metas.filter(m => m.completada);
+        if (completadas.length > 0) {
+            const montoTotal = completadas.reduce((s,m) => s + m.monto_actual, 0);
+            recs.push({ tipo:'exito', prioridad:'Media', icono:'🎉',
+                titulo: completadas.length === 1
+                    ? `¡Completaste tu meta "${completadas[0].nombre}"!`
+                    : `¡Completaste ${completadas.length} metas de ahorro!`,
+                descripcion: `Tienes $${Math.round(montoTotal).toLocaleString('es-CO')} listo para retirar cuando quieras. Retirar es opcional — también puedes dejarlo guardado.`,
+                beneficios:['Usa el botón "Retirar dinero" en Mi Perfil → Metas','El dinero se devuelve a tu sueldo/balance','La meta se elimina al retirar, ya cumplió su propósito'],
+                accion:'Ir a mis metas', link:'perfil.html#tab-metas' });
+        }
+
+        // ── Movimientos con fecha futura: aún no cuentan, están en espera ──
+        if (futurasPendientes && futurasPendientes.cantidad > 0) {
+            const neto = futurasPendientes.total;
+            recs.push({ tipo:'info', prioridad:'Baja', icono:'⏳',
+                titulo: `${futurasPendientes.cantidad} movimiento${futurasPendientes.cantidad !== 1 ? 's' : ''} programado${futurasPendientes.cantidad !== 1 ? 's' : ''} para más adelante`,
+                descripcion: `Como tu salario u otros movimientos con fecha futura, no cuentan todavía en tu balance — se sumarán automáticamente el día que lleguen.`,
+                dato_clave: `💡 Efecto neto en camino: ${neto >= 0 ? '+' : '-'}$${Math.abs(Math.round(neto)).toLocaleString('es-CO')}`,
+                accion:'Ver calendario', link:'calendario.html' });
+        }
 
         if (trans.length === 0) {
             recs.push({ tipo:'info', prioridad:'Alta', icono:'📝', titulo:'Empieza registrando tus finanzas',
