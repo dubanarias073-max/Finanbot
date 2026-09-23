@@ -6,7 +6,7 @@ from collections import defaultdict
 
 from database import get_db
 from extensions import obtener_usuario_id_requerido
-from models import Transaccion, MetaAhorro, Simulacion, Usuario
+from models import Transaccion, MetaAhorro, Usuario
 
 router = APIRouter()
 
@@ -56,7 +56,6 @@ def obtener_recomendaciones(
                       .order_by(Transaccion.fecha.desc()).all())
     transacciones_analisis = filtrar_transacciones_recientes(transacciones, dias=7) or transacciones
     metas         = db.query(MetaAhorro).filter_by(usuario_id=uid).all()
-    simulaciones  = db.query(Simulacion).filter_by(usuario_id=uid).all()
 
     if not usuario:
         return []
@@ -310,7 +309,7 @@ def obtener_recomendaciones(
             rid += 1
 
     # ── 8. SIMULADOR ──────────────────────────────────────
-    if balance > 0 and num_trans >= 5 and len(simulaciones) == 0:
+    if balance > 0 and num_trans >= 5:
         capital_sug = round(balance * 0.5)
         recs.append({
             'id': rid, 'tipo': 'info', 'prioridad': 'Baja',
@@ -451,28 +450,6 @@ def obtener_recomendaciones(
             'accion': 'Crear nueva meta', 'link': 'perfil.html',
             'completada': False, 'ahorro_potencial': 0,
             'dato_clave': f'🎯 Siguiente reto: una meta de ${round(total_comp * 1.5):,.0f}.',
-        })
-        rid += 1
-
-    if len(simulaciones) > 0:
-        ultima = simulaciones[-1]
-        gan    = float(ultima.resultado_final) - float(ultima.capital_inicial)
-        recs.append({
-            'id': rid, 'tipo': 'exito', 'prioridad': 'Baja',
-            'icono': '🔬',
-            'titulo': f'¡Usas el simulador! {len(simulaciones)} simulación(es)',
-            'descripcion': (
-                f'Tu última simulación proyectó una ganancia de ${gan:,.0f}. '
-                f'El siguiente paso es convertirla en una inversión real.'
-            ),
-            'beneficios': [
-                f'Última proyección: +${gan:,.0f}',
-                'CDT disponibles desde $100.000 en bancos colombianos',
-                'Compara tasas antes de decidir',
-            ],
-            'accion': 'Nueva simulación', 'link': 'simulador.html',
-            'completada': False, 'ahorro_potencial': 0,
-            'dato_clave': f'📊 {len(simulaciones)} simulación(es). Próximo paso: abre un CDT real con ese capital.',
         })
         rid += 1
 

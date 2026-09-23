@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from typing import Optional
 
 from database import get_db
-from extensions import hash_password, verify_password, create_access_token
+from extensions import hash_password, verify_password, create_access_token, obtener_usuario_actual
 from models import Usuario
 
 router = APIRouter()
@@ -36,7 +36,24 @@ class VerificarSeguridadSchema(BaseModel):
 
 class ResetearContrasenaSchema(BaseModel):
     correo: str
+    respuesta: str          # se vuelve a validar aquí: sin esto cualquiera cambia la clave con solo el correo
     nueva_contrasena: str
+
+
+# =========================================================
+# HELPERS
+# =========================================================
+
+def _usuario_publico(usuario: Usuario) -> dict:
+    return {
+        'id': usuario.id,
+        'nombre': usuario.nombre,
+        'correo': usuario.correo,
+        'rol': usuario.rol,
+        'ingreso_mensual': float(usuario.ingreso_mensual or 0),
+        'meta_ahorro': float(usuario.meta_ahorro or 0),
+        'onboarding_completado': usuario.onboarding_completado,
+    }
 
 
 # =========================================================
@@ -51,12 +68,11 @@ def registro(body: RegistroSchema, db: Session = Depends(get_db)):
     if usuario_existente:
         raise HTTPException(status_code=409, detail='El correo ya está registrado')
 
-    contrasena_hash = hash_password(body.contrasena)
-
     nuevo_usuario = Usuario(
         nombre=body.nombre,
         correo=body.correo,
-        contrasena_hash=contrasena_hash,
+        contrasena_hash=hash_password(body.contrasena),
+        # rol queda en NULL: se elige en el onboarding
         pregunta_seguridad=body.pregunta_seguridad,
         respuesta_seguridad=(body.respuesta_seguridad or '').lower().strip(),
         onboarding_completado=False
@@ -77,26 +93,29 @@ def login(body: LoginSchema, db: Session = Depends(get_db)):
 
     usuario = db.query(Usuario).filter_by(correo=body.correo).first()
 
-    if not usuario:
+    if not usuario or not verify_password(body.contrasena, usuario.contrasena_hash):
         raise HTTPException(status_code=401, detail='Correo o contraseña incorrectos')
 
-    if not verify_password(body.contrasena, usuario.contrasena_hash):
-        raise HTTPException(status_code=401, detail='Correo o contraseña incorrectos')
-
-    token = create_access_token({"sub": usuario.correo, "user_id": usuario.id})
+    token = create_access_token({
+        "sub": str(usuario.id),
+        "user_id": usuario.id,
+        "rol": usuario.rol,
+    })
 
     return {
         'mensaje': '✅ Inicio de sesión exitoso!',
         'token': token,
-        'usuario': {
-            'id': usuario.id,
-            'nombre': usuario.nombre,
-            'correo': usuario.correo,
-            'ingreso_mensual': float(usuario.ingreso_mensual or 0),
-            'meta_ahorro': float(usuario.meta_ahorro or 0),
-            'onboarding_completado': usuario.onboarding_completado
-        }
+        'usuario': _usuario_publico(usuario),
     }
+
+
+# =========================================================
+# USUARIO ACTUAL (para que el frontend consulte su rol)
+# =========================================================
+
+@router.get('/me')
+def me(usuario: Usuario = Depends(obtener_usuario_actual)):
+    return {'usuario': _usuario_publico(usuario)}
 
 
 # =========================================================
@@ -148,6 +167,12 @@ def resetear_contrasena(body: ResetearContrasenaSchema, db: Session = Depends(ge
 
     if not usuario:
         raise HTTPException(status_code=404, detail='Usuario no encontrado')
+
+    if not usuario.respuesta_seguridad or usuario.respuesta_seguridad != (body.respuesta or '').lower().strip():
+        raise HTTPException(status_code=401, detail='Respuesta de seguridad incorrecta')
+
+    if len(body.nueva_contrasena) < 6:
+        raise HTTPException(status_code=400, detail='La contraseña debe tener mínimo 6 caracteres')
 
     usuario.contrasena_hash = hash_password(body.nueva_contrasena)
     db.commit()

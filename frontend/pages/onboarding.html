@@ -1122,6 +1122,7 @@ async function finish(){
 
     // 1. Guardar perfil (ingreso mensual, día de pago, meta, onboarding completado)
     await req('/perfil/','PUT',{
+      rol:st.perfil,                 // estudiante | empleado | independiente | emprendedor
       ingreso_mensual:st.ingreso,
       meta_ahorro:st.meta,
       fecha_salario:fechaSalario,
@@ -1224,7 +1225,7 @@ async function req(path,method,data){
     body:JSON.stringify(data)
   });
   const j=await r.json();
-  if(!r.ok)throw new Error(j.mensaje||'Error');
+  if(!r.ok)throw new Error(typeof j.detail==='string' ? j.detail : (j.mensaje||'Error'));
   return j;
 }
 

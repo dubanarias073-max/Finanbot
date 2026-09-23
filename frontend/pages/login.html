@@ -564,7 +564,7 @@
                         }
                     }, 1500);
                 } else {
-                    mostrarError(data.mensaje || 'Correo o contraseña incorrectos.');
+                    mostrarError(data.detail || data.mensaje || 'Correo o contraseña incorrectos.');
                 }
             } catch {
     mostrarError('No se pudo conectar con el servidor. Verifica que esté en ejecución.');
@@ -654,7 +654,7 @@
                     document.getElementById('paso2Reset').style.display = 'block';
                     actualizarStepper(2);
                 } else {
-                    mostrarErrorModal(data.mensaje || 'No se encontró la cuenta.');
+                    mostrarErrorModal(data.detail || data.mensaje || 'No se encontró la cuenta.');
                     if (typeof grecaptcha !== 'undefined') grecaptcha.reset();
                 }
             } catch {
@@ -683,7 +683,7 @@
                     document.getElementById('paso3Reset').style.display = 'block';
                     actualizarStepper(3);
                 } else {
-                    mostrarErrorModal(data.mensaje || 'Respuesta incorrecta.');
+                    mostrarErrorModal(data.detail || data.mensaje || 'Respuesta incorrecta.');
                 }
             } catch {
                 mostrarErrorModal('No se pudo conectar con el servidor.');
@@ -727,7 +727,7 @@
                     mostrarExitoModal('✅ Contraseña cambiada. Ya puedes iniciar sesión.');
                     setTimeout(() => cerrarModal(), 3000);
                 } else {
-                    mostrarErrorModal(data.mensaje || 'Error al cambiar la contraseña.');
+                    mostrarErrorModal(data.detail || data.mensaje || 'Error al cambiar la contraseña.');
                 }
             } catch {
                 mostrarErrorModal('No se pudo conectar con el servidor.');

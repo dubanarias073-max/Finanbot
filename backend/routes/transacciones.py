@@ -8,7 +8,7 @@ from sqlalchemy import extract
 
 from database import get_db
 from extensions import obtener_usuario_id_requerido
-from models import Transaccion, Categoria
+from models import Transaccion, CATEGORIAS, normalizar_categoria, icono_categoria
 
 router = APIRouter()
 
@@ -19,11 +19,11 @@ router = APIRouter()
 
 class TransaccionCreate(BaseModel):
     tipo: str
-    categoria: str
+    categoria: str          # una de models.CATEGORIAS
     monto: float
     fecha: str
     descripcion: Optional[str] = ''
-    icono: Optional[str] = '💸'
+    icono: Optional[str] = None   # se ignora: el icono sale de la categoría
 
 class TransaccionUpdate(BaseModel):
     tipo: Optional[str] = None
@@ -31,7 +31,41 @@ class TransaccionUpdate(BaseModel):
     monto: Optional[float] = None
     descripcion: Optional[str] = None
     fecha: Optional[str] = None
-    icono: Optional[str] = '💸'
+    icono: Optional[str] = None   # se ignora: el icono sale de la categoría
+
+
+def _validar_tipo(tipo: str):
+    if tipo not in ('gasto', 'ingreso'):
+        raise HTTPException(status_code=400, detail="tipo debe ser 'gasto' o 'ingreso'")
+
+
+def _validar_categoria(nombre: str) -> str:
+    cat = next((c for c in CATEGORIAS if c.lower() == (nombre or '').strip().lower()), None)
+    if not cat:
+        raise HTTPException(status_code=400, detail=f"Categoría inválida. Opciones: {', '.join(CATEGORIAS)}")
+    return cat
+
+
+def _transaccion_dict(t: Transaccion) -> dict:
+    return {
+        'id': t.id,
+        'tipo': t.tipo,
+        'categoria': t.categoria,
+        'icono': icono_categoria(t.categoria, t.tipo),
+        'monto': float(t.monto),
+        'descripcion': t.descripcion or '',
+        'fecha': str(t.fecha),
+    }
+
+
+@router.get('/categorias')
+def listar_categorias():
+    """Lista fija de categorías (para llenar selects en el frontend)."""
+    from models import CATEGORIAS_GASTO, CATEGORIAS_INGRESO
+    return {
+        'gasto':   [{'nombre': c, 'icono': icono_categoria(c, 'gasto')} for c in CATEGORIAS_GASTO],
+        'ingreso': [{'nombre': c, 'icono': icono_categoria(c, 'ingreso')} for c in CATEGORIAS_INGRESO],
+    }
 
 
 # =========================================================
@@ -51,19 +85,7 @@ def obtener_transacciones(
     transacciones = (db.query(Transaccion).filter_by(usuario_id=uid)
                       .order_by(Transaccion.fecha.desc()).all())
 
-    resultado = []
-    for t in transacciones:
-        resultado.append({
-            'id': t.id,
-            'tipo': t.tipo,
-            'categoria': t.categoria.nombre if t.categoria else '',
-            'icono': t.categoria.icono if t.categoria else '💸',
-            'monto': float(t.monto),
-            'descripcion': t.descripcion or '',
-            'fecha': str(t.fecha),
-        })
-
-    return resultado
+    return [_transaccion_dict(t) for t in transacciones]
 
 
 # =========================================================
@@ -78,19 +100,22 @@ def crear_transaccion(
 ):
     uid = int(usuario_id)
 
-    categoria = db.query(Categoria).filter_by(nombre=body.categoria).first()
-    if not categoria:
-        categoria = Categoria(nombre=body.categoria, tipo=body.tipo, icono=body.icono)
-        db.add(categoria)
-        db.flush()
+    _validar_tipo(body.tipo)
+    categoria = _validar_categoria(body.categoria)
+    if body.monto == 0:
+        raise HTTPException(status_code=400, detail='El monto no puede ser cero')
+    try:
+        fecha = datetime.strptime(body.fecha, '%Y-%m-%d').date()
+    except ValueError:
+        raise HTTPException(status_code=400, detail='Formato de fecha inválido. Usa YYYY-MM-DD')
 
     nueva = Transaccion(
         usuario_id=uid,
-        categoria_id=categoria.id,
+        categoria=categoria,
         tipo=body.tipo,
         monto=body.monto,
         descripcion=body.descripcion,
-        fecha=datetime.strptime(body.fecha, '%Y-%m-%d').date()
+        fecha=fecha,
     )
 
     db.add(nueva)
@@ -117,16 +142,11 @@ def editar_transaccion(
         raise HTTPException(status_code=404, detail='Transacción no encontrada')
 
     if body.tipo is not None:
+        _validar_tipo(body.tipo)
         transaccion.tipo = body.tipo
 
     if body.categoria is not None:
-        tipo_para_cat = body.tipo or transaccion.tipo
-        categoria = db.query(Categoria).filter_by(nombre=body.categoria).first()
-        if not categoria:
-            categoria = Categoria(nombre=body.categoria, tipo=tipo_para_cat, icono=body.icono)
-            db.add(categoria)
-            db.flush()
-        transaccion.categoria_id = categoria.id
+        transaccion.categoria = _validar_categoria(body.categoria)
 
     if body.monto is not None:
         if body.monto <= 0:
@@ -144,16 +164,7 @@ def editar_transaccion(
 
     db.commit()
 
-    return {
-        'mensaje': '✅ Transacción actualizada!',
-        'id': transaccion.id,
-        'tipo': transaccion.tipo,
-        'categoria': transaccion.categoria.nombre if transaccion.categoria else '',
-        'icono': transaccion.categoria.icono if transaccion.categoria else '💸',
-        'monto': float(transaccion.monto),
-        'descripcion': transaccion.descripcion or '',
-        'fecha': str(transaccion.fecha),
-    }
+    return {'mensaje': '✅ Transacción actualizada!', **_transaccion_dict(transaccion)}
 
 
 # =========================================================

@@ -6,7 +6,7 @@ from sqlalchemy import extract
 
 from database import get_db
 from extensions import obtener_usuario_id_requerido
-from models import Transaccion, Categoria, PeriodoFinanciero, TransaccionPeriodo, Usuario
+from models import Transaccion, Usuario
 
 from .reporte_mensual import (
     generar_reporte_pdf_mensual,

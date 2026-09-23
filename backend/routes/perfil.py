@@ -1,12 +1,13 @@
 # routes/perfil.py
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException, Body
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional
 
 from database import get_db
 from extensions import obtener_usuario_id_requerido, verify_password, hash_password
+from config import settings
 from models import Usuario
 
 router = APIRouter()
@@ -14,10 +15,13 @@ router = APIRouter()
 
 # =========================================================
 # ESQUEMA
+# rol = perfil elegido en el onboarding:
+#  'estudiante' | 'empleado' | 'independiente' | 'emprendedor'
 # =========================================================
 
 class PerfilUpdate(BaseModel):
     nombre: Optional[str] = None
+    rol: Optional[str] = None
     ingreso_mensual: Optional[float] = None
     meta_ahorro: Optional[float] = None
     fecha_salario: Optional[str] = None
@@ -35,8 +39,7 @@ def obtener_perfil(
     usuario_id: str = Depends(obtener_usuario_id_requerido),
     db: Session = Depends(get_db),
 ):
-    uid = int(usuario_id)
-    usuario = db.query(Usuario).get(uid)
+    usuario = db.get(Usuario, int(usuario_id))
 
     if not usuario:
         raise HTTPException(status_code=404, detail='Usuario no encontrado')
@@ -45,10 +48,11 @@ def obtener_perfil(
         'id': usuario.id,
         'nombre': usuario.nombre,
         'correo': usuario.correo,
+        'rol': usuario.rol,
         'ingreso_mensual': float(usuario.ingreso_mensual or 0),
         'meta_ahorro': float(usuario.meta_ahorro or 0),
         'fecha_salario': usuario.fecha_salario.strftime('%Y-%m-%d') if usuario.fecha_salario else None,
-        'fecha_registro': usuario.fecha_registro.strftime('%d/%m/%Y'),
+        'fecha_registro': usuario.fecha_registro.strftime('%d/%m/%Y') if usuario.fecha_registro else None,
         'onboarding_completado': usuario.onboarding_completado,
     }
 
@@ -63,14 +67,18 @@ def actualizar_perfil(
     usuario_id: str = Depends(obtener_usuario_id_requerido),
     db: Session = Depends(get_db),
 ):
-    uid = int(usuario_id)
-    usuario = db.query(Usuario).get(uid)
+    usuario = db.get(Usuario, int(usuario_id))
 
     if not usuario:
         raise HTTPException(status_code=404, detail='Usuario no encontrado')
 
     if body.nombre:
         usuario.nombre = body.nombre
+
+    if body.rol is not None:
+        if body.rol not in settings.ROLES:
+            raise HTTPException(status_code=400, detail=f"❌ Rol inválido. Opciones: {', '.join(settings.ROLES)}")
+        usuario.rol = body.rol
 
     if body.ingreso_mensual is not None:
         usuario.ingreso_mensual = body.ingreso_mensual
@@ -79,7 +87,12 @@ def actualizar_perfil(
         usuario.meta_ahorro = body.meta_ahorro
 
     if body.fecha_salario is not None:
-        usuario.fecha_salario = datetime.strptime(body.fecha_salario, '%Y-%m-%d').date() if body.fecha_salario else None
+        try:
+            usuario.fecha_salario = (
+                datetime.strptime(body.fecha_salario, '%Y-%m-%d').date() if body.fecha_salario else None
+            )
+        except ValueError:
+            raise HTTPException(status_code=400, detail='❌ fecha_salario debe tener formato AAAA-MM-DD.')
 
     # ── CONTRASEÑA: requiere la actual ──────────────────────────
     if body.nueva_contrasena:

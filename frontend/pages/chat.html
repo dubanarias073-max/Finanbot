@@ -603,6 +603,8 @@ function inlinemd(t) {
    UTILS
 ═══════════════════════════════════════════════════ */
 const hora = () => new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
+// Escapa texto del usuario antes de meterlo en innerHTML
+const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 function autoR(el){ el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,120)+'px'; }
 function tecla(e){ if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();enviar();} }
 function scroll(){ const b=document.getElementById('chatBox'); setTimeout(()=>b.scrollTo({top:b.scrollHeight,behavior:'smooth'}),50); }
@@ -667,8 +669,8 @@ function addMsg(texto, tipo, acciones=[], h=null, conEfecto=false) {
     wrap.innerHTML = `
       <div class="msg-av usr">${inicial}</div>
       <div class="msg-body">
-        <div class="msg-nombre">${nombre}</div>
-        <div class="msg-burbuja">${texto}</div>
+        <div class="msg-nombre">${esc(nombre)}</div>
+        <div class="msg-burbuja">${esc(texto).replace(/\n/g,'<br>')}</div>
         <div class="msg-meta"><span class="msg-hora">${hText}</span><span class="msg-leido"><i class="fas fa-check-double"></i></span></div>
       </div>`;
     box.appendChild(wrap);
@@ -804,14 +806,21 @@ function renderConvs(lista) {
   lista.forEach(c => {
     const g = c.fecha===hoy?'Hoy':c.fecha===ayer?'Ayer':'Anteriores';
     if (g!==grp) { html+=`<div class="conv-grupo">${g}</div>`; grp=g; }
-    html += `<div class="conv-item ${convId===c.id?'activa':''}" onclick="selConv(${c.id},'${(c.titulo||'').replace(/'/g,"\\'") }',event)">
-      <button class="btn-del-conv" onclick="event.stopPropagation();delConv(${c.id})"><i class="fas fa-trash-alt"></i></button>
-      <div class="conv-titulo">💬 ${c.titulo||'Conversación'}</div>
-      <div class="conv-fecha">${c.fecha||''}</div>
-      ${c.ultimo_mensaje?`<div class="conv-ultimo">${c.ultimo_mensaje}</div>`:''}
+    // c.id ahora es un UUID (texto): va en data-id, no dentro del onclick
+    html += `<div class="conv-item ${convId===c.id?'activa':''}" data-id="${esc(c.id)}" data-titulo="${esc(c.titulo||'Conversación')}">
+      <button class="btn-del-conv"><i class="fas fa-trash-alt"></i></button>
+      <div class="conv-titulo">💬 ${esc(c.titulo||'Conversación')}</div>
+      <div class="conv-fecha">${esc(c.fecha||'')}</div>
+      ${c.ultimo_mensaje?`<div class="conv-ultimo">${esc(c.ultimo_mensaje)}</div>`:''}
     </div>`;
   });
   el.innerHTML = html;
+
+  el.querySelectorAll('.conv-item').forEach(item => {
+    const id = item.dataset.id;
+    item.addEventListener('click', ev => selConv(id, item.dataset.titulo, ev));
+    item.querySelector('.btn-del-conv').addEventListener('click', ev => { ev.stopPropagation(); delConv(id); });
+  });
 }
 
 async function nuevaConversacion() {
@@ -823,9 +832,8 @@ async function nuevaConversacion() {
     });
     if (!r.ok) return;
     const c = await r.json();
-    convId = c.id;
+    convId = c.id;   // UUID; la conversación aparece en la lista al guardar el primer mensaje
     abrirChat('💬 Nueva conversación');
-    await cargarConvs();
     addSep('Hoy');
     // El primer mensaje viene del backend (bienvenida)
     enviarYRenderizar('hola');
@@ -839,7 +847,7 @@ async function selConv(id, titulo, event) {
   event?.currentTarget?.classList.add('activa');
   cerrarNavMovil();
   try {
-    const r = await fetch(`${API}/chat-historial/mensajes/${id}`, {headers:{'Authorization':'Bearer '+token}});
+    const r = await fetch(`${API}/chat-historial/mensajes/${encodeURIComponent(id)}`, {headers:{'Authorization':'Bearer '+token}});
     if (!r.ok) return;
     const msgs = await r.json();
     document.getElementById('chatBox').innerHTML = '';
@@ -855,7 +863,7 @@ async function selConv(id, titulo, event) {
 async function delConv(id) {
   if (!confirm('¿Eliminar esta conversación?')) return;
   try {
-    const r = await fetch(`${API}/chat-historial/conversaciones/${id}`,{method:'DELETE',headers:{'Authorization':'Bearer '+token}});
+    const r = await fetch(`${API}/chat-historial/conversaciones/${encodeURIComponent(id)}`,{method:'DELETE',headers:{'Authorization':'Bearer '+token}});
     if (r.ok) {
       if (convId===id) { convId=null; document.getElementById('sinChat').style.display='flex'; document.getElementById('chatActivo').style.display='none'; document.getElementById('convBadge').textContent='💬 Selecciona o crea una conversación'; }
       await cargarConvs();
@@ -913,8 +921,11 @@ async function enviarYRenderizar(msg) {
   try {
     const headers = {'Content-Type':'application/json'};
     if (token) headers['Authorization'] = 'Bearer '+token;
+    // El backend guarda el mensaje en la conversación indicada (tabla chats)
+    const cuerpo = {mensaje: msg};
+    if (token && convId) cuerpo.conversacion_id = convId;
     const r = await fetch(`${API}/chat/mensaje`, {
-      method:'POST', headers, body:JSON.stringify({mensaje: msg})
+      method:'POST', headers, body:JSON.stringify(cuerpo)
     });
     const data = await r.json();
 
@@ -929,13 +940,9 @@ async function enviarYRenderizar(msg) {
 
       addMsg(data.respuesta, 'bot', data.acciones || [], null, true); // true = efecto escritura
 
-      // Guardar historial
-      if (token && convId) {
-        await fetch(`${API}/chat-historial/mensajes/${convId}`,{
-          method:'POST',
-          headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
-          body:JSON.stringify({mensaje:msg, respuesta:data.respuesta})
-        });
+      // /chat/mensaje ya guardó el mensaje: solo sincronizamos el id y refrescamos la lista
+      if (token && !modoInv) {
+        if (data.conversacion_id) convId = data.conversacion_id;
         await cargarConvs();
       }
 

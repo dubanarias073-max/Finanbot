@@ -1,9 +1,11 @@
 # database.py
 from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, declarative_base
 
-DATABASE_URL = 'mysql+pymysql://root:@localhost/finanbot_db'
+from config import settings
+
+# La URL vive en config.py (incluye charset=utf8mb4 para los emojis)
+DATABASE_URL = settings.DATABASE_URL
 
 engine = create_engine(
     DATABASE_URL,
@@ -13,6 +15,7 @@ engine = create_engine(
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
+
 
 # Dependencia para inyectar la sesión de DB en cada endpoint
 def get_db():
