@@ -6,8 +6,9 @@ from pydantic import BaseModel
 from typing import Optional
 
 from database import get_db
-from extensions import hash_password, verify_password, create_access_token, obtener_usuario_actual
+from extensions import obtener_usuario_actual
 from models import Usuario
+from application.services.auth_service import AuthService
 
 router = APIRouter()
 
@@ -44,16 +45,7 @@ class ResetearContrasenaSchema(BaseModel):
 # HELPERS
 # =========================================================
 
-def _usuario_publico(usuario: Usuario) -> dict:
-    return {
-        'id': usuario.id,
-        'nombre': usuario.nombre,
-        'correo': usuario.correo,
-        'rol': usuario.rol,
-        'ingreso_mensual': float(usuario.ingreso_mensual or 0),
-        'meta_ahorro': float(usuario.meta_ahorro or 0),
-        'onboarding_completado': usuario.onboarding_completado,
-    }
+_usuario_publico = AuthService.usuario_publico
 
 
 # =========================================================
@@ -63,23 +55,17 @@ def _usuario_publico(usuario: Usuario) -> dict:
 @router.post('/registro', status_code=201)
 def registro(body: RegistroSchema, db: Session = Depends(get_db)):
 
-    usuario_existente = db.query(Usuario).filter_by(correo=body.correo).first()
-
-    if usuario_existente:
-        raise HTTPException(status_code=409, detail='El correo ya está registrado')
-
-    nuevo_usuario = Usuario(
-        nombre=body.nombre,
-        correo=body.correo,
-        contrasena_hash=hash_password(body.contrasena),
-        # rol queda en NULL: se elige en el onboarding
-        pregunta_seguridad=body.pregunta_seguridad,
-        respuesta_seguridad=(body.respuesta_seguridad or '').lower().strip(),
-        onboarding_completado=False
-    )
-
-    db.add(nuevo_usuario)
-    db.commit()
+    try:
+        AuthService.registrar(
+            db,
+            nombre=body.nombre,
+            correo=body.correo,
+            contrasena=body.contrasena,
+            pregunta_seguridad=body.pregunta_seguridad,
+            respuesta_seguridad=body.respuesta_seguridad or '',
+        )
+    except ValueError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
 
     return {'mensaje': '✅ Usuario registrado exitosamente!'}
 
@@ -91,16 +77,11 @@ def registro(body: RegistroSchema, db: Session = Depends(get_db)):
 @router.post('/login')
 def login(body: LoginSchema, db: Session = Depends(get_db)):
 
-    usuario = db.query(Usuario).filter_by(correo=body.correo).first()
-
-    if not usuario or not verify_password(body.contrasena, usuario.contrasena_hash):
+    usuario = AuthService.autenticar(db, correo=body.correo, contrasena=body.contrasena)
+    if not usuario:
         raise HTTPException(status_code=401, detail='Correo o contraseña incorrectos')
 
-    token = create_access_token({
-        "sub": str(usuario.id),
-        "user_id": usuario.id,
-        "rol": usuario.rol,
-    })
+    token = AuthService.token(usuario)
 
     return {
         'mensaje': '✅ Inicio de sesión exitoso!',

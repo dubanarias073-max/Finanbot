@@ -60,6 +60,61 @@ Abre la carpeta frontend y ejecuta el archivo index.html.
 
 Si tienes Live Server instalado en VS Code, puedes hacer clic en “Go Live” para abrir la interfaz en el navegador.
 
+## Arquitectura
+
+FinanBot usa un monolito modular por capas orientado a MVC:
+
+```text
+backend/
+	presentation/             # ensamblado FastAPI, middleware y routers (Controller)
+	application/services/     # casos de uso y reglas de aplicación (Service)
+	models.py                 # entidades y relaciones SQLAlchemy (Model)
+	database.py               # infraestructura de persistencia existente
+	routes/                   # endpoints actuales, migrados gradualmente hacia Service
+frontend/                   # interfaz HTML existente, compatible durante la transición
+frontend-react/             # nueva interfaz React + Vite
+```
+
+La copia React incluye estas rutas:
+
+```text
+/             Dashboard / inicio
+/login        Inicio de sesión
+/registro     Registro de usuario
+/onboarding   Configuración inicial
+/chat         Chat con historial y modo invitado
+/finanzas     Registro y consulta de movimientos
+/calendario   Calendario financiero
+/recomendaciones
+/simulador
+/aprende
+/perfil
+/exportar
+```
+
+Las pantallas HTML originales permanecen en `frontend/pages` como respaldo durante la transición. La nueva interfaz React conserva los endpoints existentes y puede migrarse módulo por módulo sin cambiar el backend.
+
+### Ejecutar React
+
+En otra terminal, desde `frontend-react`:
+
+```powershell
+npm install
+npm run dev
+```
+
+Abre `http://localhost:5173`. Vite redirige `/api` al backend de FastAPI en
+`http://127.0.0.1:8000`. Las páginas actuales siguen disponibles desde el
+servidor de archivos o Live Server, por lo que la migración puede hacerse módulo a módulo.
+
+Para generar una versión de producción:
+
+```powershell
+npm run build
+```
+
+El backend continúa iniciándose desde `backend` con `fastapi dev app.py`.
+
 ## 6. Funcionalidades principales
 
 - Registro de ingresos y gastos
