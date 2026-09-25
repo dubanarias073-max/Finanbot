@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <base target="_top">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FinanBot - Crear cuenta</title>
@@ -457,7 +458,7 @@
                     document.getElementById(id).value = ''
                 );
                 document.getElementById('pregunta').value = '';
-                setTimeout(() => window.location.href = 'login.html', 2000);
+                setTimeout(() => window.top.location.href = 'login.html', 2000);
             } else {
                 mostrarError(data.mensaje || 'Error al registrar usuario.');
             }

@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <base target="_top">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FinanBot - Recomendaciones</title>
@@ -357,7 +358,7 @@
     <a href="aprende.html"         class="nav-item"><i class="fas fa-graduation-cap"></i> Aprende</a>
     <a href="perfil.html"          class="nav-item"><i class="fas fa-user-circle"></i>    Mi Perfil</a>
     <div class="sidebar-bottom">
-        <a href="../index.html" class="btn-cerrar" onclick="cerrarSesion()">
+        <a href="index-legacy.html" class="btn-cerrar" onclick="cerrarSesion()">
             <i class="fas fa-sign-out-alt"></i> Cerrar sesión
         </a>
     </div>
@@ -375,7 +376,7 @@
         </div>
         <div class="topbar-right">
             <button class="btn-accion" onclick="cargarTodo()"><i class="fas fa-sync-alt"></i> Actualizar</button>
-            <button class="btn-accion" onclick="location.href='chat.html'"><i class="fas fa-robot"></i> Pedir consejo</button>
+            <button class="btn-accion" onclick="top.location.href='chat.html'"><i class="fas fa-robot"></i> Pedir consejo</button>
             <div style="position:relative;">
                 <button class="notif-settings-btn" id="btnNotifSettings" onclick="togglePanel()">
                     <i class="fas fa-bell"></i> Notificaciones
@@ -879,7 +880,7 @@
     //  CARGAR DATOS (mes actual)
     // ════════════════════════════════════════════════════
     async function cargarTodo() {
-        if (!token) { window.location.href = 'login.html'; return; }
+        if (!token) { window.top.location.href = 'login.html'; return; }
         try {
             const [rT, rM, rR, rP] = await Promise.all([
                 fetch('http://127.0.0.1:8000/api/transacciones/',  { headers:{'Authorization':`Bearer ${token}`} }),

@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <base target="_top">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FinanBot • Bienvenido</title>
@@ -884,7 +885,7 @@ body::before {
 /* ── Estado ── */
 const API = 'http://127.0.0.1:8000/api';
 const token = localStorage.getItem('token');
-if(!token) window.location.href='login.html';
+if(!token) window.top.location.href='login.html';
 
 const st = { perfil:'', ingreso:0, diaPago:null, meta:0, objetivoTotal:0, objetivo:'', modoMeta:'manual', diaMetaAuto:null };
 const LABELS = {
@@ -1157,7 +1158,7 @@ async function finish(){
     // ───────────────────────────────────────────────────
 
     await new Promise(r=>setTimeout(r,500));
-    window.location.href='dashboard.html';
+    window.top.location.href='dashboard.html';
   }catch(err){
     console.error(err);
     sending=false;
@@ -1234,7 +1235,7 @@ async function req(path,method,data){
   try{
     const r=await fetch(API+'/perfil/',{headers:{'Authorization':'Bearer '+token}});
     const u=await r.json();
-    if(u.onboarding_completado) window.location.href='dashboard.html';
+    if(u.onboarding_completado) window.top.location.href='dashboard.html';
   }catch(e){ console.error(e); }
 })();
 

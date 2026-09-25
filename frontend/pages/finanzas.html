@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <base target="_top">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FinanBot - Mis Finanzas</title>
@@ -459,7 +460,7 @@
         <a href="aprende.html" class="nav-item"><i class="fas fa-graduation-cap"></i> Aprende</a>
         <a href="perfil.html" class="nav-item"><i class="fas fa-user-circle"></i> Mi Perfil</a>
         <div class="sidebar-bottom">
-            <a href="../index.html" class="btn-cerrar" onclick="cerrarSesion()">
+            <a href="index-legacy.html" class="btn-cerrar" onclick="cerrarSesion()">
                 <i class="fas fa-sign-out-alt"></i> Cerrar sesión
             </a>
         </div>
@@ -479,7 +480,7 @@
                 <button class="btn-calendario" onclick="abrirCalendario()">
                     <i class="fas fa-calendar-days"></i> Ver calendario
                 </button>
-                <button class="btn-accion" onclick="location.href='chat.html'">
+                <button class="btn-accion" onclick="top.location.href='chat.html'">
                     <i class="fas fa-robot"></i> Pedir ayuda al bot
                 </button>
             </div>
@@ -641,7 +642,7 @@
                     <!-- Banner informativo del salario -->
                     <div class="salario-banner" id="salarioBanner" style="display:none;">
                         <i class="fas fa-info-circle"></i>
-                        <p>Tu <strong>salario mensual</strong> (<span id="bannerSalarioVal"></span>) está activo y se suma automáticamente a tus ingresos. Para editarlo ve a <a onclick="location.href='perfil.html'">Mi Perfil</a>.</p>
+                        <p>Tu <strong>salario mensual</strong> (<span id="bannerSalarioVal"></span>) está activo y se suma automáticamente a tus ingresos. Para editarlo ve a <a onclick="top.location.href='perfil.html'">Mi Perfil</a>.</p>
                     </div>
 
                     <div class="filtros-bar">

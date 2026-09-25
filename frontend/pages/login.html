@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <base target="_top">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FinanBot - Iniciar Sesión</title>
@@ -558,9 +559,9 @@
     headers: { 'Authorization': 'Bearer ' + data.token }
 });
                             const perfil = await rp.json();
-                            window.location.href = perfil.onboarding_completado ? 'dashboard.html' : 'onboarding.html';
+                            window.top.location.href = perfil.onboarding_completado ? 'dashboard.html' : 'onboarding.html';
                         } catch {
-                            window.location.href = 'dashboard.html';
+                            window.top.location.href = 'dashboard.html';
                         }
                     }, 1500);
                 } else {
