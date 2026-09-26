@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from typing import Optional
 
 from database import get_db
-from extensions import obtener_usuario_actual
+from extensions import obtener_usuario_actual, hash_password
 from models import Usuario
 from application.services.auth_service import AuthService
 

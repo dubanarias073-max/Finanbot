@@ -13,14 +13,14 @@ function renderMarkdown(value) {
 }
 
 const routes = [
-  ['Dashboard', '/', '⌂'], ['Finanzas', '/finanzas', '◈'], ['Chat IA', '/chat', '✦'],
+  ['Dashboard', '/dashboard', '⌂'], ['Finanzas', '/finanzas', '◈'], ['Chat IA', '/chat', '✦'],
   ['Calendario', '/calendario', '▣'], ['Recomendaciones', '/recomendaciones', '✧'],
   ['Simulador', '/simulador', '↗'], ['Aprende', '/aprende', '▤'], ['Perfil', '/perfil', '◉'],
   ['Exportar', '/exportar', '⇩'],
 ]
 
 const legacyScreens = {
-  '/': 'index.html',
+  '/': 'pages/index-legacy.html',
   '/dashboard': 'pages/dashboard.html',
   '/login': 'pages/login.html',
   '/registro': 'pages/registro.html',
@@ -76,7 +76,7 @@ function SimpleRoute() {
   const normalizedPath = path.startsWith('/pages/') ? path.replace('/pages', '') : path
   const file = legacyScreens[normalizedPath]
   if (file) return <LegacyPage file={file} />
-  return <LegacyPage file="index.html" />
+  return <LegacyPage file="pages/index-legacy.html" />
 }
 
 function ChatPage() {

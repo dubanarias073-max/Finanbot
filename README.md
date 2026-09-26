@@ -71,8 +71,7 @@ backend/
 	models.py                 # entidades y relaciones SQLAlchemy (Model)
 	database.py               # infraestructura de persistencia existente
 	routes/                   # endpoints actuales, migrados gradualmente hacia Service
-frontend/                   # interfaz HTML existente, compatible durante la transición
-frontend-react/             # nueva interfaz React + Vite
+frontend/                   # interfaz unificada: app React + Vite en la raíz, HTML legado en frontend/pages
 ```
 
 La copia React incluye estas rutas:
@@ -92,11 +91,11 @@ La copia React incluye estas rutas:
 /exportar
 ```
 
-Las pantallas HTML originales permanecen en `frontend/pages` como respaldo durante la transición. La nueva interfaz React conserva los endpoints existentes y puede migrarse módulo por módulo sin cambiar el backend.
+Las pantallas HTML originales permanecen en `frontend/pages` (el antiguo `index.html` quedó como `frontend/pages/index-legacy.html`) como respaldo durante la transición. La nueva interfaz React conserva los endpoints existentes y puede migrarse módulo por módulo sin cambiar el backend.
 
 ### Ejecutar React
 
-En otra terminal, desde `frontend-react`:
+En otra terminal, desde `frontend`:
 
 ```powershell
 npm install
