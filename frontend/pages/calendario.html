@@ -9,15 +9,15 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', sans-serif; min-height: 100vh; color: white; transition: background 0.4s; overflow-x: hidden; }
+        body { font-family: 'Segoe UI', sans-serif; min-height: 100vh; color: var(--fb-text); transition: background 0.4s; overflow-x: hidden; }
         html { overflow-x: hidden; max-width: 100vw; }
 
         body.tema-oscuro {
-            background: radial-gradient(ellipse at top, #1a1a4e 0%, #0f0f2d 50%, #000010 100%);
-            --card-bg: rgba(255,255,255,0.04); --card-border: rgba(168,85,247,0.15);
-            --item-bg: rgba(255,255,255,0.03); --item-border: rgba(255,255,255,0.06);
+            background: radial-gradient(ellipse at top, #1A1A3D 0%, #11112B 50%, #0B0B22 100%);
+            --card-bg: rgba(var(--fb-fg),0.04); --card-border: rgba(139,92,246,0.15);
+            --item-bg: rgba(var(--fb-fg),0.03); --item-border: rgba(var(--fb-fg),0.06);
             --muted: #6b7280; --secondary: #9ca3af;
-            --sidebar-bg: rgba(255,255,255,0.03); --sidebar-brd: rgba(168,85,247,0.2);
+            --sidebar-bg: rgba(var(--fb-fg),0.03); --sidebar-brd: rgba(139,92,246,0.2);
         }
         body.tema-azul {
             background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #1e40af 100%);
@@ -29,23 +29,23 @@
 
         /* SIDEBAR */
         .sidebar { position: fixed; top: 0; left: 0; width: 240px; height: 100vh; background: var(--sidebar-bg); border-right: 1px solid var(--sidebar-brd); backdrop-filter: blur(20px); z-index: 1100; display: flex; flex-direction: column; padding: 25px 0; transition: background 0.4s, transform .35s ease; }
-        .sidebar-logo { display: flex; align-items: center; gap: 12px; padding: 0 20px 25px; border-bottom: 1px solid rgba(168,85,247,0.15); margin-bottom: 20px; }
-        .sidebar-logo img { width: 40px; height: 40px; border-radius: 50%; box-shadow: 0 0 15px rgba(168,85,247,0.5); }
-        .sidebar-logo span { font-size: 20px; font-weight: 800; background: linear-gradient(90deg,#c026d3,#22d3ee); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .sidebar-close { display: none; margin-left: auto; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.15); color: white; width: 34px; height: 34px; border-radius: 50%; align-items: center; justify-content: center; cursor: pointer; font-size: 14px; flex-shrink: 0; -webkit-tap-highlight-color: transparent; }
+        .sidebar-logo { display: flex; align-items: center; gap: 12px; padding: 0 20px 25px; border-bottom: 1px solid rgba(139,92,246,0.15); margin-bottom: 20px; }
+        .sidebar-logo img { width: 40px; height: 40px; border-radius: 50%; box-shadow: 0 0 15px rgba(139,92,246,0.5); }
+        .sidebar-logo span { font-size: 20px; font-weight: 800; background: linear-gradient(90deg,#6D5BD0,#5EEAD4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .sidebar-close { display: none; margin-left: auto; background: rgba(var(--fb-fg),.08); border: 1px solid rgba(var(--fb-fg),.15); color: var(--fb-text); width: 34px; height: 34px; border-radius: 50%; align-items: center; justify-content: center; cursor: pointer; font-size: 14px; flex-shrink: 0; -webkit-tap-highlight-color: transparent; }
         .sidebar-close:active { background: rgba(239,68,68,.25); }
         .nav-item { display: flex; align-items: center; gap: 12px; padding: 12px 20px; color: var(--secondary,#9ca3af); text-decoration: none; font-size: 14px; font-weight: 500; transition: all 0.3s; border-left: 3px solid transparent; margin: 2px 0; }
-        .nav-item:hover, .nav-item.active { color: white; background: rgba(168,85,247,0.08); border-left-color: #a855f7; }
+        .nav-item:hover, .nav-item.active { color: var(--fb-text); background: rgba(139,92,246,0.08); border-left-color: #8B5CF6; }
         .nav-item i { width: 18px; text-align: center; font-size: 15px; }
-        .nav-item.active i { color: #a855f7; }
-        .sidebar-bottom { margin-top: auto; padding: 20px; border-top: 1px solid rgba(168,85,247,0.15); }
+        .nav-item.active i { color: #8B5CF6; }
+        .sidebar-bottom { margin-top: auto; padding: 20px; border-top: 1px solid rgba(139,92,246,0.15); }
         .btn-cerrar { display: flex; align-items: center; gap: 10px; color: #ef4444; background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); border-radius: 10px; padding: 10px 15px; font-size: 13px; cursor: pointer; transition: all 0.3s; width: 100%; text-decoration: none; }
         .btn-cerrar:hover { background: rgba(239,68,68,0.15); color: #ef4444; }
 
         .nav-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 1050; opacity: 0; visibility: hidden; transition: opacity .35s ease, visibility .35s ease; }
         .nav-overlay.abierto { opacity: 1; visibility: visible; }
-        .menu-toggle { display: none; background: rgba(168,85,247,.18); border: 1px solid rgba(168,85,247,.5); color: white; width: 40px; height: 40px; border-radius: 11px; align-items: center; justify-content: center; font-size: 17px; cursor: pointer; flex-shrink: 0; -webkit-tap-highlight-color: transparent; }
-        .menu-toggle:active { background: rgba(168,85,247,.32); transform: scale(.94); }
+        .menu-toggle { display: none; background: rgba(139,92,246,.18); border: 1px solid rgba(139,92,246,.5); color: var(--fb-text); width: 40px; height: 40px; border-radius: 11px; align-items: center; justify-content: center; font-size: 17px; cursor: pointer; flex-shrink: 0; -webkit-tap-highlight-color: transparent; }
+        .menu-toggle:active { background: rgba(139,92,246,.32); transform: scale(.94); }
 
         /* MAIN */
         .main { margin-left: 240px; padding: 30px; min-height: 100vh; }
@@ -59,15 +59,15 @@
 
         .btn-exportar { border: none; border-radius: 50px; padding: 10px 20px; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; gap: 7px; white-space: nowrap; }
         .btn-exportar:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
-        .btn-exportar.pdf { background: linear-gradient(135deg, #f472b6, #ef4444); color: white; box-shadow: 0 4px 15px rgba(239,68,68,0.3); }
+        .btn-exportar.pdf { background: linear-gradient(135deg, #f472b6, #ef4444); color: var(--fb-text); box-shadow: 0 4px 15px rgba(239,68,68,0.3); }
         .btn-exportar.pdf:not(:disabled):hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(239,68,68,0.5); }
-        .btn-exportar.excel { background: linear-gradient(135deg, #4ade80, #22d3ee); color: #0f0f2d; box-shadow: 0 4px 15px rgba(74,222,128,0.3); }
-        .btn-exportar.excel:not(:disabled):hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(74,222,128,0.5); }
+        .btn-exportar.excel { background: linear-gradient(135deg, #10B981, #5EEAD4); color: #11112B; box-shadow: 0 4px 15px rgba(16,185,129,0.3); }
+        .btn-exportar.excel:not(:disabled):hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(16,185,129,0.5); }
 
         /* AVISO SIN TRANSACCIONES */
-        .aviso-vacio { display: none; align-items: center; gap: 14px; background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.3); border-radius: 14px; padding: 16px 20px; margin-bottom: 22px; font-size: 14px; color: #fde68a; }
+        .aviso-vacio { display: none; align-items: center; gap: 14px; background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.3); border-radius: 14px; padding: 16px 20px; margin-bottom: 22px; font-size: 14px; color: var(--fb-yellow-soft); }
         .aviso-vacio.visible { display: flex; }
-        .aviso-vacio i { font-size: 20px; color: #fbbf24; flex-shrink: 0; }
+        .aviso-vacio i { font-size: 20px; color: var(--fb-yellow); flex-shrink: 0; }
 
         /* RESUMEN DEL MES */
         .resumen-mes-bar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 22px; }
@@ -77,9 +77,9 @@
 
         /* NAV DE MES */
         .calendario-nav-grande { display: flex; align-items: center; justify-content: center; gap: 22px; margin-bottom: 22px; }
-        .calendario-nav-grande button { background: var(--card-bg); border: 1px solid var(--card-border); color: white; width: 44px; height: 44px; border-radius: 12px; cursor: pointer; font-size: 16px; transition: all 0.3s; }
-        .calendario-nav-grande button:hover { background: rgba(168,85,247,0.15); border-color: #a855f7; }
-        .calendario-nav-grande span { font-size: 22px; font-weight: 800; color: #c4b5fd; text-transform: capitalize; min-width: 220px; text-align: center; }
+        .calendario-nav-grande button { background: var(--card-bg); border: 1px solid var(--card-border); color: var(--fb-text); width: 44px; height: 44px; border-radius: 12px; cursor: pointer; font-size: 16px; transition: all 0.3s; }
+        .calendario-nav-grande button:hover { background: rgba(139,92,246,0.15); border-color: #8B5CF6; }
+        .calendario-nav-grande span { font-size: 22px; font-weight: 800; color: var(--fb-lav); text-transform: capitalize; min-width: 220px; text-align: center; }
 
         /* CALENDARIO GRANDE */
         .calendario-grande-wrap { display: grid; grid-template-columns: 1fr 340px; gap: 20px; }
@@ -92,28 +92,36 @@
             border: 1px solid var(--item-border); padding: 10px; cursor: pointer;
             transition: all 0.2s; display: flex; flex-direction: column; gap: 6px;
         }
-        .cal-dia-grande:hover { border-color: #a855f7; background: rgba(168,85,247,0.08); transform: translateY(-2px); }
+        .cal-dia-grande:hover { border-color: #8B5CF6; background: rgba(139,92,246,0.08); transform: translateY(-2px); }
         .cal-dia-grande.vacio { visibility: hidden; cursor: default; }
         .cal-dia-grande.hoy { border-color: #fbbf24; box-shadow: 0 0 0 1px rgba(251,191,36,0.3) inset; }
-        .cal-dia-grande.seleccionado { background: rgba(168,85,247,0.18); border-color: #a855f7; }
-        .cal-dia-num { font-size: 14px; font-weight: 700; color: white; }
+        .cal-dia-grande.seleccionado { background: rgba(139,92,246,0.18); border-color: #8B5CF6; }
+        .cal-dia-num { font-size: 14px; font-weight: 700; color: var(--fb-text); }
         .cal-dia-montos { display: flex; flex-direction: column; gap: 2px; margin-top: auto; }
         .cal-dia-monto { font-size: 10.5px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .cal-dia-monto.ingreso { color: #4ade80; }
+        .cal-dia-monto.ingreso { color: #10B981; }
         .cal-dia-monto.gasto { color: #f472b6; }
 
         /* PANEL LATERAL DEL DÍA */
         .panel-dia { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 20px; padding: 22px; height: fit-content; position: sticky; top: 30px; }
-        .panel-dia-titulo { font-size: 15px; font-weight: 700; color: #c4b5fd; margin-bottom: 4px; }
+        .panel-dia-titulo { font-size: 15px; font-weight: 700; color: var(--fb-lav); margin-bottom: 4px; }
         .panel-dia-sub { font-size: 12px; color: var(--muted); margin-bottom: 18px; }
         .panel-mov-item { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; background: var(--item-bg); border: 1px solid var(--item-border); border-radius: 12px; padding: 11px 14px; font-size: 13px; margin-bottom: 8px; }
-        .panel-mov-titulo { font-weight: 600; color: white; }
+        .panel-mov-titulo { font-weight: 600; color: var(--fb-text); }
         .panel-mov-desc { font-size: 11px; color: var(--muted); margin-top: 2px; }
         .panel-mov-monto.gasto { color: #f472b6; font-weight: 700; }
-        .panel-mov-monto.ingreso { color: #4ade80; font-weight: 700; }
+        .panel-mov-monto.ingreso { color: #10B981; font-weight: 700; }
         .panel-sin-datos { text-align: center; color: var(--muted); padding: 30px 10px; font-size: 13px; }
         .panel-sin-datos i { font-size: 30px; opacity: 0.3; display: block; margin-bottom: 10px; }
         .panel-sin-seleccion { text-align: center; color: var(--muted); padding: 40px 10px; font-size: 13px; }
+
+        /* LUGAR DE CADA MOVIMIENTO */
+        .panel-mov-lugar { display: inline-flex; align-items: center; gap: 5px; margin-top: 5px; font-size: 11.5px; font-weight: 600; color: var(--fb-teal); text-decoration: none; max-width: 100%; }
+        .panel-mov-lugar span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 190px; }
+        .panel-mov-lugar:hover { color: var(--fb-teal); text-decoration: underline; }
+        .cal-dia-top { display: flex; justify-content: space-between; align-items: center; }
+        .cal-dia-pin { font-size: 10px; color: var(--fb-teal); opacity: .85; }
+        .panel-lugares-dia { font-size: 12px; color: var(--muted); margin: -10px 0 14px; display: flex; align-items: center; gap: 6px; }
 
         /* ===================== RESPONSIVE / MOBILE ===================== */
         @media (max-width: 1100px) {
@@ -138,9 +146,10 @@
             .cal-dia-grande { min-height: 58px; border-radius: 9px; }
             .cal-dia-num { font-size: 12px; }
             .cal-dia-monto { display: none; } /* en pantallas muy chicas solo se ve el número + punto */
-            .cal-dia-grande.tiene-datos::after { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #a855f7; margin-top: auto; }
+            .cal-dia-grande.tiene-datos::after { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #8B5CF6; margin-top: auto; }
         }
     </style>
+    <link rel="stylesheet" href="temas.css">
 </head>
 <body class="tema-oscuro">
 
@@ -173,8 +182,8 @@
         <div class="topbar-left">
             <button class="menu-toggle" id="menuToggle" aria-label="Abrir menú"><i class="fas fa-bars"></i></button>
             <div>
-                <h1><i class="fas fa-calendar-days" style="color:#a855f7;"></i> Calendario financiero</h1>
-                <p>Revisa cualquier mes y descarga su reporte en PDF o Excel</p>
+                <h1><i class="fas fa-calendar-days" style="color:#8B5CF6;"></i> Calendario financiero</h1>
+                <p>Revisa cualquier mes, dónde gastaste y descarga su reporte en PDF o Excel</p>
             </div>
         </div>
         <div class="topbar-right">
@@ -197,7 +206,7 @@
     <div class="resumen-mes-bar">
         <div class="resumen-mes-item">
             <div class="resumen-mes-label">Ingresos del mes</div>
-            <div class="resumen-mes-valor" id="resIngresosMes" style="color:#4ade80">$0</div>
+            <div class="resumen-mes-valor" id="resIngresosMes" style="color:#10B981">$0</div>
         </div>
         <div class="resumen-mes-item">
             <div class="resumen-mes-label">Gastos del mes</div>
@@ -205,7 +214,7 @@
         </div>
         <div class="resumen-mes-item">
             <div class="resumen-mes-label">Balance del mes</div>
-            <div class="resumen-mes-valor" id="resBalanceMes" style="color:#22d3ee">$0</div>
+            <div class="resumen-mes-valor" id="resBalanceMes" style="color:var(--fb-teal)">$0</div>
         </div>
     </div>
 
@@ -277,7 +286,20 @@
         'Ajuste de meta': '🎯', 'Retiro de ahorro': '🎯',
         'Ajuste de meta (aumento)': '🎯', 'Ajuste de meta (retiro)': '↩️',
     };
-    function getIcono(cat, tipo) { return ICONOS[cat] || (tipo === 'ingreso' ? '💰' : '💸'); }
+    let iconosCategoriasUsuario = {};
+    function getIcono(cat, tipo) { return iconosCategoriasUsuario[cat] || ICONOS[cat] || (tipo === 'ingreso' ? '💰' : '💸'); }
+
+    async function cargarIconosCategoriasUsuario() {
+        if (!token) return;
+        try {
+            const response = await fetch(`${API}/transacciones/categorias/mias`, { headers: { Authorization: 'Bearer ' + token } });
+            if (!response.ok) throw new Error(`No se pudieron cargar las categorías (${response.status})`);
+            const categorias = await response.json();
+            iconosCategoriasUsuario = Object.fromEntries([...categorias.gasto, ...categorias.ingreso].map(item => [item.nombre, item.icono]));
+        } catch (error) {
+            console.error('Error cargando iconos de categorías:', error);
+        }
+    }
 
     const DIAS  = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
     const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
@@ -336,6 +358,45 @@
         return m.descripcion || 'Sin descripción';
     }
 
+    // ── UBICACIONES ───────────────────────────────────────
+    const escaparHTML = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const _num = v => (v === null || v === undefined || v === '') ? NaN : Number(v);
+    const latDe = m => _num(m.latitud);
+    const lngDe = m => _num(m.longitud);
+    const tieneUbic = m => Number.isFinite(latDe(m)) && Number.isFinite(lngDe(m));
+    const nombreLugar = m => (m.ubicacion_nombre || '').trim() || `${latDe(m).toFixed(5)}, ${lngDe(m).toFixed(5)}`;
+    const linkGoogleMaps = m => `https://www.google.com/maps/search/?api=1&query=${latDe(m)},${lngDe(m)}`;
+    const pesos = v => '$' + Math.round(Math.abs(v)).toLocaleString('es-CO');
+
+    // Si calendario.py no manda la ubicación, se completa con /transacciones/
+    let todasTransacciones = null;
+    async function cargarTransacciones() {
+        if (!token) return;
+        try {
+            const res = await fetch(`${API}/transacciones/`, { headers: { 'Authorization': `Bearer ${token}` } });
+            if (res.ok) {
+                const data = await res.json();
+                todasTransacciones = Array.isArray(data) ? data : (data.transacciones || []);
+            }
+        } catch (e) { console.error('Error cargando ubicaciones:', e); }
+    }
+    const claveMov = m => [String(m.fecha).slice(0, 10), String(m.tipo).toLowerCase(), Math.round(Number(m.monto)), m.categoria, m.descripcion || ''].join('|');
+    function completarUbicaciones(movs) {
+        if (!todasTransacciones || movs.every(tieneUbic)) return movs;
+        const porId = {}, porClave = {};
+        todasTransacciones.forEach(t => {
+            if (!tieneUbic(t)) return;
+            if (t.id != null) porId[t.id] = t;
+            (porClave[claveMov(t)] = porClave[claveMov(t)] || []).push(t);
+        });
+        return movs.map(m => {
+            if (tieneUbic(m)) return m;
+            let t = m.id != null ? porId[m.id] : null;
+            if (!t) { const lista = porClave[claveMov(m)]; t = lista && lista.shift(); }
+            return t ? { ...m, ubicacion_nombre: t.ubicacion_nombre, latitud: t.latitud, longitud: t.longitud } : m;
+        });
+    }
+
     // ── ESTADO ────────────────────────────────────────────
     const hoy = new Date();
     let anioActual = hoy.getFullYear();
@@ -365,14 +426,14 @@
             if (!res.ok) throw new Error('No se pudo cargar el mes');
             const data = await res.json();
 
-            movimientosMes = data.movimientos || [];
+            movimientosMes = completarUbicaciones(data.movimientos || []);
             hayTransaccionesMes = data.hay_transacciones;
 
             document.getElementById('resIngresosMes').textContent = '$' + Math.round(data.total_ingresos).toLocaleString('es-CO');
             document.getElementById('resGastosMes').textContent   = '$' + Math.round(data.total_gastos).toLocaleString('es-CO');
             const balEl = document.getElementById('resBalanceMes');
             balEl.textContent = '$' + Math.abs(Math.round(data.balance)).toLocaleString('es-CO');
-            balEl.style.color = data.balance >= 0 ? '#4ade80' : '#f472b6';
+            balEl.style.color = data.balance >= 0 ? '#10B981' : '#f472b6';
 
             document.getElementById('avisoVacio').classList.toggle('visible', !hayTransaccionesMes);
             document.getElementById('btnExportarPDF').disabled = !hayTransaccionesMes;
@@ -396,7 +457,8 @@
 
         const porDia = {};
         movimientosMes.forEach(m => {
-            if (!porDia[m.fecha]) porDia[m.fecha] = { ingreso: 0, gasto: 0 };
+            if (!porDia[m.fecha]) porDia[m.fecha] = { ingreso: 0, gasto: 0, lugares: 0 };
+            if (tieneUbic(m)) porDia[m.fecha].lugares++;
             // Un "gasto" con monto NEGATIVO es un ajuste que devuelve plata
             // (ej. retiro de una meta) — se muestra del lado de ingreso,
             // no como un gasto en rojo, para reflejar el efecto real.
@@ -425,7 +487,7 @@
             }
 
             html += `<div class="${clases.join(' ')}" onclick="seleccionarDia('${dateStr}')">
-                <div class="cal-dia-num">${d}</div>
+                <div class="cal-dia-top"><div class="cal-dia-num">${d}</div>${datosDia && datosDia.lugares ? `<i class="fas fa-location-dot cal-dia-pin" title="${datosDia.lugares} con ubicación"></i>` : ''}</div>
                 ${montosHtml}
             </div>`;
         }
@@ -451,6 +513,7 @@
             if (efectivo >= 0) ingresosDia += efectivo; else gastosDia += -efectivo;
         });
 
+        const conLugar = movs.filter(tieneUbic).length;
         const movsHtml = movs.length ? movs.map(m => {
             const efectivo = efectivoDe(m);
             const esIngreso = efectivo >= 0;
@@ -460,9 +523,10 @@
             const montoAbs = Math.abs(efectivo);
             return `
             <div class="panel-mov-item">
-                <div>
+                <div style="min-width:0;">
                     <div class="panel-mov-titulo">${getIcono(m.categoria, m.tipo)} ${etiquetaTipo} · ${m.categoria}</div>
-                    <div class="panel-mov-desc">${descripcionAmigable(m)}</div>
+                    <div class="panel-mov-desc">${escaparHTML(descripcionAmigable(m))}</div>
+                    ${tieneUbic(m) ? `<a class="panel-mov-lugar" href="${linkGoogleMaps(m)}" target="_blank" rel="noopener" title="Abrir en Google Maps"><i class="fas fa-location-dot"></i><span>${escaparHTML(nombreLugar(m))}</span></a>` : ''}
                 </div>
                 <span class="panel-mov-monto ${claseColor}">${signo}$${Math.round(montoAbs).toLocaleString('es-CO')}</span>
             </div>`;
@@ -471,7 +535,8 @@
 
         document.getElementById('panelDiaContenido').innerHTML = `
             <div class="panel-dia-titulo">${fechaLegible.charAt(0).toUpperCase() + fechaLegible.slice(1)}</div>
-            <div class="panel-dia-sub">${movs.length} movimiento${movs.length !== 1 ? 's' : ''} · Balance: $${(ingresosDia - gastosDia).toLocaleString('es-CO')}</div>
+            <div class="panel-dia-sub">${movs.length} movimiento${movs.length !== 1 ? 's' : ''} · Balance: ${(ingresosDia - gastosDia) < 0 ? '-' : ''}${pesos(ingresosDia - gastosDia)}</div>
+            ${conLugar ? `<div class="panel-lugares-dia"><i class="fas fa-location-dot"></i> ${conLugar} con ubicación</div>` : ''}
             ${movsHtml}
         `;
     }
@@ -524,7 +589,7 @@
 
     // ── INIT ──────────────────────────────────────────────
     (async function initCalendario() {
-        await cargarMetasCache();
+        await Promise.all([cargarMetasCache(), cargarTransacciones(), cargarIconosCategoriasUsuario()]);
         await cargarMes();
     })();
 </script>

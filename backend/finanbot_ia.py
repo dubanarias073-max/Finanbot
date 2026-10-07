@@ -6,19 +6,25 @@ import random
 import re
 import unicodedata
 
+try:                                   # mismo paquete (routes/, services/…)
+    from . import finanbot_ia_2
+except ImportError:                    # ejecutado como módulo suelto
+    import finanbot_ia_2
+
 # ══════════════════════════════════════════════════════════════════
 #  RUTAS REALES DEL PROYECTO  (usadas en los botones de acción)
 # ══════════════════════════════════════════════════════════════════
 RUTAS = {
     'dashboard':      'dashboard.html',
     'finanzas':       'finanzas.html',
-    'metas':          'finanzas.html#metas',
+    'metas':          'perfil.html#tab-metas',
     'simulador':      'simulador.html',
     'recomendaciones':'recomendaciones.html',
     'aprende':        'aprende.html',
     'perfil':         'perfil.html',
     'chat':           'chat.html',
     'calendario':     'calendario.html',
+    'mapa':           'finanzas.html#cardMapa',
     'exportar_pdf':   'exportar.html',
     'exportar_excel': 'exportar.html',
 }
@@ -53,6 +59,120 @@ def _con_ejemplo(texto: str, clave: str) -> str:
     if not ejemplo:
         return texto
     return f"{texto}\n\n{ejemplo}"
+
+
+# ══════════════════════════════════════════════════════════════════
+#  UBICACIONES (reales y precisas)
+#  La acción que llega del backend puede traer, opcionalmente:
+#     ubicacion_nombre, latitud, longitud, precision_m
+#  Aquí NO se inventa ningún lugar: si no hay coordenadas reales,
+#  se dice tal cual. Mismo criterio que finanzas / reportes:
+#  dos movimientos a <= 75 m se consideran el MISMO lugar.
+# ══════════════════════════════════════════════════════════════════
+RADIO_MISMO_LUGAR_M = 75
+PRECISION_ACEPTABLE_M = 100
+
+
+def _num_coord(v):
+    try:
+        if v is None or v == '':
+            return None
+        return float(v)
+    except (TypeError, ValueError):
+        return None
+
+
+def _coords(a: dict | None):
+    """(lat, lng) válidos o None. Exige ambos y rango real; (0,0) no cuenta."""
+    if not a:
+        return None
+    lat, lng = _num_coord(a.get('latitud')), _num_coord(a.get('longitud'))
+    if lat is None or lng is None:
+        return None
+    if not (-90 <= lat <= 90 and -180 <= lng <= 180):
+        return None
+    if lat == 0 and lng == 0:
+        return None
+    return lat, lng
+
+
+def _limpiar_md(txt: str) -> str:
+    """Evita que un nombre de lugar rompa los links/negritas del markdown."""
+    return re.sub(r'[\[\]()*_`]', '', str(txt or '')).strip()
+
+
+def _maps_url(lat: float, lng: float) -> str:
+    return f"https://www.google.com/maps/search/?api=1&query={lat:.6f},{lng:.6f}"
+
+
+def _fmt_coords(lat: float, lng: float) -> str:
+    return f"{lat:.5f}, {lng:.5f}"
+
+
+def _distancia_m(a, b) -> float:
+    """Haversine en metros entre (lat,lng) y (lat,lng)."""
+    from math import radians, sin, cos, asin, sqrt
+    la1, lo1, la2, lo2 = map(radians, (a[0], a[1], b[0], b[1]))
+    h = sin((la2 - la1) / 2) ** 2 + cos(la1) * cos(la2) * sin((lo2 - lo1) / 2) ** 2
+    return 2 * 6371000 * asin(sqrt(h))
+
+
+def _lugar_texto(a: dict | None, enlace: bool = True) -> str:
+    """Una línea con el lugar real del movimiento, o '' si no tiene."""
+    if not a:
+        return ''
+    c = _coords(a)
+    nombre = _limpiar_md(a.get('ubicacion_nombre'))
+    if not c:
+        return f"📍 {nombre} *(sin coordenadas: no puedo ubicarlo en el mapa)*" if nombre else ''
+    base = nombre or "Punto GPS"
+    prec = _num_coord(a.get('precision_m'))
+    txt = f"📍 **{base}** · {_fmt_coords(*c)}"
+    if prec is not None and prec > 0:
+        txt += f" · ±{prec:,.0f} m"
+    if enlace:
+        txt += f" · [Abrir punto exacto en Google Maps]({_maps_url(*c)})"
+    if prec is not None and prec > PRECISION_ACEPTABLE_M:
+        txt += (f"\n⚠️ *La precisión del GPS fue de ±{prec:,.0f} m. "
+                f"Si necesitas el sitio exacto, corrígelo desde el mapa en [Mis finanzas]({RUTAS['finanzas']}).*")
+    return txt
+
+
+def _agrupar_lugares(movs: list[dict]) -> list[dict]:
+    """Agrupa por DISTANCIA (<= 75 m = mismo lugar), no por nombre.
+    Devuelve [{nombre, lat, lng, total, n}] ordenado por total desc.
+    Nombre = el más frecuente del grupo; coordenadas = promedio."""
+    grupos: list[dict] = []
+    for m in movs or []:
+        c = _coords(m)
+        if not c:
+            continue
+        monto = _num_coord(m.get('monto')) or 0
+        destino = None
+        for g in grupos:
+            if _distancia_m((g['lat'], g['lng']), c) <= RADIO_MISMO_LUGAR_M:
+                destino = g
+                break
+        if destino is None:
+            destino = {'lat': c[0], 'lng': c[1], 'total': 0.0, 'n': 0,
+                       'nombres': {}, 'sum_lat': 0.0, 'sum_lng': 0.0}
+            grupos.append(destino)
+        destino['total'] += monto
+        destino['n'] += 1
+        destino['sum_lat'] += c[0]
+        destino['sum_lng'] += c[1]
+        nom = _limpiar_md(m.get('ubicacion_nombre'))
+        if nom:
+            destino['nombres'][nom] = destino['nombres'].get(nom, 0) + 1
+        destino['lat'] = destino['sum_lat'] / destino['n']
+        destino['lng'] = destino['sum_lng'] / destino['n']
+    salida = []
+    for g in grupos:
+        nombre = max(g['nombres'], key=g['nombres'].get) if g['nombres'] else "Punto GPS"
+        salida.append({'nombre': nombre, 'lat': g['lat'], 'lng': g['lng'],
+                       'total': g['total'], 'n': g['n']})
+    salida.sort(key=lambda x: x['total'], reverse=True)
+    return salida
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -219,7 +339,10 @@ def detectar_categoria_gasto(texto: str) -> str | None:
         return exacta
     msg = (texto or '').lower()
     for categoria, palabras in KEYWORDS_GASTO.items():
-        if any(p in msg for p in palabras):
+        if any(
+            re.search(rf'(?<!\w){re.escape(p)}(?!\w)', msg) if len(p) <= 3 else p in msg
+            for p in palabras
+        ):
             return categoria
     return None
 
@@ -232,7 +355,10 @@ def detectar_categoria_ingreso(texto: str) -> str | None:
         return exacta
     msg = (texto or '').lower()
     for categoria, palabras in KEYWORDS_INGRESO.items():
-        if any(p in msg for p in palabras):
+        if any(
+            re.search(rf'(?<!\w){re.escape(p)}(?!\w)', msg) if len(p) <= 3 else p in msg
+            for p in palabras
+        ):
             return categoria
     return None
 
@@ -1432,8 +1558,11 @@ class FinanBotIA:
         mensaje: str,
         ctx: dict | None,
         accion: dict | None,
+        conversacion_id: str | None = None,
     ) -> tuple[str, list[dict]]:
         ts = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        self._clave_conv = self._clave_conversacion(ctx, conversacion_id)
+        self._respuesta_de_ia2 = False
         self.historial.append({'rol': 'usuario', 'msg': mensaje, 'timestamp': ts})
         self._actualizar_memoria(mensaje, ctx)
 
@@ -1445,9 +1574,30 @@ class FinanBotIA:
                 return respuesta, acciones_ui
 
         respuesta, acciones_ui = self._generar(mensaje, ctx, accion)
-        respuesta = self._personalizar_respuesta(respuesta, mensaje, ctx)
+        if self._respuesta_de_ia2:
+            respuesta = self._normalizar_respuesta(respuesta)
+        else:
+            respuesta = self._personalizar_respuesta(respuesta, mensaje, ctx, accion)
+            # la IA conversacional también "ve" lo que hicieron las reglas
+            finanbot_ia_2.recordar(self._clave_conv, 'user', mensaje)
+            finanbot_ia_2.recordar(self._clave_conv, 'bot', respuesta)
         self.historial.append({'rol': 'bot', 'msg': respuesta[:200], 'timestamp': ts})
         return respuesta, acciones_ui
+
+    @staticmethod
+    def _clave_conversacion(ctx: dict | None, conversacion_id: str | None) -> str | None:
+        """Identifica la conversación para la memoria de la IA. Sin un id
+        no se guarda memoria (evita mezclar conversaciones de usuarios)."""
+        if conversacion_id:
+            return f'conv:{conversacion_id}'
+        if ctx:
+            for k in ('conversacion_id', 'conversation_id'):
+                if ctx.get(k):
+                    return f'conv:{ctx[k]}'
+            for k in ('usuario_id', 'user_id', 'id_usuario'):
+                if ctx.get(k):
+                    return f'user:{ctx[k]}'
+        return None
 
     # ── Router principal ──────────────────────────────────────────
 
@@ -1510,6 +1660,8 @@ class FinanBotIA:
             return self._gastos(accion), _btns_finanzas()
         if tipo == 'consulta_ingresos':
             return self._ingresos(accion), _btns_finanzas()
+        if tipo == 'consulta_lugares':
+            return self._lugares(accion), _btns_mapa()
         if tipo == 'consulta_resumen':
             return self._resumen(accion, ctx), _btns_resumen()
 
@@ -1782,6 +1934,12 @@ class FinanBotIA:
             if meta_m > 0 and total_gastos_ctx > meta_m * 3:
                 lineas.append(f"\n⚠️ {_tip()} Tus gastos de este mes suman ${total_gastos_ctx:,.0f}. ¡Ojo con el presupuesto!")
 
+        lugar = _lugar_texto(a)
+        if lugar:
+            lineas.append(f"\n{lugar}")
+        else:
+            lineas.append("\n📍 *Sin lugar registrado. Activa el GPS del chat al registrar y lo guardo con la ubicación real.*")
+
         lineas.append(f"\n\n📝 *¿Te equivocaste? Puedo editarlo o borrarlo:*")
         lineas.append(EJEMPLOS['editar_gasto'])
         lineas.append(EJEMPLOS['borrar_gasto'])
@@ -1802,6 +1960,12 @@ class FinanBotIA:
             lineas.append(f"\n💡 *Regla del 20%: guarda **${int(monto*0.2):,.0f}** de este ingreso.*")
             if info.get('tip'):
                 lineas.append(f"\n{_tip()} {info['tip']}")
+
+        lugar = _lugar_texto(a)
+        if lugar:
+            lineas.append(f"\n{lugar}")
+        else:
+            lineas.append("\n📍 *Sin lugar registrado. Activa el GPS del chat al registrar y lo guardo con la ubicación real.*")
 
         lineas.append(f"\n\n📝 *¿Te equivocaste? Puedo editarlo o borrarlo:*")
         lineas.append(EJEMPLOS['editar_ingreso'])
@@ -1826,6 +1990,10 @@ class FinanBotIA:
         else:
             lineas.append(f"\n{ico} **{cat}** actualizado.")
 
+        lugar = _lugar_texto(a)
+        if lugar:
+            lineas.append(f"\n{lugar}")
+
         clave = 'editar_gasto' if tipo_t == 'gasto' else 'editar_ingreso'
         return _con_ejemplo("\n".join(lineas), clave)
 
@@ -1835,6 +2003,9 @@ class FinanBotIA:
         ico = info.get('emoji') or ("💸" if tipo_t == 'gasto' else "💰")
         texto = (f"🗑️ {tipo_t.capitalize()} eliminado.\n\n"
                  f"{ico} **${monto:,.0f}** en **{cat}** fue removido de tu historial de este mes.")
+        lugar = _lugar_texto(a, enlace=False)
+        if lugar:
+            texto += f"\n\n{lugar}"
         clave = 'borrar_gasto' if tipo_t == 'gasto' else 'borrar_ingreso'
         return _con_ejemplo(texto, clave)
 
@@ -1926,7 +2097,10 @@ class FinanBotIA:
         if rec:
             lineas.append("\n**Últimos movimientos:**")
             for t in rec[:4]:
-                lineas.append(f"  • {t['categoria']}: ${t['monto']:,.0f} — {t['fecha']}")
+                lineas.append(f"  • {t['categoria']}: ${t['monto']:,.0f} — {t['fecha']}{self._sufijo_lugar(t)}")
+        top = self._bloque_lugares(a.get('movimientos') or rec, 'gasto')
+        if top:
+            lineas.append(top)
         lineas.append(f"\n📅 *¿Necesitas un mes anterior? Consúltalo en el [Calendario]({RUTAS['calendario']}) — ahí puedes verlo y descargar su reporte.*")
         return "\n".join(lineas)
 
@@ -1948,7 +2122,54 @@ class FinanBotIA:
         if rec:
             lineas.append("\n**Últimos ingresos:**")
             for t in rec[:5]:
-                lineas.append(f"  • {t['categoria']}: ${t['monto']:,.0f} — {t['fecha']}")
+                lineas.append(f"  • {t['categoria']}: ${t['monto']:,.0f} — {t['fecha']}{self._sufijo_lugar(t)}")
+        top = self._bloque_lugares(a.get('movimientos') or rec, 'ingreso')
+        if top:
+            lineas.append(top)
+        return "\n".join(lineas)
+
+    def _sufijo_lugar(self, t: dict) -> str:
+        """' · 📍 Lugar' corto para listas de movimientos (solo si es real)."""
+        nombre = _limpiar_md(t.get('ubicacion_nombre'))
+        c = _coords(t)
+        if c:
+            return f" · 📍 [{nombre or _fmt_coords(*c)}]({_maps_url(*c)})"
+        return f" · 📍 {nombre}" if nombre else ""
+
+    def _bloque_lugares(self, movs, tipo: str) -> str:
+        """Top de lugares reales (<=75 m = mismo lugar). '' si no hay coordenadas."""
+        grupos = _agrupar_lugares(movs or [])
+        if not grupos:
+            return ""
+        verbo = "gastas" if tipo == 'gasto' else "recibes"
+        out = [f"\n📍 **Dónde {verbo} más:**"]
+        for g in grupos[:3]:
+            signo = "" if tipo == 'gasto' else "+"
+            out.append(f"  • [{g['nombre']}]({_maps_url(g['lat'], g['lng'])}): {signo}${g['total']:,.0f} "
+                       f"({g['n']} mov.) · {_fmt_coords(g['lat'], g['lng'])}")
+        return "\n".join(out)
+
+    def _lugares(self, a):
+        """Respuesta a '¿dónde gasto más?' / '¿dónde recibo ingresos?'.
+        Usa a['movimientos'] (con latitud/longitud) que entrega el backend."""
+        movs = a.get('movimientos') or []
+        tipo = a.get('filtro_tipo') or 'gasto'
+        con = [m for m in movs if _coords(m)]
+        sin = len(movs) - len(con)
+        etiqueta = {'gasto': 'gastos', 'ingreso': 'ingresos'}.get(tipo, 'movimientos')
+        if not con:
+            return (f"📍 Aún no tienes {etiqueta} con ubicación real este mes.\n\n"
+                    f"Cuando registres uno, activa el GPS del chat y lo guardo con las coordenadas exactas. "
+                    f"También puedes marcar el punto en el mapa de [Mis finanzas]({RUTAS['finanzas']}).")
+        grupos = _agrupar_lugares(con)
+        lineas = [f"📍 **Dónde se mueven tus {etiqueta} — {_mes_actual_label()}**\n",
+                  f"*(Dos movimientos a {RADIO_MISMO_LUGAR_M} m o menos cuentan como el mismo lugar)*\n"]
+        for i, g in enumerate(grupos[:5], 1):
+            signo = "+" if tipo == 'ingreso' else ""
+            lineas.append(f"{i}. [{g['nombre']}]({_maps_url(g['lat'], g['lng'])}) — {signo}${g['total']:,.0f} "
+                          f"en {g['n']} movimiento(s)\n   {_fmt_coords(g['lat'], g['lng'])}")
+        if sin > 0:
+            lineas.append(f"\n⚠️ {sin} movimiento(s) no tienen coordenadas y no entran en este ranking.")
         return "\n".join(lineas)
 
     def _resumen(self, a, ctx):
@@ -2053,8 +2274,14 @@ class FinanBotIA:
     def _normalizar_respuesta(texto: str) -> str:
         if not texto:
             return texto
-        texto = re.sub(r'(?<!\w)(\d+(?:[.,]\d+)?)\s*%', r'\1 porcentaje', texto)
-        return texto.replace('%', 'porcentaje')
+        # Antes se cambiaba "%" por la palabra "porcentaje"; se quitó porque
+        # dañaba tablas, porcentajes y la regla 50/30/20. Solo se limpian
+        # espacios sobrantes.
+        texto = re.sub(r'\n{3,}', '\n\n', texto).strip()
+        # Montos en formato colombiano: $1,234,567 → $1.234.567 y $-5.000 → -$5.000
+        texto = re.sub(r'\$(-?)(\d{1,3}(?:,\d{3})+)(?!\d)', lambda m: f"{m.group(1)}${m.group(2).replace(',', '.')}", texto)
+        texto = re.sub(r'\$-(\d)', r'-$\1', texto)
+        return texto
 
     def _detectar_tema(self, mensaje: str) -> str:
         msg = mensaje.lower()
@@ -2119,7 +2346,7 @@ class FinanBotIA:
         if ingresos > 0:
             ahorro_pct = round(balance / ingresos * 100) if ingresos else 0
             if ahorro_pct < 20 and tema in {'ahorro', 'finanzas'}:
-                return 'Con tus ingresos actuales, un siguiente paso útil sería ahorrar al menos el 20 porcentaje mensual y dejarlo automático.'
+                return 'Con tus ingresos actuales, un siguiente paso útil sería ahorrar al menos el 20% mensual y dejarlo automático.'
 
         if metas:
             meta_activa = next((m for m in metas if not m.get('completada')), None)
@@ -2150,7 +2377,7 @@ class FinanBotIA:
             if pct is not None and pct > 100:
                 return (
                     "⚠️ Ese porcentaje parece demasiado alto. Ahorrar más del 100 porcentaje de tus ingresos no es realista para la mayoría de personas. "
-                    "Lo más recomendable suele ser entre 10 y 20 porcentaje de tus ingresos, o incluso menos si tu situación está ajustada. "
+                    "Lo más recomendable suele ser entre 10% y 20% de tus ingresos, o incluso menos si tu situación está ajustada. "
                     "Si quieres, te ayudo a calcular una meta más sostenible."
                 )
         if any(p in msg for p in ['descuento', 'rebaja', 'oferta']) and re.search(r'(\d+(?:[.,]\d+)?)\s*%', msg):
@@ -2158,38 +2385,38 @@ class FinanBotIA:
             for valor in re.findall(r'(\d+(?:[.,]\d+)?)\s*%', mensaje):
                 pct = float(valor.replace(',', '.'))
             if pct is not None and pct > 100:
-                return "⚠️ Un descuento superior al 100 porcentaje no tiene sentido práctico; revisa el dato o el porcentaje que quieres aplicar."
+                return "⚠️ Un descuento superior al 100% no tiene sentido práctico; revisa el dato o el porcentaje que quieres aplicar."
         return None
 
-    def _personalizar_respuesta(self, respuesta: str, mensaje: str, ctx: dict | None) -> str:
+    def _personalizar_respuesta(self, respuesta: str, mensaje: str, ctx: dict | None,
+                                accion: dict | None = None) -> str:
+        """Agrega solo lo que aporta: corrección de datos absurdos y, en
+        respuestas de conversación libre, una sugerencia basada en los datos
+        reales. Antes se agregaba a TODO una frase de empatía genérica y un
+        eco de los últimos mensajes del usuario; eso se quitó."""
         if not respuesta:
             return respuesta
 
         tema = self._detectar_tema(mensaje)
-        if tema != self.memoria.get('ultimo_tema', 'general'):
-            self.memoria['ultimo_tema'] = tema
+        self.memoria['ultimo_tema'] = tema
 
-        intro = self._frase_empatica(ctx, tema)
-        sugerencia = self._sugerencia_personalizada(mensaje, ctx, tema)
         correccion = self._corregir_pedido(mensaje)
-
         if correccion:
             respuesta = f"{correccion}\n\n{respuesta}"
 
-        if sugerencia:
-            respuesta = f"{respuesta}\n\n💬 {sugerencia}"
+        es_conversacion = accion is None
+        if es_conversacion and tema != 'general':
+            sugerencia = self._sugerencia_personalizada(mensaje, ctx, tema)
+            if sugerencia and sugerencia not in respuesta:
+                respuesta = f"{respuesta}\n\n💬 {sugerencia}"
+            if ctx and (ctx.get('balance') or 0) < 0 and tema in ('deuda', 'finanzas'):
+                respuesta = f"{self._frase_empatica(ctx, tema)}\n\n{respuesta}"
 
+        # Patrón repetido: solo se menciona una vez, cuando aparece
         cats_mem = self.memoria.get('categorias_mencionadas', [])
-        if len(cats_mem) >= 3 and len(set(cats_mem[-3:])) == 1:
-            cat_repetida = cats_mem[-1]
-            info = CATEGORIAS_GASTO.get(cat_repetida) or CATEGORIAS_INGRESO.get(cat_repetida)
-            if info:
-                respuesta = f"{respuesta}\n\n🔁 Noto que **{cat_repetida}** ha salido varias veces en esta conversación — parece un patrón recurrente."
+        if es_conversacion and len(cats_mem) == 3 and len(set(cats_mem)) == 1:
+            respuesta += f"\n\n🔁 Noto que **{cats_mem[-1]}** sale varias veces en la conversación, parece un gasto recurrente."
 
-        if self.memoria.get('historial_reciente') and len(self.memoria['historial_reciente']) > 1:
-            respuesta = f"{respuesta}\n\n🧠 Contexto reciente: {', '.join(self.memoria['historial_reciente'][-3:])}."
-
-        respuesta = f"{intro}\n\n{respuesta}"
         return self._normalizar_respuesta(respuesta)
 
     def _detectar_intencion_edicion_borrado(self, msg: str) -> str | None:
@@ -2227,7 +2454,8 @@ class FinanBotIA:
 
         return None
 
-    def _respuesta_inteligente_contextual(self, mensaje: str, ctx: dict | None) -> str | None:
+    def _respuesta_inteligente_contextual(self, mensaje: str, ctx: dict | None,
+                                          incluir_consejos: bool = True) -> str | None:
         msg = mensaje.lower().strip()
         if not msg:
             return None
@@ -2243,6 +2471,16 @@ class FinanBotIA:
         if self._es_solicitud_reporte_mensual(msg) and any(p in msg for p in ['reporte', 'descargar', 'exportar']):
             return self._reporte('pdf', 'mes')
 
+        # Preguntas por lugares: si el backend no mandó 'movimientos' con
+        # coordenadas, se usa ctx; nunca se inventan lugares.
+        if any(p in msg for p in ['donde gasto', 'dónde gasto', 'donde he gastado', 'dónde he gastado',
+                                  'donde recibo', 'dónde recibo', 'lugares', 'ubicacion', 'ubicación',
+                                  'en que lugar', 'en qué lugar', 'mapa de gastos']):
+            tipo = 'ingreso' if any(p in msg for p in ['ingreso', 'recibo', 'recibí', 'recibi', 'cobro']) else 'gasto'
+            movs = (ctx or {}).get('movimientos') or []
+            return self._lugares({'movimientos': [m for m in movs if (m.get('tipo') or tipo) == tipo],
+                                  'filtro_tipo': tipo})
+
         # Intención clara de editar/borrar/abonar sin datos suficientes
         intencion = self._detectar_intencion_edicion_borrado(msg)
         if intencion:
@@ -2254,7 +2492,7 @@ class FinanBotIA:
                 pct = float(match.group(1).replace(',', '.'))
                 base = float(match.group(2).replace(',', '.'))
                 resultado = round(_aplicar_porcentaje(base, pct))
-                return f"🧮 El {int(pct) if float(pct).is_integer() else pct} porcentaje de {base:,.0f} es **{resultado:,.0f}**."
+                return f"🧮 El {int(pct) if float(pct).is_integer() else pct}% de ${base:,.0f} es **${resultado:,.0f}**."
 
         if any(p in msg for p in ['en qué categoría', 'en que categoria', 'qué categoría es', 'que categoria es']):
             cat_g = detectar_categoria_gasto(msg)
@@ -2265,6 +2503,11 @@ class FinanBotIA:
             if cat_i:
                 emoji_c = CATEGORIAS_INGRESO[cat_i]['emoji']
                 return f"🏷️ Eso encajaría en la categoría de ingreso **{emoji_c} {cat_i}**. ¿Quieres que lo registre así?"
+
+        # Desde aquí son consejos fijos; con la IA conversacional activa se
+        # dejan a ella, que los adapta a los datos del usuario.
+        if not incluir_consejos:
+            return None
 
         if any(p in msg for p in ['mejorar mis finanzas', 'mejorar finanzas', 'quiero mejorar', 'como mejorar', 'cómo mejorar', 'plan financiero', 'mejorar mi dinero']):
             balance = ctx.get('balance', 0) if ctx else 0
@@ -2416,14 +2659,33 @@ class FinanBotIA:
 
     def _sin_accion(self, mensaje: str, ctx) -> tuple[str, list[dict]]:
         msg = mensaje.lower()
+        con_ia2 = finanbot_ia_2.disponible()
 
-        respuesta_contextual = self._respuesta_inteligente_contextual(mensaje, ctx)
+        # Lo exacto (reportes, lugares reales, guías de editar/borrar, % de X)
+        # siempre lo resuelven las reglas; los consejos, la IA si está activa.
+        respuesta_contextual = self._respuesta_inteligente_contextual(mensaje, ctx, incluir_consejos=not con_ia2)
         if respuesta_contextual:
             return respuesta_contextual, []
 
         directa = self._resolver_operacion_directa(mensaje)
         if directa is not None:
             return directa[0], directa[1]
+
+        # ── FinanBot IA 2 (conversación inteligente) ────────────────
+        if con_ia2:
+            categorias_gasto = ctx.get('categorias_gasto', CATEGORIAS_GASTO) if ctx else CATEGORIAS_GASTO
+            categorias_ingreso = ctx.get('categorias_ingreso', CATEGORIAS_INGRESO) if ctx else CATEGORIAS_INGRESO
+            resultado = finanbot_ia_2.responder(
+                mensaje, ctx, getattr(self, '_clave_conv', None),
+                categorias_gasto=list(categorias_gasto), categorias_ingreso=list(categorias_ingreso),
+                ejemplos=EJEMPLOS, rutas=RUTAS, referencia=self._referencia_base(msg),
+            )
+            if resultado:
+                self._respuesta_de_ia2 = True
+                acciones = [_sug(s) for s in resultado['sugerencias']]
+                acciones += [_btn(_ETIQUETAS_RUTA.get(k, k.capitalize()), RUTAS[k]) for k in resultado['enlaces']]
+                return resultado['respuesta'], acciones
+        # si no hay IA o falló, siguen las respuestas de siempre
 
         # 1. Buscar en base de conocimiento CON RAZONAMIENTO
         for claves, contenido in BASE.items():
@@ -2467,17 +2729,54 @@ class FinanBotIA:
         # 1b. Detección de categoría exacta o por palabras clave en texto
         # libre que no tiene 'accion' todavía (es la IA "entendiendo" a
         # qué categoría pertenece algo que el usuario describió).
-        cat_g = detectar_categoria_gasto(msg)
-        cat_i = detectar_categoria_ingreso(msg)
+        categorias_gasto_activas = set(
+            ctx.get('categorias_gasto', CATEGORIAS_GASTO) if ctx else CATEGORIAS_GASTO
+        )
+        categorias_ingreso_activas = set(
+            ctx.get('categorias_ingreso', CATEGORIAS_INGRESO) if ctx else CATEGORIAS_INGRESO
+        )
+        cat_g = next(
+            (nombre for nombre in sorted(categorias_gasto_activas, key=len, reverse=True)
+             if nombre.casefold() in msg.casefold()),
+            None,
+        ) or detectar_categoria_gasto(msg)
+        cat_i = next(
+            (nombre for nombre in sorted(categorias_ingreso_activas, key=len, reverse=True)
+             if nombre.casefold() in msg.casefold()),
+            None,
+        ) or detectar_categoria_ingreso(msg)
+        if cat_g not in categorias_gasto_activas:
+            cat_g = None
+        if cat_i not in categorias_ingreso_activas:
+            cat_i = None
         if (cat_g or cat_i) and self._extraer_monto(mensaje) is None:
             if cat_g:
-                info = CATEGORIAS_GASTO[cat_g]
-                return (f"🏷️ Eso suena a un gasto de **{info['emoji']} {cat_g}**.\n\n"
-                        f"💡 {info['tip']}\n\n"
+                info = CATEGORIAS_GASTO.get(cat_g)
+                detalle = f"\n\n💡 {info['tip']}" if info else ''
+                return (f"🏷️ Eso suena a un gasto de **{info['emoji'] if info else '🏷️'} {cat_g}**."
+                        f"{detalle}\n\n"
                         f"Dime el monto y te lo registro en el mes actual."), _btns_finanzas()
-            info = CATEGORIAS_INGRESO[cat_i]
-            return (f"🏷️ Eso suena a un ingreso de **{info['emoji']} {cat_i}**.\n\n"
-                    f"💡 {info['tip']}\n\n"
+        elif (cat_g or cat_i) and self._extraer_monto(mensaje) is not None:
+            monto = self._extraer_monto(mensaje)
+            if cat_g:
+                info = CATEGORIAS_GASTO.get(cat_g)
+                return (
+                        f"🏷️ Ese gasto de **${monto:,.0f}** encaja en "
+                        f"**{info['emoji'] if info else '🏷️'} {cat_g}**. "
+                        "Puedes registrarlo desde Mis finanzas.",
+                        _btns_finanzas(),
+                )
+            info = CATEGORIAS_INGRESO.get(cat_i)
+            return (
+                f"🏷️ Ese ingreso de **${monto:,.0f}** encaja en "
+                f"**{info['emoji'] if info else '🏷️'} {cat_i}**. "
+                "Puedes registrarlo desde Mis finanzas.",
+                _btns_finanzas(),
+            )
+            info = CATEGORIAS_INGRESO.get(cat_i)
+            detalle = f"\n\n💡 {info['tip']}" if info else ''
+            return (f"🏷️ Eso suena a un ingreso de **{info['emoji'] if info else '🏷️'} {cat_i}**."
+                    f"{detalle}\n\n"
                     f"Dime el monto y te lo registro en el mes actual."), _btns_finanzas()
 
         # 2. Instrucciones de uso
@@ -2552,6 +2851,17 @@ class FinanBotIA:
         # 7. Respuesta genérica inteligente
         return self._resp_generica_mejorada(mensaje), []
 
+    @staticmethod
+    def _referencia_base(msg: str) -> str | None:
+        """Texto de la base de conocimiento que coincide con el mensaje,
+        para que la IA responda con la información curada del proyecto."""
+        for claves, contenido in BASE.items():
+            for clave in claves.split('|'):
+                c = clave.strip()
+                if c and re.search(r'(?<!\w)' + re.escape(c) + r'(?!\w)', msg):
+                    return f"{contenido['titulo']}\n{_limpiar_md(contenido['cuerpo'])}"
+        return None
+
     def _como_usar(self):
         return (
             "## 💬 Cómo hablarme\n\n"
@@ -2576,6 +2886,9 @@ class FinanBotIA:
             "• *'Añade $50.000 a mi meta de viajes'* → solo suma\n"
             "• *'Pon mi meta de viajes en $300.000'* → reemplaza el total\n"
             "• *'Simula $500.000 al 12% por 6 meses'*\n\n"
+            "**Lugares (reales y precisos):**\n"
+            "• Al registrar, el chat usa tu GPS y guarda el punto exacto\n"
+            "• *'¿Dónde gasto más?'* / *'¿Dónde recibo mis ingresos?'*\n\n"
             "**Reportes:**\n"
             "• *'Reporte de este mes'* → PDF/Excel solo del mes actual\n"
             "• *'Reporte completo'* → PDF/Excel con todo el histórico\n"
@@ -2671,7 +2984,8 @@ class FinanBotIA:
 
         if re.search(r'qu[eé]\s+es\s+(\w+)', msg) or re.search(r'c[oó]mo\s+funciona\s+(\w+)', msg):
             return (
-                "🤖 No tengo esa información específica en mi base, pero puedo enseñarte sobre:\n\n"
+                "🤖 Soy un chat especializado en finanzas personales y no tengo información sobre ese tema. "
+                "Sí puedo ayudarte con:\n\n"
                 "**Inversiones:** CDT • Fondos • Acciones • Criptomonedas\n"
                 "**Deudas:** Tarjeta de crédito • Préstamos • Salir de deudas\n"
                 "**Ahorro:** Fondo de emergencia • Metas manuales/automáticas • Presupuesto\n"
@@ -2680,14 +2994,9 @@ class FinanBotIA:
             )
 
         return (
-            "🤔 No estoy 100% seguro qué necesitas, pero puedo ayudarte con esto:\n\n"
-            "**📝 Registrar/editar/borrar (mes actual):**  *'Gasté $30.000 en comida'*, *'edita mi gasto de comida a $40.000'*, *'borra el ingreso de Freelance'*\n"
-            "**🧮 Calcular:**  *'$80.000 con 20% descuento'* o *'$50.000 más IVA'*\n"
-            "**📈 Simular:**  *'Simula $500.000 al 10% por 1 año'*\n"
-            "**💡 Preguntar:**  *'¿Qué es un CDT?'* o *'¿Cómo ahorrar más?'*\n"
-            "**🎯 Metas:**  *'Crea meta de $1M para viajes'* o *'crea una meta automática de $2M, $200.000/mes el día 5'*\n"
-            "**📄 Reportes:**  *'Reporte de este mes'* o *'Reporte completo'*\n\n"
-            "Reformula así tu pregunta o cuéntame qué necesitas lograr financieramente 😊"
+            "😄 Soy FinanBot, un chat especializado en finanzas personales, así que no puedo ayudarte con temas ajenos a las finanzas.\n\n"
+            "Puedo ayudarte a registrar gastos e ingresos, calcular descuentos e IVA, simular inversiones, "
+            "crear metas de ahorro o consultar tus reportes. ¿Qué quieres revisar de tus finanzas? 💰"
         )
 
     # ─── Utilidades ───────────────────────────────────────────────
@@ -2700,6 +3009,13 @@ class FinanBotIA:
 # ══════════════════════════════════════════════════════════════════
 #  BOTONES DE ACCIÓN  ─  URLs reales del proyecto
 # ══════════════════════════════════════════════════════════════════
+
+_ETIQUETAS_RUTA = {
+    'dashboard': '🏠 Dashboard', 'finanzas': '💳 Mis Finanzas', 'metas': '🎯 Mis metas',
+    'simulador': '📈 Simulador', 'recomendaciones': '💡 Recomendaciones', 'aprende': '🎓 Aprende',
+    'perfil': '👤 Mi Perfil', 'chat': '💬 Chat', 'calendario': '📅 Calendario', 'mapa': '🗺️ Mapa',
+    'exportar_pdf': '📄 Reporte PDF', 'exportar_excel': '📊 Reporte Excel',
+}
 
 def _btn(texto, link): return {'tipo': 'link', 'texto': texto, 'link': link}
 def _sug(texto):       return {'tipo': 'sugerencia', 'texto': texto}
@@ -2738,6 +3054,13 @@ def _btns_finanzas():
     return [
         _btn('💸 Ir a mis finanzas', RUTAS['finanzas']),
         _btn('📊 Ver dashboard', RUTAS['dashboard']),
+    ]
+
+def _btns_mapa():
+    return [
+        _sug('¿Dónde gasto más?'),
+        _sug('¿Dónde recibo mis ingresos?'),
+        _btn('🗺️ Ver mapa', RUTAS['mapa']),
     ]
 
 def _btns_resumen():

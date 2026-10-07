@@ -1,0 +1,205 @@
+/* ════════════════════════════════════════════════════════════
+   temas.css — FinanBot
+   Tres temas: oscuro (paleta oficial), azul y claro.
+   Se carga DESPUÉS del <style> de cada página, así que estas
+   variables ganan sobre las que definía cada HTML.
+   ════════════════════════════════════════════════════════════ */
+
+/* ── Valores base (oscuro) para todas las páginas ── */
+:root {
+    --fb-text:       #ffffff;
+    --fb-fg:         255,255,255;   /* se usa como rgba(var(--fb-fg), .05) */
+    --fb-lav:        #C4B5FD;
+    --fb-text-soft:  #E4E1FF;
+    --fb-body-text:  #B8B8D6;
+    --fb-cyan-soft:  #99F6E4;
+    --fb-green-soft: #86EFAC;
+    --fb-red-soft:   #FCA5A5;
+    --fb-teal:       #5EEAD4;
+    --fb-yellow:     #FBBF24;
+    --fb-yellow-soft:#FDE68A;
+    --fb-blue:       #93C5FD;
+
+    /* Paleta oficial */
+    --azul-noche:    #11112B;
+    --azul-violeta:  #35356B;
+    --violeta:       #6D5BD0;
+    --lavanda:       #A78BFA;
+    --verde-azulado: #8BC6B9;
+}
+
+/* ════════════════════════════════════════════
+   TEMA OSCURO — paleta Azul noche / Violeta
+   ════════════════════════════════════════════ */
+body.tema-oscuro {
+    background: radial-gradient(ellipse at top, #35356B 0%, #1A1A3D 35%, #11112B 65%, #0B0B22 100%) fixed;
+    --card-bg:        rgba(26,26,61,0.72);
+    --card-border:    rgba(139,92,246,0.20);
+    --item-bg:        rgba(59,59,122,0.20);
+    --item-border:    rgba(165,165,200,0.10);
+    --input-bg:       rgba(59,59,122,0.22);
+    --input-border:   rgba(139,92,246,0.30);
+    --muted:          #7C7CA8;
+    --secondary:      #A5A5C8;
+    --text-secondary: #A5A5C8;
+    --text-muted:     #7C7CA8;
+    --sidebar-bg:     rgba(11,11,34,0.88);
+    --sidebar-brd:    rgba(139,92,246,0.22);
+    --sidebar-border: rgba(139,92,246,0.22);
+    --accent:  #8B5CF6;
+    --accent2: #5EEAD4;
+    /* chat */
+    --sb-bg: rgba(11,11,34,0.88);   --sb-brd: rgba(139,92,246,0.22);
+    --pnl-bg: rgba(17,17,43,0.85);  --pnl-brd: rgba(139,92,246,0.16);
+    --hdr-bg: rgba(17,17,43,0.70);
+    --bot-bg: rgba(26,26,61,0.85);  --bot-brd: rgba(139,92,246,0.25);
+    --item-brd: rgba(165,165,200,0.10);
+    --inp-bg: rgba(26,26,61,0.80);  --inp-brd: rgba(139,92,246,0.25);
+    --sec: #A5A5C8;
+    --tbl-hdr: rgba(139,92,246,0.18); --tbl-row: rgba(59,59,122,0.20); --tbl-brd: rgba(139,92,246,0.16);
+    --code-bg: rgba(139,92,246,0.14); --hl-bg: rgba(139,92,246,0.08); --hl-brd: #8B5CF6;
+}
+body.tema-oscuro .modal-box,
+body.tema-oscuro .modal-content,
+body.tema-oscuro .notif-panel { background: linear-gradient(145deg, #1A1A3D, #11112B); }
+
+/* ════════════════════════════════════════════
+   TEMA AZUL — el antiguo "claro"
+   (los colores ya vienen definidos en cada página
+    como body.tema-azul; aquí solo se completan)
+   ════════════════════════════════════════════ */
+body.tema-azul {
+    --accent:  #60a5fa;
+    --accent2: #34d399;
+}
+
+/* ════════════════════════════════════════════
+   TEMA CLARO — blanco con acentos FinanBot
+   ════════════════════════════════════════════ */
+body.tema-claro {
+    background: linear-gradient(180deg, #F8F7FF 0%, #F1F0FB 55%, #ECEEF9 100%) fixed;
+    color: #1E1B4B;
+
+    --fb-text:       #1E1B4B;
+    --fb-fg:         30,27,75;
+    --fb-lav:        #6D5BD0;
+    --fb-text-soft:  #312E81;
+    --fb-body-text:  #4B4870;
+    --fb-cyan-soft:  #0F766E;
+    --fb-green-soft: #047857;
+    --fb-red-soft:   #B91C1C;
+    --fb-teal:       #0D9488;
+    --fb-yellow:     #B45309;
+    --fb-yellow-soft:#92400E;
+    --fb-blue:       #2563EB;
+
+    --card-bg:        #FFFFFF;
+    --card-border:    rgba(109,91,208,0.14);
+    --item-bg:        #F7F6FE;
+    --item-border:    rgba(30,27,75,0.08);
+    --input-bg:       #FFFFFF;
+    --input-border:   rgba(109,91,208,0.28);
+    --muted:          #7A7896;
+    --secondary:      #55527A;
+    --text-secondary: #55527A;
+    --text-muted:     #7A7896;
+    --sidebar-bg:     #FFFFFF;
+    --sidebar-brd:    rgba(109,91,208,0.14);
+    --sidebar-border: rgba(109,91,208,0.14);
+    --accent:  #6D5BD0;
+    --accent2: #0D9488;
+    /* chat */
+    --sb-bg: #FFFFFF;   --sb-brd: rgba(109,91,208,0.14);
+    --pnl-bg: #FBFAFF;  --pnl-brd: rgba(109,91,208,0.12);
+    --hdr-bg: #FFFFFF;
+    --bot-bg: #FFFFFF;  --bot-brd: rgba(109,91,208,0.18);
+    --item-brd: rgba(30,27,75,0.08);
+    --inp-bg: #FFFFFF;  --inp-brd: rgba(109,91,208,0.25);
+    --sec: #55527A;
+    --tbl-hdr: rgba(109,91,208,0.10); --tbl-row: #FAFAFF; --tbl-brd: rgba(109,91,208,0.14);
+    --code-bg: rgba(109,91,208,0.08); --hl-bg: rgba(109,91,208,0.06); --hl-brd: #6D5BD0;
+}
+
+/* Tarjetas con sombra suave en vez de brillo */
+body.tema-claro .card,
+body.tema-claro .stat-card,
+body.tema-claro .chart-card,
+body.tema-claro .trans-card,
+body.tema-claro .acceso-card,
+body.tema-claro .avatar-card,
+body.tema-claro .resumen-card,
+body.tema-claro .resumen-mes-item,
+body.tema-claro .meta-stat-card,
+body.tema-claro .totales-historicos,
+body.tema-claro .calendario-grande,
+body.tema-claro .panel-dia,
+body.tema-claro .art-card,
+body.tema-claro .calc-card,
+body.tema-claro .buscador-wrap,
+body.tema-claro .rec-card,
+body.tema-claro .analisis-section,
+body.tema-claro .regla-widget,
+body.tema-claro .stats-bar,
+body.tema-claro .res-featured {
+    box-shadow: 0 1px 2px rgba(30,27,75,0.04), 0 8px 24px rgba(30,27,75,0.06);
+}
+
+body.tema-claro .sidebar { box-shadow: 4px 0 24px rgba(30,27,75,0.05); backdrop-filter: none; }
+
+/* Superficies sólidas (modales, paneles flotantes) */
+body.tema-claro .modal-box,
+body.tema-claro .modal-content,
+body.tema-claro .modal-abonar-box,
+body.tema-claro .modal-editar-box,
+body.tema-claro .notif-panel,
+body.tema-claro .toast-notif,
+body.tema-claro .mapa-resultados,
+body.tema-claro .leaflet-popup-content-wrapper,
+body.tema-claro .leaflet-popup-tip {
+    background: #FFFFFF !important;
+    border-color: rgba(109,91,208,0.18) !important;
+    box-shadow: 0 24px 60px rgba(30,27,75,0.18) !important;
+    color: #1E1B4B;
+}
+body.tema-claro .modal-overlay,
+body.tema-claro .modal-art { background: rgba(30,27,75,0.35); }
+body.tema-claro .nav-overlay { background: rgba(30,27,75,0.30); }
+body.tema-claro .panel { background: #FBFAFF; }
+@media (max-width: 900px) { body.tema-claro .panel { background: #FFFFFF; } }
+body.tema-claro .bot-dot { border-color: #FFFFFF; }
+
+/* Opciones de <select> */
+body.tema-claro select option,
+body.tema-claro .form-select option,
+body.tema-claro .modal-select option { background: #FFFFFF; color: #1E1B4B; }
+
+/* Botones de fondo sólido: texto blanco */
+body.tema-claro .btn-guardar,
+body.tema-claro .btn-primary,
+body.tema-claro .btn-simular,
+body.tema-claro .btn-calc,
+body.tema-claro .btn-buscar,
+body.tema-claro .btn-nueva,
+body.tema-claro .btn-enviar,
+body.tema-claro .btn-modal-guardar,
+body.tema-claro .btn-crear-modal,
+body.tema-claro .btn-guardar-regla,
+body.tema-claro .btn-guardar-regla-sm,
+body.tema-claro .btn-cal-guardar,
+body.tema-claro .btn-ver-categorias,
+body.tema-claro .btn-exportar.pdf,
+body.tema-claro .usuario .msg-burbuja,
+body.tema-claro .msg-av.usr,
+body.tema-claro .user-avatar,
+body.tema-claro .avatar-circle,
+body.tema-claro .art-card:hover .art-arrow { color: #FFFFFF; }
+
+/* Tablas markdown y burbujas del chat */
+body.tema-claro .bot .msg-burbuja { box-shadow: 0 2px 10px rgba(30,27,75,0.05); }
+body.tema-claro .msg-burbuja pre { background: #F4F3FC; }
+
+/* Tooltip/modales de Leaflet */
+body.tema-claro .popup-fb-meta { color: #6B6890; }
+
+/* Barras de scroll */
+body.tema-claro ::-webkit-scrollbar-thumb { background: rgba(109,91,208,0.30); }

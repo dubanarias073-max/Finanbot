@@ -1,5 +1,5 @@
 # routes/chat_route.py
-import re, ast, operator, uuid
+import re, ast, operator, uuid, unicodedata
 from datetime import date
 from collections import defaultdict
 from typing import Optional
@@ -10,13 +10,44 @@ from sqlalchemy.orm import Session
 from database import get_db
 from extensions import obtener_usuario_id_opcional
 from finanbot_ia import FinanBotIA
-from models import Transaccion, MetaAhorro, Usuario, Chat, nuevo_conversacion_id, normalizar_categoria
+from models import (
+    Transaccion, MetaAhorro, Usuario, Chat, Categoria, CategoriaUsuario, nuevo_conversacion_id,
+    CATEGORIAS_GASTO, CATEGORIAS_INGRESO,
+    normalizar_categoria, eliminar_tiendas_sin_transacciones,
+)
+from routes.transacciones import (
+    CategoriaCrear, crear_mi_categoria, eliminar_mi_categoria, _mis_categorias,
+)
 
 
-def obtener_categoria(nombre: str, tipo: str) -> str:
-    """Ya no hay tabla categorias: devuelve el nombre válido del ENUM
-    transacciones.categoria (o 'Otros gastos' / 'Otros ingresos')."""
+def obtener_categoria(nombre: str, tipo: str, uid: int | None = None, db: Session | None = None) -> str:
+    """Devuelve una categoría válida para el usuario, o la categoría Otros."""
+    if uid is not None and db is not None:
+        preferencias = db.query(CategoriaUsuario).filter_by(usuario_id=uid).all()
+        desactivadas = {
+            c.nombre for c in preferencias
+            if (c.oculta or c.eliminada) and c.nombre not in ('Otros gastos', 'Otros ingresos')
+        }
+        propias = {c.nombre for c in preferencias if c.personalizada and not c.oculta}
+        predeterminadas = CATEGORIAS_GASTO if tipo == 'gasto' else CATEGORIAS_INGRESO
+        nombre_normalizado = (nombre or '').strip().casefold()
+        for categoria in predeterminadas:
+            if categoria.casefold() == nombre_normalizado:
+                return normalizar_categoria(nombre, tipo) if categoria not in desactivadas else normalizar_categoria('', tipo)
+        for categoria in propias:
+            if categoria.casefold() == nombre_normalizado:
+                return categoria
     return normalizar_categoria(nombre, tipo)
+
+
+def _categorias_activas(uid: int, db: Session) -> dict[str, list[dict]]:
+    return {
+        tipo: [
+            categoria for categoria in categorias
+            if not categoria['oculta'] and not categoria.get('eliminada', False)
+        ]
+        for tipo, categorias in _mis_categorias(uid, db).items()
+    }
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -65,6 +96,80 @@ sesiones   = {}
 _contextos = {}
 
 # ══════════════════════════════════════════════════════════════════
+#  UBICACIÓN REAL Y PRECISA
+#  chat.html manda en cada mensaje:
+#     "ubicacion": {"lat":.., "lng":.., "precision": metros, "nombre": "..."}
+#  Se guarda SOLO si es una lectura real (rango válido, no 0,0 y con
+#  precisión razonable). Nunca se inventan coordenadas ni nombres.
+# ══════════════════════════════════════════════════════════════════
+PRECISION_MAX_GUARDAR_M = 1000   # peor que esto = ubicación por IP/WiFi, no sirve
+PRECISION_BUENA_M = 100
+
+
+def _leer_ubicacion(raw):
+    """Devuelve (ubic|None, precision_rechazada|None)."""
+    if not isinstance(raw, dict):
+        return None, None
+    try:
+        lat = float(raw.get('lat', raw.get('latitud')))
+        lng = float(raw.get('lng', raw.get('longitud')))
+    except (TypeError, ValueError):
+        return None, None
+    if not (-90 <= lat <= 90 and -180 <= lng <= 180) or (lat == 0 and lng == 0):
+        return None, None
+    try:
+        prec = raw.get('precision', raw.get('precision_m'))
+        prec = float(prec) if prec not in (None, '') else None
+    except (TypeError, ValueError):
+        prec = None
+    if prec is not None and prec > PRECISION_MAX_GUARDAR_M:
+        return None, prec
+    nombre = str(raw.get('nombre') or '').strip()[:150] or None
+    return {'lat': round(lat, 7), 'lng': round(lng, 7), 'precision': prec, 'nombre': nombre}, None
+
+
+def _campos_ubic(ctx) -> dict:
+    """kwargs para Transaccion(...) con la ubicación de este mensaje."""
+    u = (ctx or {}).get('ubicacion_actual')
+    if not u:
+        return {}
+    return {'ubicacion_nombre': u['nombre'], 'latitud': u['lat'], 'longitud': u['lng']}
+
+
+def _campos_ubic_lugar(ctx, lugar: str | None, desc: str | None):
+    """Ubicación + descripción para guardar. Si el usuario nombró el lugar
+    ('el lugar carrera 52') se usa como nombre del punto GPS; si no hay GPS
+    se agrega a la descripción para no perderlo."""
+    campos = _campos_ubic(ctx)
+    if lugar:
+        if campos:
+            campos['ubicacion_nombre'] = lugar[:150]
+        else:
+            desc = f'{desc} · {lugar}' if desc else lugar
+    return campos, desc
+
+
+def _get(o, k):
+    return o.get(k) if isinstance(o, dict) else getattr(o, k, None)
+
+
+def _datos_ubic(o, ctx=None) -> dict:
+    """Campos de ubicación para devolver en la acción (desde la transacción
+    ya guardada, no desde lo que se pidió). Vacío si no tiene coordenadas."""
+    try:
+        lat, lng = _get(o, 'latitud'), _get(o, 'longitud')
+        if lat is None or lng is None:
+            return {}
+        d = {'ubicacion_nombre': _get(o, 'ubicacion_nombre'),
+             'latitud': float(lat), 'longitud': float(lng)}
+        u = (ctx or {}).get('ubicacion_actual')
+        if u and u.get('precision') is not None:
+            d['precision_m'] = u['precision']
+        return d
+    except (TypeError, ValueError):
+        return {}
+
+# ══════════════════════════════════════════════════════════════════
 #  NORMALIZACIÓN DE TEXTO (sin cambios — es Python puro)
 # ══════════════════════════════════════════════════════════════════
 _TYPOS = {
@@ -92,6 +197,8 @@ def _normalizar(texto: str) -> str:
 _TIPOS_RESPUESTA_LOCAL = {
     'ayuda_accion', 'pide_categoria', 'pide_nombre_meta',
     'confirmar_editar_gasto', 'confirmar_editar_ingreso', 'confirmar_editar_meta',
+    'pide_tipo_categoria', 'categoria_creada', 'categoria_eliminada', 'error_categoria',
+    'categorias_disponibles',
 }
 
 def _fmt(monto) -> str:
@@ -100,10 +207,33 @@ def _fmt(monto) -> str:
     except (TypeError, ValueError):
         return str(monto)
 
-def _texto_ayuda(entidad: str, accion: str) -> str:
+
+def _es_comando_categoria(mensaje: str) -> bool:
+    return _intencion_categoria(mensaje) is not None
+
+
+def _intencion_categoria(mensaje: str) -> str | None:
+    coincidencia = re.search(
+        r'\b(crea(?:r)?|agrega(?:r)?|añade|añadir|adiciona(?:r)?|'
+        r'elimina(?:r)?|borra(?:r)?|quita(?:r)?)\b.*?\bcategor[ií]a\b',
+        mensaje,
+        re.IGNORECASE,
+    )
+    if not coincidencia:
+        return None
+    categoria = re.search(r'\bcategor[ií]a\b', mensaje, re.IGNORECASE)
+    if categoria and re.search(r'\b(gasto|ingreso|transacci[oó]n|movimiento)\b',
+                               mensaje[:categoria.start()], re.IGNORECASE):
+        return None
+    return 'eliminar' if coincidencia.group(1).lower().startswith(('elimina', 'borra', 'quita')) else 'crear'
+
+
+def _texto_ayuda(accion: dict) -> str:
+    entidad = accion['entidad']
+    tipo_accion = accion['accion']
     nombre_entidad = {'gasto': 'un gasto', 'ingreso': 'un ingreso', 'meta': 'una meta'}[entidad]
 
-    if accion == 'crear':
+    if tipo_accion == 'crear':
         if entidad == 'meta':
             return (
                 "Para crear una meta de ahorro dime:\n\n"
@@ -114,9 +244,8 @@ def _texto_ayuda(entidad: str, accion: str) -> str:
                 "Si te falta algún dato, yo te lo pregunto."
             )
         ejemplo = '"gasté $50.000 en comida"' if entidad == 'gasto' else '"recibí $1.200.000 de freelance"'
-        cats = ('Alimentación, Transporte, Arriendo, Salud, Entretenimiento, Educación, Ropa, '
-                'Servicios, Mascotas, Regalos, Viajes u Otros gastos') if entidad == 'gasto' else \
-               'Salario, Freelance, Inversión, Negocio, Regalo u Otros ingresos'
+        categorias = accion.get('categorias_gasto' if entidad == 'gasto' else 'categorias_ingreso', [])
+        cats = ', '.join(categorias) or ('Otros gastos' if entidad == 'gasto' else 'Otros ingresos')
         return (
             f"Para registrar {nombre_entidad} dime:\n\n"
             "• 💰 **Monto** (obligatorio)\n"
@@ -153,19 +282,53 @@ def _texto_respuesta_local(accion: dict) -> str:
     tipo = accion.get('tipo')
 
     if tipo == 'ayuda_accion':
-        return _texto_ayuda(accion['entidad'], accion['accion'])
+        return _texto_ayuda(accion)
 
     if tipo == 'pide_categoria':
         entidad = accion.get('contexto')
         sujeto = 'ese gasto' if entidad == 'gasto' else 'ese ingreso'
-        opciones = ('Alimentación, Transporte, Arriendo, Salud, Entretenimiento, Educación, '
-                    'Ropa, Servicios, Mascotas, Regalos, Viajes u Otros gastos') if entidad == 'gasto' else \
-                   'Salario, Freelance, Inversión, Negocio, Regalo u Otros ingresos'
+        categorias = accion.get('categorias_gasto' if entidad == 'gasto' else 'categorias_ingreso', [])
+        opciones = ', '.join(categorias) or (
+            'Otros gastos' if entidad == 'gasto' else 'Otros ingresos'
+        )
         return (f"¡Listo, {_fmt(accion.get('monto'))}! ¿En qué categoría va {sujeto}?\n\n"
                 f"Puede ser: {opciones}.")
 
     if tipo == 'pide_nombre_meta':
         return f"¡Perfecto, {_fmt(accion.get('monto'))}! ¿Cómo quieres llamar esta meta?"
+
+    if tipo == 'pide_tipo_categoria':
+        return (
+            f"¿**{accion['nombre']}** será una categoría de gasto o de ingreso?\n\n"
+            f"Puedes decir, por ejemplo: _\"crea la categoría {accion['nombre']} para gastos\"_."
+        )
+
+    if tipo == 'categoria_creada':
+        return accion['mensaje']
+
+    if tipo == 'categoria_eliminada':
+        respuesta = accion['mensaje']
+        if accion.get('movidos'):
+            respuesta += (
+                f" {accion['movidos']} movimiento(s) se conservaron en "
+                f"**{accion['destino']}**."
+            )
+        return respuesta
+
+    if tipo == 'categorias_disponibles':
+        categorias_gasto = accion.get('gasto', [])
+        categorias_ingreso = accion.get('ingreso', [])
+        formato = lambda categorias: ', '.join(
+            f"{categoria['icono']} {categoria['nombre']}" for categoria in categorias
+        ) or 'Ninguna'
+        return (
+            f"Estas son tus categorías activas:\n\n"
+            f"**Gastos:** {formato(categorias_gasto)}\n\n"
+            f"**Ingresos:** {formato(categorias_ingreso)}"
+        )
+
+    if tipo == 'error_categoria':
+        return accion['mensaje']
 
     if tipo in ('confirmar_editar_gasto', 'confirmar_editar_ingreso'):
         entidad = 'gasto' if tipo == 'confirmar_editar_gasto' else 'ingreso'
@@ -213,7 +376,19 @@ def mensaje(
     uid = int(usuario_id) if usuario_id else None
     accion = None
 
-    if uid and ctx:
+    ubic_rechazada = None
+    if ctx is not None:
+        ctx['ubicacion_actual'], ubic_rechazada = _leer_ubicacion(body.get('ubicacion'))
+
+    if uid and ctx and _es_comando_categoria(msg_usuario):
+        accion = ejecutar_accion(msg_usuario, uid, ctx, db)
+    elif uid is None and _es_comando_categoria(msg_usuario):
+        accion = {
+            'tipo': 'error_categoria',
+            'mensaje': 'Inicia sesión para crear o eliminar tus categorías.',
+        }
+
+    if accion is None and uid and ctx:
         accion = _resolver_contexto(msg_usuario, uid, ctx, session_key, db)
 
     if accion is None and uid and ctx:
@@ -226,11 +401,21 @@ def mensaje(
         # Preguntas de ayuda y "¿cuál de estos?" se responden aquí mismo,
         # con el texto exacto ligado a los datos que ya extrajimos —
         # no dependen de FinanBotIA.
+        if ctx and accion['tipo'] in ('ayuda_accion', 'pide_categoria'):
+            accion['categorias_gasto'] = ctx.get('categorias_gasto', [])
+            accion['categorias_ingreso'] = ctx.get('categorias_ingreso', [])
         respuesta = _texto_respuesta_local(accion)
         acciones_ui = []
     else:
         respuesta, acciones_ui = bot.responder_con_acciones(msg_usuario, ctx, accion)
         respuesta = _agregar_disclaimers_si_necesario(respuesta, msg_usuario)
+
+    # Si se registró algo pero el GPS era demasiado impreciso, se dice claro
+    # (en vez de guardar un lugar falso).
+    if (ubic_rechazada is not None and accion
+            and accion.get('tipo') in ('gasto_registrado', 'ingreso_registrado')):
+        respuesta += (f"\n\n⚠️ *No guardé la ubicación: el GPS tenía una precisión de ±{ubic_rechazada:,.0f} m "
+                      f"y así no sería un lugar real. Actívalo en un lugar abierto o márcalo en el mapa de Mis finanzas.*")
 
     conversacion_id = None
     if uid:
@@ -281,13 +466,17 @@ def _actualizar_contexto(session_key: str, accion, msg: str):
                 **ctx_actual.get('datos', {}),
                 'id_objetivo': accion.get('id_objetivo'),
                 'categoria_objetivo': accion.get('categoria_objetivo'),
+                'descripcion': accion.get('descripcion'),
+                'categoria': accion.get('categoria'),
+                'lugar': accion.get('lugar'),
             },
         }
     elif tipo == 'pide_categoria':
         _contextos[session_key] = {
             'esperando': 'categoria',
             'accion_pendiente': accion.get('contexto', ''),
-            'datos': {'monto': accion.get('monto'), 'descripcion': accion.get('descripcion')},
+            'datos': {'monto': accion.get('monto'), 'descripcion': accion.get('descripcion'),
+                      'lugar': accion.get('lugar')},
         }
     elif tipo == 'pide_nombre_meta':
         _contextos[session_key] = {
@@ -298,6 +487,11 @@ def _actualizar_contexto(session_key: str, accion, msg: str):
                 'monto_automatico': accion.get('monto_automatico'),
                 'dia_automatico': accion.get('dia_automatico'),
             },
+        }
+    elif tipo == 'pide_tipo_categoria':
+        _contextos[session_key] = {
+            'esperando': 'tipo_categoria',
+            'datos': {'nombre': accion.get('nombre')},
         }
     elif tipo in ('confirmar_eliminar_gasto', 'confirmar_eliminar_ingreso'):
         entidad = 'gasto' if tipo == 'confirmar_eliminar_gasto' else 'ingreso'
@@ -356,9 +550,28 @@ def _resolver_contexto(msg: str, uid: int, ctx: dict, session_key: str, db: Sess
     datos_previos    = conv.get('datos', {})
     ultimo_tipo      = conv.get('ultimo_tipo', '')
     msg_l            = msg.lower().strip()
+    if esperando == 'tipo_categoria':
+        if re.search(r'\b(gastos?|gasto)\b', msg_l):
+            tipo_categoria = 'gasto'
+        elif re.search(r'\b(ingresos?|ingreso)\b', msg_l):
+            tipo_categoria = 'ingreso'
+        else:
+            return {'tipo': 'pide_tipo_categoria', 'nombre': datos_previos.get('nombre', '')}
+        try:
+            resultado = crear_mi_categoria(
+                CategoriaCrear(nombre=datos_previos['nombre'], tipo=tipo_categoria), str(uid), db,
+            )
+            return {'tipo': 'categoria_creada', 'mensaje': resultado['mensaje']}
+        except HTTPException as error:
+            return {'tipo': 'error_categoria', 'mensaje': str(error.detail)}
 
-    if any(p in msg_l for p in ['sí', 'si', 'ok', 'dale', 'claro', 'exacto',
-                                  'ese mismo', 'eso', 'correcto', 'listo', 'bueno']):
+    # ¿El mensaje es una orden nueva completa? (ej. "registra un ingreso de $50.000")
+    nueva_orden = _crear_implicito(msg_l) and _t(msg_l, GASTO_KW + INGRESO_KW + META_KW)
+
+    # Confirmaciones cortas ("sí", "dale", "listo"). Se compara por palabra
+    # completa: antes "pesos" contaba como "eso" y "simula" como "si".
+    if (not esperando and len(msg_l.split()) <= 4 and
+            re.search(r'\b(s[ií]|ok|dale|claro|exacto|ese mismo|eso|correcto|listo|bueno)\b', msg_l)):
         if ultimo_tipo == 'simulacion':
             return {'tipo': 'pide_monto', 'contexto': 'simulacion'}
         if ultimo_tipo == 'meta':
@@ -378,7 +591,7 @@ def _resolver_contexto(msg: str, uid: int, ctx: dict, session_key: str, db: Sess
         # app (GASTO_CATS/ING_CATS) antes que crear una categoría nueva
         # con el texto tal cual lo escribió el usuario.
         cats_reales = GASTO_CATS if accion_pendiente == 'gasto' else ING_CATS
-        cat_normalizada = next(
+        cat_normalizada = _categoria_activa_mencionada(cat_texto, accion_pendiente, uid, db) or next(
             (nombre for nombre in cats_reales if nombre.lower() == cat_texto.lower()),
             None
         ) or _detectar_categoria(cat_texto, accion_pendiente)
@@ -387,15 +600,17 @@ def _resolver_contexto(msg: str, uid: int, ctx: dict, session_key: str, db: Sess
         if monto and monto > 0 and cat_texto:
             try:
                 icono = '🍔' if accion_pendiente == 'gasto' else '💰'
-                cat_ok = obtener_categoria(cat_texto, accion_pendiente)
+                cat_ok = obtener_categoria(cat_texto, accion_pendiente, uid, db)
+                ubic, desc = _campos_ubic_lugar(ctx, datos_previos.get('lugar'), desc)
                 t = Transaccion(usuario_id=uid, categoria=cat_ok, tipo=accion_pendiente, monto=monto,
-                                 descripcion=desc or 'Registrado por FinanBot', fecha=date.today())
+                                 descripcion=desc or 'Registrado por FinanBot', fecha=date.today(),
+                                 **ubic)
                 db.add(t); db.commit()
                 _contextos[session_key] = {
                     'esperando': None, 'ultimo_tipo': f'{accion_pendiente}_registrado',
                     'datos': {'monto': monto, 'categoria': cat_ok}
                 }
-                return {'tipo': f'{accion_pendiente}_registrado', 'monto': monto, 'categoria': cat_ok, 'id': t.id}
+                return {'tipo': f'{accion_pendiente}_registrado', 'monto': monto, 'categoria': cat_ok, 'id': t.id, **_datos_ubic(t, ctx)}
             except Exception as e:
                 print(f'[FinanBot] {accion_pendiente} categoria contexto: {e}')
         return None
@@ -442,9 +657,13 @@ def _resolver_contexto(msg: str, uid: int, ctx: dict, session_key: str, db: Sess
             if not t or t.usuario_id != uid:
                 return None
             if sub == 'eliminar':
-                db.delete(t); db.commit()
+                tienda_id = t.tienda_id
+                db.delete(t)
+                eliminar_tiendas_sin_transacciones(db, [tienda_id])
+                db.commit()
                 _contextos[session_key] = {'esperando': None, 'ultimo_tipo': f'{entidad}_eliminado', 'datos': {}}
-                return {'tipo': f'{entidad}_eliminado', 'monto': elegido['monto'], 'categoria': elegido['categoria']}
+                return {'tipo': f'{entidad}_eliminado', 'monto': elegido['monto'], 'categoria': elegido['categoria'],
+                        **_datos_ubic(elegido)}
             else:
                 nuevo_monto = extraer_monto(msg) or datos_previos.get('monto')
                 if not (nuevo_monto and nuevo_monto > 0):
@@ -454,7 +673,8 @@ def _resolver_contexto(msg: str, uid: int, ctx: dict, session_key: str, db: Sess
                 db.commit()
                 _contextos[session_key] = {'esperando': None, 'ultimo_tipo': f'{entidad}_editado', 'datos': {}}
                 return {'tipo': f'{entidad}_editado', 'categoria': elegido['categoria'],
-                        'monto': nuevo_monto, 'monto_anterior': anterior, 'id': t.id}
+                        'monto': nuevo_monto, 'monto_anterior': anterior, 'id': t.id,
+                                **_datos_ubic(t)}
         except Exception as e:
             print(f'[FinanBot] {accion_pendiente} contexto: {e}')
         return None
@@ -507,7 +727,8 @@ def _resolver_contexto(msg: str, uid: int, ctx: dict, session_key: str, db: Sess
                     db.commit()
                     _contextos[session_key] = {'esperando': None, 'ultimo_tipo': f'{entidad}_editado', 'datos': {}}
                     return {'tipo': f'{entidad}_editado', 'categoria': datos_previos.get('categoria_objetivo', ''),
-                            'monto': nuevo_monto, 'monto_anterior': anterior, 'id': t.id}
+                            'monto': nuevo_monto, 'monto_anterior': anterior, 'id': t.id,
+                                **_datos_ubic(t)}
             except Exception as e:
                 print(f'[FinanBot] {entidad} editar contexto: {e}')
         return None
@@ -569,45 +790,59 @@ def _resolver_contexto(msg: str, uid: int, ctx: dict, session_key: str, db: Sess
             except Exception as e:
                 print(f'[FinanBot] Meta contexto: {e}')
 
-    if esperando == 'monto' and accion_pendiente == 'gasto':
+    if esperando == 'monto' and accion_pendiente == 'gasto' and not nueva_orden:
         monto = extraer_monto(msg)
+        if monto is None and re.fullmatch(r'\s*(?:de\s+|son\s+|fue(?:ron)?\s+)?\$?\s*(\d{1,3})\s*(?:pesos)?\s*', msg_l):
+            monto = int(re.findall(r'\d+', msg_l)[0])          # respuesta corta: "800", "de 500 pesos"
         if monto and monto > 0:
-            desc = extraer_descripcion(msg)
-            cat  = _detectar_categoria(msg, 'gasto')
+            desc  = extraer_descripcion(msg) or datos_previos.get('descripcion')
+            lugar = extraer_lugar(msg) or datos_previos.get('lugar')
+            cat   = (_categoria_activa_mencionada(msg, 'gasto', uid, db)
+                     or extraer_categoria_explicita(msg, 'gasto') or _detectar_categoria(msg, 'gasto')
+                     or datos_previos.get('categoria'))
             if not cat:
                 _contextos[session_key] = {
                     'esperando': 'categoria', 'accion_pendiente': 'gasto',
-                    'datos': {'monto': monto, 'descripcion': desc}
+                    'datos': {'monto': monto, 'descripcion': desc, 'lugar': lugar}
                 }
                 return {'tipo': 'pide_categoria', 'contexto': 'gasto', 'monto': monto, 'descripcion': desc}
             try:
-                cat_ok = obtener_categoria(cat, 'gasto')
+                cat_ok = obtener_categoria(cat, 'gasto', uid, db)
+                ubic, desc = _campos_ubic_lugar(ctx, lugar, desc)
                 t = Transaccion(usuario_id=uid, categoria=cat_ok, tipo='gasto', monto=monto,
-                                 descripcion=desc or 'Registrado por FinanBot', fecha=date.today())
+                                 descripcion=desc or 'Registrado por FinanBot', fecha=date.today(),
+                                 **ubic)
                 db.add(t); db.commit()
                 _contextos[session_key] = {'esperando': None, 'ultimo_tipo': 'gasto_registrado', 'datos': {}}
-                return {'tipo': 'gasto_registrado', 'monto': monto, 'categoria': cat_ok, 'id': t.id}
+                return {'tipo': 'gasto_registrado', 'monto': monto, 'categoria': cat_ok, 'id': t.id, **_datos_ubic(t, ctx)}
             except Exception as e:
                 print(f'[FinanBot] Gasto contexto: {e}')
 
-    if esperando == 'monto' and accion_pendiente == 'ingreso':
+    if esperando == 'monto' and accion_pendiente == 'ingreso' and not nueva_orden:
         monto = extraer_monto(msg)
+        if monto is None and re.fullmatch(r'\s*(?:de\s+|son\s+|fue(?:ron)?\s+)?\$?\s*(\d{1,3})\s*(?:pesos)?\s*', msg_l):
+            monto = int(re.findall(r'\d+', msg_l)[0])          # respuesta corta: "800", "de 500 pesos"
         if monto and monto > 0:
-            desc = extraer_descripcion(msg)
-            cat  = _detectar_categoria(msg, 'ingreso')
+            desc  = extraer_descripcion(msg) or datos_previos.get('descripcion')
+            lugar = extraer_lugar(msg) or datos_previos.get('lugar')
+            cat   = (_categoria_activa_mencionada(msg, 'ingreso', uid, db)
+                     or extraer_categoria_explicita(msg, 'ingreso') or _detectar_categoria(msg, 'ingreso')
+                     or datos_previos.get('categoria'))
             if not cat:
                 _contextos[session_key] = {
                     'esperando': 'categoria', 'accion_pendiente': 'ingreso',
-                    'datos': {'monto': monto, 'descripcion': desc}
+                    'datos': {'monto': monto, 'descripcion': desc, 'lugar': lugar}
                 }
                 return {'tipo': 'pide_categoria', 'contexto': 'ingreso', 'monto': monto, 'descripcion': desc}
             try:
-                cat_ok = obtener_categoria(cat, 'ingreso')
+                cat_ok = obtener_categoria(cat, 'ingreso', uid, db)
+                ubic, desc = _campos_ubic_lugar(ctx, lugar, desc)
                 t = Transaccion(usuario_id=uid, categoria=cat_ok, tipo='ingreso', monto=monto,
-                                 descripcion=desc or 'Registrado por FinanBot', fecha=date.today())
+                                 descripcion=desc or 'Registrado por FinanBot', fecha=date.today(),
+                                 **ubic)
                 db.add(t); db.commit()
                 _contextos[session_key] = {'esperando': None, 'ultimo_tipo': 'ingreso_registrado', 'datos': {}}
-                return {'tipo': 'ingreso_registrado', 'monto': monto, 'categoria': cat_ok, 'id': t.id}
+                return {'tipo': 'ingreso_registrado', 'monto': monto, 'categoria': cat_ok, 'id': t.id, **_datos_ubic(t, ctx)}
             except Exception as e:
                 print(f'[FinanBot] Ingreso contexto: {e}')
 
@@ -638,6 +873,9 @@ def _cargar_contexto(uid: int, db: Session):
         transacciones = db.query(Transaccion).filter_by(usuario_id=uid).all()
         metas         = db.query(MetaAhorro).filter_by(usuario_id=uid).all()
         usuario       = db.query(Usuario).get(uid)
+        categorias_activas = _categorias_activas(uid, db)
+        categorias_gasto = [categoria['nombre'] for categoria in categorias_activas['gasto']]
+        categorias_ingreso = [categoria['nombre'] for categoria in categorias_activas['ingreso']]
 
         total_ing = sum(float(t.monto) for t in transacciones if t.tipo == 'ingreso')
         total_gas = sum(float(t.monto) for t in transacciones if t.tipo == 'gasto')
@@ -653,6 +891,8 @@ def _cargar_contexto(uid: int, db: Session):
             'nombre': usuario.nombre if usuario else 'Usuario',
             'correo': usuario.correo if usuario else '',
             'rol': usuario.rol if usuario else None,  # estudiante/empleado/independiente/emprendedor
+            'categorias_gasto': categorias_gasto,
+            'categorias_ingreso': categorias_ingreso,
             'total_ingresos': total_ing, 'total_gastos': total_gas, 'balance': total_ing - total_gas,
             'num_transacciones': len(transacciones),
             'num_gastos':   sum(1 for t in transacciones if t.tipo == 'gasto'),
@@ -674,7 +914,21 @@ def _cargar_contexto(uid: int, db: Session):
                 'id': t.id, 'tipo': t.tipo, 'monto': float(t.monto),
                 'categoria': t.categoria or 'Otros gastos',
                 'descripcion': t.descripcion, 'fecha': str(t.fecha),
+                'ubicacion_nombre': getattr(t, 'ubicacion_nombre', None),
+                'latitud': float(t.latitud) if getattr(t, 'latitud', None) is not None else None,
+                'longitud': float(t.longitud) if getattr(t, 'longitud', None) is not None else None,
             } for t in sorted(transacciones, key=lambda x: x.fecha, reverse=True)[:10]],
+            # Todos los movimientos del mes actual (para "¿dónde gasto más?").
+            # El salario automático sin coordenadas no cuenta como "sin lugar".
+            'movimientos': [{
+                'id': t.id, 'tipo': t.tipo, 'monto': float(t.monto),
+                'categoria': t.categoria or 'Otros gastos', 'fecha': str(t.fecha),
+                'ubicacion_nombre': getattr(t, 'ubicacion_nombre', None),
+                'latitud': float(t.latitud) if getattr(t, 'latitud', None) is not None else None,
+                'longitud': float(t.longitud) if getattr(t, 'longitud', None) is not None else None,
+            } for t in transacciones
+              if t.fecha and t.fecha.year == date.today().year and t.fecha.month == date.today().month
+              and not (t.descripcion == '__auto_salario__' and getattr(t, 'latitud', None) is None)],
             'ingreso_mensual': float(usuario.ingreso_mensual or 0),
             'meta_ahorro_mensual': float(usuario.meta_ahorro or 0),
             'usuario_id': uid, 'usuario_obj': usuario,
@@ -711,6 +965,10 @@ INGRESO_KW   = ['ingreso','ingresos','salario','sueldo','cobré','cobre','gané'
 SIMULADOR_KW = ['simula','simulacion','simulación','simulador','simular']
 PERFIL_KW    = ['nombre','correo','email','mi nombre','mi correo','llámame','llamame','salario mensual',
                 'ingreso mensual','meta mensual','meta_ahorro']
+LUGAR_KW     = ['donde gasto','dónde gasto','donde he gastado','dónde he gastado','donde gaste','dónde gasté',
+                'donde recibo','dónde recibo','donde cobro','dónde cobro','donde me pagan','dónde me pagan',
+                'mis lugares','lugares donde','lugares en los que','mapa de gastos','mapa de ingresos',
+                'en que lugar','en qué lugar','donde mas gasto','dónde más gasto']
 REPORTE_KW   = ['reporte','informe','exportar','descargar reporte','descargar informe','hazme un reporte',
                 'genera un reporte','quiero el reporte','pdf','excel']
 CALCULO_KW   = ['suma','resta','multiplica','divide','calcula','cuanto es','cuánto es','cuanto son',
@@ -789,6 +1047,79 @@ def _extraer_ordinal(msg: str) -> int | None:
 def ejecutar_accion(mensaje: str, uid: int, ctx: dict, db: Session):
     msg = mensaje.lower().strip()
 
+    intencion_categoria = _intencion_categoria(mensaje)
+    if intencion_categoria:
+        coincidencia_nombre = re.search(
+            r'\bcategor[ií]a\b\s*(.*)$', mensaje, re.IGNORECASE,
+        )
+        nombre = coincidencia_nombre.group(1) if coincidencia_nombre else ''
+        nombre = re.sub(r'^\s*nueva?\s+', '', nombre, flags=re.IGNORECASE)
+        nombre = re.sub(r'^\s*(?:de|para)\s+(?:gasto|gastos|ingreso|ingresos)\b', '', nombre,
+                        flags=re.IGNORECASE)
+        nombre = re.sub(r'^\s*(?:llamada?|nombrada?|con nombre|nombre)\s*', '', nombre,
+                        flags=re.IGNORECASE)
+        nombre = re.sub(r'^\s*(?:de|llamada?|nombrada?|con nombre|nombre)\s+', '', nombre,
+                        flags=re.IGNORECASE)
+        nombre = re.sub(
+            r'\s+(?:(?:para|de|tipo)\s+(?:los?\s+)?(?:gastos?|ingresos?)|'
+            r'\((?:gasto|ingreso)\))\s*$', '', nombre, flags=re.IGNORECASE,
+        )
+        nombre = nombre.strip(" \t\r\n\"'“”‘’.,:;()")[:50]
+        if not nombre:
+            return {'tipo': 'error_categoria', 'mensaje': 'Dime el nombre de la categoría. Ejemplo: “crea la categoría Mascotas para gastos”.'}
+
+        if intencion_categoria == 'crear':
+            coincidencia_tipo = re.search(
+                r'\b(?:para|de|tipo)\s+(?:los?\s+)?(gastos?|ingresos?)\b|'
+                r'\b(gasto|ingreso)\s*$', mensaje, re.IGNORECASE,
+            )
+            tipo = None
+            if coincidencia_tipo:
+                tipo_texto = next(g for g in coincidencia_tipo.groups() if g)
+                tipo = 'gasto' if tipo_texto.lower().startswith('gast') else 'ingreso'
+            if tipo is None:
+                categorias_existentes = _mis_categorias(uid, db)
+                tipo = next(
+                    (categoria['tipo'] for lista in categorias_existentes.values()
+                     for categoria in lista if categoria['nombre'].casefold() == nombre.casefold()),
+                    None,
+                )
+            if tipo is None:
+                return {'tipo': 'pide_tipo_categoria', 'nombre': nombre}
+            try:
+                resultado = crear_mi_categoria(
+                    CategoriaCrear(nombre=nombre, tipo=tipo), str(uid), db,
+                )
+                return {'tipo': 'categoria_creada', 'mensaje': resultado['mensaje']}
+            except HTTPException as error:
+                return {'tipo': 'error_categoria', 'mensaje': str(error.detail)}
+
+        categorias = _mis_categorias(uid, db)
+        nombre_canonico = next(
+            (categoria['nombre'] for lista in categorias.values()
+             for categoria in lista if categoria['nombre'].casefold() == nombre.casefold()),
+            None,
+        )
+        if nombre_canonico is None:
+            nombre_canonico = db.query(Categoria.nombre).filter(Categoria.nombre.ilike(nombre)).scalar()
+        if nombre_canonico is None:
+            return {'tipo': 'error_categoria', 'mensaje': f'No encontré la categoría “{nombre}”.'}
+        try:
+            resultado = eliminar_mi_categoria(nombre_canonico, str(uid), db)
+            return {'tipo': 'categoria_eliminada', **resultado}
+        except HTTPException as error:
+            return {'tipo': 'error_categoria', 'mensaje': str(error.detail)}
+
+    if (
+        re.search(r'\bcategor[ií]as\b', msg)
+        and (
+            re.search(r'\b(tengo|hay|puedo usar|disponibles?|lista|manejas|cu[aá]les|qu[eé])\b', msg)
+            or re.search(r'\bcategor[ií]as\s+(?:de|para|en)\s+(?:gastos?|ingresos?)\b', msg)
+        )
+    ):
+        categorias = _categorias_activas(uid, db)
+        return {'tipo': 'categorias_disponibles', **categorias}
+
     ayuda = _detectar_ayuda(msg)
     if ayuda:
         return {'tipo': 'ayuda_accion', **ayuda}
@@ -798,6 +1129,12 @@ def ejecutar_accion(mensaje: str, uid: int, ctx: dict, db: Session):
                 'resumen': {'balance': ctx.get('balance', 0), 'total_ingresos': ctx.get('total_ingresos', 0),
                             'total_gastos': ctx.get('total_gastos', 0), 'num_metas': ctx.get('num_metas', 0),
                             'num_transacciones': ctx.get('num_transacciones', 0)}}
+
+    if _t(msg, LUGAR_KW):
+        es_ing = _t(msg, ['recibo', 'cobro', 'me pagan', 'ingreso'])
+        tipo_l = 'ingreso' if es_ing else 'gasto'
+        return {'tipo': 'consulta_lugares', 'filtro_tipo': tipo_l,
+                'movimientos': [m for m in ctx.get('movimientos', []) if m['tipo'] == tipo_l]}
 
     if _t(msg, REPORTE_KW):
         tipo_rep = 'excel' if any(p in msg for p in ['excel', 'xlsx']) else 'pdf'
@@ -984,7 +1321,8 @@ def ejecutar_accion(mensaje: str, uid: int, ctx: dict, db: Session):
                         t.monto = nuevo_monto
                         db.commit()
                         return {'tipo': 'gasto_editado', 'categoria': g['categoria'],
-                                'monto': nuevo_monto, 'monto_anterior': anterior, 'id': t.id}
+                                'monto': nuevo_monto, 'monto_anterior': anterior, 'id': t.id,
+                                **_datos_ubic(t)}
                 except Exception as e:
                     print(f'[FinanBot] Gasto editar: {e}')
             return {'tipo': 'pide_monto', 'contexto': 'gasto_editar',
@@ -993,19 +1331,25 @@ def ejecutar_accion(mensaje: str, uid: int, ctx: dict, db: Session):
         if _crear_implicito(msg):
             monto = extraer_monto(mensaje)
             desc  = extraer_descripcion(mensaje)
+            lugar = extraer_lugar(mensaje)
+            cat   = (_categoria_activa_mencionada(mensaje, 'gasto', uid, db)
+                     or extraer_categoria_explicita(mensaje, 'gasto') or _detectar_categoria(mensaje, 'gasto'))
             if monto and monto > 0:
-                cat = _detectar_categoria(mensaje, 'gasto')
                 if not cat:
-                    return {'tipo': 'pide_categoria', 'contexto': 'gasto', 'monto': monto, 'descripcion': desc}
+                    return {'tipo': 'pide_categoria', 'contexto': 'gasto', 'monto': monto,
+                            'descripcion': desc, 'lugar': lugar}
                 try:
-                    cat_ok = obtener_categoria(cat, 'gasto')
+                    cat_ok = obtener_categoria(cat, 'gasto', uid, db)
+                    ubic, desc = _campos_ubic_lugar(ctx, lugar, desc)
                     t = Transaccion(usuario_id=uid, categoria=cat_ok, tipo='gasto', monto=monto,
-                                     descripcion=desc or 'Registrado por FinanBot', fecha=date.today())
+                                     descripcion=desc or 'Registrado por FinanBot', fecha=date.today(),
+                                     **ubic)
                     db.add(t); db.commit()
-                    return {'tipo': 'gasto_registrado', 'monto': monto, 'categoria': cat_ok, 'id': t.id}
+                    return {'tipo': 'gasto_registrado', 'monto': monto, 'categoria': cat_ok, 'id': t.id, **_datos_ubic(t, ctx)}
                 except Exception as e:
                     print(f'[FinanBot] Gasto crear: {e}')
-            return {'tipo': 'pide_monto', 'contexto': 'gasto'}
+            return {'tipo': 'pide_monto', 'contexto': 'gasto',
+                    'descripcion': desc, 'categoria': cat, 'lugar': lugar}
 
         if _t(msg, ELIMINAR):
             gastos = [t for t in ctx.get('transacciones_recientes', []) if t['tipo'] == 'gasto']
@@ -1017,8 +1361,11 @@ def ejecutar_accion(mensaje: str, uid: int, ctx: dict, db: Session):
             try:
                 t = db.query(Transaccion).get(g['id'])
                 if t and t.usuario_id == uid:
-                    db.delete(t); db.commit()
-                    return {'tipo': 'gasto_eliminado', 'monto': g['monto'], 'categoria': g['categoria']}
+                    tienda_id = t.tienda_id
+                    db.delete(t)
+                    eliminar_tiendas_sin_transacciones(db, [tienda_id])
+                    db.commit()
+                    return {'tipo': 'gasto_eliminado', 'monto': g['monto'], 'categoria': g['categoria'], **_datos_ubic(g)}
             except Exception as e:
                 print(f'[FinanBot] Gasto eliminar: {e}')
 
@@ -1026,7 +1373,8 @@ def ejecutar_accion(mensaje: str, uid: int, ctx: dict, db: Session):
             return {'tipo': 'consulta_gastos', 'num_gastos': ctx.get('num_gastos', 0),
                     'total_gastos': ctx.get('total_gastos', 0),
                     'gastos_por_categoria': ctx.get('gastos_por_categoria', {}),
-                    'recientes': [t for t in ctx.get('transacciones_recientes', []) if t['tipo'] == 'gasto'][:5]}
+                    'recientes': [t for t in ctx.get('transacciones_recientes', []) if t['tipo'] == 'gasto'][:5],
+                    'movimientos': [m for m in ctx.get('movimientos', []) if m['tipo'] == 'gasto']}
 
     # ── INGRESOS ─────────────────────────────────────────────────
     if _t(msg, INGRESO_KW):
@@ -1049,7 +1397,8 @@ def ejecutar_accion(mensaje: str, uid: int, ctx: dict, db: Session):
                         t.monto = nuevo_monto
                         db.commit()
                         return {'tipo': 'ingreso_editado', 'categoria': i['categoria'],
-                                'monto': nuevo_monto, 'monto_anterior': anterior, 'id': t.id}
+                                'monto': nuevo_monto, 'monto_anterior': anterior, 'id': t.id,
+                                **_datos_ubic(t)}
                 except Exception as e:
                     print(f'[FinanBot] Ingreso editar: {e}')
             return {'tipo': 'pide_monto', 'contexto': 'ingreso_editar',
@@ -1058,19 +1407,25 @@ def ejecutar_accion(mensaje: str, uid: int, ctx: dict, db: Session):
         if _crear_implicito(msg):
             monto = extraer_monto(mensaje)
             desc  = extraer_descripcion(mensaje)
+            lugar = extraer_lugar(mensaje)
+            cat   = (_categoria_activa_mencionada(mensaje, 'ingreso', uid, db)
+                     or extraer_categoria_explicita(mensaje, 'ingreso') or _detectar_categoria(mensaje, 'ingreso'))
             if monto and monto > 0:
-                cat = _detectar_categoria(mensaje, 'ingreso')
                 if not cat:
-                    return {'tipo': 'pide_categoria', 'contexto': 'ingreso', 'monto': monto, 'descripcion': desc}
+                    return {'tipo': 'pide_categoria', 'contexto': 'ingreso', 'monto': monto,
+                            'descripcion': desc, 'lugar': lugar}
                 try:
-                    cat_ok = obtener_categoria(cat, 'ingreso')
+                    cat_ok = obtener_categoria(cat, 'ingreso', uid, db)
+                    ubic, desc = _campos_ubic_lugar(ctx, lugar, desc)
                     t = Transaccion(usuario_id=uid, categoria=cat_ok, tipo='ingreso', monto=monto,
-                                     descripcion=desc or 'Registrado por FinanBot', fecha=date.today())
+                                     descripcion=desc or 'Registrado por FinanBot', fecha=date.today(),
+                                     **ubic)
                     db.add(t); db.commit()
-                    return {'tipo': 'ingreso_registrado', 'monto': monto, 'categoria': cat_ok, 'id': t.id}
+                    return {'tipo': 'ingreso_registrado', 'monto': monto, 'categoria': cat_ok, 'id': t.id, **_datos_ubic(t, ctx)}
                 except Exception as e:
                     print(f'[FinanBot] Ingreso crear: {e}')
-            return {'tipo': 'pide_monto', 'contexto': 'ingreso'}
+            return {'tipo': 'pide_monto', 'contexto': 'ingreso',
+                    'descripcion': desc, 'categoria': cat, 'lugar': lugar}
 
         if _t(msg, ELIMINAR):
             ingresos = [t for t in ctx.get('transacciones_recientes', []) if t['tipo'] == 'ingreso']
@@ -1082,15 +1437,19 @@ def ejecutar_accion(mensaje: str, uid: int, ctx: dict, db: Session):
             try:
                 t = db.query(Transaccion).get(i['id'])
                 if t and t.usuario_id == uid:
-                    db.delete(t); db.commit()
-                    return {'tipo': 'ingreso_eliminado', 'monto': i['monto'], 'categoria': i['categoria']}
+                    tienda_id = t.tienda_id
+                    db.delete(t)
+                    eliminar_tiendas_sin_transacciones(db, [tienda_id])
+                    db.commit()
+                    return {'tipo': 'ingreso_eliminado', 'monto': i['monto'], 'categoria': i['categoria'], **_datos_ubic(i)}
             except Exception as e:
                 print(f'[FinanBot] Ingreso eliminar: {e}')
 
         if _t(msg, CONSULTAR):
             return {'tipo': 'consulta_ingresos', 'num_ingresos': ctx.get('num_ingresos', 0),
                     'total_ingresos': ctx.get('total_ingresos', 0),
-                    'recientes': [t for t in ctx.get('transacciones_recientes', []) if t['tipo'] == 'ingreso'][:5]}
+                    'recientes': [t for t in ctx.get('transacciones_recientes', []) if t['tipo'] == 'ingreso'][:5],
+                    'movimientos': [m for m in ctx.get('movimientos', []) if m['tipo'] == 'ingreso']}
 
     return None
 
@@ -1207,25 +1566,51 @@ def _buscar_trans(msg: str, lista: list, monto: int | None, tipo_cat: str | None
 #  EXTRACCIÓN
 # ══════════════════════════════════════════════════════════════════
 
+# Palabras que anteceden números que NO son plata (direcciones, fechas, horas…)
+_NO_MONTO_ANTES = (r'(?:carrera|cra|cr|kr|kra|calle|cll|cl|avenida|av|diagonal|dg|transversal|tv|'
+                   r'n[uú]mero|no|nro|piso|apto|apartamento|local|torre|bloque|casa|interior|'
+                   r'd[ií]a|d[ií]as|el|las|los|a\s+las|ficha|c[oó]digo|ref|referencia|#)')
+_NO_MONTO_DESPUES = r'\s*(?:%|por\s*ciento|mes(?:es)?\b|a[ñn]os?\b|d[ií]as?\b|horas?\b|minutos?\b|personas?\b|cuotas?\b|-\s*\d|sur\b|norte\b|este\b|bis\b)'
+
+
 def extraer_monto(texto: str) -> int | None:
+    """Monto en pesos. Entiende: $1.500 · 1500 · 1.500 pesos · 20 mil · 20k ·
+    20 lucas · 2 millones · 1 palo · 1,5 millones. Ignora números de
+    direcciones ('carrera 52', 'calle 80 # 12-30'), días, plazos y porcentajes."""
     n = re.sub(r'(\d)[\.,](\d{3})\b', r'\1\2', texto)
+    n = re.sub(r'(\d)[\.,](\d{3})\b', r'\1\2', n)            # 1.250.000 → 1250000
+    n = re.sub(r'(\d),(\d{1,2})\b', r'\1.\2', n)              # 1,5 millones → 1.5
+    low = n.lower()
+
     for patron, mult in [
-        (r'\$\s*(\d+(?:\.\d+)?)', None),
-        (r'(\d+(?:\.\d+)?)\s*millones?', 1_000_000),
-        (r'(\d+(?:\.\d+)?)\s*mil\b', 1_000),
+        (r'\$\s*(\d+(?:\.\d+)?)\s*(millones?|mill[oó]n|palos?|mil|k|lucas?|barras?)?', None),
+        (r'(\d+(?:\.\d+)?)\s*(?:millones?|mill[oó]n|palos?)\b', 1_000_000),
+        (r'(\d+(?:\.\d+)?)\s*(?:mil|lucas?|barras?)\b', 1_000),
         (r'\b(\d+(?:\.\d+)?)\s*k\b', 1_000),
-        (r'\b(\d{5,})\b', 1),
+        (r'\b(\d+(?:\.\d+)?)\s*(?:pesos|cop)\b', 1),
     ]:
-        m = re.search(patron, n, re.IGNORECASE)
+        m = re.search(patron, low)
         if m:
             v = float(m.group(1))
-            if mult:
-                return int(v * mult)
-            t = texto.lower()
-            if 'millon' in t and v < 1_000:  return int(v * 1_000_000)
-            if 'mil'    in t and v < 10_000: return int(v * 1_000)
-            return int(v)
+            if mult is None:                     # con signo $
+                suf = (m.group(2) or '')
+                if suf.startswith(('millon', 'millón', 'palo')):
+                    v *= 1_000_000
+                elif suf.startswith(('mil', 'k', 'luca', 'barra')):
+                    v *= 1_000
+                return int(v)
+            return int(v * mult)
+
+    # Número suelto: el primero de 3+ cifras que no sea dirección, día, plazo…
+    for m in re.finditer(r'(?<![\w.#-])(\d{3,})(?![\w.])', low):
+        antes = low[:m.start()].rstrip()
+        if re.search(rf'(?:^|\W){_NO_MONTO_ANTES}\s*$', antes):
+            continue
+        if re.match(_NO_MONTO_DESPUES, low[m.end():]):
+            continue
+        return int(m.group(1))
     return None
+
 
 def extraer_todos_montos(texto: str) -> list:
     """Devuelve TODOS los montos en pesos mencionados en el texto, en orden.
@@ -1322,14 +1707,76 @@ def extraer_email(texto: str) -> str | None:
     m = re.search(r'[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}', texto)
     return m.group(0) if m else None
 
+_ETIQUETAS_CAMPOS = r'(?:descripci[oó]n|concepto|detalle|nota|categor[ií]a|lugar|ubicaci[oó]n|sitio|tienda|direcci[oó]n|monto|valor|precio)'
+
+
+def _campo_etiquetado(texto: str, etiquetas: str) -> str | None:
+    """Lee 'descripción: Comida sena', 'el lugar carrera 52', 'categoría alimentación'…
+    hasta la coma, el punto o la siguiente etiqueta."""
+    m = re.search(rf'\b(?:{etiquetas})\b\s*(?:es|ser[ií]a|de)?\s*[:=]?\s*(.+)', texto, re.IGNORECASE)
+    if not m:
+        return None
+    valor = m.group(1)
+    corte = re.search(rf'\s*(?:[,;.]|\s+y\s+(?:el\s+|la\s+|en\s+(?:el\s+|la\s+)?)?{_ETIQUETAS_CAMPOS}\b|\s+{_ETIQUETAS_CAMPOS}\b)', valor, re.IGNORECASE)
+    if corte:
+        valor = valor[:corte.start()]
+    valor = valor.strip(' :"\'')
+    return valor[:100] if len(valor) >= 2 else None
+
+
+def extraer_lugar(texto: str) -> str | None:
+    lugar = _campo_etiquetado(texto, r'lugar|ubicaci[oó]n|sitio|tienda|direcci[oó]n')
+    return lugar[:1].upper() + lugar[1:] if lugar else None
+
+
+def extraer_categoria_explicita(texto: str, tipo: str) -> str | None:
+    """'categoría alimentación' → 'Alimentación' (gana sobre las palabras clave)."""
+    valor = _campo_etiquetado(texto, r'categor[ií]a')
+    if not valor:
+        return None
+    sin_tilde = lambda x: x.lower().translate(str.maketrans('áéíóúü', 'aeiouu'))
+    v = sin_tilde(valor)
+    cats = GASTO_CATS if tipo == 'gasto' else ING_CATS
+    for nombre in cats:
+        if sin_tilde(nombre) == v or v.startswith(sin_tilde(nombre)) or sin_tilde(nombre).startswith(v):
+            return nombre
+    return _detectar_categoria(valor, tipo)
+
+
+def _categoria_activa_mencionada(texto: str, tipo: str, uid: int, db: Session) -> str | None:
+    categorias = _categorias_activas(uid, db).get(tipo, [])
+
+    def sin_tildes(valor: str) -> str:
+        return ''.join(
+            letra for letra in unicodedata.normalize('NFD', valor.casefold())
+            if unicodedata.category(letra) != 'Mn'
+        )
+
+    texto_normalizado = sin_tildes(texto)
+    for categoria in sorted(categorias, key=lambda item: len(item['nombre']), reverse=True):
+        nombre = re.escape(sin_tildes(categoria['nombre']))
+        if re.search(rf'(?<!\w){nombre}(?!\w)', texto_normalizado):
+            return categoria['nombre']
+    return None
+
+
 def extraer_descripcion(texto: str) -> str | None:
+    etiquetada = _campo_etiquetado(texto, r'descripci[oó]n|concepto|detalle|nota')
+    if etiquetada:
+        return etiquetada[:1].upper() + etiquetada[1:]
     m = re.search(
-        r'\d[\d.,]*\s*(?:pesos|mil|millones|k)?\s+(?:en|para|por)\s+(.{3,80})',
+        r'\d[\d.,]*\s*(?:pesos|mil|millones|k|lucas?)?\s+(?:en|para|por)\s+(.{3,80})',
         texto, re.IGNORECASE)
-    if m:
-        return m.group(1).strip()[:100]
-    m = re.search(r'\b(?:en|para)\s+([a-záéíóúüñA-ZÁÉÍÓÚÜÑ][^$\d]{3,60})', texto, re.IGNORECASE)
-    return m.group(1).strip()[:100] if m else None
+    if not m:
+        m = re.search(r'\b(?:en|para)\s+([a-záéíóúüñA-ZÁÉÍÓÚÜÑ][^$\d]{3,60})', texto, re.IGNORECASE)
+    if not m:
+        return None
+    valor = m.group(1)
+    corte = re.search(rf'\s*(?:[,;]|\s+y\s+(?:el\s+|la\s+)?{_ETIQUETAS_CAMPOS}\b|\s+{_ETIQUETAS_CAMPOS}\b)', valor, re.IGNORECASE)
+    if corte:
+        valor = valor[:corte.start()]
+    valor = valor.strip(' .:')
+    return valor[:100] if len(valor) >= 2 else None
 
 # Categorías — coinciden EXACTO con el selector de finanzas.html/perfil.html
 GASTO_CATS = {
@@ -1372,7 +1819,11 @@ def _detectar_categoria(texto: str, tipo: str) -> str | None:
     score = defaultdict(int)
     for cat, kws in cats.items():
         for kw in kws:
-            if kw in t:
+            if len(kw) <= 3:
+                coincide = re.search(rf'(?<!\w){re.escape(kw)}(?!\w)', t)
+            else:
+                coincide = kw in t
+            if coincide:
                 score[cat] += 1
     return max(score, key=score.get) if score else None
 

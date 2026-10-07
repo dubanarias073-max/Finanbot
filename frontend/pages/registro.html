@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <base target="_top">
     <meta charset="UTF-8">
@@ -7,472 +8,805 @@
     <title>FinanBot - Crear cuenta</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
     <style>
-        *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
         :root {
-            --purple: #a855f7;
-            --rose:   #c026d3;
-            --cyan:   #22d3ee;
-            --green:  #4ade80;
-            --red:    #f87171;
-            --warn:   #fbbf24;
-            --muted:  #6b7280;
-            --second: #9ca3af;
+            --purple: #6D5BD0;
+            --rose: #35356B;
+            --cyan: #8BC6B9;
+            --green: #8BC6B9;
+            --red: #F87171;
+            --warn: #FBBF24;
+            --muted: #6B7280;
+            --second: #9CA3AF;
+
+            --azul-noche: #11112B;
+            --azul-violeta: #35356B;
+            --violeta: #6D5BD0;
+            --lavanda: #A78BFA;
+            --verde-azulado: #8BC6B9;
         }
 
         body {
             font-family: 'Segoe UI', sans-serif;
-            background: radial-gradient(ellipse at top, #1a1a4e 0%, #0f0f2d 50%, #000010 100%);
+            background: radial-gradient(ellipse at top, #35356B 0%, #11112B 50%, #08081F 100%);
             min-height: 100vh;
-            display: flex; align-items: center; justify-content: center;
-            padding: 28px 15px; overflow-x: hidden; position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 28px 15px;
+            overflow-x: hidden;
+            position: relative;
         }
 
         /* Orbes de fondo */
         body::before {
-            content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+            content: '';
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
             background:
-                radial-gradient(circle at 20% 20%, rgba(168,85,247,.09) 0%, transparent 50%),
-                radial-gradient(circle at 80% 80%, rgba(34,211,238,.08) 0%, transparent 50%);
+                radial-gradient(circle at 20% 20%, rgba(139,92,246, .09) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(94,234,212, .08) 0%, transparent 50%);
         }
+
         /* Grid de puntos */
         body::after {
-            content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
-            background-image: radial-gradient(rgba(168,85,247,.05) 1px, transparent 1px);
+            content: '';
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            background-image: radial-gradient(rgba(139,92,246, .05) 1px, transparent 1px);
             background-size: 28px 28px;
         }
 
         /* ── CARD ─────────────────────────────────────── */
         .card-registro {
-            position: relative; z-index: 1;
-            width: 100%; max-width: 460px;
-            background: rgba(255,255,255,.04);
-            border: 1px solid rgba(168,85,247,.25);
-            border-radius: 26px; padding: 42px 36px 36px;
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 460px;
+            background: rgba(53, 53, 107, 0.18);
+            border: 1px solid rgba(167, 139, 250, 0.25);
+            border-radius: 26px;
+            padding: 42px 36px 36px;
             backdrop-filter: blur(22px);
-            box-shadow: 0 28px 70px rgba(0,0,0,.55), 0 0 0 1px rgba(168,85,247,.06);
+            box-shadow: 0 28px 70px rgba(0, 0, 0, .55), 0 0 0 1px rgba(139,92,246, .06);
         }
+
         .card-registro::before {
-            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
-            background: linear-gradient(90deg, transparent, #c026d3, #a855f7, #22d3ee, transparent);
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #35356B, #6D5BD0, #A78BFA, #8BC6B9, transparent);
             border-radius: 26px 26px 0 0;
         }
 
         /* ── HEADER ───────────────────────────────────── */
-        .logo-wrap { text-align: center; margin-bottom: 24px; }
+        .logo-wrap {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
         .logo-img {
-            width: 70px; height: 70px; border-radius: 50%; object-fit: cover;
-            border: 2px solid rgba(168,85,247,.35);
-            box-shadow: 0 0 22px rgba(168,85,247,.4), 0 0 48px rgba(168,85,247,.12);
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid rgba(139,92,246, .35);
+            box-shadow: 0 0 22px rgba(139,92,246, .4), 0 0 48px rgba(139,92,246, .12);
             margin-bottom: 14px;
         }
+
         .logo-fallback {
-            width: 70px; height: 70px; border-radius: 50%; margin: 0 auto 14px;
-            background: linear-gradient(135deg, rgba(192,38,211,.25), rgba(168,85,247,.2));
-            border: 2px solid rgba(168,85,247,.35);
-            display: flex; align-items: center; justify-content: center; font-size: 30px;
-            box-shadow: 0 0 22px rgba(168,85,247,.35);
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            margin: 0 auto 14px;
+            background: linear-gradient(135deg, rgba(109,91,208, .25), rgba(139,92,246, .2));
+            border: 2px solid rgba(139,92,246, .35);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            box-shadow: 0 0 22px rgba(139,92,246, .35);
         }
+
         .titulo {
-            font-family: 'Segoe UI', sans-serif; font-size: 28px; font-weight: 800;
-            background: linear-gradient(90deg, #c026d3, #a855f7, #22d3ee);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            margin-bottom: 4px; letter-spacing: -.3px;
+            font-family: 'Segoe UI', sans-serif;
+            font-size: 28px;
+            font-weight: 800;
+            background: linear-gradient(90deg, #c2a8fd 20%, #8BC6B9 50%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 4px;
+            letter-spacing: -.3px;
         }
-        .subtitulo { color: #a78bfa; font-size: 13px; }
+
+        .subtitulo {
+            color: #A78BFA;
+            font-size: 13px;
+        }
 
         /* ── ALERTAS ──────────────────────────────────── */
         .alerta {
-            padding: 12px 15px; border-radius: 12px; margin-bottom: 20px;
-            font-size: 13px; display: none; align-items: center; gap: 9px;
+            padding: 12px 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            display: none;
+            align-items: center;
+            gap: 9px;
         }
-        .alerta.visible { display: flex; animation: slideDown .3s ease; }
-        @keyframes slideDown { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
-        .alerta-error { background: rgba(239,68,68,.08); border: 1px solid rgba(239,68,68,.25); color: #fca5a5; }
-        .alerta-exito { background: rgba(34,197,94,.08); border: 1px solid rgba(34,197,94,.25); color: #86efac; }
+
+        .alerta.visible {
+            display: flex;
+            animation: slideDown .3s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-8px)
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0)
+            }
+        }
+
+        .alerta-error {
+            background: rgba(239, 68, 68, .08);
+            border: 1px solid rgba(239, 68, 68, .25);
+            color: var(--fb-red-soft);
+        }
+
+        .alerta-exito {
+            background: rgba(34, 197, 94, .08);
+            border: 1px solid rgba(34, 197, 94, .25);
+            color: var(--fb-green-soft);
+        }
 
         /* ── CAMPOS ───────────────────────────────────── */
-        .campo { margin-bottom: 16px; }
-        .campo-label {
-            display: block; font-size: 11px; font-weight: 700; color: #c4b5fd;
-            text-transform: uppercase; letter-spacing: .8px; margin-bottom: 7px;
+        .campo {
+            margin-bottom: 16px;
         }
-        .campo-row { display: flex; }
+
+        .campo-label {
+            display: block;
+            font-size: 11px;
+            font-weight: 700;
+            color: #A78BFA;
+            text-transform: uppercase;
+            letter-spacing: .8px;
+            margin-bottom: 7px;
+        }
+
+        .campo-row {
+            display: flex;
+        }
 
         .campo-prefix {
-            width: 42px; flex-shrink: 0;
-            display: flex; align-items: center; justify-content: center;
-            background: rgba(168,85,247,.1); border: 1.5px solid rgba(168,85,247,.28);
-            border-right: none; border-radius: 13px 0 0 13px;
-            color: var(--purple); font-size: 13px;
+            width: 42px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(139,92,246, .1);
+            border: 1.5px solid rgba(139,92,246, .28);
+            border-right: none;
+            border-radius: 13px 0 0 13px;
+            color: var(--purple);
+            font-size: 13px;
         }
+
         .campo-input {
-            flex: 1; background: rgba(255,255,255,.05);
-            border: 1.5px solid rgba(168,85,247,.25); border-left: none;
+            flex: 1;
+            background: rgba(var(--fb-fg),.05);
+            border: 1.5px solid rgba(139,92,246, .25);
+            border-left: none;
             border-radius: 0 13px 13px 0;
-            color: white; padding: 12px 14px; font-size: 14px; outline: none;
-            transition: all .3s; font-family: 'Segoe UI', sans-serif;
+            color: var(--fb-text);
+            padding: 12px 14px;
+            font-size: 14px;
+            outline: none;
+            transition: all .3s;
+            font-family: 'Segoe UI', sans-serif;
         }
-        .campo-input:focus { border-color: var(--purple); box-shadow: 0 0 0 3px rgba(168,85,247,.12); background: rgba(168,85,247,.06); }
-        .campo-input::placeholder { color: var(--muted); }
-        .campo-input.con-ojo { border-radius: 0; }
-        .campo-input.ok    { border-color: rgba(74,222,128,.45); }
-        .campo-input.error { border-color: rgba(248,113,113,.45); }
+
+        .campo-input:focus {
+            border-color: var(--purple);
+            box-shadow: 0 0 0 3px rgba(139,92,246, .12);
+            background: rgba(139,92,246, .06);
+        }
+
+        .campo-input::placeholder {
+            color: var(--muted);
+        }
+
+        .campo-input.con-ojo {
+            border-radius: 0;
+        }
+
+        .campo-input.ok {
+            border-color: rgba(16,185,129, .45);
+        }
+
+        .campo-input.error {
+            border-color: rgba(248, 113, 113, .45);
+        }
 
         /* Select */
         .campo-select {
-            flex: 1; background: rgba(255,255,255,.05);
-            border: 1.5px solid rgba(168,85,247,.25); border-left: none;
+            flex: 1;
+            background: rgba(var(--fb-fg),.05);
+            border: 1.5px solid rgba(139,92,246, .25);
+            border-left: none;
             border-radius: 0 13px 13px 0;
-            color: white; padding: 12px 14px; font-size: 14px; outline: none;
-            transition: all .3s; font-family: 'Segoe UI', sans-serif; cursor: pointer;
+            color: var(--fb-text);
+            padding: 12px 14px;
+            font-size: 14px;
+            outline: none;
+            transition: all .3s;
+            font-family: 'Segoe UI', sans-serif;
+            cursor: pointer;
             appearance: none;
             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7' viewBox='0 0 10 7'%3E%3Cpath fill='%23a855f7' d='M1 1l4 4 4-4'/%3E%3C/svg%3E");
-            background-repeat: no-repeat; background-position: right 14px center;
+            background-repeat: no-repeat;
+            background-position: right 14px center;
         }
-        .campo-select:focus { border-color: var(--purple); box-shadow: 0 0 0 3px rgba(168,85,247,.12); }
-        .campo-select option { background: #1a0a3c; color: white; }
+
+        .campo-select:focus {
+            border-color: var(--purple);
+            box-shadow: 0 0 0 3px rgba(139,92,246, .12);
+        }
+
+        .campo-select option {
+            background: #1A1A3D;
+            color: var(--fb-text);
+        }
 
         /* Ojo */
         .ojo-btn {
-            background: rgba(168,85,247,.1); border: 1.5px solid rgba(168,85,247,.25);
-            border-left: none; border-radius: 0 13px 13px 0;
-            color: var(--muted); padding: 0 13px; cursor: pointer; transition: all .3s;
-            display: flex; align-items: center; font-size: 14px;
+            background: rgba(139,92,246, .1);
+            border: 1.5px solid rgba(139,92,246, .25);
+            border-left: none;
+            border-radius: 0 13px 13px 0;
+            color: var(--muted);
+            padding: 0 13px;
+            cursor: pointer;
+            transition: all .3s;
+            display: flex;
+            align-items: center;
+            font-size: 14px;
         }
-        .ojo-btn:hover { color: var(--purple); background: rgba(168,85,247,.18); }
+
+        .ojo-btn:hover {
+            color: var(--purple);
+            background: rgba(139,92,246, .18);
+        }
 
         /* ── FORTALEZA CONTRASEÑA ─────────────────────── */
-        .strength-wrap { margin-top: 10px; }
-        .strength-bar {
-            width: 100%; height: 5px; border-radius: 5px;
-            background: rgba(255,255,255,.07); overflow: hidden; margin-bottom: 7px;
+        .strength-wrap {
+            margin-top: 10px;
         }
-        .strength-fill { height: 100%; width: 0%; border-radius: 5px; transition: all .4s; }
-        .strength-fill.weak   { width: 33%; background: var(--red); }
-        .strength-fill.medium { width: 66%; background: var(--warn); }
-        .strength-fill.strong { width: 100%; background: var(--green); }
-        .strength-txt { font-size: 12px; color: var(--muted); margin-bottom: 8px; transition: color .3s; }
 
-        .reqs { display: flex; gap: 6px; flex-wrap: wrap; }
-        .req {
-            font-size: 11px; padding: 3px 10px; border-radius: 50px; font-weight: 600;
-            border: 1px solid; transition: all .3s;
+        .strength-bar {
+            width: 100%;
+            height: 5px;
+            border-radius: 5px;
+            background: rgba(var(--fb-fg),.07);
+            overflow: hidden;
+            margin-bottom: 7px;
         }
-        .req.pending { color: var(--muted); border-color: rgba(255,255,255,.08); background: rgba(255,255,255,.03); }
-        .req.ok      { color: var(--green); border-color: rgba(74,222,128,.25); background: rgba(74,222,128,.07); }
-        .req.fail    { color: var(--red);   border-color: rgba(248,113,113,.25); background: rgba(248,113,113,.07); }
+
+        .strength-fill {
+            height: 100%;
+            width: 0%;
+            border-radius: 5px;
+            transition: all .4s;
+        }
+
+        .strength-fill.weak {
+            width: 33%;
+            background: var(--red);
+        }
+
+        .strength-fill.medium {
+            width: 66%;
+            background: var(--warn);
+        }
+
+        .strength-fill.strong {
+            width: 100%;
+            background: var(--green);
+        }
+
+        .strength-txt {
+            font-size: 12px;
+            color: var(--muted);
+            margin-bottom: 8px;
+            transition: color .3s;
+        }
+
+        .reqs {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .req {
+            font-size: 11px;
+            padding: 3px 10px;
+            border-radius: 50px;
+            font-weight: 600;
+            border: 1px solid;
+            transition: all .3s;
+        }
+
+        .req.pending {
+            color: var(--muted);
+            border-color: rgba(var(--fb-fg),.08);
+            background: rgba(var(--fb-fg),.03);
+        }
+
+        .req.ok {
+            color: var(--green);
+            border-color: rgba(16,185,129, .25);
+            background: rgba(16,185,129, .07);
+        }
+
+        .req.fail {
+            color: var(--red);
+            border-color: rgba(248, 113, 113, .25);
+            background: rgba(248, 113, 113, .07);
+        }
 
         /* Match contraseñas */
         .match-hint {
-            font-size: 11px; margin-top: 6px; display: none;
-            align-items: center; gap: 5px;
+            font-size: 11px;
+            margin-top: 6px;
+            display: none;
+            align-items: center;
+            gap: 5px;
         }
 
         /* ── SEPARADOR ────────────────────────────────── */
-        .sep { display: flex; align-items: center; gap: 12px; margin: 20px 0; }
-        .sep-line { flex: 1; height: 1px; background: rgba(168,85,247,.1); }
-        .sep-txt { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+        .sep {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 20px 0;
+        }
+
+        .sep-line {
+            flex: 1;
+            height: 1px;
+            background: rgba(139,92,246, .1);
+        }
+
+        .sep-txt {
+            font-size: 11px;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
 
         /* ── BOTÓN REGISTRAR ──────────────────────────── */
         .btn-registrar {
-            width: 100%; border: none; border-radius: 13px; padding: 14px;
-            font-size: 15px; font-weight: 700; color: white; cursor: pointer;
-            background: linear-gradient(135deg, #c026d3, #a855f7);
-            box-shadow: 0 8px 26px rgba(192,38,211,.38);
-            transition: all .3s; display: flex; align-items: center;
-            justify-content: center; gap: 9px;
-            font-family: 'Segoe UI', sans-serif; margin-top: 6px;
+            width: 100%;
+            border: none;
+            border-radius: 13px;
+            padding: 14px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            background: linear-gradient(135deg, #579F90, #8BC6B9);
+            color: #11112B;
+            box-shadow: 0 8px 26px rgba(139, 198, 185, 0.25);
+            transition: all .3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 9px;
+            font-family: 'Segoe UI', sans-serif;
+            margin-top: 6px;
         }
-        .btn-registrar:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 12px 36px rgba(192,38,211,.56); }
-        .btn-registrar:disabled { opacity: .65; cursor: not-allowed; transform: none; }
-        .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,.3); border-top-color: white; border-radius: 50%; animation: spin .7s linear infinite; }
-        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .btn-registrar:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 36px rgba(139, 198, 185, 0.56);
+        }
+
+        .btn-registrar:disabled {
+            opacity: .65;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(var(--fb-fg),.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin .7s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
 
         /* ── LINK LOGIN ───────────────────────────────── */
-        .link-login { margin-top: 20px; text-align: center; font-size: 13px; color: var(--muted); }
-        .link-login a { color: var(--cyan); text-decoration: none; font-weight: 600; transition: color .3s; }
-        .link-login a:hover { color: #67e8f9; }
+        .link-login {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 13px;
+            color: var(--muted);
+        }
+
+        .link-login a {
+            color: var(--cyan);
+            text-decoration: none;
+            font-weight: 600;
+            transition: color .3s;
+        }
+
+        .link-login a:hover {
+            color: var(--fb-cyan-soft);
+        }
 
         /* ===================== RESPONSIVE / MOBILE ===================== */
         @media (max-width: 480px) {
-            body { padding: 16px 12px; align-items: flex-start; padding-top: 30px; }
+            body {
+                padding: 16px 12px;
+                align-items: flex-start;
+                padding-top: 30px;
+            }
 
             .card-registro {
                 padding: 30px 20px 26px;
                 border-radius: 20px;
             }
 
-            .logo-img, .logo-fallback { width: 60px; height: 60px; margin-bottom: 10px; }
-            .titulo { font-size: 22px; }
-            .subtitulo { font-size: 12px; }
+            .logo-img,
+            .logo-fallback {
+                width: 60px;
+                height: 60px;
+                margin-bottom: 10px;
+            }
 
-            .campo-label { font-size: 10.5px; }
-            .campo-input, .campo-select { font-size: 15px; padding: 11px 12px; } /* evita zoom automático en iOS */
-            .campo-prefix { width: 38px; }
+            .titulo {
+                font-size: 22px;
+            }
 
-            .reqs { gap: 5px; }
-            .req { font-size: 10px; padding: 3px 8px; }
+            .subtitulo {
+                font-size: 12px;
+            }
 
-            .btn-registrar { font-size: 14px; padding: 13px; }
+            .campo-label {
+                font-size: 10.5px;
+            }
 
-            .sep { margin: 16px 0; }
+            .campo-input,
+            .campo-select {
+                font-size: 15px;
+                padding: 11px 12px;
+            }
+
+            /* evita zoom automático en iOS */
+            .campo-prefix {
+                width: 38px;
+            }
+
+            .reqs {
+                gap: 5px;
+            }
+
+            .req {
+                font-size: 10px;
+                padding: 3px 8px;
+            }
+
+            .btn-registrar {
+                font-size: 14px;
+                padding: 13px;
+            }
+
+            .sep {
+                margin: 16px 0;
+            }
         }
 
         @media (max-width: 360px) {
-            .titulo { font-size: 20px; }
-            .campo-prefix { width: 34px; font-size: 12px; }
+            .titulo {
+                font-size: 20px;
+            }
+
+            .campo-prefix {
+                width: 34px;
+                font-size: 12px;
+            }
         }
     </style>
+    <link rel="stylesheet" href="temas.css">
 </head>
+
 <body>
 
-<div class="card-registro">
+    <div class="card-registro">
 
-    <!-- HEADER -->
-    <div class="logo-wrap">
-        <img src="../../images/logo.png" alt="FinanBot" class="logo-img"
-             onerror="this.outerHTML='<div class=\'logo-fallback\'>🤖</div>'">
-        <div class="titulo">Crear cuenta</div>
-        <div class="subtitulo">Únete a FinanBot y toma el control de tus finanzas</div>
-    </div>
-
-    <!-- ALERTAS -->
-    <div class="alerta alerta-error" id="alertaError">
-        <i class="fas fa-circle-exclamation"></i><span id="mensajeError"></span>
-    </div>
-    <div class="alerta alerta-exito" id="alertaExito">
-        <i class="fas fa-circle-check"></i><span id="mensajeExito"></span>
-    </div>
-
-    <!-- NOMBRE -->
-    <div class="campo">
-        <label class="campo-label"><i class="fas fa-user" style="margin-right:5px"></i>Nombre completo</label>
-        <div class="campo-row">
-            <div class="campo-prefix"><i class="fas fa-user"></i></div>
-            <input type="text" id="nombre" class="campo-input" placeholder="Tu nombre completo">
+        <!-- HEADER -->
+        <div class="logo-wrap">
+            <img src="../../images/logo.png" alt="FinanBot" class="logo-img"
+                onerror="this.outerHTML='<div class=\'logo-fallback\'>🤖</div>'">
+            <div class="titulo">Crear cuenta</div>
+            <div class="subtitulo">Únete a FinanBot y toma el control de tus finanzas</div>
         </div>
-    </div>
 
-    <!-- CORREO -->
-    <div class="campo">
-        <label class="campo-label"><i class="fas fa-envelope" style="margin-right:5px"></i>Correo electrónico</label>
-        <div class="campo-row">
-            <div class="campo-prefix"><i class="fas fa-envelope"></i></div>
-            <input type="email" id="correo" class="campo-input" placeholder="tu@correo.com" oninput="validarCorreoRT()">
+        <!-- ALERTAS -->
+        <div class="alerta alerta-error" id="alertaError">
+            <i class="fas fa-circle-exclamation"></i><span id="mensajeError"></span>
         </div>
-    </div>
+        <div class="alerta alerta-exito" id="alertaExito">
+            <i class="fas fa-circle-check"></i><span id="mensajeExito"></span>
+        </div>
 
-    <!-- CONTRASEÑA -->
-    <div class="campo">
-        <label class="campo-label"><i class="fas fa-lock" style="margin-right:5px"></i>Contraseña</label>
-        <div class="campo-row">
-            <div class="campo-prefix"><i class="fas fa-lock"></i></div>
-            <input type="password" id="contrasena" class="campo-input con-ojo" placeholder="Mínimo 6 caracteres"
-                   oninput="verificarFortaleza(this.value); verificarMatch()">
-            <button class="ojo-btn" type="button" onclick="togglePwd('contrasena',this)"><i class="fas fa-eye"></i></button>
-        </div>
-        <div class="strength-wrap">
-            <div class="strength-bar"><div class="strength-fill" id="strFill"></div></div>
-            <div class="strength-txt" id="strTxt">Ingresa una contraseña segura</div>
-            <div class="reqs">
-                <span class="req pending" id="reqLen">6+ caracteres</span>
-                <span class="req pending" id="reqMay">Mayúscula</span>
-                <span class="req pending" id="reqNum">Número</span>
+        <!-- NOMBRE -->
+        <div class="campo">
+            <label class="campo-label"> Nombre completo</label>
+            <div class="campo-row">
+                <div class="campo-prefix"><i class="fas fa-user"></i></div>
+                <input type="text" id="nombre" class="campo-input" placeholder="Tu nombre completo">
             </div>
         </div>
-    </div>
 
-    <!-- CONFIRMAR -->
-    <div class="campo">
-        <label class="campo-label"><i class="fas fa-shield-alt" style="margin-right:5px"></i>Confirmar contraseña</label>
-        <div class="campo-row">
-            <div class="campo-prefix"><i class="fas fa-lock"></i></div>
-            <input type="password" id="confirmar" class="campo-input con-ojo" placeholder="Repite tu contraseña"
-                   oninput="verificarMatch()">
-            <button class="ojo-btn" type="button" onclick="togglePwd('confirmar',this)"><i class="fas fa-eye"></i></button>
+        <!-- CORREO -->
+        <div class="campo">
+            <label class="campo-label"> Correo
+                electrónico</label>
+            <div class="campo-row">
+                <div class="campo-prefix"><i class="fas fa-envelope"></i></div>
+                <input type="email" id="correo" class="campo-input" placeholder="tu@correo.com"
+                    oninput="validarCorreoRT()">
+            </div>
         </div>
-        <div class="match-hint" id="matchHint"></div>
-    </div>
 
-    <!-- SEPARADOR -->
-    <div class="sep">
-        <div class="sep-line"></div>
-        <div class="sep-txt">Seguridad</div>
-        <div class="sep-line"></div>
-    </div>
-
-    <!-- PREGUNTA -->
-    <div class="campo">
-        <label class="campo-label"><i class="fas fa-question-circle" style="margin-right:5px"></i>Pregunta de seguridad</label>
-        <div class="campo-row">
-            <div class="campo-prefix"><i class="fas fa-question"></i></div>
-            <select id="pregunta" class="campo-select">
-                <option value="">Selecciona una pregunta...</option>
-                <option value="¿Cuál es el nombre de tu mascota?">¿Cuál es el nombre de tu mascota?</option>
-                <option value="¿En qué ciudad naciste?">¿En qué ciudad naciste?</option>
-                <option value="¿Cuál es tu comida favorita?">¿Cuál es tu comida favorita?</option>
-                <option value="¿Cuál es el nombre de tu colegio?">¿Cuál es el nombre de tu colegio?</option>
-                <option value="¿Cuál es el apellido de tu madre?">¿Cuál es el apellido de tu madre?</option>
-            </select>
+        <!-- CONTRASEÑA -->
+        <div class="campo">
+            <label class="campo-label"> Contraseña</label>
+            <div class="campo-row">
+                <div class="campo-prefix"><i class="fas fa-lock"></i></div>
+                <input type="password" id="contrasena" class="campo-input con-ojo" placeholder="Mínimo 6 caracteres"
+                    oninput="verificarFortaleza(this.value); verificarMatch()">
+                <button class="ojo-btn" type="button" onclick="togglePwd('contrasena',this)"><i
+                        class="fas fa-eye"></i></button>
+            </div>
+            <div class="strength-wrap">
+                <div class="strength-bar">
+                    <div class="strength-fill" id="strFill"></div>
+                </div>
+                <div class="strength-txt" id="strTxt">Ingresa una contraseña segura</div>
+                <div class="reqs">
+                    <span class="req pending" id="reqLen">6+ caracteres</span>
+                    <span class="req pending" id="reqMay">Mayúscula</span>
+                    <span class="req pending" id="reqNum">Número</span>
+                </div>
+            </div>
         </div>
-    </div>
 
-    <!-- RESPUESTA -->
-    <div class="campo">
-        <label class="campo-label"><i class="fas fa-key" style="margin-right:5px"></i>Respuesta de seguridad</label>
-        <div class="campo-row">
-            <div class="campo-prefix"><i class="fas fa-lock"></i></div>
-            <input type="text" id="respuestaSeguridad" class="campo-input" placeholder="Tu respuesta secreta">
+        <!-- CONFIRMAR -->
+        <div class="campo">
+            <label class="campo-label"> Confirmar
+                contraseña</label>
+            <div class="campo-row">
+                <div class="campo-prefix"><i class="fas fa-lock"></i></div>
+                <input type="password" id="confirmar" class="campo-input con-ojo" placeholder="Repite tu contraseña"
+                    oninput="verificarMatch()">
+                <button class="ojo-btn" type="button" onclick="togglePwd('confirmar',this)"><i
+                        class="fas fa-eye"></i></button>
+            </div>
+            <div class="match-hint" id="matchHint"></div>
         </div>
+
+        <!-- SEPARADOR -->
+        <div class="sep">
+            <div class="sep-line"></div>
+            <div class="sep-txt">Seguridad</div>
+            <div class="sep-line"></div>
+        </div>
+
+        <!-- PREGUNTA -->
+        <div class="campo">
+            <label class="campo-label"> Pregunta de
+                seguridad</label>
+            <div class="campo-row">
+                <div class="campo-prefix"><i class="fas fa-question"></i></div>
+                <select id="pregunta" class="campo-select">
+                    <option value="">Selecciona una pregunta...</option>
+                    <option value="¿Cuál es el nombre de tu mascota?">¿Cuál es el nombre de tu mascota?</option>
+                    <option value="¿En qué ciudad naciste?">¿En qué ciudad naciste?</option>
+                    <option value="¿Cuál es tu comida favorita?">¿Cuál es tu comida favorita?</option>
+                    <option value="¿Cuál es el nombre de tu colegio?">¿Cuál es el nombre de tu colegio?</option>
+                    <option value="¿Cuál es el apellido de tu madre?">¿Cuál es el apellido de tu madre?</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- RESPUESTA -->
+        <div class="campo">
+            <label class="campo-label"> Respuesta de seguridad</label>
+            <div class="campo-row">
+                <div class="campo-prefix"><i class="fas fa-lock"></i></div>
+                <input type="text" id="respuestaSeguridad" class="campo-input" placeholder="Tu respuesta secreta">
+            </div>
+        </div>
+
+        <!-- BOTÓN -->
+        <button class="btn-registrar" id="btnRegistrar" onclick="registrar()">
+            <i class="fas fa-user-plus"></i> Crear mi cuenta
+        </button>
+
+        <!-- LINK LOGIN -->
+        <div class="link-login">
+            ¿Ya tienes cuenta? <a href="login.html">Inicia sesión aquí</a>
+        </div>
+
     </div>
 
-    <!-- BOTÓN -->
-    <button class="btn-registrar" id="btnRegistrar" onclick="registrar()">
-        <i class="fas fa-user-plus"></i> Crear mi cuenta
-    </button>
-
-    <!-- LINK LOGIN -->
-    <div class="link-login">
-        ¿Ya tienes cuenta? <a href="login.html">Inicia sesión aquí</a>
-    </div>
-
-</div>
-
-<script>
-    // ── TOGGLE OJO ─────────────────────────────────
-    function togglePwd(id, btn) {
-        const inp  = document.getElementById(id);
-        const ico  = btn.querySelector('i');
-        const show = inp.type === 'password';
-        inp.type      = show ? 'text' : 'password';
-        ico.className = show ? 'fas fa-eye-slash' : 'fas fa-eye';
-        btn.style.color = show ? 'var(--purple)' : '';
-    }
-
-    // ── FORTALEZA ──────────────────────────────────
-    function verificarFortaleza(pwd) {
-        const fill = document.getElementById('strFill');
-        const txt  = document.getElementById('strTxt');
-        const len  = pwd.length >= 6;
-        const may  = /[A-Z]/.test(pwd);
-        const num  = /[0-9]/.test(pwd);
-        const t    = pwd.length > 0;
-
-        setReq('reqLen', len, t);
-        setReq('reqMay', may, t);
-        setReq('reqNum', num, t);
-
-        fill.className = 'strength-fill';
-        if (!t) { fill.style.width = '0'; txt.textContent = 'Ingresa una contraseña segura'; txt.style.color = ''; return; }
-
-        const score = [len, may, num].filter(Boolean).length;
-        if (score === 1)      { fill.classList.add('weak');   txt.textContent = 'Contraseña débil';    txt.style.color = 'var(--red)'; }
-        else if (score === 2) { fill.classList.add('medium'); txt.textContent = 'Contraseña media';    txt.style.color = 'var(--warn)'; }
-        else                  { fill.classList.add('strong'); txt.textContent = 'Contraseña fuerte ✓'; txt.style.color = 'var(--green)'; }
-    }
-
-    function setReq(id, ok, touched) {
-        document.getElementById(id).className = 'req ' + (touched ? (ok ? 'ok' : 'fail') : 'pending');
-    }
-
-    // ── VALIDAR CORREO RT ──────────────────────────
-    function validarCorreoRT() {
-        const inp = document.getElementById('correo');
-        const ok  = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(inp.value);
-        inp.classList.toggle('ok',    inp.value.length > 0 && ok);
-        inp.classList.toggle('error', inp.value.length > 0 && !ok);
-    }
-
-    // ── MATCH CONTRASEÑAS ──────────────────────────
-    function verificarMatch() {
-        const p1   = document.getElementById('contrasena').value;
-        const p2   = document.getElementById('confirmar').value;
-        const hint = document.getElementById('matchHint');
-        const inp  = document.getElementById('confirmar');
-        if (!p2) { hint.style.display = 'none'; return; }
-        const ok = p1 === p2;
-        hint.style.cssText = 'display:flex;align-items:center;gap:5px;font-size:11px;margin-top:6px;color:' + (ok ? 'var(--green)' : 'var(--red)');
-        hint.innerHTML = ok
-            ? '<i class="fas fa-check-circle"></i> Las contraseñas coinciden'
-            : '<i class="fas fa-times-circle"></i> Las contraseñas no coinciden';
-        inp.classList.toggle('ok',    ok);
-        inp.classList.toggle('error', !ok);
-    }
-
-    // ── ALERTAS ────────────────────────────────────
-    function mostrarError(msg) {
-        document.getElementById('mensajeError').textContent = msg;
-        document.getElementById('alertaError').classList.add('visible');
-        document.getElementById('alertaExito').classList.remove('visible');
-    }
-    function mostrarExito(msg) {
-        document.getElementById('mensajeExito').textContent = msg;
-        document.getElementById('alertaExito').classList.add('visible');
-        document.getElementById('alertaError').classList.remove('visible');
-    }
-
-    // ── REGISTRAR ──────────────────────────────────
-    async function registrar() {
-        const nombre   = document.getElementById('nombre').value.trim();
-        const correo   = document.getElementById('correo').value.trim();
-        const contrasena = document.getElementById('contrasena').value;
-        const confirmar  = document.getElementById('confirmar').value;
-        const pregunta   = document.getElementById('pregunta').value;
-        const respuesta  = document.getElementById('respuestaSeguridad').value.trim();
-        const btn        = document.getElementById('btnRegistrar');
-
-        document.getElementById('alertaError').classList.remove('visible');
-        document.getElementById('alertaExito').classList.remove('visible');
-
-        if (!nombre || !correo || !contrasena || !confirmar || !pregunta || !respuesta) {
-            mostrarError('Todos los campos son obligatorios.'); return;
+    <script>
+        // ── TOGGLE OJO ─────────────────────────────────
+        function togglePwd(id, btn) {
+            const inp = document.getElementById(id);
+            const ico = btn.querySelector('i');
+            const show = inp.type === 'password';
+            inp.type = show ? 'text' : 'password';
+            ico.className = show ? 'fas fa-eye-slash' : 'fas fa-eye';
+            btn.style.color = show ? 'var(--purple)' : '';
         }
-        if (nombre.length < 3)                    { mostrarError('El nombre debe tener mínimo 3 caracteres.'); return; }
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) { mostrarError('Ingresa un correo electrónico válido.'); return; }
-        if (contrasena.length < 6)                { mostrarError('La contraseña debe tener mínimo 6 caracteres.'); return; }
-        if (!/[A-Z]/.test(contrasena))            { mostrarError('La contraseña debe incluir al menos una mayúscula.'); return; }
-        if (!/[0-9]/.test(contrasena))            { mostrarError('La contraseña debe incluir al menos un número.'); return; }
-        if (contrasena !== confirmar)             { mostrarError('Las contraseñas no coinciden.'); return; }
 
-        btn.disabled = true;
-        btn.innerHTML = '<span class="spinner"></span> Creando cuenta...';
+        // ── FORTALEZA ──────────────────────────────────
+        function verificarFortaleza(pwd) {
+            const fill = document.getElementById('strFill');
+            const txt = document.getElementById('strTxt');
+            const len = pwd.length >= 6;
+            const may = /[A-Z]/.test(pwd);
+            const num = /[0-9]/.test(pwd);
+            const t = pwd.length > 0;
 
-        try {
-            const res = await fetch('http://127.0.0.1:8000/api/auth/registro', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-        nombre, correo, contrasena,
-        pregunta_seguridad:  pregunta,
-        respuesta_seguridad: respuesta
-    })
-});
-            const data = await res.json();
+            setReq('reqLen', len, t);
+            setReq('reqMay', may, t);
+            setReq('reqNum', num, t);
 
-            if (res.ok) {
-                mostrarExito('¡Cuenta creada exitosamente! Redirigiendo...');
-                ['nombre','correo','contrasena','confirmar','respuestaSeguridad'].forEach(id =>
-                    document.getElementById(id).value = ''
-                );
-                document.getElementById('pregunta').value = '';
-                setTimeout(() => window.top.location.href = 'login.html', 2000);
-            } else {
-                mostrarError(data.mensaje || 'Error al registrar usuario.');
+            fill.className = 'strength-fill';
+            if (!t) { fill.style.width = '0'; txt.textContent = 'Ingresa una contraseña segura'; txt.style.color = ''; return; }
+
+            const score = [len, may, num].filter(Boolean).length;
+            if (score === 1) { fill.classList.add('weak'); txt.textContent = 'Contraseña débil'; txt.style.color = 'var(--red)'; }
+            else if (score === 2) { fill.classList.add('medium'); txt.textContent = 'Contraseña media'; txt.style.color = 'var(--warn)'; }
+            else { fill.classList.add('strong'); txt.textContent = 'Contraseña fuerte ✓'; txt.style.color = 'var(--green)'; }
+        }
+
+        function setReq(id, ok, touched) {
+            document.getElementById(id).className = 'req ' + (touched ? (ok ? 'ok' : 'fail') : 'pending');
+        }
+
+        // ── VALIDAR CORREO RT ──────────────────────────
+        function validarCorreoRT() {
+            const inp = document.getElementById('correo');
+            const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(inp.value);
+            inp.classList.toggle('ok', inp.value.length > 0 && ok);
+            inp.classList.toggle('error', inp.value.length > 0 && !ok);
+        }
+
+        // ── MATCH CONTRASEÑAS ──────────────────────────
+        function verificarMatch() {
+            const p1 = document.getElementById('contrasena').value;
+            const p2 = document.getElementById('confirmar').value;
+            const hint = document.getElementById('matchHint');
+            const inp = document.getElementById('confirmar');
+            if (!p2) { hint.style.display = 'none'; return; }
+            const ok = p1 === p2;
+            hint.style.cssText = 'display:flex;align-items:center;gap:5px;font-size:11px;margin-top:6px;color:' + (ok ? 'var(--green)' : 'var(--red)');
+            hint.innerHTML = ok
+                ? '<i class="fas fa-check-circle"></i> Las contraseñas coinciden'
+                : '<i class="fas fa-times-circle"></i> Las contraseñas no coinciden';
+            inp.classList.toggle('ok', ok);
+            inp.classList.toggle('error', !ok);
+        }
+
+        // ── ALERTAS ────────────────────────────────────
+        function mostrarError(msg) {
+            document.getElementById('mensajeError').textContent = msg;
+            document.getElementById('alertaError').classList.add('visible');
+            document.getElementById('alertaExito').classList.remove('visible');
+        }
+        function mostrarExito(msg) {
+            document.getElementById('mensajeExito').textContent = msg;
+            document.getElementById('alertaExito').classList.add('visible');
+            document.getElementById('alertaError').classList.remove('visible');
+        }
+
+        // ── REGISTRAR ──────────────────────────────────
+        async function registrar() {
+            const nombre = document.getElementById('nombre').value.trim();
+            const correo = document.getElementById('correo').value.trim();
+            const contrasena = document.getElementById('contrasena').value;
+            const confirmar = document.getElementById('confirmar').value;
+            const pregunta = document.getElementById('pregunta').value;
+            const respuesta = document.getElementById('respuestaSeguridad').value.trim();
+            const btn = document.getElementById('btnRegistrar');
+
+            document.getElementById('alertaError').classList.remove('visible');
+            document.getElementById('alertaExito').classList.remove('visible');
+
+            if (!nombre || !correo || !contrasena || !confirmar || !pregunta || !respuesta) {
+                mostrarError('Todos los campos son obligatorios.'); return;
             }
-        } catch {
-    mostrarError('No se pudo conectar con el servidor. Verifica que esté en ejecución.');
-      } finally  {
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-user-plus"></i> Crear mi cuenta';
+            if (nombre.length < 3) { mostrarError('El nombre debe tener mínimo 3 caracteres.'); return; }
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) { mostrarError('Ingresa un correo electrónico válido.'); return; }
+            if (contrasena.length < 6) { mostrarError('La contraseña debe tener mínimo 6 caracteres.'); return; }
+            if (!/[A-Z]/.test(contrasena)) { mostrarError('La contraseña debe incluir al menos una mayúscula.'); return; }
+            if (!/[0-9]/.test(contrasena)) { mostrarError('La contraseña debe incluir al menos un número.'); return; }
+            if (contrasena !== confirmar) { mostrarError('Las contraseñas no coinciden.'); return; }
+
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> Creando cuenta...';
+
+            try {
+                const res = await fetch('http://127.0.0.1:8000/api/auth/registro', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        nombre, correo, contrasena,
+                        pregunta_seguridad: pregunta,
+                        respuesta_seguridad: respuesta
+                    })
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    mostrarExito('¡Cuenta creada exitosamente! Redirigiendo...');
+                    ['nombre', 'correo', 'contrasena', 'confirmar', 'respuestaSeguridad'].forEach(id =>
+                        document.getElementById(id).value = ''
+                    );
+                    document.getElementById('pregunta').value = '';
+                    setTimeout(() => window.top.location.href = 'login.html', 2000);
+                } else {
+                    mostrarError(data.mensaje || 'Error al registrar usuario.');
+                }
+            } catch {
+                mostrarError('No se pudo conectar con el servidor. Verifica que esté en ejecución.');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-user-plus"></i> Crear mi cuenta';
+            }
         }
-    }
 
-    document.addEventListener('keydown', e => { if (e.key === 'Enter') registrar(); });
-</script>
+        document.addEventListener('keydown', e => { if (e.key === 'Enter') registrar(); });
+    </script>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
+
 </html>

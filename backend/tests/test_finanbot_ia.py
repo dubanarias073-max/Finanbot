@@ -10,11 +10,11 @@ from routes.chat_route import extraer_categoria
 from routes.recomendaciones import filtrar_transacciones_recientes
 
 
-def test_reemplaza_signo_porcentaje_por_texto():
+def test_conserva_signo_porcentaje_en_calculadora():
     bot = FinanBotIA()
     respuesta, _ = bot.responder_con_acciones("¿Cuánto es 20% de 100?", None, None)
-    assert "20 porcentaje" in respuesta
-    assert "%" not in respuesta
+    assert "20%" in respuesta
+    assert "20 porcentaje" not in respuesta
 
 
 def test_calcula_descuento_con_frase_natural():
@@ -29,6 +29,25 @@ def test_responde_siempre_con_tupla_en_preguntas_de_conocimiento():
     respuesta, acciones = bot.responder_con_acciones("¿Qué es un CDT?", None, None)
     assert isinstance(respuesta, str)
     assert isinstance(acciones, list)
+
+
+def test_redirige_consulta_ajena_a_finanzas_al_chat_financiero():
+    bot = FinanBotIA()
+    respuesta, acciones = bot.responder_con_acciones(
+        "chat como consigo novia jajaja", None, None
+    )
+
+    assert "chat especializado en finanzas personales" in respuesta
+    assert "temas ajenos a las finanzas" in respuesta
+    assert acciones == []
+
+
+def test_redirige_concepto_desconocido_a_temas_financieros():
+    bot = FinanBotIA()
+    respuesta, _ = bot.responder_con_acciones("¿Qué es la jardinería?", None, None)
+
+    assert "chat especializado en finanzas personales" in respuesta
+    assert "Ahorro" in respuesta
 
 
 def test_respuesta_inteligente_para_mejorar_finanzas():

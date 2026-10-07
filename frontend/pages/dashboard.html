@@ -14,20 +14,20 @@
         body {
             font-family: 'Segoe UI', sans-serif;
             min-height: 100vh;
-            color: white;
+            color: var(--fb-text);
             transition: background 0.4s, color 0.3s;
         }
  
         body.tema-oscuro {
-            background: radial-gradient(ellipse at top, #1a1a4e 0%, #0f0f2d 50%, #000010 100%);
-            --card-bg:        rgba(255,255,255,0.04);
-            --card-border:    rgba(168,85,247,0.15);
-            --item-bg:        rgba(255,255,255,0.03);
-            --item-border:    rgba(255,255,255,0.06);
+            background: radial-gradient(ellipse at top, #1A1A3D 0%, #11112B 50%, #0B0B22 100%);
+            --card-bg:        rgba(var(--fb-fg),0.04);
+            --card-border:    rgba(139,92,246,0.15);
+            --item-bg:        rgba(var(--fb-fg),0.03);
+            --item-border:    rgba(var(--fb-fg),0.06);
             --muted:          #6b7280;
             --secondary:      #9ca3af;
-            --sidebar-bg:     rgba(255,255,255,0.03);
-            --sidebar-border: rgba(168,85,247,0.2);
+            --sidebar-bg:     rgba(var(--fb-fg),0.03);
+            --sidebar-border: rgba(139,92,246,0.2);
         }
  
         body.tema-azul {
@@ -55,19 +55,19 @@
         .sidebar-logo {
             display: flex; align-items: center; gap: 12px;
             padding: 0 20px 25px;
-            border-bottom: 1px solid rgba(168,85,247,0.15);
+            border-bottom: 1px solid rgba(139,92,246,0.15);
             margin-bottom: 20px;
         }
-        .sidebar-logo img { width: 40px; height: 40px; border-radius: 50%; box-shadow: 0 0 15px rgba(168,85,247,0.5); }
+        .sidebar-logo img { width: 40px; height: 40px; border-radius: 50%; box-shadow: 0 0 15px rgba(139,92,246,0.5); }
         .sidebar-logo span {
             font-size: 20px; font-weight: 800;
-            background: linear-gradient(90deg, #c026d3, #22d3ee);
+            background: linear-gradient(90deg, #6D5BD0, #5EEAD4);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         }
         .sidebar-close {
             display: none;
             margin-left: auto;
-            background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(var(--fb-fg),0.06); border: 1px solid rgba(var(--fb-fg),0.1);
             color: var(--secondary, #9ca3af); width: 30px; height: 30px; border-radius: 50%;
             align-items: center; justify-content: center; cursor: pointer; font-size: 13px;
         }
@@ -78,13 +78,13 @@
             border-left: 3px solid transparent; margin: 2px 0;
         }
         .nav-item:hover, .nav-item.active {
-            color: white; background: rgba(168,85,247,0.08); border-left-color: #a855f7;
+            color: var(--fb-text); background: rgba(139,92,246,0.08); border-left-color: #8B5CF6;
         }
         .nav-item i { width: 18px; text-align: center; font-size: 15px; }
-        .nav-item.active i { color: #a855f7; }
+        .nav-item.active i { color: #8B5CF6; }
         .sidebar-bottom {
             margin-top: auto; padding: 20px;
-            border-top: 1px solid rgba(168,85,247,0.15);
+            border-top: 1px solid rgba(139,92,246,0.15);
         }
         .btn-cerrar {
             display: flex; align-items: center; gap: 10px;
@@ -106,9 +106,9 @@
         /* Botón hamburguesa (solo visible en móvil) */
         .menu-toggle {
             display: none;
-            background: var(--card-bg, rgba(255,255,255,0.05));
-            border: 1px solid var(--card-border, rgba(168,85,247,0.2));
-            color: white; width: 42px; height: 42px; border-radius: 12px;
+            background: var(--card-bg, rgba(var(--fb-fg),0.05));
+            border: 1px solid var(--card-border, rgba(139,92,246,0.2));
+            color: var(--fb-text); width: 42px; height: 42px; border-radius: 12px;
             align-items: center; justify-content: center; font-size: 18px;
             cursor: pointer; flex-shrink: 0;
         }
@@ -129,37 +129,37 @@
         .btn-calendario {
             display: flex; align-items: center; gap: 8px;
             background: var(--card-bg); border: 1px solid var(--card-border);
-            color: white; border-radius: 50px; padding: 10px 18px;
+            color: var(--fb-text); border-radius: 50px; padding: 10px 18px;
             font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.3s;
         }
-        .btn-calendario:hover { background: rgba(168,85,247,0.12); border-color: #a855f7; }
-        .btn-calendario i { color: #fbbf24; }
+        .btn-calendario:hover { background: rgba(139,92,246,0.12); border-color: #8B5CF6; }
+        .btn-calendario i { color: var(--fb-yellow); }
  
         .btn-exportar {
-            background: linear-gradient(135deg, #4ade80, #22d3ee);
-            color: #0f0f2d; border: none; border-radius: 50px;
+            background: linear-gradient(135deg, #10B981, #5EEAD4);
+            color: #11112B; border: none; border-radius: 50px;
             padding: 10px 20px; font-size: 13px; font-weight: 700;
             cursor: pointer; transition: all 0.3s;
-            box-shadow: 0 4px 15px rgba(74,222,128,0.3);
+            box-shadow: 0 4px 15px rgba(16,185,129,0.3);
             display: flex; align-items: center; gap: 7px;
             white-space: nowrap;
         }
-        .btn-exportar:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(74,222,128,0.5); }
+        .btn-exportar:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(16,185,129,0.5); }
         .btn-exportar:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
  
         .user-badge {
             display: flex; align-items: center; gap: 10px;
-            background: rgba(168,85,247,0.1);
-            border: 1px solid rgba(168,85,247,0.2);
+            background: rgba(139,92,246,0.1);
+            border: 1px solid rgba(139,92,246,0.2);
             border-radius: 50px; padding: 8px 15px;
         }
         .user-avatar {
             width: 32px; height: 32px; border-radius: 50%;
-            background: linear-gradient(135deg, #c026d3, #22d3ee);
+            background: linear-gradient(135deg, #6D5BD0, #5EEAD4);
             display: flex; align-items: center; justify-content: center;
             font-weight: 700; font-size: 13px;
         }
-        .user-name { font-size: 13px; color: #c4b5fd; }
+        .user-name { font-size: 13px; color: var(--fb-lav); }
  
         /* STATS */
         .cards-grid {
@@ -176,15 +176,15 @@
             content: ''; position: absolute;
             top: 0; left: 0; width: 100%; height: 3px;
         }
-        .stat-card.ingresos::before { background: linear-gradient(90deg, #22d3ee, #38bdf8); }
-        .stat-card.gastos::before   { background: linear-gradient(90deg, #c026d3, #a855f7); }
-        .stat-card.balance::before  { background: linear-gradient(90deg, #4ade80, #22d3ee); }
+        .stat-card.ingresos::before { background: linear-gradient(90deg, #5EEAD4, #93C5FD); }
+        .stat-card.gastos::before   { background: linear-gradient(90deg, #6D5BD0, #8B5CF6); }
+        .stat-card.balance::before  { background: linear-gradient(90deg, #10B981, #5EEAD4); }
         .stat-card.meta::before     { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
-        .stat-card:hover { transform: translateY(-4px); border-color: rgba(168,85,247,0.3); }
+        .stat-card:hover { transform: translateY(-4px); border-color: rgba(139,92,246,0.3); }
         .stat-icon  { font-size: 28px; margin-bottom: 12px; }
         .stat-label { font-size: 11px; color: var(--secondary, #9ca3af); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
         .stat-value { font-size: 22px; font-weight: 700; }
-        .stat-value.positivo { color: #4ade80; }
+        .stat-value.positivo { color: #10B981; }
         .stat-value.negativo { color: #f472b6; }
         .stat-sub   { font-size: 12px; color: var(--muted, #6b7280); margin-top: 5px; }
  
@@ -198,15 +198,15 @@
             border: 1px solid var(--card-border);
             border-radius: 16px; padding: 18px;
             text-align: center; text-decoration: none;
-            transition: all 0.3s; color: white;
+            transition: all 0.3s; color: var(--fb-text);
         }
         .acceso-card:hover {
-            background: rgba(168,85,247,0.1);
+            background: rgba(139,92,246,0.1);
             transform: translateY(-4px);
-            border-color: #a855f7; color: white;
+            border-color: #8B5CF6; color: var(--fb-text);
         }
         .acceso-icon  { font-size: 30px; margin-bottom: 8px; }
-        .acceso-texto { font-size: 13px; color: #c4b5fd; font-weight: 500; }
+        .acceso-texto { font-size: 13px; color: var(--fb-lav); font-weight: 500; }
  
         /* ══ BANNERS DE NOTIFICACIONES ══════════════════════ */
  
@@ -228,8 +228,8 @@
             border-color: rgba(251,191,36,0.3);
         }
         .alerta-meta.pct100 {
-            background: rgba(74,222,128,0.08);
-            border-color: rgba(74,222,128,0.3);
+            background: rgba(16,185,129,0.08);
+            border-color: rgba(16,185,129,0.3);
         }
         .alerta-meta.vencida {
             background: rgba(239,68,68,0.08);
@@ -248,13 +248,13 @@
             font-size: 16px; cursor: pointer; padding: 4px; line-height: 1;
             transition: color 0.2s;
         }
-        .alerta-meta-cerrar:hover { color: white; }
+        .alerta-meta-cerrar:hover { color: var(--fb-text); }
  
         /* Tips financieros */
         .tip-card {
             display: none;
             background: var(--card-bg);
-            border: 1px solid rgba(168,85,247,0.25);
+            border: 1px solid rgba(139,92,246,0.25);
             border-radius: 18px; padding: 20px 22px;
             margin-bottom: 24px;
             position: relative; overflow: hidden;
@@ -263,16 +263,16 @@
         .tip-card::before {
             content: ''; position: absolute; top: 0; left: 0;
             width: 100%; height: 3px;
-            background: linear-gradient(90deg, #4ade80, #22d3ee);
+            background: linear-gradient(90deg, #10B981, #5EEAD4);
         }
         .tip-icono { font-size: 32px; flex-shrink: 0; line-height: 1; }
         .tip-contenido { flex: 1; }
         .tip-label {
-            font-size: 11px; font-weight: 600; color: #4ade80;
+            font-size: 11px; font-weight: 600; color: #10B981;
             text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;
         }
         .tip-texto {
-            font-size: 14px; color: white; font-weight: 500;
+            font-size: 14px; color: var(--fb-text); font-weight: 500;
             line-height: 1.6; margin-bottom: 6px;
         }
         .tip-sub { font-size: 12px; color: var(--secondary); }
@@ -281,7 +281,7 @@
             font-size: 16px; cursor: pointer; padding: 2px;
             transition: color 0.2s; align-self: flex-start;
         }
-        .tip-cerrar:hover { color: white; }
+        .tip-cerrar:hover { color: var(--fb-text); }
  
         /* GRÁFICAS */
         .bottom-grid {
@@ -296,10 +296,18 @@
             min-width: 0; /* evita overflow de canvas en grid */
         }
         .chart-title {
-            font-size: 15px; font-weight: 600; color: #c4b5fd;
+            font-size: 15px; font-weight: 600; color: var(--fb-lav);
             margin-bottom: 18px; display: flex; align-items: center; gap: 8px;
         }
         .chart-card canvas { max-width: 100%; }
+        .zona-bloque { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--item-border, rgba(255,255,255,0.06)); }
+        .zona-titulo { font-size: 14px; font-weight: 600; color: var(--fb-lav); display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+        .zona-sub { font-size: 12px; color: var(--muted); margin-bottom: 12px; }
+        .zona-wrap { position: relative; height: 210px; }
+        .zona-vacia { display: none; flex-direction: column; align-items: center; justify-content: center; gap: 6px; height: 150px; text-align: center; font-size: 13px; color: var(--muted); }
+        .zona-vacia i { font-size: 24px; opacity: .4; }
+        .zona-vacia a { color: var(--fb-lav); font-weight: 600; }
+        .zona-vacia.visible { display: flex; }
  
         /* TRANSACCIONES */
         .trans-card {
@@ -313,17 +321,17 @@
             margin-bottom: 16px;
         }
         .section-title {
-            font-size: 15px; font-weight: 700; color: white;
+            font-size: 15px; font-weight: 700; color: var(--fb-text);
             display: flex; align-items: center; gap: 8px;
         }
         .section-link {
-            font-size: 13px; color: #a855f7; text-decoration: none;
+            font-size: 13px; color: #8B5CF6; text-decoration: none;
             display: flex; align-items: center; gap: 5px; transition: color 0.3s;
         }
-        .section-link:hover { color: #c4b5fd; }
+        .section-link:hover { color: var(--fb-lav); }
         .trans-item {
             display: flex; align-items: center; justify-content: space-between;
-            padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
+            padding: 12px 0; border-bottom: 1px solid rgba(var(--fb-fg),0.04);
             gap: 10px;
         }
         .trans-item:last-child { border-bottom: none; }
@@ -333,13 +341,13 @@
             display: flex; align-items: center; justify-content: center;
             font-size: 20px; flex-shrink: 0;
         }
-        .trans-icon.gasto   { background: rgba(192,38,211,0.15); }
-        .trans-icon.ingreso { background: rgba(34,211,238,0.15); }
-        .trans-nombre { font-size: 14px; font-weight: 600; color: white; }
+        .trans-icon.gasto   { background: rgba(109,91,208,0.15); }
+        .trans-icon.ingreso { background: rgba(94,234,212,0.15); }
+        .trans-nombre { font-size: 14px; font-weight: 600; color: var(--fb-text); }
         .trans-desc   { font-size: 12px; color: var(--muted, #6b7280); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 55vw; }
         .trans-monto  { font-size: 15px; font-weight: 700; flex-shrink: 0; }
         .trans-monto.gasto   { color: #f472b6; }
-        .trans-monto.ingreso { color: #4ade80; }
+        .trans-monto.ingreso { color: #10B981; }
         .trans-empty {
             text-align: center; color: var(--muted, #6b7280);
             padding: 28px; font-size: 14px;
@@ -359,14 +367,14 @@
             font-size: 11px; color: var(--secondary,#9ca3af); text-transform: uppercase;
             letter-spacing: 0.5px; margin-bottom: 14px; display: flex; align-items: center; gap: 7px;
         }
-        .totales-historicos-label i { color: #a855f7; }
+        .totales-historicos-label i { color: #8B5CF6; }
         .totales-historicos-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
         .totales-item { display: flex; flex-direction: column; gap: 4px; }
         .totales-item-label { font-size: 11px; color: var(--muted,#6b7280); }
         .totales-item-val { font-size: 18px; font-weight: 800; }
-        .totales-item.ing .totales-item-val { color: #4ade80; }
+        .totales-item.ing .totales-item-val { color: #10B981; }
         .totales-item.gas .totales-item-val { color: #f472b6; }
-        .totales-item.bal .totales-item-val { color: #22d3ee; }
+        .totales-item.bal .totales-item-val { color: var(--fb-teal); }
 
         /* ══ BOTONES "VER POR CATEGORÍA" (arriba de las gráficas) ══ */
         .categorias-toolbar {
@@ -375,7 +383,7 @@
         }
         .btn-ver-categorias {
             display: flex; align-items: center; justify-content: center; gap: 12px;
-            border: none; color: white; border-radius: 18px; padding: 20px 24px;
+            border: none; color: var(--fb-text); border-radius: 18px; padding: 20px 24px;
             font-size: 16px; font-weight: 800; cursor: pointer; transition: all 0.3s;
             letter-spacing: 0.2px;
         }
@@ -383,18 +391,18 @@
             font-size: 22px;
         }
         .btn-ver-categorias.gastos {
-            background: linear-gradient(135deg, #c026d3, #a855f7);
-            box-shadow: 0 8px 24px rgba(192,38,211,0.35);
+            background: linear-gradient(135deg, #6D5BD0, #8B5CF6);
+            box-shadow: 0 8px 24px rgba(109,91,208,0.35);
         }
         .btn-ver-categorias.gastos:hover {
-            transform: translateY(-3px); box-shadow: 0 14px 34px rgba(192,38,211,0.55);
+            transform: translateY(-3px); box-shadow: 0 14px 34px rgba(109,91,208,0.55);
         }
         .btn-ver-categorias.ingresos {
-            background: linear-gradient(135deg, #0891b2, #22d3ee);
-            box-shadow: 0 8px 24px rgba(34,211,238,0.35);
+            background: linear-gradient(135deg, #3FA796, #5EEAD4);
+            box-shadow: 0 8px 24px rgba(94,234,212,0.35);
         }
         .btn-ver-categorias.ingresos:hover {
-            transform: translateY(-3px); box-shadow: 0 14px 34px rgba(34,211,238,0.55);
+            transform: translateY(-3px); box-shadow: 0 14px 34px rgba(94,234,212,0.55);
         }
 
         /* ══ MODAL CATEGORÍAS ══ */
@@ -406,11 +414,11 @@
         }
         .cat-item-izq { display: flex; align-items: center; gap: 10px; min-width: 0; }
         .cat-item-icono { font-size: 18px; flex-shrink: 0; }
-        .cat-item-nombre { font-size: 13px; font-weight: 600; color: white; }
+        .cat-item-nombre { font-size: 13px; font-weight: 600; color: var(--fb-text); }
         .cat-item-pct { font-size: 11px; color: var(--muted, #6b7280); }
         .cat-item-monto { font-size: 14px; font-weight: 700; flex-shrink: 0; }
         .cat-item-monto.gasto { color: #f472b6; }
-        .cat-item-monto.ingreso { color: #4ade80; }
+        .cat-item-monto.ingreso { color: #10B981; }
         .cat-sin-datos { text-align: center; color: var(--muted, #6b7280); padding: 20px; font-size: 13px; }
 
         /* MODAL CALENDARIO */
@@ -421,83 +429,83 @@
         }
         .modal-overlay.visible { display: flex; }
         .modal-box {
-            background: linear-gradient(145deg, #12103a, #0d0d2a);
-            border: 1px solid rgba(168,85,247,0.3); border-radius: 24px;
+            background: linear-gradient(145deg, #1A1A3D, #11112B);
+            border: 1px solid rgba(139,92,246,0.3); border-radius: 24px;
             padding: 30px 28px; width: 100%; max-width: 480px; max-height: 90vh;
             overflow-y: auto; position: relative; box-shadow: 0 30px 80px rgba(0,0,0,0.7);
         }
         body.tema-azul .modal-box { background: linear-gradient(145deg, #060e1e, #0a1628); }
         .modal-box::before {
             content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
-            background: linear-gradient(90deg, transparent, #c026d3, #a855f7, #22d3ee, transparent);
+            background: linear-gradient(90deg, transparent, #6D5BD0, #8B5CF6, #5EEAD4, transparent);
             border-radius: 24px 24px 0 0;
         }
         .modal-close {
             position: absolute; top: 16px; right: 18px;
-            background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(var(--fb-fg),0.07); border: 1px solid rgba(var(--fb-fg),0.1);
             color: #9ca3af; width: 32px; height: 32px; border-radius: 50%;
             display: flex; align-items: center; justify-content: center; cursor: pointer;
             font-size: 14px; transition: all 0.3s;
         }
         .modal-close:hover { background: rgba(239,68,68,0.2); color: #ef4444; }
-        .modal-titulo { font-size: 18px; font-weight: 800; color: white; margin-bottom: 4px; display: flex; align-items: center; gap: 9px; }
+        .modal-titulo { font-size: 18px; font-weight: 800; color: var(--fb-text); margin-bottom: 4px; display: flex; align-items: center; gap: 9px; }
         .modal-sub { font-size: 13px; color: #6b7280; margin-bottom: 18px; }
 
         .calendario-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
         .calendario-nav button {
-            background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
-            color: white; width: 32px; height: 32px; border-radius: 8px; cursor: pointer;
+            background: rgba(var(--fb-fg),0.06); border: 1px solid rgba(var(--fb-fg),0.1);
+            color: var(--fb-text); width: 32px; height: 32px; border-radius: 8px; cursor: pointer;
         }
-        .calendario-nav span { font-size: 14px; font-weight: 700; color: #c4b5fd; text-transform: capitalize; }
+        .calendario-nav span { font-size: 14px; font-weight: 700; color: var(--fb-lav); text-transform: capitalize; }
         .calendario-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 5px; margin-bottom: 16px; }
         .cal-header-dia { text-align: center; font-size: 10px; color: var(--muted, #6b7280); font-weight: 700; text-transform: uppercase; padding-bottom: 4px; }
         .cal-dia {
             min-width: 0; aspect-ratio: 1; border-radius: 10px; background: var(--item-bg);
             border: 1px solid var(--item-border); display: flex; flex-direction: column;
             align-items: center; justify-content: center; font-size: 12px; cursor: pointer;
-            transition: all 0.2s; position: relative; color: white;
+            transition: all 0.2s; position: relative; color: var(--fb-text);
         }
-        .cal-dia:hover { border-color: #a855f7; background: rgba(168,85,247,0.1); }
+        .cal-dia:hover { border-color: #8B5CF6; background: rgba(139,92,246,0.1); }
         .cal-dia.vacio { visibility: hidden; cursor: default; }
         .cal-dia.hoy { border-color: #fbbf24; }
-        .cal-dia.seleccionado { background: rgba(168,85,247,0.25); border-color: #a855f7; }
+        .cal-dia.seleccionado { background: rgba(139,92,246,0.25); border-color: #8B5CF6; }
         .cal-dia-dots { display: flex; gap: 2px; margin-top: 2px; }
         .cal-dot { width: 5px; height: 5px; border-radius: 50%; }
         .cal-dot.gasto { background: #f472b6; }
-        .cal-dot.ingreso { background: #4ade80; }
+        .cal-dot.ingreso { background: #10B981; }
 
         .cal-dia-panel { border-top: 1px solid var(--item-border); padding-top: 16px; }
-        .cal-dia-panel-titulo { font-size: 13px; font-weight: 700; color: #c4b5fd; margin-bottom: 10px; }
+        .cal-dia-panel-titulo { font-size: 13px; font-weight: 700; color: var(--fb-lav); margin-bottom: 10px; }
         .cal-mov-item {
             display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;
             background: var(--item-bg); border: 1px solid var(--item-border);
             border-radius: 10px; padding: 9px 12px; font-size: 12px; margin-bottom: 6px;
         }
-        .cal-mov-titulo { font-weight: 600; color: white; }
+        .cal-mov-titulo { font-weight: 600; color: var(--fb-text); }
         .cal-mov-desc { font-size: 11px; color: var(--muted, #6b7280); margin-top: 2px; }
         .cal-sin-datos { font-size: 12px; color: var(--muted, #6b7280); margin-bottom: 10px; text-align: center; padding: 10px 0; }
         .cal-mov-item .monto.gasto { color: #f472b6; font-weight: 700; }
-        .cal-mov-item .monto.ingreso { color: #4ade80; font-weight: 700; }
+        .cal-mov-item .monto.ingreso { color: #10B981; font-weight: 700; }
 
         .cal-form-tipo { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
         .cal-form-tipo button {
             padding: 9px; border-radius: 10px; border: 2px solid transparent; cursor: pointer;
             font-size: 12px; font-weight: 600; transition: all 0.3s;
         }
-        .cal-form-tipo button.gasto { background: rgba(192,38,211,0.08); border-color: rgba(192,38,211,0.2); color: #f0abfc; }
-        .cal-form-tipo button.gasto.activo { background: rgba(192,38,211,0.2); border-color: #c026d3; }
-        .cal-form-tipo button.ingreso { background: rgba(34,211,238,0.08); border-color: rgba(34,211,238,0.2); color: #67e8f9; }
-        .cal-form-tipo button.ingreso.activo { background: rgba(34,211,238,0.2); border-color: #22d3ee; }
+        .cal-form-tipo button.gasto { background: rgba(109,91,208,0.08); border-color: rgba(109,91,208,0.2); color: #f0abfc; }
+        .cal-form-tipo button.gasto.activo { background: rgba(109,91,208,0.2); border-color: #6D5BD0; }
+        .cal-form-tipo button.ingreso { background: rgba(94,234,212,0.08); border-color: rgba(94,234,212,0.2); color: var(--fb-cyan-soft); }
+        .cal-form-tipo button.ingreso.activo { background: rgba(94,234,212,0.2); border-color: #5EEAD4; }
         .cal-form input, .cal-form select {
-            width: 100%; background: rgba(255,255,255,0.04); border: 1.5px solid rgba(168,85,247,0.22);
-            border-radius: 10px; color: white; padding: 9px 12px; font-size: 13px; outline: none;
+            width: 100%; background: rgba(var(--fb-fg),0.04); border: 1.5px solid rgba(139,92,246,0.22);
+            border-radius: 10px; color: var(--fb-text); padding: 9px 12px; font-size: 13px; outline: none;
             margin-bottom: 9px; font-family: inherit;
         }
-        .cal-form select option { background: #1a0a3c; color: white; }
+        .cal-form select option { background: #1A1A3D; color: var(--fb-text); }
         .btn-cal-guardar {
             width: 100%; border: none; border-radius: 10px; padding: 11px; font-size: 13px;
-            font-weight: 700; color: white; cursor: pointer;
-            background: linear-gradient(135deg, #c026d3, #a855f7);
+            font-weight: 700; color: var(--fb-text); cursor: pointer;
+            background: linear-gradient(135deg, #6D5BD0, #8B5CF6);
         }
 
         /* ===================== RESPONSIVE / MOBILE ===================== */
@@ -558,6 +566,7 @@
             .cards-grid { grid-template-columns: 1fr; }
         }
     </style>
+    <link rel="stylesheet" href="temas.css">
 </head>
 <body class="tema-oscuro">
  
@@ -645,7 +654,7 @@
             <div class="stat-card meta">
                 <div class="stat-icon">🎯</div>
                 <div class="stat-label">Progreso metas</div>
-                <div class="stat-value" style="color:#fbbf24" id="metaGlobal">—</div>
+                <div class="stat-value" style="color:var(--fb-yellow)" id="metaGlobal">—</div>
                 <div class="stat-sub" id="numMetas">Sin metas creadas</div>
             </div>
         </div>
@@ -693,17 +702,37 @@
         <div class="bottom-grid">
             <div class="chart-card">
                 <div class="chart-title">
-                    <i class="fas fa-chart-line" style="color:#c026d3"></i>
+                    <i class="fas fa-chart-line" style="color:#6D5BD0"></i>
                     Gastos por mes
                 </div>
                 <canvas id="chartGastos" height="240"></canvas>
+                <div class="zona-bloque">
+                    <div class="zona-titulo"><i class="fas fa-map-location-dot" style="color:#6D5BD0"></i> Zonas donde más gastaste</div>
+                    <div class="zona-sub" id="zonaSubGastos">Según la ubicación de tus movimientos</div>
+                    <div class="zona-wrap" id="zonaWrapGastos"><canvas id="chartZonaGastos"></canvas></div>
+                    <div class="zona-vacia" id="zonaVaciaGastos">
+                        <i class="fas fa-location-dot"></i>
+                        Aún no tienes gastos con ubicación.
+                        <span>Agrégala en <a href="finanzas.html#cardMapa">Mis Finanzas</a> o activa el GPS en el chat.</span>
+                    </div>
+                </div>
             </div>
             <div class="chart-card">
                 <div class="chart-title">
-                    <i class="fas fa-chart-line" style="color:#22d3ee"></i>
+                    <i class="fas fa-chart-line" style="color:var(--fb-teal)"></i>
                     Ingresos por mes
                 </div>
                 <canvas id="chartIngresos" height="240"></canvas>
+                <div class="zona-bloque">
+                    <div class="zona-titulo"><i class="fas fa-map-location-dot" style="color:var(--fb-teal)"></i> Zonas donde más recibiste</div>
+                    <div class="zona-sub" id="zonaSubIngresos">Según la ubicación de tus movimientos</div>
+                    <div class="zona-wrap" id="zonaWrapIngresos"><canvas id="chartZonaIngresos"></canvas></div>
+                    <div class="zona-vacia" id="zonaVaciaIngresos">
+                        <i class="fas fa-location-dot"></i>
+                        Aún no tienes ingresos con ubicación.
+                        <span>Agrégala en <a href="finanzas.html#cardMapa">Mis Finanzas</a> o activa el GPS en el chat.</span>
+                    </div>
+                </div>
             </div>
         </div>
  
@@ -711,7 +740,7 @@
         <div class="trans-card">
             <div class="section-header">
                 <div class="section-title">
-                    <i class="fas fa-history" style="color:#4ade80"></i>
+                    <i class="fas fa-history" style="color:#10B981"></i>
                     Transacciones recientes
                 </div>
                 <a href="finanzas.html" class="section-link">
@@ -729,7 +758,7 @@
     <div class="modal-overlay" id="modalCategorias">
         <div class="modal-box">
             <button class="modal-close" onclick="cerrarCategorias()">✕</button>
-            <div class="modal-titulo" id="catModalTitulo"><i class="fas fa-chart-simple" style="color:#a855f7"></i> Por categoría</div>
+            <div class="modal-titulo" id="catModalTitulo"><i class="fas fa-chart-simple" style="color:#8B5CF6"></i> Por categoría</div>
             <div class="modal-sub" id="catModalSub">Monto acumulado por categoría</div>
             <canvas id="chartCategorias" height="220"></canvas>
             <div class="cat-lista" id="catLista"></div>
@@ -740,7 +769,7 @@
     <div class="modal-overlay" id="modalCalendario">
         <div class="modal-box">
             <button class="modal-close" onclick="cerrarCalendario()">✕</button>
-            <div class="modal-titulo"><i class="fas fa-calendar-days" style="color:#fbbf24"></i> Calendario de movimientos</div>
+            <div class="modal-titulo"><i class="fas fa-calendar-days" style="color:var(--fb-yellow)"></i> Calendario de movimientos</div>
             <div class="modal-sub">Elige un día para ver los movimientos registrados</div>
             <div class="calendario-nav">
                 <button onclick="cambiarMesCalendario(-1)"><i class="fas fa-chevron-left"></i></button>
@@ -756,9 +785,11 @@
         const token   = localStorage.getItem('token');
         const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
         let chartGastos = null;
+        let chartZonaGastos = null, chartZonaIngresos = null;
         let chartIngresos = null;
         let chartCategorias = null;
         let transaccionesCache = [];
+        let categoriasUsuario = { gasto: [], ingreso: [] };
  
         // ── TEMA ──────────────────────────────────────────
         (function() {
@@ -830,7 +861,24 @@
             'Otros ingresos':  '💵',
         };
         function getIcono(cat, tipo) {
-            return ICONOS[cat] || (tipo === 'ingreso' ? '💰' : '💸');
+            const categoria = [...categoriasUsuario.gasto, ...categoriasUsuario.ingreso]
+                .find(item => item.nombre === cat);
+            return categoria?.icono || ICONOS[cat] || (tipo === 'ingreso' ? '💰' : '💸');
+        }
+
+        async function cargarCategoriasUsuario() {
+            if (!token) return false;
+            try {
+                const response = await fetch('http://127.0.0.1:8000/api/transacciones/categorias/mias', {
+                    headers: { Authorization: 'Bearer ' + token }
+                });
+                if (!response.ok) throw new Error(`No se pudieron cargar las categorías (${response.status})`);
+                categoriasUsuario = await response.json();
+                return true;
+            } catch (error) {
+                console.error('Error cargando categorías del usuario:', error);
+                return false;
+            }
         }
 
         // ── MES ACTUAL (tarjetas superiores y tip) ────────
@@ -1114,7 +1162,7 @@
                 lista.innerHTML = `
                     <div class="trans-empty">
                         No hay transacciones aún.
-                        <a href="finanzas.html" style="color:#a855f7;text-decoration:none;margin-left:4px;">¡Agrega una!</a>
+                        <a href="finanzas.html" style="color:#8B5CF6;text-decoration:none;margin-left:4px;">¡Agrega una!</a>
                     </div>`;
                 return;
             }
@@ -1144,8 +1192,10 @@
 
             trans.forEach(t => {
                 if ((t.fecha || '') > hoy) return; // fecha futura: aún no cuenta, queda en espera
-                const fecha = new Date(t.fecha);
-                const m = Number.isNaN(fecha.getTime()) ? -1 : fecha.getMonth();
+                // Se lee el mes del texto "AAAA-MM-DD": new Date("2026-10-01") se
+                // interpreta en UTC y en Colombia caía en septiembre.
+                const mm = String(t.fecha || '').match(/^\d{4}-(\d{2})/);
+                const m = mm ? Number(mm[1]) - 1 : -1;
                 if (m < 0) return;
                 if (t.tipo === 'gasto') gas[m] += Number(t.monto || 0);
                 else ing[m] += Number(t.monto || 0);
@@ -1159,8 +1209,8 @@
                     datasets: [{
                         label: 'Gastos',
                         data: gas,
-                        borderColor: '#c026d3',
-                        backgroundColor: 'rgba(192,38,211,0.16)',
+                        borderColor: '#6D5BD0',
+                        backgroundColor: 'rgba(109,91,208,0.16)',
                         fill: true,
                         tension: 0.35,
                         pointBackgroundColor: '#f0abfc',
@@ -1191,8 +1241,8 @@
                     datasets: [{
                         label: 'Ingresos',
                         data: ing,
-                        borderColor: '#22d3ee',
-                        backgroundColor: 'rgba(34,211,238,0.16)',
+                        borderColor: '#5EEAD4',
+                        backgroundColor: 'rgba(94,234,212,0.16)',
                         fill: true,
                         tension: 0.35,
                         pointBackgroundColor: '#67e8f9',
@@ -1214,6 +1264,121 @@
                     }
                 }
             });
+
+            renderZona(trans, 'gasto');
+            renderZona(trans, 'ingreso');
+        }
+
+        // ════════════════════════════════════════════════
+        //  ZONAS DONDE MÁS GASTA / INGRESA (barras horizontales)
+        //  Los movimientos a menos de RADIO_ZONA_M se agrupan en una
+        //  misma zona; el nombre es el lugar con más plata de esa zona.
+        // ════════════════════════════════════════════════
+        const RADIO_ZONA_M = 400;
+        const MAX_ZONAS = 5;
+        const _numZ = v => (v === null || v === undefined || v === '') ? NaN : Number(v);
+        function distZonaM(a, b) {
+            const R = 6371000, rad = x => x * Math.PI / 180;
+            const dLat = rad(b.lat - a.lat), dLng = rad(b.lng - a.lng);
+            const h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLng / 2) ** 2;
+            return 2 * R * Math.asin(Math.sqrt(h));
+        }
+        function nombreCorto(n) {
+            const base = String(n || '').split(',')[0].trim();
+            return base.length > 30 ? base.slice(0, 29) + '…' : base;
+        }
+        function calcularZonas(trans, tipo) {
+            const hoy = hoyStr();
+            const zonas = [];
+            trans.forEach(t => {
+                if (t.tipo !== tipo || (t.fecha || '') > hoy) return;
+                const lat = _numZ(t.latitud), lng = _numZ(t.longitud);
+                if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+                const monto = Math.abs(Number(t.monto || 0));
+                const p = { lat, lng };
+                let z = zonas.find(z => distZonaM(z, p) <= RADIO_ZONA_M);
+                if (!z) { z = { lat, lng, total: 0, movs: 0, lugares: {} }; zonas.push(z); }
+                // el centro de la zona se mueve hacia donde están los movimientos
+                z.lat = (z.lat * z.movs + lat) / (z.movs + 1);
+                z.lng = (z.lng * z.movs + lng) / (z.movs + 1);
+                z.total += monto; z.movs++;
+                const nom = nombreCorto(t.ubicacion_nombre) || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+                z.lugares[nom] = (z.lugares[nom] || 0) + monto;
+            });
+            zonas.forEach(z => {
+                const nombres = Object.entries(z.lugares).sort((a, b) => b[1] - a[1]);
+                z.nombre = nombres[0][0];
+                z.otros = nombres.length - 1;
+                z.detalle = nombres.slice(0, 4).map(([n, v]) => `${n}: $${Math.round(v).toLocaleString('es-CO')}`);
+            });
+            return zonas.sort((a, b) => b.total - a.total);
+        }
+        function renderZona(trans, tipo) {
+            const sufijo = tipo === 'gasto' ? 'Gastos' : 'Ingresos';
+            const zonas = calcularZonas(trans, tipo);
+            const top = zonas.slice(0, MAX_ZONAS);
+            const conUbic = zonas.reduce((s, z) => s + z.movs, 0);
+            const total = zonas.reduce((s, z) => s + z.total, 0);
+
+            document.getElementById('zonaWrap' + sufijo).style.display = top.length ? '' : 'none';
+            document.getElementById('zonaVacia' + sufijo).classList.toggle('visible', !top.length);
+            document.getElementById('zonaSub' + sufijo).textContent = top.length
+                ? `${zonas.length} zona${zonas.length !== 1 ? 's' : ''} · ${conUbic} ${tipo}${conUbic !== 1 ? 's' : ''} con ubicación`
+                : 'Según la ubicación de tus movimientos';
+
+            const anterior = tipo === 'gasto' ? chartZonaGastos : chartZonaIngresos;
+            if (anterior) anterior.destroy();
+            if (!top.length) return;
+
+            const esGasto = tipo === 'gasto';
+            const colores = top.map((_, i) => esGasto
+                ? `rgba(139,92,246,${1 - i * 0.15})`
+                : `rgba(94,234,212,${1 - i * 0.15})`);
+            const grafica = new Chart(document.getElementById('chartZona' + sufijo), {
+                type: 'bar',
+                data: {
+                    labels: top.map(z => z.otros ? `${z.nombre} (+${z.otros})` : z.nombre),
+                    datasets: [{
+                        label: esGasto ? 'Gastado' : 'Recibido',
+                        data: top.map(z => Math.round(z.total)),
+                        backgroundColor: colores,
+                        borderColor: esGasto ? '#8B5CF6' : '#5EEAD4',
+                        borderWidth: 1, borderRadius: 8, barThickness: 22
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { callbacks: {
+                            title: items => top[items[0].dataIndex].nombre,
+                            label: ctx => {
+                                const z = top[ctx.dataIndex];
+                                const pct = total ? Math.round(z.total / total * 100) : 0;
+                                return ` $${ctx.parsed.x.toLocaleString('es-CO')} · ${pct}% · ${z.movs} movimiento${z.movs !== 1 ? 's' : ''}`;
+                            },
+                            afterBody: items => {
+                                const z = top[items[0].dataIndex];
+                                return z.otros ? ['', 'Lugares de la zona:', ...z.detalle] : [];
+                            }
+                        } }
+                    },
+                    scales: {
+                        x: { ticks: { color: '#9ca3af', font: { size: 10 }, callback: v => '$' + (v >= 1e6 ? (v / 1e6).toFixed(1) + 'M' : (v / 1000).toFixed(0) + 'k') },
+                             grid: { color: 'rgba(255,255,255,0.04)' } },
+                        y: { ticks: { color: (getComputedStyle(document.body).getPropertyValue('--fb-lav') || '#c4b5fd').trim(), font: { size: 11, weight: '600' } }, grid: { display: false } }
+                    },
+                    onClick: (e, els) => {
+                        if (!els.length) return;
+                        const z = top[els[0].index];
+                        window.open(`https://www.google.com/maps/search/?api=1&query=${z.lat},${z.lng}`, '_blank', 'noopener');
+                    },
+                    onHover: (e, els) => { e.native.target.style.cursor = els.length ? 'pointer' : 'default'; }
+                }
+            });
+            if (esGasto) chartZonaGastos = grafica; else chartZonaIngresos = grafica;
         }
 
         // ════════════════════════════════════════════════
@@ -1225,7 +1390,7 @@
             const esGasto = tipo === 'gasto';
 
             document.getElementById('catModalTitulo').innerHTML =
-                `<i class="fas fa-chart-simple" style="color:${esGasto ? '#c026d3' : '#22d3ee'}"></i> ${esGasto ? 'Gastos' : 'Ingresos'} por categoría`;
+                `<i class="fas fa-chart-simple" style="color:${esGasto ? '#6D5BD0' : '#5EEAD4'}"></i> ${esGasto ? 'Gastos' : 'Ingresos'} por categoría`;
             document.getElementById('catModalSub').textContent =
                 `Monto total acumulado por cada categoría de ${esGasto ? 'gasto' : 'ingreso'}`;
 
@@ -1239,7 +1404,7 @@
             const entradas = Object.entries(porCategoria).sort((a,b) => b[1]-a[1]);
             const total = entradas.reduce((s,[,monto]) => s + monto, 0);
 
-            const colorBarra = esGasto ? '#c026d3' : '#22d3ee';
+            const colorBarra = esGasto ? '#6D5BD0' : '#5EEAD4';
             const colorPunto = esGasto ? '#f0abfc' : '#67e8f9';
             const colorMonto = esGasto ? 'gasto' : 'ingreso';
 
@@ -1471,17 +1636,18 @@
                     const diaFinal = Math.min(diaPago, ultimoDia);
                     if (hoy.getDate() < diaFinal) return; // aún no llega el día de pago este mes
                     const fecha = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-${String(diaFinal).padStart(2,'0')}`;
+                    const salarioActivo = categoriasUsuario.ingreso.some(c => c.nombre === 'Salario' && !c.oculta);
                     await fetch('http://127.0.0.1:8000/api/transacciones/', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                        body: JSON.stringify({ tipo: 'ingreso', categoria: 'Salario', icono: '💼', monto: ingreso, descripcion: '__auto_salario__', fecha })
+                        body: JSON.stringify({ tipo: 'ingreso', categoria: salarioActivo ? 'Salario' : 'Otros ingresos', icono: salarioActivo ? '💼' : '💵', monto: ingreso, descripcion: '__auto_salario__', fecha })
                     });
                 }
             } catch(e) { console.error('Error verificando salario del mes:', e); }
         }
 
         (async function initDashboard() {
-            await asegurarSalarioMesActual();
+            if (await cargarCategoriasUsuario()) await asegurarSalarioMesActual();
             cargarDashboard();
         })();
     </script>
