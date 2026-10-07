@@ -1,10 +1,12 @@
 # reporte_mensual.py
 
 import calendar as calendar_lib
+import math
 import unicodedata
 from collections import defaultdict
 from datetime import datetime, date
 from io import BytesIO
+from xml.sax.saxutils import escape as xml_escape
 
 MESES_ES = [
     '', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -28,6 +30,11 @@ CATEGORIAS_INGRESO_ORDEN = [
     'Salario', 'Freelance', 'Inversión', 'Negocio', 'Regalo', 'Otros ingresos'
 ]
 
+# Dos movimientos a menos de esta distancia (en metros) cuentan como el
+# MISMO lugar. Cubre la variación normal del GPS ("Mi ubicación") sin
+# mezclar sitios distintos. Es el mismo valor que usa finanzas.html.
+RADIO_MISMO_LUGAR_M = 75
+
 
 # ══════════════════════════════════════════════════════════════════
 #  HELPERS COMPARTIDOS
@@ -41,6 +48,14 @@ def _limpiar(texto):
     nfkd = unicodedata.normalize('NFKD', str(texto))
     ascii_str = ''.join(c for c in nfkd if not unicodedata.combining(c))
     return ''.join(c for c in ascii_str if 32 <= ord(c) <= 126) or 'Sin categoria'
+
+
+def _ascii(texto):
+    """Como _limpiar pero devuelve '' si no queda nada (para nombres de lugar)."""
+    if not texto:
+        return ''
+    nfkd = unicodedata.normalize('NFKD', str(texto))
+    return ''.join(c for c in nfkd if not unicodedata.combining(c) and 32 <= ord(c) <= 126).strip()
 
 
 def _get_cat(t):
@@ -61,6 +76,76 @@ def _icono(cat_str):
 
 def _fecha_str(fecha):
     return fecha.strftime('%Y-%m-%d') if hasattr(fecha, 'strftime') else str(fecha)
+
+
+# ── UBICACIÓN ─────────────────────────────────────────────────────
+def _ubic(t):
+    """{'nombre','lat','lng'} de la transacción, o None si no tiene lugar.
+    Las coordenadas se conservan completas (no se redondean) para que el
+    enlace al mapa caiga en el punto exacto que eligió el usuario."""
+    lat = getattr(t, 'latitud', None)
+    lng = getattr(t, 'longitud', None)
+    if lat is None or lng is None:
+        return None
+    try:
+        lat, lng = float(lat), float(lng)
+    except (TypeError, ValueError):
+        return None
+    raw = (getattr(t, 'ubicacion_nombre', None) or '').strip()
+    return {'nombre': raw or _coords_txt(lat, lng), 'lat': lat, 'lng': lng}
+
+
+def _coords_txt(lat, lng):
+    return f'{lat:.5f}, {lng:.5f}'          # 5 decimales ≈ 1 metro
+
+
+def _maps_url(lat, lng):
+    # Sin '&' para poder usarlo dentro del Paragraph de reportlab sin escapar
+    return f'https://www.google.com/maps?q={lat:.6f},{lng:.6f}'
+
+
+def _distancia_m(lat1, lng1, lat2, lng2):
+    """Distancia en metros entre dos puntos (fórmula de Haversine)."""
+    r = 6371000.0
+    p1, p2 = math.radians(lat1), math.radians(lat2)
+    dp = p2 - p1
+    dl = math.radians(lng2 - lng1)
+    a = math.sin(dp / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(dl / 2) ** 2
+    return 2 * r * math.asin(math.sqrt(a))
+
+
+def _agrupar_lugares(transacciones, tipo):
+    """Agrupa los movimientos de un tipo por LUGAR REAL: los que están a
+    <= RADIO_MISMO_LUGAR_M metros entre sí son el mismo sitio, sin importar
+    cómo se haya escrito el nombre. Cada grupo usa el nombre más frecuente
+    y las coordenadas promedio. Devuelve la lista de mayor a menor total."""
+    grupos = []
+    for t in transacciones:
+        if t.tipo != tipo:
+            continue
+        u = _ubic(t)
+        if not u:
+            continue
+        g = next((x for x in grupos
+                  if _distancia_m(x['lat'], x['lng'], u['lat'], u['lng']) <= RADIO_MISMO_LUGAR_M), None)
+        if g is None:
+            g = {'lat': u['lat'], 'lng': u['lng'], 'sum_lat': 0.0, 'sum_lng': 0.0,
+                 'total': 0.0, 'n': 0, 'max': 0.0, 'nombres': {}}
+            grupos.append(g)
+        monto = float(t.monto)
+        g['n'] += 1
+        g['total'] += monto
+        g['max'] = max(g['max'], monto)
+        g['sum_lat'] += u['lat']
+        g['sum_lng'] += u['lng']
+        g['lat'] = g['sum_lat'] / g['n']
+        g['lng'] = g['sum_lng'] / g['n']
+        nom = (getattr(t, 'ubicacion_nombre', None) or '').strip()
+        if nom:
+            g['nombres'][nom] = g['nombres'].get(nom, 0) + 1
+    for g in grupos:
+        g['nombre'] = max(g['nombres'], key=g['nombres'].get) if g['nombres'] else _coords_txt(g['lat'], g['lng'])
+    return sorted(grupos, key=lambda g: g['total'], reverse=True)
 
 
 def _semanas_del_mes(anio, mes):
@@ -127,6 +212,9 @@ def _agrupar_mes(transacciones, anio, mes):
         'por_dia': por_dia, 'por_semana': por_semana,
         'ultimo_dia_mes': ultimo_dia_mes, 'dias_con_datos': dias_con_datos,
         'promedio_gasto_diario': promedio_gasto_diario, 'cat_mayor': cat_mayor,
+        'lugares_gasto': _agrupar_lugares(transacciones, 'gasto'),
+        'lugares_ingreso': _agrupar_lugares(transacciones, 'ingreso'),
+        'con_ubicacion': sum(1 for t in transacciones if _ubic(t)),
     }
 
 
@@ -165,6 +253,14 @@ def generar_reporte_pdf_mensual(usuario, transacciones, anio: int, mes: int) -> 
     S_TC     = st('tc', fontSize=8, textColor=BLANC, alignment=TA_LEFT, leading=11)
     S_LABEL  = st('lbl', fontSize=8, textColor=GRIS, leading=11)
     S_FOOT   = st('ft', fontSize=7, textColor=MUTED, alignment=TA_CENTER)
+    S_LUGAR  = st('lug', fontSize=7, textColor=CYAN, alignment=TA_LEFT, leading=10)
+    S_COORD  = st('crd', fontSize=7, textColor=GRIS, fontName='Courier', alignment=TA_CENTER, leading=10)
+
+    def parrafo_lugar(nombre, lat, lng, estilo=S_LUGAR):
+        """Nombre del lugar como enlace que abre Google Maps en el punto exacto."""
+        txt = _ascii(nombre) or _coords_txt(lat, lng)
+        return Paragraph(
+            f'<link href="{_maps_url(lat, lng)}" color="#22d3ee">{xml_escape(txt)}</link>', estilo)
 
     nombre_mes = MESES_ES[mes]
     r = _agrupar_mes(transacciones, anio, mes)
@@ -289,6 +385,29 @@ def generar_reporte_pdf_mensual(usuario, transacciones, anio: int, mes: int) -> 
             ])
         story += [mk_tabla(['Fuente', 'Monto', '%'], filas_ing, [W * 0.5, W * 0.3, W * 0.2]), Spacer(1, 18)]
 
+    # ── LUGARES DEL MES ──────────────────────────────────────
+    if r['lugares_gasto'] or r['lugares_ingreso']:
+        story += [Paragraph('Lugares del mes', S_SEC),
+                  Paragraph(f"{r['con_ubicacion']} de {len(transacciones)} movimientos tienen lugar registrado. "
+                            f"Haz clic en un lugar para abrir el punto exacto en Google Maps.",
+                            st('lsub', fontSize=8, textColor=GRIS, leading=11)),
+                  Spacer(1, 6)]
+        filas_lug = []
+        for tipo, lista, col, sgn in (('Gasto', r['lugares_gasto'][:5], ROSA, '-'),
+                                      ('Ingreso', r['lugares_ingreso'][:5], VERDE, '+')):
+            for i, g in enumerate(lista, 1):
+                filas_lug.append([
+                    Paragraph(str(i), st('lr', fontSize=8, textColor=MUTED, alignment=TA_CENTER)),
+                    parrafo_lugar(g['nombre'], g['lat'], g['lng'], st('lnom', fontSize=8, textColor=CYAN, leading=11)),
+                    Paragraph(tipo, st('lt', fontSize=8, fontName='Helvetica-Bold', textColor=col, alignment=TA_CENTER)),
+                    Paragraph(str(g['n']), st('ln', fontSize=8, alignment=TA_CENTER)),
+                    Paragraph(f"{sgn}${g['total']:,.0f}",
+                              st('lm', fontSize=8, fontName='Helvetica-Bold', textColor=col, alignment=TA_RIGHT)),
+                    Paragraph(_coords_txt(g['lat'], g['lng']), S_COORD),
+                ])
+        story += [mk_tabla(['#', 'Lugar', 'Tipo', 'Movs.', 'Total', 'Coordenadas'], filas_lug,
+                            [W * 0.05, W * 0.33, W * 0.10, W * 0.08, W * 0.19, W * 0.25]), Spacer(1, 18)]
+
     # ── DETALLE DÍA A DÍA ────────────────────────────────────
     if r['por_dia']:
         story += [Paragraph('Detalle día a día', S_SEC), Spacer(1, 6)]
@@ -317,16 +436,20 @@ def generar_reporte_pdf_mensual(usuario, transacciones, anio: int, mes: int) -> 
             col_tipo = VERDE if t.tipo == 'ingreso' else ROSA
             sgn = '+' if t.tipo == 'ingreso' else '-'
             fd = t.fecha.strftime('%d/%m') if hasattr(t.fecha, 'strftime') else str(t.fecha)
+            u = _ubic(t)
+            lugar_cell = (parrafo_lugar(u['nombre'], u['lat'], u['lng'])
+                          if u else Paragraph('---', st('lvac', fontSize=7, textColor=MUTED, leading=10)))
             filas_tr.append([
                 Paragraph(str(i), st('fn', fontSize=8, textColor=MUTED, alignment=TA_CENTER)),
                 Paragraph(fd, st('fdt', fontSize=8, alignment=TA_CENTER)),
                 Paragraph(t.tipo.capitalize(), st('ft2', fontSize=8, textColor=col_tipo, fontName='Helvetica-Bold', alignment=TA_CENTER)),
                 Paragraph(_limpiar(_get_cat(t)), S_TC),
                 Paragraph(_limpiar(t.descripcion) if t.descripcion else '—', st('fd2', fontSize=8, textColor=GRIS)),
+                lugar_cell,
                 Paragraph(f'{sgn}${float(t.monto):,.0f}', st('fm', fontSize=8, fontName='Helvetica-Bold', textColor=col_tipo, alignment=TA_RIGHT)),
             ])
-        story += [mk_tabla(['#', 'Fecha', 'Tipo', 'Categoría', 'Descripción', 'Monto'], filas_tr,
-                            [W * 0.05, W * 0.11, W * 0.11, W * 0.19, W * 0.34, W * 0.20]), Spacer(1, 18)]
+        story += [mk_tabla(['#', 'Fecha', 'Tipo', 'Categoría', 'Descripción', 'Lugar', 'Monto'], filas_tr,
+                            [W * 0.04, W * 0.09, W * 0.09, W * 0.16, W * 0.22, W * 0.22, W * 0.18]), Spacer(1, 18)]
 
     # ── PIE DE PÁGINA ────────────────────────────────────────
     story += [HRFlowable(width=W, thickness=0.5, color=LINE), Spacer(1, 6),
@@ -383,6 +506,13 @@ def generar_reporte_excel_mensual(usuario, transacciones, anio: int, mes: int) -
         if brd: c.border = bd()
         return c
 
+    def link_cell(ws, row, col, url, bg, texto='Ver mapa'):
+        """Celda con hipervínculo que abre Google Maps en el punto exacto."""
+        c = wr(ws, row, col, texto, bg, P['cy'], sz=9)
+        c.hyperlink = url
+        c.font = Font(color=P['cy'], size=9, underline='single', name='Segoe UI')
+        return c
+
     def fondo_hoja(ws, filas=200, cols=16):
         ws.sheet_view.showGridLines = False
         for row in ws.iter_rows(min_row=1, max_row=filas, min_col=1, max_col=cols):
@@ -427,6 +557,7 @@ def generar_reporte_excel_mensual(usuario, transacciones, anio: int, mes: int) -
         ('BALANCE',          f"${r['balance']:,.0f}",        P['ve'] if r['balance'] >= 0 else P['re']),
         ('PROM. GASTO/DÍA',  f"${r['promedio_gasto_diario']:,.0f}", P['am']),
         ('DÍAS CON DATOS',   f"{r['dias_con_datos']}/{r['ultimo_dia_mes']}", P['gr']),
+        ('CON LUGAR',        f"{r['con_ubicacion']}/{len(transacciones)}", P['cy']),
     ])
 
     rh(ws1, 7, 5)
@@ -551,13 +682,14 @@ def generar_reporte_excel_mensual(usuario, transacciones, anio: int, mes: int) -
         ws3.add_chart(pie, 'K5')
 
     # ════════════════════════════════════════════════════
-    #  HOJA 4 — TRANSACCIONES DEL MES
+    #  HOJA 4 — TRANSACCIONES DEL MES (con lugar exacto)
     # ════════════════════════════════════════════════════
     ws4 = wb.create_sheet('Transacciones')
     ws4.sheet_properties.tabColor = P['ve']
     cabecera(ws4, f'Transacciones — {nombre_mes} {anio}',
-             f"{len(transacciones)} registros  ·  Ingresos: ${r['total_ingresos']:,.0f}  ·  Gastos: ${r['total_gastos']:,.0f}", 8)
-    enc_fila(ws4, 4, [('#', 5), ('Fecha', 13), ('Tipo', 11), ('Categoría', 22), ('Descripción', 30), ('Monto', 15), ('Saldo acum.', 16)])
+             f"{len(transacciones)} registros  ·  Ingresos: ${r['total_ingresos']:,.0f}  ·  Gastos: ${r['total_gastos']:,.0f}", 10)
+    enc_fila(ws4, 4, [('#', 5), ('Fecha', 13), ('Tipo', 11), ('Categoría', 22), ('Descripción', 30),
+                      ('Monto', 15), ('Saldo acum.', 16), ('Lugar', 34), ('Coordenadas', 20), ('Mapa', 12)])
 
     saldo = 0.0
     for idx, t in enumerate(sorted(transacciones, key=lambda x: x.fecha), 1):
@@ -569,6 +701,7 @@ def generar_reporte_excel_mensual(usuario, transacciones, anio: int, mes: int) -
         col_ = P['ve'] if t.tipo == 'ingreso' else P['ro']
         sgn = '+' if t.tipo == 'ingreso' else '-'
         fd = t.fecha.strftime('%d/%m/%Y') if hasattr(t.fecha, 'strftime') else str(t.fecha)
+        u = _ubic(t)
         rh(ws4, row, 19)
         wr(ws4, row, 1, idx, bg_, P['mu'], sz=9)
         wr(ws4, row, 2, fd, bg_, P['gr'], sz=9)
@@ -577,9 +710,53 @@ def generar_reporte_excel_mensual(usuario, transacciones, anio: int, mes: int) -
         wr(ws4, row, 5, t.descripcion or '—', bg_, P['gr'], sz=9, h='left')
         wr(ws4, row, 6, f'{sgn}${mn:,.0f}', bg_, col_, bold=True, sz=9)
         wr(ws4, row, 7, f'${saldo:,.0f}', bg_, P['cy'] if saldo >= 0 else P['re'], sz=9)
+        if u:
+            wr(ws4, row, 8, u['nombre'], bg_, P['bl'], sz=9, h='left')
+            wr(ws4, row, 9, _coords_txt(u['lat'], u['lng']), bg_, P['gr'], sz=9)
+            link_cell(ws4, row, 10, _maps_url(u['lat'], u['lng']), bg_)
+        else:
+            wr(ws4, row, 8, '—', bg_, P['mu'], sz=9)
+            wr(ws4, row, 9, '—', bg_, P['mu'], sz=9)
+            wr(ws4, row, 10, '—', bg_, P['mu'], sz=9)
 
     if transacciones:
-        ws4.auto_filter.ref = f'A4:G{4 + len(transacciones)}'
+        ws4.auto_filter.ref = f'A4:J{4 + len(transacciones)}'
+
+    # ════════════════════════════════════════════════════
+    #  HOJA 5 — LUGARES DEL MES
+    # ════════════════════════════════════════════════════
+    ws5 = wb.create_sheet('Lugares')
+    ws5.sheet_properties.tabColor = P['cy']
+    cabecera(ws5, f'Lugares — {nombre_mes} {anio}',
+             f"{r['con_ubicacion']} de {len(transacciones)} movimientos con lugar  ·  "
+             f"{len(r['lugares_gasto'])} lugares de gasto  ·  {len(r['lugares_ingreso'])} de ingreso  ·  "
+             f"mismo lugar = a menos de {RADIO_MISMO_LUGAR_M} m", 7)
+
+    defs_lug = [('#', 5), ('Lugar', 36), ('Movs.', 9), ('Total', 16), ('Promedio', 16), ('Coordenadas', 22), ('Mapa', 12)]
+
+    def seccion_lugares(fila_ini, titulo, lista, color_total, color_enc):
+        wr(ws5, fila_ini, 1, titulo, P['li'], color_total, bold=True, sz=11, h='left')
+        enc_fila(ws5, fila_ini + 1, defs_lug, color_enc)
+        fila_ = fila_ini + 2
+        if not lista:
+            wr(ws5, fila_, 1, '—', P['bg'], P['mu'], sz=9)
+            wr(ws5, fila_, 2, 'Sin movimientos con lugar este mes', P['bg'], P['mu'], sz=9, h='left')
+            return fila_ + 1
+        for i, g in enumerate(lista, 1):
+            bg_ = P['ca'] if i % 2 == 0 else P['bg']
+            rh(ws5, fila_, 20)
+            wr(ws5, fila_, 1, i, bg_, P['mu'], sz=9)
+            wr(ws5, fila_, 2, g['nombre'], bg_, P['bl'], sz=9, h='left')
+            wr(ws5, fila_, 3, g['n'], bg_, P['gr'], sz=9)
+            wr(ws5, fila_, 4, round(g['total'], 2), bg_, color_total, bold=True, sz=9)
+            wr(ws5, fila_, 5, round(g['total'] / g['n'], 2), bg_, P['cy'], sz=9)
+            wr(ws5, fila_, 6, _coords_txt(g['lat'], g['lng']), bg_, P['gr'], sz=9)
+            link_cell(ws5, fila_, 7, _maps_url(g['lat'], g['lng']), bg_)
+            fila_ += 1
+        return fila_
+
+    sig = seccion_lugares(4, '💸  DÓNDE GASTAS', r['lugares_gasto'], P['ro'], P['re'])
+    seccion_lugares(sig + 1, '💰  DÓNDE INGRESAS', r['lugares_ingreso'], P['ve'], P['ve'])
 
     output = BytesIO()
     wb.save(output)

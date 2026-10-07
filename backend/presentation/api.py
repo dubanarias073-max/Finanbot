@@ -42,11 +42,30 @@ def _register_routers(app: FastAPI) -> None:
         app.include_router(router, prefix=prefix)
 
 
+def _migrar_columnas_ubicacion() -> None:
+    """create_all() NO agrega columnas a tablas que ya existen. Si la base
+    se creó antes de agregar ubicaciones, se añaden aquí una sola vez."""
+    from sqlalchemy import inspect, text
+
+    columnas = {c['name'] for c in inspect(engine).get_columns('transacciones')}
+    nuevas = {
+        'ubicacion_nombre': 'VARCHAR(255) NULL',
+        'latitud': 'DECIMAL(10,7) NULL',
+        'longitud': 'DECIMAL(10,7) NULL',
+    }
+    with engine.begin() as conn:
+        for nombre, tipo in nuevas.items():
+            if nombre not in columnas:
+                conn.execute(text(f'ALTER TABLE transacciones ADD COLUMN {nombre} {tipo}'))
+                print(f'Columna transacciones.{nombre} agregada')
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     import models  # noqa: F401 - registra los modelos antes de crear tablas
 
     Base.metadata.create_all(bind=engine)
+    _migrar_columnas_ubicacion()
     print('Base de datos conectada correctamente!')
     yield
 

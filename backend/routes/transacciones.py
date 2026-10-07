@@ -24,6 +24,10 @@ class TransaccionCreate(BaseModel):
     fecha: str
     descripcion: Optional[str] = ''
     icono: Optional[str] = None   # se ignora: el icono sale de la categoría
+    # Ubicación opcional (dónde se hizo el gasto/ingreso)
+    ubicacion_nombre: Optional[str] = None
+    latitud: Optional[float] = None
+    longitud: Optional[float] = None
 
 class TransaccionUpdate(BaseModel):
     tipo: Optional[str] = None
@@ -32,6 +36,10 @@ class TransaccionUpdate(BaseModel):
     descripcion: Optional[str] = None
     fecha: Optional[str] = None
     icono: Optional[str] = None   # se ignora: el icono sale de la categoría
+    ubicacion_nombre: Optional[str] = None
+    latitud: Optional[float] = None
+    longitud: Optional[float] = None
+    quitar_ubicacion: Optional[bool] = False   # True = borrar la ubicación guardada
 
 
 def _validar_tipo(tipo: str):
@@ -46,6 +54,19 @@ def _validar_categoria(nombre: str) -> str:
     return cat
 
 
+def _validar_ubicacion(lat, lng, nombre):
+    """Devuelve (nombre, lat, lng) validados, o (None, None, None) si no
+    se envió ubicación. Latitud y longitud deben ir juntas."""
+    if lat is None and lng is None:
+        return None, None, None
+    if lat is None or lng is None:
+        raise HTTPException(status_code=400, detail='Envía latitud y longitud juntas')
+    if not (-90 <= lat <= 90) or not (-180 <= lng <= 180):
+        raise HTTPException(status_code=400, detail='Coordenadas fuera de rango')
+    nombre = (nombre or '').strip()[:255] or None
+    return nombre, round(lat, 7), round(lng, 7)
+
+
 def _transaccion_dict(t: Transaccion) -> dict:
     return {
         'id': t.id,
@@ -55,6 +76,9 @@ def _transaccion_dict(t: Transaccion) -> dict:
         'monto': float(t.monto),
         'descripcion': t.descripcion or '',
         'fecha': str(t.fecha),
+        'ubicacion_nombre': t.ubicacion_nombre,
+        'latitud': float(t.latitud) if t.latitud is not None else None,
+        'longitud': float(t.longitud) if t.longitud is not None else None,
     }
 
 
@@ -109,6 +133,8 @@ def crear_transaccion(
     except ValueError:
         raise HTTPException(status_code=400, detail='Formato de fecha inválido. Usa YYYY-MM-DD')
 
+    ubic_nombre, lat, lng = _validar_ubicacion(body.latitud, body.longitud, body.ubicacion_nombre)
+
     nueva = Transaccion(
         usuario_id=uid,
         categoria=categoria,
@@ -116,6 +142,9 @@ def crear_transaccion(
         monto=body.monto,
         descripcion=body.descripcion,
         fecha=fecha,
+        ubicacion_nombre=ubic_nombre,
+        latitud=lat,
+        longitud=lng,
     )
 
     db.add(nueva)
@@ -162,9 +191,42 @@ def editar_transaccion(
         except ValueError:
             raise HTTPException(status_code=400, detail='Formato de fecha inválido. Usa YYYY-MM-DD')
 
+    if body.quitar_ubicacion:
+        transaccion.ubicacion_nombre = None
+        transaccion.latitud = None
+        transaccion.longitud = None
+    elif body.latitud is not None or body.longitud is not None:
+        nombre, lat, lng = _validar_ubicacion(body.latitud, body.longitud, body.ubicacion_nombre)
+        transaccion.ubicacion_nombre = nombre
+        transaccion.latitud = lat
+        transaccion.longitud = lng
+
     db.commit()
 
     return {'mensaje': '✅ Transacción actualizada!', **_transaccion_dict(transaccion)}
+
+
+# =========================================================
+# UBICACIONES — solo los movimientos que tienen coordenadas,
+# para pintarlos en el mapa (tipo Google Maps).
+# Debe ir ANTES de '/{id}' para que FastAPI no lo confunda.
+# =========================================================
+
+@router.get('/ubicaciones')
+def obtener_ubicaciones(
+    tipo: Optional[str] = None,
+    usuario_id: str = Depends(obtener_usuario_id_requerido),
+    db: Session = Depends(get_db),
+):
+    uid = int(usuario_id)
+    q = (db.query(Transaccion)
+         .filter(Transaccion.usuario_id == uid)
+         .filter(Transaccion.latitud.isnot(None))
+         .filter(Transaccion.longitud.isnot(None)))
+    if tipo:
+        _validar_tipo(tipo)
+        q = q.filter(Transaccion.tipo == tipo)
+    return [_transaccion_dict(t) for t in q.order_by(Transaccion.fecha.desc()).all()]
 
 
 # =========================================================

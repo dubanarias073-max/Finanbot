@@ -1,160 +1,162 @@
 # FinanBot
 
-FinanBot es un proyecto web para gestionar finanzas personales con un asistente inteligente, simulaciones financieras y registro de transacciones.
+**FinanBot** es una plataforma web modular diseñada para la gestión de finanzas personales. Integra un **asistente inteligente con IA**, simuladores financieros avanzados, calendarios de pagos y herramientas de exportación de reportes.
 
-## Requisitos previos
+La arquitectura sigue un enfoque de **monolito modular por capas** orientado a MVC, donde un backend en **FastAPI** sirve tanto una API REST como pantallas legadas (`/legacy`), complementado por un frontend moderno en **React + Vite**.
 
-- Python 3.10 o superior
-- Node.js 18 o superior (para el frontend con Vite)
-- XAMPP con MySQL activo
-- MySQL Workbench
-- Visual Studio Code
-- Extensión Live Server (opcional, solo para abrir pantallas sueltas de `frontend/pages`)
+---
 
-## 1. Preparar la base de datos
+## 🚀 Requisitos Previos
 
-1. Abre la carpeta `Mysql(base de datos)` del proyecto.
-2. Abre el archivo `finanbot_db.sql` en MySQL Workbench.
-3. Copia su contenido y ejecútalo en una conexión activa de MySQL para crear la base de datos.
+Antes de comenzar, asegúrate de tener instalado:
+* **Python 3.10** o superior.
+* **Node.js 18** o superior (con npm).
+* **Visual Studio Code**.
 
-> Si usas XAMPP, asegúrate de iniciar Apache y MySQL desde el panel de control.
+Elige uno de los dos siguientes entornos para preparar tu base de datos antes de inicializar los servidores.
 
-## 2. Crear el entorno virtual
+---
 
-Abre una terminal en la carpeta `backend` del proyecto y ejecuta:
+## 🐳 Entorno A: Docker Desktop + HeidiSQL 
+
+Esta opción automatiza la creación del servidor de base de datos en un contenedor aislado, evitando conflictos de puertos en tu sistema operativo.
+
+### 1. Levantar el contenedor de MySQL
+Ejecuta el siguiente comando en tu terminal de PowerShell. Este comando descargará la imagen oficial, configurará el usuario `root`, asignará la contraseña `123456` y **creará automáticamente la base de datos** vacía llamada `finanbot_db`:
 
 ```powershell
-cd backend
+docker run --name mi-mysql -e MYSQL_ROOT_PASSWORD=123456 -e MYSQL_DATABASE=finanbot_db -p 3306:3306 -d mysql:latest
+```
+
+### 2. Importar las tablas con HeidiSQL
+1. Abre **HeidiSQL** y haz clic en el botón **Nuevo** (abajo a la izquierda) para crear una sesión.
+2. Configura los siguientes parámetros en la pestaña *Settings*:
+   * **Tipo de red / Network type:** `MariaDB or MySQL (TCP/IP)`
+   * **Host / IP:** `127.0.0.1`
+   * **Usuario / User:** `root`
+   * **Contraseña / Password:** `123456`
+   * **Puerto / Port:** `3306`
+3. Haz clic en **Abrir** (Open). Verás la base de datos `finanbot_db` en el árbol de la izquierda.
+4. Selecciónala, ve a la pestaña **Consulta** (Query), copia y pega el contenido del archivo `Mysql(base de datos)/finanbot_db.sql` y presiona **F9** para ejecutar el script.
+
+### 3. Archivo de entorno `.env` para Docker
+En la raíz de la carpeta `backend/`, crea un archivo llamado `.env` apuntando a tu puerto local con la contraseña configurada:
+
+```env
+SECRET_KEY="finanbot_super_secret_key_2026_production_ready"
+JWT_SECRET_KEY="finanbot_jwt_token_secret_generation_2026"
+
+# URL activa para el contenedor Docker
+DATABASE_URL="mysql+pymysql://root:123456@127.0.0.1:3306/finanbot_db?charset=utf8mb4"
+```
+
+---
+
+## 🛠️ Entorno B: XAMPP + MySQL Workbench (Tradicional)
+
+Usa esta opción si prefieres administrar los servicios de forma local directamente sobre tu máquina mediante herramientas tradicionales.
+
+### 1. Iniciar los servicios locales
+1. Abre el panel de control de **XAMPP**.
+2. Haz clic en el botón **Start** de los módulos **Apache** y **MySQL**. Asegúrate de que los indicadores cambien a color verde.
+
+### 2. Importar las tablas con MySQL Workbench
+1. Abre **MySQL Workbench** y abre tu conexión local (usualmente llamada *Local Instance 3306*).
+2. Ve al menú superior y selecciona **File > Open SQL Script...**
+3. Busca y abre el archivo `Mysql(base de datos)/finanbot_db.sql`.
+4. Haz clic en el icono del **rayo** en la barra de herramientas para ejecutar todo el script. Esto creará la base de datos y todas las tablas del sistema.
+
+### 3. Archivo de entorno `.env` para XAMPP
+En la raíz de la carpeta `backend/`, crea un archivo llamado `.env` sin contraseña en la cadena de conexión (configuración por defecto de XAMPP):
+
+```env
+SECRET_KEY="finanbot_super_secret_key_2026_production_ready"
+JWT_SECRET_KEY="finanbot_jwt_token_secret_generation_2026"
+
+# URL activa para XAMPP (sin contraseña)
+DATABASE_URL="mysql+pymysql://root:@127.0.0.1:3306/finanbot_db?charset=utf8mb4"
+```
+
+---
+
+## ⚙️ Inicialización del Proyecto
+
+Una vez que tu base de datos esté lista con cualquiera de las dos opciones anteriores, sigue estos pasos:
+
+### Paso 1: Levantar el Backend (FastAPI)
+Abre una terminal en la carpeta `backend/` y ejecuta:
+
+```powershell
+# 1. Crear el entorno virtual
 python -m venv venv
-venv\Scripts\Activate
-```
 
-## 3. Instalar dependencias del backend
+# 2. Activar el entorno virtual
+.\venv\Scripts\Activate
 
-Dentro del entorno virtual, instala las dependencias con:
-
-```powershell
+# 3. Instalar dependencias del proyecto
 pip install -r requirements.txt
-```
 
-## 4. Ejecutar el backend
-
-Una vez instaladas las dependencias, inicia el servidor con:
-
-```powershell
+# 4. Iniciar el servidor en modo desarrollo
 fastapi dev app.py
 ```
+> El backend estará disponible en `http://127.0.0.1:8000` con documentación interactiva en `/docs`. También puedes usar `uvicorn app:app --reload`.
 
-Si prefieres usar Uvicorn directamente:
-
-```powershell
-uvicorn app:app --reload
-```
-
-El backend queda disponible en `http://127.0.0.1:8000` (documentación interactiva en `/docs`).
-
-> **ADVERTENCIA:** si el chatbot se vuelve tonto es porque creaste la base de datos y reiniciaste el servidor de FastAPI. Entonces `Ctrl + C` y vuelve a colocar `fastapi dev app.py` o `uvicorn app:app --reload`.
-
-## 5. Ejecutar el frontend (React + Vite)
-
-El backend por sí solo **no sirve la interfaz**; el frontend corre con su propio servidor de desarrollo. En otra terminal, desde `frontend`:
+### Paso 2: Levantar el Frontend (React + Vite)
+El backend no sirve la interfaz de usuario de forma directa de manera nativa. En una **nueva terminal**, navega a la carpeta `frontend/`:
 
 ```powershell
-cd frontend
+# 1. Instalar dependencias de Node
 npm install
+
+# 2. Levantar el servidor de desarrollo de Vite
 npm run dev
 ```
+Abre `http://localhost:5173` en tu navegador. Vite redirige automáticamente las peticiones de `/api`, `/legacy` e `/images` hacia el backend en el puerto `8000`.
 
-Abre `http://localhost:5173`. Vite redirige `/api`, `/legacy` e `/images` al backend de FastAPI en `http://127.0.0.1:8000`, así que el backend debe estar corriendo (paso 4) para que el login, los datos y las imágenes funcionen.
+---
 
-Scripts disponibles (no existe `npm start`, es un proyecto Vite):
+## 📐 Arquitectura del Proyecto
 
-```powershell
-npm run dev       # servidor de desarrollo (recarga en caliente)
-npm run build     # genera la versión de producción en frontend/dist
-npm run preview   # sirve localmente el build de producción
-```
-
-## Arquitectura
-
-FinanBot usa un monolito modular por capas orientado a MVC:
+El proyecto está segmentado de forma monolítica pero modular por capas:
 
 ```text
 backend/
-	application/
-		services/
-			auth_service.py       # lógica de autenticación (hash, tokens)
-	presentation/
-		api.py                     # ensamblado de FastAPI, middleware, mounts /legacy e /images
-	routes/                        # endpoints por dominio (auth, transacciones, metas, chat,
-	                                #   recomendaciones, simulaciones, perfil, calendario,
-	                                #   exportar/excel, aprende, chat-historial, reporte mensual)
-	tests/                         # pruebas con pytest
-	venv/                          # entorno virtual (no se versiona)
-	app.py                         # punto de entrada FastAPI
-	config.py                      # configuración/variables de entorno
-	database.py                    # conexión SQLAlchemy a MySQL
-	extensions.py                  # utilidades compartidas (hash_password, auth, etc.)
-	finanbot_ia.py                 # motor del asistente / chatbot
-	models.py                      # entidades y relaciones SQLAlchemy
-	requirements.txt
+├── application/services/   # Lógica de negocio encapsulada (auth_service, etc.)
+├── presentation/api.py     # Configuración central de FastAPI, Middlewares y ruteo legacy
+├── routes/                 # Endpoints REST organizados por dominios financieros
+├── tests/                  # Suite de pruebas unitarias e integración (Pytest)
+├── app.py                  # Punto de entrada de la aplicación
+├── config.py               # Lector de variables de entorno y configuraciones
+├── database.py             # Instanciación y gestión del ciclo de vida de SQLAlchemy
+├── finanbot_ia.py          # Orquestador del modelo de Inteligencia Artificial
+└── models.py               # Declaración de modelos y mapas relacionales ORM
 
 frontend/
-	node_modules/                  # dependencias (no se versiona, generado por npm install)
-	src/                            # código de la app React (App.jsx, main.jsx, estilos)
-	pages/                          # pantallas HTML originales, servidas por el backend en /legacy
-	index.html                      # punto de entrada real de Vite (no abrir con doble clic)
-	package.json / package-lock.json
-	vite.config.js
+├── src/                    # Componentes core de React y estilos globales
+├── pages/                  # Vistas HTML estáticas servidas en la ruta /legacy
+└── vite.config.js          # Configuración del servidor de desarrollo y Proxies de API
 
-images/                           # logo.png y assets compartidos entre frontend/pages y el backend (/images)
-Mysql(base de datos)/             # script(s) SQL para crear la base de datos
+images/                     # Assets compartidos del ecosistema
+Mysql(base de datos)/       # Scripts de respaldo y migraciones SQL
 ```
 
-`frontend/pages` contiene las pantallas originales (dashboard, chat, finanzas, calendario, etc.), servidas por el backend en `/legacy/pages/<archivo>.html`. La app React solo decide **qué pantalla mostrar primero** según la ruta con la que entras (`/`, `/dashboard`, `/chat`, ...); a partir de ahí, cada pantalla navega directamente a la siguiente (login → dashboard → chat, menú lateral, cerrar sesión) sin depender de React, así que recargar la página (F5) siempre te deja en la misma pantalla en la que estabas — la URL cambiará a algo como `http://localhost:5173/legacy/pages/dashboard.html`, y eso es normal.
+### 🔄 Funcionamiento de Rutas y Páginas Legadas
+Las vistas interactivas residen en `frontend/pages/` y son servidas por FastAPI en `/legacy/pages/<archivo>.html`. 
 
-Rutas de entrada que reconoce la app React:
+La aplicación React actúa como el **enrutador inicial** para determinar la vista de entrada. Tras el renderizado inicial, la navegación ocurre directamente entre las páginas HTML mediante hipervínculos nativos. Al recargar la página (`F5`), el navegador conserva el estado de la vista legada actual en la URL de forma transparente.
 
-```text
-/             Landing pública (antiguo index.html, ahora frontend/pages/index-legacy.html)
-/dashboard    Dashboard
-/login        Inicio de sesión
-/registro     Registro de usuario
-/onboarding   Configuración inicial
-/chat         Chat con historial y modo invitado
-/finanzas     Registro y consulta de movimientos
-/calendario   Calendario financiero
-/recomendaciones
-/simulador
-/aprende
-/perfil
-/exportar
-```
+---
 
-### Abrir una pantalla legada de forma independiente (opcional)
+## 🧪 Validaciones y Pruebas Unitarias
 
-Para revisar o editar una pantalla suelta sin pasar por React, puedes abrir cualquier archivo de `frontend/pages` con Live Server. Los enlaces entre pantallas y las rutas a `images/` funcionan igual, siempre que el backend (paso 4) esté corriendo para las llamadas a la API.
-
-## 6. Funcionalidades principales
-
-- Registro de ingresos y gastos
-- Metas de ahorro
-- Simulaciones financieras
-- Chat con inteligencia artificial
-- Exportación de reportes
-
-## 7. Pruebas rápidas
-
-Para validar el motor del chatbot puedes ejecutar:
+Para comprobar el correcto funcionamiento de los algoritmos del Chatbot y las conexiones, puedes correr los tests integrados:
 
 ```powershell
-cd backend
+# Ejecutar pruebas del motor de IA
 pytest -q tests/test_finanbot_ia.py
-```
 
-O correr toda la suite de pruebas:
-
-```powershell
-cd backend
+# Ejecutar la suite completa de pruebas del backend
 pytest -q tests
 ```
+
+⚠️ **Advertencia de desarrollo:** Si el chatbot no responde correctamente o devuelve respuestas genéricas vacías, se debe a una pérdida de sincronía con la base de datos tras un reinicio del servidor de FastAPI. Detén el proceso (`Ctrl + C`) y levanta el backend nuevamente con `fastapi dev app.py`.

@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from datetime import datetime
 from collections import defaultdict
 import io
+import math
 
 from database import get_db
 from extensions import obtener_usuario_id_requerido
@@ -36,6 +37,73 @@ def get_cat(t):
 
 def get_icono(cat_str):
     return ICONOS.get(cat_str, '💸')
+
+
+# ── UBICACIÓN ─────────────────────────────────────────────
+# Dos movimientos a menos de esta distancia (m) cuentan como el MISMO lugar.
+# Es el mismo valor que usan finanzas.html y reporte_mensual.py.
+RADIO_MISMO_LUGAR_M = 75
+
+def get_ubic(t):
+    """{'nombre','lat','lng'} o None si la transacción no tiene lugar.
+    Las coordenadas NO se redondean: el enlace al mapa cae en el punto exacto."""
+    lat = getattr(t, 'latitud', None)
+    lng = getattr(t, 'longitud', None)
+    if lat is None or lng is None:
+        return None
+    try:
+        lat, lng = float(lat), float(lng)
+    except (TypeError, ValueError):
+        return None
+    raw = (getattr(t, 'ubicacion_nombre', None) or '').strip()
+    return {'nombre': raw or coords_txt(lat, lng), 'lat': lat, 'lng': lng}
+
+def coords_txt(lat, lng):
+    return f'{lat:.5f}, {lng:.5f}'          # 5 decimales ≈ 1 metro
+
+def maps_url(lat, lng):
+    return f'https://www.google.com/maps?q={lat:.6f},{lng:.6f}'
+
+def distancia_m(lat1, lng1, lat2, lng2):
+    """Distancia en metros entre dos puntos (Haversine)."""
+    r = 6371000.0
+    p1, p2 = math.radians(lat1), math.radians(lat2)
+    dp = p2 - p1
+    dl = math.radians(lng2 - lng1)
+    a = math.sin(dp / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(dl / 2) ** 2
+    return 2 * r * math.asin(math.sqrt(a))
+
+def agrupar_lugares(trans, tipo):
+    """Agrupa por LUGAR REAL (<= RADIO_MISMO_LUGAR_M metros entre sí), sin
+    importar cómo se escribió el nombre. Cada grupo usa el nombre más
+    frecuente y las coordenadas promedio. Orden: mayor total primero."""
+    grupos = []
+    for t in trans:
+        if t.tipo != tipo:
+            continue
+        u = get_ubic(t)
+        if not u:
+            continue
+        g = next((x for x in grupos
+                  if distancia_m(x['lat'], x['lng'], u['lat'], u['lng']) <= RADIO_MISMO_LUGAR_M), None)
+        if g is None:
+            g = {'lat': u['lat'], 'lng': u['lng'], 'sum_lat': 0.0, 'sum_lng': 0.0,
+                 'total': 0.0, 'n': 0, 'max': 0.0, 'nombres': {}}
+            grupos.append(g)
+        monto = float(t.monto)
+        g['n'] += 1
+        g['total'] += monto
+        g['max'] = max(g['max'], monto)
+        g['sum_lat'] += u['lat']
+        g['sum_lng'] += u['lng']
+        g['lat'] = g['sum_lat'] / g['n']
+        g['lng'] = g['sum_lng'] / g['n']
+        nom = (getattr(t, 'ubicacion_nombre', None) or '').strip()
+        if nom:
+            g['nombres'][nom] = g['nombres'].get(nom, 0) + 1
+    for g in grupos:
+        g['nombre'] = max(g['nombres'], key=g['nombres'].get) if g['nombres'] else coords_txt(g['lat'], g['lng'])
+    return sorted(grupos, key=lambda g: g['total'], reverse=True)
 
 
 @router.get('/excel')
@@ -93,6 +161,13 @@ def exportar_excel(
         if brd: c.border = bd()
         return c
 
+    def link_cell(ws, row, col, url, bg, texto='Ver mapa'):
+        """Celda con hipervínculo que abre Google Maps en el punto exacto."""
+        c = wr(ws, row, col, texto, bg, P['cy'], sz=9)
+        c.hyperlink = url
+        c.font = Font(color=P['cy'], size=9, underline='single', name='Segoe UI')
+        return c
+
     def fondo_hoja(ws, filas=300, cols=20):
         ws.sheet_view.showGridLines = False
         for row in ws.iter_rows(min_row=1, max_row=filas, min_col=1, max_col=cols):
@@ -138,6 +213,7 @@ def exportar_excel(
     bal_t = ing_t - gas_t
     aho_t = sum(float(m.monto_actual) for m in metas)
     pct_g = round(gas_t / ing_t * 100) if ing_t > 0 else 0
+    con_ubic = sum(1 for t in trans if get_ubic(t))
 
     gastos_cat   = defaultdict(float)
     ingresos_cat = defaultdict(float)
@@ -214,6 +290,9 @@ def exportar_excel(
     pct_f = min(100, round(max(0, bal_t) / fondo_obj * 100)) if fondo_obj > 0 else 0
     inds.append(('Fondo de emergencia (3 meses)',
                  f'{pct_f}%', '✅ Completo' if pct_f >= 100 else f'Meta: ${fondo_obj:,.0f}'))
+    inds.append(('Movimientos con lugar registrado',
+                 f'{con_ubic} de {len(trans)}',
+                 '✅ Con lugar en el mapa' if con_ubic else 'Agrega lugares al registrar'))
 
     for ri, (ind, val, est) in enumerate(inds, 9):
         rh(ws1, ri, 20)
@@ -245,17 +324,18 @@ def exportar_excel(
         ws1.add_chart(bar, 'J4')
 
     # ════════════════════════════════════════════════════
-    #  HOJA 2 — TRANSACCIONES
+    #  HOJA 2 — TRANSACCIONES (con lugar exacto)
     # ════════════════════════════════════════════════════
     ws2 = wb.create_sheet('Transacciones')
     ws2.sheet_properties.tabColor = P['cy']
     cabecera(ws2, 'Historial de Transacciones',
         f'{len(trans)} registros  ·  Ingresos: ${ing_t:,.0f}  ·  Gastos: ${gas_t:,.0f}  ·  Balance: ${bal_t:,.0f}',
-        9)
+        12)
     enc_fila(ws2, 4, [
         ('#', 5), ('Fecha', 13), ('Tipo', 11),
         ('Categoría', 22), ('Descripción', 28),
         ('Monto', 16), ('Saldo acum.', 16), ('Retención', 12), ('Neto', 14),
+        ('Lugar', 34), ('Coordenadas', 20), ('Mapa', 12),
     ])
 
     saldo = 0.0
@@ -269,6 +349,7 @@ def exportar_excel(
         sgn  = '+' if t.tipo == 'ingreso' else '-'
         fd   = t.fecha.strftime('%d/%m/%Y') if t.fecha else '—'
         ret_ = round(mn * 0.04, 2) if t.tipo == 'ingreso' else 0
+        u    = get_ubic(t)
         rh(ws2, r, 19)
         wr(ws2, r, 1, idx,                                      bg_, P['mu'], sz=9)
         wr(ws2, r, 2, fd,                                       bg_, P['gr'], sz=9)
@@ -280,27 +361,36 @@ def exportar_excel(
         wr(ws2, r, 8, f'${ret_:,.0f}' if ret_ > 0 else '—',    bg_, P['ro'], sz=9)
         wr(ws2, r, 9, f'${mn - ret_:,.0f}' if t.tipo == 'ingreso' else f'-${mn:,.0f}',
            bg_, P['ve'] if t.tipo == 'ingreso' else P['ro'], sz=9)
+        if u:
+            wr(ws2, r, 10, u['nombre'],                         bg_, P['bl'], sz=9, h='left')
+            wr(ws2, r, 11, coords_txt(u['lat'], u['lng']),      bg_, P['gr'], sz=9)
+            link_cell(ws2, r, 12, maps_url(u['lat'], u['lng']), bg_)
+        else:
+            wr(ws2, r, 10, '—', bg_, P['mu'], sz=9)
+            wr(ws2, r, 11, '—', bg_, P['mu'], sz=9)
+            wr(ws2, r, 12, '—', bg_, P['mu'], sz=9)
 
-    ws2.auto_filter.ref = 'A4:I4'
+    ws2.auto_filter.ref = 'A4:L4'
 
     if gastos_cat:
-        ws2['K1'] = 'Categoría'; ws2['L1'] = 'Monto'
-        ws2['K1'].fill = fl(P['li']); ws2['K1'].font = fn(P['bl'], bold=True, sz=9)
-        ws2['L1'].fill = fl(P['li']); ws2['L1'].font = fn(P['bl'], bold=True, sz=9)
-        cw(ws2, 11, 24); cw(ws2, 12, 14)
+        # Datos del gráfico circular (columnas N y O, a la derecha de la tabla)
+        ws2['N1'] = 'Categoría'; ws2['O1'] = 'Monto'
+        ws2['N1'].fill = fl(P['li']); ws2['N1'].font = fn(P['bl'], bold=True, sz=9)
+        ws2['O1'].fill = fl(P['li']); ws2['O1'].font = fn(P['bl'], bold=True, sz=9)
+        cw(ws2, 14, 24); cw(ws2, 15, 14)
         fp = 2
         for cat, monto in sorted(gastos_cat.items(), key=lambda x: x[1], reverse=True)[:8]:
-            ws2[f'K{fp}'] = f'{get_icono(cat)} {cat}'
-            ws2[f'L{fp}'] = round(monto, 2)
-            ws2[f'K{fp}'].fill = fl(P['ca']); ws2[f'K{fp}'].font = fn(P['bl'], sz=9)
-            ws2[f'L{fp}'].fill = fl(P['ca']); ws2[f'L{fp}'].font = fn(P['am'], sz=9)
+            ws2[f'N{fp}'] = f'{get_icono(cat)} {cat}'
+            ws2[f'O{fp}'] = round(monto, 2)
+            ws2[f'N{fp}'].fill = fl(P['ca']); ws2[f'N{fp}'].font = fn(P['bl'], sz=9)
+            ws2[f'O{fp}'].fill = fl(P['ca']); ws2[f'O{fp}'].font = fn(P['am'], sz=9)
             fp += 1
         pie = PieChart(); pie.title = 'Distribución de Gastos'
         pie.style = 10; pie.width = 18; pie.height = 13
-        pd_ = Reference(ws2, min_col=12, min_row=1, max_row=fp-1)
-        pc_ = Reference(ws2, min_col=11, min_row=2, max_row=fp-1)
+        pd_ = Reference(ws2, min_col=15, min_row=1, max_row=fp-1)
+        pc_ = Reference(ws2, min_col=14, min_row=2, max_row=fp-1)
         pie.add_data(pd_, titles_from_data=True); pie.set_categories(pc_)
-        ws2.add_chart(pie, 'K4')
+        ws2.add_chart(pie, 'N4')
 
     # ════════════════════════════════════════════════════
     #  HOJA 3 — ANÁLISIS POR CATEGORÍA
@@ -531,6 +621,46 @@ def exportar_excel(
            'Registra tu ingreso mensual en Mi Perfil para activar el plan personalizado.',
            P['bg'],P['am'],sz=10,h='left')
         cw(ws5,1,60)
+
+    # ════════════════════════════════════════════════════
+    #  HOJA 6 — LUGARES (dónde gastas / dónde ingresas)
+    # ════════════════════════════════════════════════════
+    lug_g = agrupar_lugares(trans, 'gasto')
+    lug_i = agrupar_lugares(trans, 'ingreso')
+
+    ws6 = wb.create_sheet('Lugares')
+    ws6.sheet_properties.tabColor = P['az']
+    cabecera(ws6, 'Mapa de Lugares',
+        f'{con_ubic} de {len(trans)} movimientos con lugar  ·  {len(lug_g)} lugares de gasto  ·  '
+        f'{len(lug_i)} de ingreso  ·  mismo lugar = a menos de {RADIO_MISMO_LUGAR_M} m', 8)
+
+    defs_lug = [('#', 5), ('Lugar', 36), ('Movs.', 9), ('Total', 16),
+                ('Promedio', 16), ('Máximo', 16), ('Coordenadas', 22), ('Mapa', 12)]
+
+    def seccion_lugares(fila_ini, titulo, lista, color_total, color_enc):
+        wr(ws6, fila_ini, 1, titulo, P['li'], color_total, bold=True, sz=11, h='left')
+        enc_fila(ws6, fila_ini + 1, defs_lug, color_enc)
+        fila_ = fila_ini + 2
+        if not lista:
+            wr(ws6, fila_, 1, '—', P['bg'], P['mu'], sz=9)
+            wr(ws6, fila_, 2, 'Sin movimientos con lugar', P['bg'], P['mu'], sz=9, h='left')
+            return fila_ + 1
+        for i, g in enumerate(lista, 1):
+            bg_ = P['ca'] if i % 2 == 0 else P['bg']
+            rh(ws6, fila_, 20)
+            wr(ws6, fila_, 1, i, bg_, P['mu'], sz=9)
+            wr(ws6, fila_, 2, g['nombre'], bg_, P['bl'], sz=9, h='left')
+            wr(ws6, fila_, 3, g['n'], bg_, P['gr'], sz=9)
+            wr(ws6, fila_, 4, round(g['total'], 2), bg_, color_total, bold=True, sz=9)
+            wr(ws6, fila_, 5, round(g['total'] / g['n'], 2), bg_, P['cy'], sz=9)
+            wr(ws6, fila_, 6, round(g['max'], 2), bg_, P['gr'], sz=9)
+            wr(ws6, fila_, 7, coords_txt(g['lat'], g['lng']), bg_, P['gr'], sz=9)
+            link_cell(ws6, fila_, 8, maps_url(g['lat'], g['lng']), bg_)
+            fila_ += 1
+        return fila_
+
+    sig = seccion_lugares(4, '💸  DÓNDE GASTAS', lug_g, P['ro'], P['re'])
+    seccion_lugares(sig + 1, '💰  DÓNDE INGRESAS', lug_i, P['ve'], P['ve'])
 
     # ── Guardar ───────────────────────────────────────────
     output = io.BytesIO()

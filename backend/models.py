@@ -83,6 +83,11 @@ class Transaccion(Base):
     descripcion = Column(String(255))
     fecha = Column(Date, nullable=False)
     fecha_registro = Column(DateTime, default=datetime.utcnow)
+    # Ubicación donde se hizo el gasto/ingreso (opcional).
+    # DECIMAL(10,7) da precisión de ~1 cm, suficiente para un mapa.
+    ubicacion_nombre = Column(String(255), nullable=True)
+    latitud = Column(Numeric(10, 7), nullable=True)
+    longitud = Column(Numeric(10, 7), nullable=True)
 
     usuario = relationship('Usuario', back_populates='transacciones')
 

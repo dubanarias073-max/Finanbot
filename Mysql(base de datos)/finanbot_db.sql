@@ -52,11 +52,17 @@ CREATE TABLE transacciones (
     descripcion VARCHAR(255),
     fecha DATE NOT NULL,
     fecha_registro DATETIME DEFAULT CURRENT_TIMESTAMP,
+    -- Ubicación donde se hizo el movimiento (opcional, se ve en el mapa)
+    ubicacion_nombre VARCHAR(255) NULL,
+    latitud DECIMAL(10,7) NULL,
+    longitud DECIMAL(10,7) NULL,
 
     FOREIGN KEY (usuario_id)
         REFERENCES usuarios(id)
-        ON DELETE CASCADE
+        ON DELETE CASCADE,
+    INDEX idx_transacciones_ubicacion (usuario_id, latitud, longitud)
 );
+
 
 -- =========================================================
 -- METAS DE AHORRO (incluye modo automático)
@@ -235,3 +241,4 @@ GROUP BY ch.conversacion_id, ch.usuario_id, u.nombre;
 
 -- Mensajes de una conversación en orden:
 -- SELECT * FROM chats WHERE conversacion_id = '...' ORDER BY fecha;
+
