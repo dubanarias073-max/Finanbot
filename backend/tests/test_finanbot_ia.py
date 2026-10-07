@@ -31,6 +31,25 @@ def test_responde_siempre_con_tupla_en_preguntas_de_conocimiento():
     assert isinstance(acciones, list)
 
 
+def test_redirige_consulta_ajena_a_finanzas_al_chat_financiero():
+    bot = FinanBotIA()
+    respuesta, acciones = bot.responder_con_acciones(
+        "chat como consigo novia jajaja", None, None
+    )
+
+    assert "chat especializado en finanzas personales" in respuesta
+    assert "temas ajenos a las finanzas" in respuesta
+    assert acciones == []
+
+
+def test_redirige_concepto_desconocido_a_temas_financieros():
+    bot = FinanBotIA()
+    respuesta, _ = bot.responder_con_acciones("¿Qué es la jardinería?", None, None)
+
+    assert "chat especializado en finanzas personales" in respuesta
+    assert "Ahorro" in respuesta
+
+
 def test_respuesta_inteligente_para_mejorar_finanzas():
     bot = FinanBotIA()
     respuesta, _ = bot.responder_con_acciones("quiero mejorar mis finanzas", None, None)

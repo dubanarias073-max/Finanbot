@@ -4,7 +4,9 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from datetime import datetime
 from collections import defaultdict
+from xml.sax.saxutils import escape as xml_escape
 import io
+import math
 
 from database import get_db
 from extensions import obtener_usuario_id_requerido
@@ -60,6 +62,71 @@ def get_texto_cat(cat):
     if en_mapa:
         return en_mapa
     return limpiar(cat)
+
+
+# ── UBICACIÓN ─────────────────────────────────────────────
+def get_ubic(t):
+    """Devuelve {'nombre', 'lat', 'lng'} o None si la transacción no tiene
+    ubicación. El nombre va en ASCII (Helvetica no soporta tildes/emojis)."""
+    lat = getattr(t, 'latitud', None)
+    lng = getattr(t, 'longitud', None)
+    if lat is None or lng is None:
+        return None
+    lat, lng = float(lat), float(lng)
+    raw = getattr(t, 'ubicacion_nombre', None)
+    nombre = limpiar(raw).strip() if raw else ''
+    if not nombre:
+        nombre = f'{lat:.5f}, {lng:.5f}'
+    return {'nombre': nombre, 'lat': lat, 'lng': lng}
+
+def maps_url(lat, lng):
+    # Sin '&' para no tener que escapar el enlace dentro del Paragraph
+    return f'https://www.google.com/maps?q={lat:.6f},{lng:.6f}'
+
+# Dos movimientos a menos de esta distancia (m) cuentan como el MISMO lugar.
+# Mismo valor que usan finanzas.html, excel.py y reporte_mensual.py.
+RADIO_MISMO_LUGAR_M = 75
+
+def distancia_m(lat1, lng1, lat2, lng2):
+    """Distancia en metros entre dos puntos (Haversine)."""
+    r = 6371000.0
+    p1, p2 = math.radians(lat1), math.radians(lat2)
+    dp = p2 - p1
+    dl = math.radians(lng2 - lng1)
+    a = math.sin(dp / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(dl / 2) ** 2
+    return 2 * r * math.asin(math.sqrt(a))
+
+def agrupar_lugares(trans, tipo):
+    """Agrupa por LUGAR REAL (<= RADIO_MISMO_LUGAR_M metros entre sí), sin
+    importar cómo se escribió el nombre. Cada grupo usa el nombre más
+    frecuente y las coordenadas promedio. Orden: mayor total primero."""
+    grupos = []
+    for t in trans:
+        if t.tipo != tipo:
+            continue
+        u = get_ubic(t)
+        if not u:
+            continue
+        g = next((x for x in grupos
+                  if distancia_m(x['lat'], x['lng'], u['lat'], u['lng']) <= RADIO_MISMO_LUGAR_M), None)
+        if g is None:
+            g = {'lat': u['lat'], 'lng': u['lng'], 'sum_lat': 0.0, 'sum_lng': 0.0,
+                 'total': 0.0, 'n': 0, 'nombres': {}}
+            grupos.append(g)
+        g['n'] += 1
+        g['total'] += float(t.monto)
+        g['sum_lat'] += u['lat']
+        g['sum_lng'] += u['lng']
+        g['lat'] = g['sum_lat'] / g['n']
+        g['lng'] = g['sum_lng'] / g['n']
+        raw = getattr(t, 'ubicacion_nombre', None)
+        nom = limpiar(raw).strip() if raw else ''
+        if nom and nom != 'Sin categoria':
+            g['nombres'][nom] = g['nombres'].get(nom, 0) + 1
+    for g in grupos:
+        g['nombre'] = (max(g['nombres'], key=g['nombres'].get) if g['nombres']
+                       else f"{g['lat']:.5f}, {g['lng']:.5f}")
+    return sorted(grupos, key=lambda g: g['total'], reverse=True)
 
 
 # ══════════════════════════════════════════════════════════
@@ -120,6 +187,16 @@ def exportar_pdf(
     S_TCC    = st('tcc',   fontSize=8,  textColor=BLANC,           alignment=TA_CENTER, leading=11)
     S_LABEL  = st('lbl',   fontSize=8,  textColor=GRIS,  leading=11)
     S_FOOT   = st('ft',    fontSize=7,  textColor=MUTED, alignment=TA_CENTER)
+    S_LUGAR  = st('lug',   fontSize=7,  textColor=CYAN,  alignment=TA_LEFT, leading=10)
+
+    def parrafo_lugar(u, estilo=None):
+        """Nombre del lugar como enlace a Google Maps (o '---' si no hay)."""
+        if not u:
+            return Paragraph('---', st('lugvacio', fontSize=7, textColor=MUTED, leading=10))
+        return Paragraph(
+            f'<link href="{maps_url(u["lat"], u["lng"])}" color="#22d3ee">{xml_escape(u["nombre"])}</link>',
+            estilo or S_LUGAR
+        )
 
     # ── MÉTRICAS ──────────────────────────────────────────
     ingresos_t = sum(float(t.monto) for t in trans if t.tipo == 'ingreso')
@@ -323,6 +400,16 @@ def exportar_pdf(
                       st('fobj', fontSize=8, textColor=VERDE if pct_fondo >= 100 else GRIS, alignment=TA_CENTER)),
         ])
 
+        # Cuántos movimientos tienen lugar registrado
+        con_ubic = sum(1 for t in trans if get_ubic(t))
+        filas_af.append([
+            Paragraph('Movimientos con ubicacion', S_TC),
+            Paragraph(f'{con_ubic}', st('v2', fontSize=9, fontName='Helvetica-Bold', textColor=CYAN, alignment=TA_CENTER)),
+            Paragraph(f'de {len(trans)} movimientos registrados', st('cu', fontSize=8, textColor=GRIS)),
+            Paragraph('Con lugar en el mapa' if con_ubic else 'Agrega lugares al registrar',
+                      st('cue', fontSize=8, textColor=VERDE if con_ubic else MUTED, alignment=TA_CENTER)),
+        ])
+
         story.append(mk_tabla(
             ['Indicador', '%  / Valor', 'Detalle', 'Estado'],
             filas_af,
@@ -353,6 +440,35 @@ def exportar_pdf(
         ))
         story.append(Spacer(1, 18))
 
+    # ── LUGARES (gastos e ingresos con ubicación) ─────────
+    lug_gasto   = agrupar_lugares(trans, 'gasto')[:5]
+    lug_ingreso = agrupar_lugares(trans, 'ingreso')[:5]
+    if lug_gasto or lug_ingreso:
+        story.append(Paragraph('Lugares con mas movimiento', S_SEC))
+        story.append(Spacer(1, 6))
+
+        filas_lug = []
+        for tipo, lista, col in (('Gasto', lug_gasto, ROSA), ('Ingreso', lug_ingreso, VERDE)):
+            for i, g in enumerate(lista, 1):
+                sgn = '+' if tipo == 'Ingreso' else '-'
+                filas_lug.append([
+                    Paragraph(str(i), st('lr', fontSize=8, textColor=MUTED, alignment=TA_CENTER)),
+                    parrafo_lugar(g, st('lnom', fontSize=8, textColor=CYAN, leading=11)),
+                    Paragraph(tipo, st('lt', fontSize=8, fontName='Helvetica-Bold', textColor=col, alignment=TA_CENTER)),
+                    Paragraph(str(g['n']), S_TCC),
+                    Paragraph(f'{sgn}${g["total"]:,.0f}',
+                              st('lm', fontSize=8, fontName='Helvetica-Bold', textColor=col, alignment=TA_RIGHT)),
+                    Paragraph(f'{g["lat"]:.5f}, {g["lng"]:.5f}',
+                              st('lc', fontSize=7, fontName='Courier', textColor=GRIS, alignment=TA_CENTER, leading=10)),
+                ])
+
+        story.append(mk_tabla(
+            ['#', 'Lugar (clic abre el punto exacto)', 'Tipo', 'Movs.', 'Total', 'Coordenadas'],
+            filas_lug,
+            [W*0.05, W*0.31, W*0.10, W*0.08, W*0.20, W*0.26]
+        ))
+        story.append(Spacer(1, 18))
+
     # ── HISTORIAL DE TRANSACCIONES ────────────────────────
     if trans:
         story.append(Paragraph('Historial de transacciones', S_SEC))
@@ -371,14 +487,15 @@ def exportar_pdf(
                 Paragraph(t.tipo.capitalize(), st('ft2', fontSize=8, textColor=col_tipo, alignment=TA_CENTER, fontName='Helvetica-Bold')),
                 Paragraph(cat_txt,            S_TC),
                 Paragraph(limpiar(t.descripcion) if t.descripcion else '---', st('fd', fontSize=8, textColor=GRIS)),
+                parrafo_lugar(get_ubic(t)),
                 Paragraph(f'{sgn}${float(t.monto):,.0f}',
                            st('fm', fontSize=8, fontName='Helvetica-Bold', textColor=col_tipo, alignment=TA_RIGHT)),
             ])
 
         story.append(mk_tabla(
-            ['#', 'Fecha', 'Tipo', 'Categoria', 'Descripcion', 'Monto'],
+            ['#', 'Fecha', 'Tipo', 'Categoria', 'Descripcion', 'Lugar', 'Monto'],
             filas_tr,
-            [W*0.04, W*0.11, W*0.09, W*0.20, W*0.36, W*0.20]
+            [W*0.04, W*0.10, W*0.08, W*0.16, W*0.22, W*0.22, W*0.18]
         ))
         story.append(Spacer(1, 18))
 

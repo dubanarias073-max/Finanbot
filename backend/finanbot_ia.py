@@ -19,6 +19,7 @@ RUTAS = {
     'perfil':         'perfil.html',
     'chat':           'chat.html',
     'calendario':     'calendario.html',
+    'mapa':           'finanzas.html',
     'exportar_pdf':   'exportar.html',
     'exportar_excel': 'exportar.html',
 }
@@ -53,6 +54,120 @@ def _con_ejemplo(texto: str, clave: str) -> str:
     if not ejemplo:
         return texto
     return f"{texto}\n\n{ejemplo}"
+
+
+# ══════════════════════════════════════════════════════════════════
+#  UBICACIONES (reales y precisas)
+#  La acción que llega del backend puede traer, opcionalmente:
+#     ubicacion_nombre, latitud, longitud, precision_m
+#  Aquí NO se inventa ningún lugar: si no hay coordenadas reales,
+#  se dice tal cual. Mismo criterio que finanzas / reportes:
+#  dos movimientos a <= 75 m se consideran el MISMO lugar.
+# ══════════════════════════════════════════════════════════════════
+RADIO_MISMO_LUGAR_M = 75
+PRECISION_ACEPTABLE_M = 100
+
+
+def _num_coord(v):
+    try:
+        if v is None or v == '':
+            return None
+        return float(v)
+    except (TypeError, ValueError):
+        return None
+
+
+def _coords(a: dict | None):
+    """(lat, lng) válidos o None. Exige ambos y rango real; (0,0) no cuenta."""
+    if not a:
+        return None
+    lat, lng = _num_coord(a.get('latitud')), _num_coord(a.get('longitud'))
+    if lat is None or lng is None:
+        return None
+    if not (-90 <= lat <= 90 and -180 <= lng <= 180):
+        return None
+    if lat == 0 and lng == 0:
+        return None
+    return lat, lng
+
+
+def _limpiar_md(txt: str) -> str:
+    """Evita que un nombre de lugar rompa los links/negritas del markdown."""
+    return re.sub(r'[\[\]()*_`]', '', str(txt or '')).strip()
+
+
+def _maps_url(lat: float, lng: float) -> str:
+    return f"https://www.google.com/maps/search/?api=1&query={lat:.6f},{lng:.6f}"
+
+
+def _fmt_coords(lat: float, lng: float) -> str:
+    return f"{lat:.5f}, {lng:.5f}"
+
+
+def _distancia_m(a, b) -> float:
+    """Haversine en metros entre (lat,lng) y (lat,lng)."""
+    from math import radians, sin, cos, asin, sqrt
+    la1, lo1, la2, lo2 = map(radians, (a[0], a[1], b[0], b[1]))
+    h = sin((la2 - la1) / 2) ** 2 + cos(la1) * cos(la2) * sin((lo2 - lo1) / 2) ** 2
+    return 2 * 6371000 * asin(sqrt(h))
+
+
+def _lugar_texto(a: dict | None, enlace: bool = True) -> str:
+    """Una línea con el lugar real del movimiento, o '' si no tiene."""
+    if not a:
+        return ''
+    c = _coords(a)
+    nombre = _limpiar_md(a.get('ubicacion_nombre'))
+    if not c:
+        return f"📍 {nombre} *(sin coordenadas: no puedo ubicarlo en el mapa)*" if nombre else ''
+    base = nombre or "Punto GPS"
+    prec = _num_coord(a.get('precision_m'))
+    txt = f"📍 **{base}** · {_fmt_coords(*c)}"
+    if prec is not None and prec > 0:
+        txt += f" · ±{prec:,.0f} m"
+    if enlace:
+        txt += f" · [Abrir punto exacto en Google Maps]({_maps_url(*c)})"
+    if prec is not None and prec > PRECISION_ACEPTABLE_M:
+        txt += (f"\n⚠️ *La precisión del GPS fue de ±{prec:,.0f} m. "
+                f"Si necesitas el sitio exacto, corrígelo desde el mapa en [Mis finanzas]({RUTAS['finanzas']}).*")
+    return txt
+
+
+def _agrupar_lugares(movs: list[dict]) -> list[dict]:
+    """Agrupa por DISTANCIA (<= 75 m = mismo lugar), no por nombre.
+    Devuelve [{nombre, lat, lng, total, n}] ordenado por total desc.
+    Nombre = el más frecuente del grupo; coordenadas = promedio."""
+    grupos: list[dict] = []
+    for m in movs or []:
+        c = _coords(m)
+        if not c:
+            continue
+        monto = _num_coord(m.get('monto')) or 0
+        destino = None
+        for g in grupos:
+            if _distancia_m((g['lat'], g['lng']), c) <= RADIO_MISMO_LUGAR_M:
+                destino = g
+                break
+        if destino is None:
+            destino = {'lat': c[0], 'lng': c[1], 'total': 0.0, 'n': 0,
+                       'nombres': {}, 'sum_lat': 0.0, 'sum_lng': 0.0}
+            grupos.append(destino)
+        destino['total'] += monto
+        destino['n'] += 1
+        destino['sum_lat'] += c[0]
+        destino['sum_lng'] += c[1]
+        nom = _limpiar_md(m.get('ubicacion_nombre'))
+        if nom:
+            destino['nombres'][nom] = destino['nombres'].get(nom, 0) + 1
+        destino['lat'] = destino['sum_lat'] / destino['n']
+        destino['lng'] = destino['sum_lng'] / destino['n']
+    salida = []
+    for g in grupos:
+        nombre = max(g['nombres'], key=g['nombres'].get) if g['nombres'] else "Punto GPS"
+        salida.append({'nombre': nombre, 'lat': g['lat'], 'lng': g['lng'],
+                       'total': g['total'], 'n': g['n']})
+    salida.sort(key=lambda x: x['total'], reverse=True)
+    return salida
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -1510,6 +1625,8 @@ class FinanBotIA:
             return self._gastos(accion), _btns_finanzas()
         if tipo == 'consulta_ingresos':
             return self._ingresos(accion), _btns_finanzas()
+        if tipo == 'consulta_lugares':
+            return self._lugares(accion), _btns_mapa()
         if tipo == 'consulta_resumen':
             return self._resumen(accion, ctx), _btns_resumen()
 
@@ -1782,6 +1899,12 @@ class FinanBotIA:
             if meta_m > 0 and total_gastos_ctx > meta_m * 3:
                 lineas.append(f"\n⚠️ {_tip()} Tus gastos de este mes suman ${total_gastos_ctx:,.0f}. ¡Ojo con el presupuesto!")
 
+        lugar = _lugar_texto(a)
+        if lugar:
+            lineas.append(f"\n{lugar}")
+        else:
+            lineas.append("\n📍 *Sin lugar registrado. Activa el GPS del chat al registrar y lo guardo con la ubicación real.*")
+
         lineas.append(f"\n\n📝 *¿Te equivocaste? Puedo editarlo o borrarlo:*")
         lineas.append(EJEMPLOS['editar_gasto'])
         lineas.append(EJEMPLOS['borrar_gasto'])
@@ -1802,6 +1925,12 @@ class FinanBotIA:
             lineas.append(f"\n💡 *Regla del 20%: guarda **${int(monto*0.2):,.0f}** de este ingreso.*")
             if info.get('tip'):
                 lineas.append(f"\n{_tip()} {info['tip']}")
+
+        lugar = _lugar_texto(a)
+        if lugar:
+            lineas.append(f"\n{lugar}")
+        else:
+            lineas.append("\n📍 *Sin lugar registrado. Activa el GPS del chat al registrar y lo guardo con la ubicación real.*")
 
         lineas.append(f"\n\n📝 *¿Te equivocaste? Puedo editarlo o borrarlo:*")
         lineas.append(EJEMPLOS['editar_ingreso'])
@@ -1826,6 +1955,10 @@ class FinanBotIA:
         else:
             lineas.append(f"\n{ico} **{cat}** actualizado.")
 
+        lugar = _lugar_texto(a)
+        if lugar:
+            lineas.append(f"\n{lugar}")
+
         clave = 'editar_gasto' if tipo_t == 'gasto' else 'editar_ingreso'
         return _con_ejemplo("\n".join(lineas), clave)
 
@@ -1835,6 +1968,9 @@ class FinanBotIA:
         ico = info.get('emoji') or ("💸" if tipo_t == 'gasto' else "💰")
         texto = (f"🗑️ {tipo_t.capitalize()} eliminado.\n\n"
                  f"{ico} **${monto:,.0f}** en **{cat}** fue removido de tu historial de este mes.")
+        lugar = _lugar_texto(a, enlace=False)
+        if lugar:
+            texto += f"\n\n{lugar}"
         clave = 'borrar_gasto' if tipo_t == 'gasto' else 'borrar_ingreso'
         return _con_ejemplo(texto, clave)
 
@@ -1926,7 +2062,10 @@ class FinanBotIA:
         if rec:
             lineas.append("\n**Últimos movimientos:**")
             for t in rec[:4]:
-                lineas.append(f"  • {t['categoria']}: ${t['monto']:,.0f} — {t['fecha']}")
+                lineas.append(f"  • {t['categoria']}: ${t['monto']:,.0f} — {t['fecha']}{self._sufijo_lugar(t)}")
+        top = self._bloque_lugares(a.get('movimientos') or rec, 'gasto')
+        if top:
+            lineas.append(top)
         lineas.append(f"\n📅 *¿Necesitas un mes anterior? Consúltalo en el [Calendario]({RUTAS['calendario']}) — ahí puedes verlo y descargar su reporte.*")
         return "\n".join(lineas)
 
@@ -1948,7 +2087,54 @@ class FinanBotIA:
         if rec:
             lineas.append("\n**Últimos ingresos:**")
             for t in rec[:5]:
-                lineas.append(f"  • {t['categoria']}: ${t['monto']:,.0f} — {t['fecha']}")
+                lineas.append(f"  • {t['categoria']}: ${t['monto']:,.0f} — {t['fecha']}{self._sufijo_lugar(t)}")
+        top = self._bloque_lugares(a.get('movimientos') or rec, 'ingreso')
+        if top:
+            lineas.append(top)
+        return "\n".join(lineas)
+
+    def _sufijo_lugar(self, t: dict) -> str:
+        """' · 📍 Lugar' corto para listas de movimientos (solo si es real)."""
+        nombre = _limpiar_md(t.get('ubicacion_nombre'))
+        c = _coords(t)
+        if c:
+            return f" · 📍 [{nombre or _fmt_coords(*c)}]({_maps_url(*c)})"
+        return f" · 📍 {nombre}" if nombre else ""
+
+    def _bloque_lugares(self, movs, tipo: str) -> str:
+        """Top de lugares reales (<=75 m = mismo lugar). '' si no hay coordenadas."""
+        grupos = _agrupar_lugares(movs or [])
+        if not grupos:
+            return ""
+        verbo = "gastas" if tipo == 'gasto' else "recibes"
+        out = [f"\n📍 **Dónde {verbo} más:**"]
+        for g in grupos[:3]:
+            signo = "" if tipo == 'gasto' else "+"
+            out.append(f"  • [{g['nombre']}]({_maps_url(g['lat'], g['lng'])}): {signo}${g['total']:,.0f} "
+                       f"({g['n']} mov.) · {_fmt_coords(g['lat'], g['lng'])}")
+        return "\n".join(out)
+
+    def _lugares(self, a):
+        """Respuesta a '¿dónde gasto más?' / '¿dónde recibo ingresos?'.
+        Usa a['movimientos'] (con latitud/longitud) que entrega el backend."""
+        movs = a.get('movimientos') or []
+        tipo = a.get('filtro_tipo') or 'gasto'
+        con = [m for m in movs if _coords(m)]
+        sin = len(movs) - len(con)
+        etiqueta = {'gasto': 'gastos', 'ingreso': 'ingresos'}.get(tipo, 'movimientos')
+        if not con:
+            return (f"📍 Aún no tienes {etiqueta} con ubicación real este mes.\n\n"
+                    f"Cuando registres uno, activa el GPS del chat y lo guardo con las coordenadas exactas. "
+                    f"También puedes marcar el punto en el mapa de [Mis finanzas]({RUTAS['finanzas']}).")
+        grupos = _agrupar_lugares(con)
+        lineas = [f"📍 **Dónde se mueven tus {etiqueta} — {_mes_actual_label()}**\n",
+                  f"*(Dos movimientos a {RADIO_MISMO_LUGAR_M} m o menos cuentan como el mismo lugar)*\n"]
+        for i, g in enumerate(grupos[:5], 1):
+            signo = "+" if tipo == 'ingreso' else ""
+            lineas.append(f"{i}. [{g['nombre']}]({_maps_url(g['lat'], g['lng'])}) — {signo}${g['total']:,.0f} "
+                          f"en {g['n']} movimiento(s)\n   {_fmt_coords(g['lat'], g['lng'])}")
+        if sin > 0:
+            lineas.append(f"\n⚠️ {sin} movimiento(s) no tienen coordenadas y no entran en este ranking.")
         return "\n".join(lineas)
 
     def _resumen(self, a, ctx):
@@ -2242,6 +2428,16 @@ class FinanBotIA:
         # Reporte del mes actual, sin pasar por 'accion' del backend
         if self._es_solicitud_reporte_mensual(msg) and any(p in msg for p in ['reporte', 'descargar', 'exportar']):
             return self._reporte('pdf', 'mes')
+
+        # Preguntas por lugares: si el backend no mandó 'movimientos' con
+        # coordenadas, se usa ctx; nunca se inventan lugares.
+        if any(p in msg for p in ['donde gasto', 'dónde gasto', 'donde he gastado', 'dónde he gastado',
+                                  'donde recibo', 'dónde recibo', 'lugares', 'ubicacion', 'ubicación',
+                                  'en que lugar', 'en qué lugar', 'mapa de gastos']):
+            tipo = 'ingreso' if any(p in msg for p in ['ingreso', 'recibo', 'recibí', 'recibi', 'cobro']) else 'gasto'
+            movs = (ctx or {}).get('movimientos') or []
+            return self._lugares({'movimientos': [m for m in movs if (m.get('tipo') or tipo) == tipo],
+                                  'filtro_tipo': tipo})
 
         # Intención clara de editar/borrar/abonar sin datos suficientes
         intencion = self._detectar_intencion_edicion_borrado(msg)
@@ -2576,6 +2772,9 @@ class FinanBotIA:
             "• *'Añade $50.000 a mi meta de viajes'* → solo suma\n"
             "• *'Pon mi meta de viajes en $300.000'* → reemplaza el total\n"
             "• *'Simula $500.000 al 12% por 6 meses'*\n\n"
+            "**Lugares (reales y precisos):**\n"
+            "• Al registrar, el chat usa tu GPS y guarda el punto exacto\n"
+            "• *'¿Dónde gasto más?'* / *'¿Dónde recibo mis ingresos?'*\n\n"
             "**Reportes:**\n"
             "• *'Reporte de este mes'* → PDF/Excel solo del mes actual\n"
             "• *'Reporte completo'* → PDF/Excel con todo el histórico\n"
@@ -2671,7 +2870,8 @@ class FinanBotIA:
 
         if re.search(r'qu[eé]\s+es\s+(\w+)', msg) or re.search(r'c[oó]mo\s+funciona\s+(\w+)', msg):
             return (
-                "🤖 No tengo esa información específica en mi base, pero puedo enseñarte sobre:\n\n"
+                "🤖 Soy un chat especializado en finanzas personales y no tengo información sobre ese tema. "
+                "Sí puedo ayudarte con:\n\n"
                 "**Inversiones:** CDT • Fondos • Acciones • Criptomonedas\n"
                 "**Deudas:** Tarjeta de crédito • Préstamos • Salir de deudas\n"
                 "**Ahorro:** Fondo de emergencia • Metas manuales/automáticas • Presupuesto\n"
@@ -2680,14 +2880,9 @@ class FinanBotIA:
             )
 
         return (
-            "🤔 No estoy 100% seguro qué necesitas, pero puedo ayudarte con esto:\n\n"
-            "**📝 Registrar/editar/borrar (mes actual):**  *'Gasté $30.000 en comida'*, *'edita mi gasto de comida a $40.000'*, *'borra el ingreso de Freelance'*\n"
-            "**🧮 Calcular:**  *'$80.000 con 20% descuento'* o *'$50.000 más IVA'*\n"
-            "**📈 Simular:**  *'Simula $500.000 al 10% por 1 año'*\n"
-            "**💡 Preguntar:**  *'¿Qué es un CDT?'* o *'¿Cómo ahorrar más?'*\n"
-            "**🎯 Metas:**  *'Crea meta de $1M para viajes'* o *'crea una meta automática de $2M, $200.000/mes el día 5'*\n"
-            "**📄 Reportes:**  *'Reporte de este mes'* o *'Reporte completo'*\n\n"
-            "Reformula así tu pregunta o cuéntame qué necesitas lograr financieramente 😊"
+            "😄 Soy FinanBot, un chat especializado en finanzas personales, así que no puedo ayudarte con temas ajenos a las finanzas.\n\n"
+            "Puedo ayudarte a registrar gastos e ingresos, calcular descuentos e IVA, simular inversiones, "
+            "crear metas de ahorro o consultar tus reportes. ¿Qué quieres revisar de tus finanzas? 💰"
         )
 
     # ─── Utilidades ───────────────────────────────────────────────
@@ -2738,6 +2933,13 @@ def _btns_finanzas():
     return [
         _btn('💸 Ir a mis finanzas', RUTAS['finanzas']),
         _btn('📊 Ver dashboard', RUTAS['dashboard']),
+    ]
+
+def _btns_mapa():
+    return [
+        _sug('¿Dónde gasto más?'),
+        _sug('¿Dónde recibo mis ingresos?'),
+        _btn('🗺️ Ver mapa', RUTAS['mapa']),
     ]
 
 def _btns_resumen():

@@ -8,6 +8,9 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Leaflet: mapas tipo Google Maps (gratis, sin API key) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', sans-serif; min-height: 100vh; color: white; transition: background 0.4s; overflow-x: hidden; }
@@ -319,9 +322,86 @@
         .salario-banner strong { color: #4ade80; }
         .salario-banner a { color: #22d3ee; text-decoration: underline; cursor: pointer; }
 
+        /* ===================== UBICACIONES (tipo Google Maps) ===================== */
+        .ubic-acciones { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .btn-ubic { display: flex; align-items: center; justify-content: center; gap: 7px; background: var(--item-bg); border: 1px dashed var(--input-border); color: var(--secondary, #9ca3af); border-radius: 12px; padding: 10px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.3s; }
+        .btn-ubic:hover { background: rgba(168,85,247,0.1); border-color: #a855f7; border-style: solid; color: white; }
+        .btn-ubic i { color: #a855f7; }
+        .btn-ubic:disabled { opacity: .6; cursor: wait; }
+        .ubic-elegida { display: none; align-items: center; gap: 10px; background: rgba(168,85,247,0.08); border: 1px solid rgba(168,85,247,0.3); border-radius: 12px; padding: 10px 12px; }
+        .ubic-elegida.visible { display: flex; }
+        .ubic-elegida-pin { width: 34px; height: 34px; border-radius: 10px; background: rgba(168,85,247,0.18); color: #c4b5fd; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .ubic-elegida-texto { flex: 1; min-width: 0; }
+        .ubic-elegida-nombre { font-size: 13px; font-weight: 600; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .ubic-elegida-coords { font-size: 11px; color: var(--muted, #6b7280); }
+        .ubic-elegida button { background: none; border: none; color: var(--muted, #6b7280); cursor: pointer; padding: 6px; border-radius: 8px; font-size: 13px; }
+        .ubic-elegida button:hover { color: #a855f7; background: rgba(168,85,247,0.1); }
+        .ubic-elegida button.quitar:hover { color: #ef4444; background: rgba(239,68,68,0.1); }
+
+        .trans-lugar { display: inline-flex; align-items: center; gap: 5px; margin-top: 4px; font-size: 11.5px; color: #c4b5fd; background: rgba(168,85,247,0.1); border: 1px solid rgba(168,85,247,0.2); border-radius: 999px; padding: 2px 9px; cursor: pointer; max-width: 100%; transition: all .2s; }
+        .trans-lugar:hover { background: rgba(168,85,247,0.2); border-color: #a855f7; }
+        .trans-lugar span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        /* Modal selector de ubicación */
+        .modal-box.modal-mapa { max-width: 640px; padding: 26px 24px; }
+        .mapa-buscador { display: flex; gap: 8px; margin-bottom: 10px; }
+        .mapa-buscador input { flex: 1; }
+        .mapa-buscador button { flex-shrink: 0; width: 46px; border-radius: 12px; border: 1px solid var(--input-border); background: rgba(168,85,247,0.12); color: #c4b5fd; cursor: pointer; }
+        .mapa-resultados { display: none; background: #14123a; border: 1px solid rgba(168,85,247,0.25); border-radius: 12px; margin-bottom: 10px; max-height: 180px; overflow-y: auto; }
+        .mapa-resultados.visible { display: block; }
+        .mapa-resultado { padding: 9px 12px; font-size: 13px; color: #d1d5db; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; gap: 8px; align-items: flex-start; }
+        .mapa-resultado:last-child { border-bottom: none; }
+        .mapa-resultado:hover { background: rgba(168,85,247,0.12); color: white; }
+        .mapa-resultado i { color: #a855f7; margin-top: 3px; }
+        .mapa-picker { height: 340px; border-radius: 14px; overflow: hidden; border: 1px solid rgba(168,85,247,0.25); margin-bottom: 10px; }
+        .mapa-ayuda { font-size: 12px; color: var(--muted, #6b7280); margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+        .mapa-seleccion { font-size: 13px; color: white; background: rgba(255,255,255,0.04); border: 1px solid rgba(168,85,247,0.2); border-radius: 12px; padding: 10px 12px; margin-bottom: 14px; min-height: 42px; display: flex; align-items: center; gap: 8px; }
+        .mapa-seleccion i { color: #a855f7; }
+        .mapa-acciones { display: grid; grid-template-columns: auto 1fr; gap: 10px; }
+        .mapa-acciones .btn-accion { justify-content: center; }
+        .mapa-acciones .btn-modal-guardar { margin-top: 0; }
+
+        /* Mapa de movimientos */
+        .mapa-mov-wrap { display: flex; flex-direction: column; gap: 18px; }
+        #mapaTopLugares { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; }
+        #mapaTopLugares .mapa-top-item { margin-bottom: 0; }
+        #mapaTopLugares .mapa-vacio { grid-column: 1 / -1; }
+        .mapa-movimientos { width: 100%; height: 460px; border-radius: 16px; overflow: hidden; border: 1px solid var(--card-border); }
+        .mapa-filtros { display: flex; gap: 8px; flex-wrap: wrap; margin-left: auto; }
+        .mapa-top-titulo { font-size: 11px; color: var(--secondary, #9ca3af); text-transform: uppercase; letter-spacing: .8px; margin-bottom: 10px; font-weight: 600; }
+        .mapa-top-item { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 12px; background: var(--item-bg); border: 1px solid var(--item-border); margin-bottom: 7px; cursor: pointer; transition: all .2s; }
+        .mapa-top-item:hover { border-color: rgba(168,85,247,0.4); transform: translateX(2px); }
+        .mapa-top-rank { width: 24px; height: 24px; border-radius: 8px; background: rgba(168,85,247,0.15); color: #c4b5fd; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .mapa-top-info { flex: 1; min-width: 0; }
+        .mapa-top-nombre { font-size: 13px; font-weight: 600; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .mapa-top-sub { font-size: 11px; color: var(--muted, #6b7280); }
+        .mapa-top-monto { font-size: 13px; font-weight: 700; color: #f472b6; white-space: nowrap; }
+        .mapa-top-monto.ingreso { color: #4ade80; }
+        .mapa-vacio { font-size: 12.5px; color: var(--muted, #6b7280); line-height: 1.6; padding: 6px 2px; }
+
+        /* Marcadores (pin tipo Google Maps) */
+        .pin-fb { position: relative; width: 34px; height: 34px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); display: flex; align-items: center; justify-content: center; border: 3px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.35); }
+        .pin-fb span { transform: rotate(45deg); font-size: 15px; line-height: 1; }
+        .pin-fb.gasto { background: #e11d48; }
+        .pin-fb.ingreso { background: #16a34a; }
+        .pin-fb.nuevo { background: #7c3aed; }
+        /* Mapa oscuro: se invierten los colores del mapa claro de OpenStreetMap */
+        body.tema-oscuro .tiles-fb, body.tema-azul .tiles-fb { filter: invert(1) hue-rotate(180deg) brightness(0.95) contrast(0.9) saturate(0.6); }
+        .leaflet-container { font-family: 'Segoe UI', sans-serif; background: #1a1a3a; }
+        .leaflet-popup-content-wrapper { background: #14123a; color: white; border: 1px solid rgba(168,85,247,0.3); border-radius: 14px; }
+        .leaflet-popup-tip { background: #14123a; }
+        .leaflet-popup-content { margin: 12px 14px; font-size: 13px; line-height: 1.45; }
+        .popup-fb-cat { font-weight: 700; font-size: 14px; }
+        .popup-fb-monto.gasto { color: #f472b6; font-weight: 800; font-size: 15px; }
+        .popup-fb-monto.ingreso { color: #4ade80; font-weight: 800; font-size: 15px; }
+        .popup-fb-meta { color: #9ca3af; font-size: 12px; }
+        .popup-fb-link { display: inline-flex; align-items: center; gap: 5px; margin-top: 6px; color: #c4b5fd; font-weight: 600; font-size: 12px; text-decoration: none; }
+        .popup-fb-link:hover { color: #a855f7; }
+
         /* ===================== RESPONSIVE / MOBILE ===================== */
         @media (max-width: 1000px) {
             .grid-principal { grid-template-columns: 1fr; }
+            .mapa-movimientos { height: 340px; }
         }
 
         @media (max-width: 900px) {
@@ -372,6 +452,9 @@
             .btn-trans-accion { padding: 5px 7px; }
 
             .card-title { font-size: 14px; }
+            .mapa-picker { height: 260px; }
+            .mapa-acciones { grid-template-columns: 1fr; }
+            .modal-box.modal-mapa { padding: 22px 14px; }
         }
 
         @media (max-width: 380px) {
@@ -379,8 +462,9 @@
             .trans-right { flex-wrap: wrap; justify-content: flex-end; }
         }
     </style>
+    <link rel="stylesheet" href="tema-claro.css">
 </head>
-<body class="tema-oscuro">
+<body class="tema-oscuro" data-pagina="finanzas">
 
     <!-- MODAL EDITAR TRANSACCIÓN -->
     <div class="modal-overlay" id="modalEditar">
@@ -420,6 +504,26 @@
                 <label class="modal-label">Fecha</label>
                 <input type="date" class="modal-input" id="mFecha">
             </div>
+            <div class="modal-campo">
+                <label class="modal-label">Ubicación (opcional)</label>
+                <div class="ubic-acciones" id="ubicAccionesEditar">
+                    <button type="button" class="btn-ubic" id="btnUbicActualEditar" onclick="usarMiUbicacion('editar')">
+                        <i class="fas fa-location-crosshairs"></i> Mi ubicación
+                    </button>
+                    <button type="button" class="btn-ubic" onclick="abrirSelectorMapa('editar')">
+                        <i class="fas fa-map-location-dot"></i> Elegir en mapa
+                    </button>
+                </div>
+                <div class="ubic-elegida" id="ubicElegidaEditar">
+                    <div class="ubic-elegida-pin"><i class="fas fa-location-dot"></i></div>
+                    <div class="ubic-elegida-texto">
+                        <div class="ubic-elegida-nombre" id="ubicNombreEditar"></div>
+                        <div class="ubic-elegida-coords" id="ubicCoordsEditar"></div>
+                    </div>
+                    <button type="button" title="Cambiar" onclick="abrirSelectorMapa('editar')"><i class="fas fa-pen"></i></button>
+                    <button type="button" class="quitar" title="Quitar ubicación" onclick="quitarUbicacion('editar')"><i class="fas fa-xmark"></i></button>
+                </div>
+            </div>
             <button class="btn-modal-guardar" id="btnModalGuardar" onclick="guardarEdicion()">
                 <i class="fas fa-check"></i> Guardar cambios
             </button>
@@ -439,6 +543,29 @@
             </div>
             <div class="calendario-grid" id="calendarioGrid"></div>
             <div class="cal-dia-panel" id="calDiaPanel" style="display:none;"></div>
+        </div>
+    </div>
+
+    <!-- MODAL ELEGIR UBICACIÓN (tipo Google Maps) -->
+    <div class="modal-overlay" id="modalMapa">
+        <div class="modal-box modal-mapa">
+            <button class="modal-close" onclick="cerrarSelectorMapa()">✕</button>
+            <div class="modal-titulo"><i class="fas fa-map-location-dot" style="color:#a855f7"></i> ¿Dónde hiciste este movimiento?</div>
+            <div class="modal-sub">Busca el lugar o toca el mapa para poner el pin</div>
+            <div class="mapa-buscador">
+                <input type="text" class="modal-input" id="mapaBusqueda" placeholder="Ej: Centro Andino, Calle 26 #57, Éxito Chapinero...">
+                <button type="button" onclick="buscarLugar()" title="Buscar"><i class="fas fa-magnifying-glass"></i></button>
+            </div>
+            <div class="mapa-resultados" id="mapaResultados"></div>
+            <div class="mapa-picker" id="mapaPicker"></div>
+            <div class="mapa-ayuda"><i class="fas fa-hand-pointer"></i> Toca el mapa o arrastra el pin para ajustar el punto exacto.</div>
+            <div class="mapa-seleccion" id="mapaSeleccion"><i class="fas fa-location-dot"></i><span>Aún no has elegido un punto</span></div>
+            <div class="mapa-acciones">
+                <button type="button" class="btn-accion" onclick="centrarEnMiUbicacion()"><i class="fas fa-location-crosshairs"></i> Mi ubicación</button>
+                <button type="button" class="btn-modal-guardar" id="btnConfirmarUbic" onclick="confirmarUbicacion()" disabled>
+                    <i class="fas fa-check"></i> Usar esta ubicación
+                </button>
+            </div>
         </div>
     </div>
 
@@ -611,6 +738,26 @@
                         <label class="form-label">Fecha</label>
                         <input type="date" class="form-control" id="fecha">
                     </div>
+                    <div class="form-group">
+                        <label class="form-label">¿Dónde fue? (opcional)</label>
+                        <div class="ubic-acciones" id="ubicAccionesNueva">
+                            <button type="button" class="btn-ubic" id="btnUbicActual" onclick="usarMiUbicacion('nueva')">
+                                <i class="fas fa-location-crosshairs"></i> Mi ubicación
+                            </button>
+                            <button type="button" class="btn-ubic" onclick="abrirSelectorMapa('nueva')">
+                                <i class="fas fa-map-location-dot"></i> Elegir en mapa
+                            </button>
+                        </div>
+                        <div class="ubic-elegida" id="ubicElegidaNueva">
+                            <div class="ubic-elegida-pin"><i class="fas fa-location-dot"></i></div>
+                            <div class="ubic-elegida-texto">
+                                <div class="ubic-elegida-nombre" id="ubicNombreNueva"></div>
+                                <div class="ubic-elegida-coords" id="ubicCoordsNueva"></div>
+                            </div>
+                            <button type="button" title="Cambiar" onclick="abrirSelectorMapa('nueva')"><i class="fas fa-pen"></i></button>
+                            <button type="button" class="quitar" title="Quitar ubicación" onclick="quitarUbicacion('nueva')"><i class="fas fa-xmark"></i></button>
+                        </div>
+                    </div>
                     <button class="btn-guardar" id="btnGuardar" onclick="guardarTransaccion()">
                         <i class="fas fa-save"></i> Guardar transacción
                     </button>
@@ -643,13 +790,14 @@
                     <div class="salario-banner" id="salarioBanner" style="display:none;">
                         <i class="fas fa-info-circle"></i>
                         <p>Tu <strong>salario mensual</strong> (<span id="bannerSalarioVal"></span>) está activo y se suma automáticamente a tus ingresos. Para editarlo ve a <a onclick="top.location.href='perfil.html'">Mi Perfil</a>.</p>
+                        <button type="button" class="btn-accion" onclick="ubicarSalario()" style="margin-left:auto;"><i class="fas fa-location-dot"></i> Ubicar en el mapa</button>
                     </div>
 
                     <div class="filtros-bar">
                         <div class="search-wrap">
                             <i class="fas fa-search"></i>
                             <input type="text" class="search-input" id="busqueda"
-                                   placeholder="Buscar por categoría o descripción..."
+                                   placeholder="Buscar por categoría, descripción o lugar..."
                                    oninput="filtrarYRender()">
                         </div>
                         <button class="filter-chip activo" id="chip-todos"   onclick="setFiltro('todos',this)">Todos</button>
@@ -666,6 +814,28 @@
                     </div>
 
                     <div class="paginacion" id="paginacion"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MAPA DE MOVIMIENTOS -->
+        <div class="card" id="cardMapa" style="margin-top:22px;">
+            <div class="card-title">
+                <i class="fas fa-map-location-dot" style="color:#a855f7;"></i>
+                Mapa de mis movimientos
+                <div class="mapa-filtros">
+                    <button class="filter-chip activo" data-mapa-tipo="todos" onclick="setFiltroMapa('tipo','todos',this)">Todos</button>
+                    <button class="filter-chip tipo-ingreso" data-mapa-tipo="ingreso" onclick="setFiltroMapa('tipo','ingreso',this)">Ingresos</button>
+                    <button class="filter-chip tipo-gasto" data-mapa-tipo="gasto" onclick="setFiltroMapa('tipo','gasto',this)">Gastos</button>
+                    <button class="filter-chip activo" data-mapa-periodo="mes" onclick="setFiltroMapa('periodo','mes',this)">Este mes</button>
+                    <button class="filter-chip" data-mapa-periodo="todo" onclick="setFiltroMapa('periodo','todo',this)">Todo</button>
+                </div>
+            </div>
+            <div class="mapa-mov-wrap">
+                <div class="mapa-movimientos" id="mapaMovimientos"></div>
+                <div>
+                    <div class="mapa-top-titulo" id="mapaTopTitulo"><i class="fas fa-ranking-star"></i> Lugares con más movimiento</div>
+                    <div id="mapaTopLugares"></div>
                 </div>
             </div>
         </div>
@@ -710,28 +880,28 @@
         // ── HELPER: IDENTIFICAR SALARIO AUTO ─────────────
         // El salario automático usa descripcion='__auto_salario__'
         // → Cuenta en totales (ingresos/balance) pero NO aparece en la lista
-       
-         const esAutoSalario = t =>
-          t.descripcion && (
-        t.descripcion.includes('__auto_salario__') ||
-        t.descripcion.includes('salario mensual'));
+
+        const esAutoSalario = t =>
+            t.descripcion && (
+                t.descripcion.includes('__auto_salario__') ||
+                t.descripcion.includes('salario mensual'));
 
         function obtenerMesActualStr() {
-    const hoy = new Date();
-    return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}`;
-}
-function hoyStr() {
-    const h = new Date();
-    return `${h.getFullYear()}-${String(h.getMonth()+1).padStart(2,'0')}-${String(h.getDate()).padStart(2,'0')}`;
-}
-// Una transacción con fecha futura (mayor a hoy) NO cuenta todavía —
-// se queda "en espera" hasta que llegue esa fecha, sea salario auto o
-// un gasto/ingreso registrado con fecha adelantada.
-function transaccionesDelMesActual() {
-    const mesActual = obtenerMesActualStr();
-    const hoy = hoyStr();
-    return transacciones.filter(t => (t.fecha || '').slice(0, 7) === mesActual && (t.fecha || '') <= hoy);
-}
+            const hoy = new Date();
+            return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}`;
+        }
+        function hoyStr() {
+            const h = new Date();
+            return `${h.getFullYear()}-${String(h.getMonth()+1).padStart(2,'0')}-${String(h.getDate()).padStart(2,'0')}`;
+        }
+        // Una transacción con fecha futura (mayor a hoy) NO cuenta todavía —
+        // se queda "en espera" hasta que llegue esa fecha, sea salario auto o
+        // un gasto/ingreso registrado con fecha adelantada.
+        function transaccionesDelMesActual() {
+            const mesActual = obtenerMesActualStr();
+            const hoy = hoyStr();
+            return transacciones.filter(t => (t.fecha || '').slice(0, 7) === mesActual && (t.fecha || '') <= hoy);
+        }
 
         // ── CATEGORÍAS ────────────────────────────────────
         const CATS = {
@@ -792,11 +962,12 @@ function transaccionesDelMesActual() {
                 const res = await fetch('http://127.0.0.1:8000/api/transacciones/', {
                     method: 'POST',
                     headers: {'Content-Type':'application/json','Authorization':'Bearer '+token},
-                    body: JSON.stringify({tipo:tipoSeleccionado, categoria:cat, icono:ICONOS_MAP[cat]||'💸', monto, descripcion:desc, fecha})
+                    body: JSON.stringify({tipo:tipoSeleccionado, categoria:cat, icono:ICONOS_MAP[cat]||'💸', monto, descripcion:desc, fecha, ...datosUbicacion('nueva')})
                 });
                 if (res.ok) {
                     document.getElementById('monto').value = '';
                     document.getElementById('descripcion').value = '';
+                    quitarUbicacion('nueva');
                     mostrar('alertaExito');
                     await cargarTransacciones();
                 } else { mostrar('alertaError'); }
@@ -828,6 +999,9 @@ function transaccionesDelMesActual() {
             document.getElementById('mMonto').value       = t.monto;
             document.getElementById('mDescripcion').value = t.descripcion || '';
             document.getElementById('mFecha').value       = t.fecha;
+            ubicEditarOriginal = tieneUbic(t) ? { lat: latDe(t), lng: lngDe(t), nombre: t.ubicacion_nombre || fmtCoords(t.latitud, t.longitud) } : null;
+            ubic.editar = ubicEditarOriginal ? { ...ubicEditarOriginal } : null;
+            pintarUbicacion('editar');
             document.getElementById('modalAlertaError').classList.remove('visible');
             document.getElementById('modalAlertaExito').classList.remove('visible');
             document.getElementById('modalEditar').classList.add('visible');
@@ -879,7 +1053,7 @@ function transaccionesDelMesActual() {
                 const res = await fetch(`http://127.0.0.1:8000/api/transacciones/${editandoId}`, {
                     method: 'PUT',
                     headers: {'Content-Type':'application/json','Authorization':'Bearer '+token},
-                    body: JSON.stringify({ tipo: editTipo, categoria: cat, icono: ICONOS_MAP[cat] || '💸', monto, descripcion: desc, fecha })
+                    body: JSON.stringify({ tipo: editTipo, categoria: cat, icono: ICONOS_MAP[cat] || '💸', monto, descripcion: desc, fecha, ...datosUbicacion('editar') })
                 });
                 const data = await res.json();
                 if (res.ok) {
@@ -890,6 +1064,7 @@ function transaccionesDelMesActual() {
                     actualizarStats();
                     renderCategorias();
                     renderResumenMensual();
+                    renderMapaMovimientos(false);
                     setTimeout(() => cerrarModal(), 1400);
                 } else {
                     mostrarModalError(data.mensaje || 'Error al actualizar.');
@@ -928,6 +1103,7 @@ function transaccionesDelMesActual() {
                     renderCategorias();
                     renderResumenMensual();
                     actualizarSalarioBanner();
+                    renderMapaMovimientos();
                     if (document.getElementById('modalCalendario').classList.contains('visible')) {
                         renderCalendarioModal();
                     }
@@ -951,7 +1127,7 @@ function transaccionesDelMesActual() {
         }
 
         // ── MOSTRAR BANNER E INFO DEL SALARIO AUTO ────────
-       function actualizarSalarioBanner() {
+        function actualizarSalarioBanner() {
             const autoSal = transaccionesDelMesActual().find(t => esAutoSalario(t));
             const banner  = document.getElementById('salarioBanner');
             const pill    = document.getElementById('salarioPill');
@@ -1167,7 +1343,7 @@ function transaccionesDelMesActual() {
 
         // ── RESUMEN CATEGORÍAS ────────────────────────────
         function renderCategorias() {
-         const gastos = transaccionesDelMesActual().filter(t => t.tipo==='gasto');
+            const gastos = transaccionesDelMesActual().filter(t => t.tipo==='gasto');
             const total  = gastos.reduce((s,t)=>s+t.monto,0);
             const catMap = {};
             gastos.forEach(t => {
@@ -1193,7 +1369,7 @@ function transaccionesDelMesActual() {
         // ── FILTROS Y RENDER ──────────────────────────────
         function setFiltro(f, btn) {
             filtroActivo = f; paginaActual = 1;
-            document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('activo'));
+            document.querySelectorAll('.filtros-bar .filter-chip').forEach(c=>c.classList.remove('activo'));
             btn.classList.add('activo'); filtrarYRender();
         }
 
@@ -1208,10 +1384,10 @@ function transaccionesDelMesActual() {
             const busq = (document.getElementById('busqueda').value||'').toLowerCase();
 
             // Filtrar: SIEMPRE excluir el salario auto de la lista
-           let lista = transaccionesDelMesActual().filter(t => {
+            let lista = transaccionesDelMesActual().filter(t => {
                 if (esAutoSalario(t)) return false; // ← NUNCA aparece en la lista
                 if (filtroActivo!=='todos' && t.tipo!==filtroActivo) return false;
-                if (busq && !t.categoria.toLowerCase().includes(busq) && !(t.descripcion||'').toLowerCase().includes(busq)) return false;
+                if (busq && !t.categoria.toLowerCase().includes(busq) && !(t.descripcion||'').toLowerCase().includes(busq) && !(t.ubicacion_nombre||'').toLowerCase().includes(busq)) return false;
                 return true;
             });
 
@@ -1245,6 +1421,7 @@ function transaccionesDelMesActual() {
                     <div class="trans-info">
                         <div class="trans-nombre">${t.categoria}</div>
                         <div class="trans-detalle">${t.descripcion||'Sin descripción'}${fechaTag}</div>
+                        ${tieneUbic(t) ? `<div class="trans-lugar" onclick="verEnMapa(${t.id})" title="Ver en el mapa"><i class="fas fa-location-dot"></i><span>${escaparHTML(t.ubicacion_nombre || fmtCoords(t.latitud, t.longitud))}</span></div>` : ''}
                     </div>
                     <div class="trans-right">
                         <div class="trans-monto ${t.tipo}">
@@ -1431,9 +1608,9 @@ function transaccionesDelMesActual() {
                 const ingreso = Number(perfil.ingreso_mensual) || 0;
                 if (ingreso <= 0 || !perfil.fecha_salario) return;
                 function diaDeFechaStr(fechaStr) {
-                if (!fechaStr) return null;
-                const partes = fechaStr.split('-');
-                return partes.length >= 3 ? parseInt(partes[2], 10) : null;
+                    if (!fechaStr) return null;
+                    const partes = fechaStr.split('-');
+                    return partes.length >= 3 ? parseInt(partes[2], 10) : null;
                 }
                 const diaPago = diaDeFechaStr(perfil.fecha_salario);
                 if (!diaPago) return;
@@ -1467,10 +1644,420 @@ function transaccionesDelMesActual() {
                     await fetch('http://127.0.0.1:8000/api/transacciones/', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                        body: JSON.stringify({ tipo: 'ingreso', categoria: 'Salario', icono: '💼', monto: ingreso, descripcion: '__auto_salario__', fecha })
+                        body: JSON.stringify({ tipo: 'ingreso', categoria: 'Salario', icono: '💼', monto: ingreso, descripcion: '__auto_salario__', fecha, ...datosUbicSalario() })
                     });
                 }
             } catch(e) { console.error('Error verificando salario del mes:', e); }
+        }
+
+        // ════════════════════════════════════════════════
+        //  UBICACIONES — dónde se hizo cada gasto/ingreso
+        //  Mapa: Leaflet + OpenStreetMap (estilo Google Maps,
+        //  gratis y sin API key). Búsqueda de direcciones: Nominatim.
+        // ════════════════════════════════════════════════
+        const BOGOTA = [4.6533, -74.0836];
+        const NOMINATIM = 'https://nominatim.openstreetmap.org';
+        const ubic = { nueva: null, editar: null };   // {nombre, lat, lng}
+        let ubicEditarOriginal = null;                 // para saber si se quitó
+        let destinoMapa = 'nueva';
+        let mapaPicker = null, pinPicker = null, seleccionPicker = null;
+        let mapaMov = null, capaMov = null;
+        const marcadoresMov = {};
+        const filtroMapa = { tipo: 'todos', periodo: 'mes' };
+
+        const escaparHTML = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        const fmtCoords = (lat, lng) => `${Number(lat).toFixed(5)}, ${Number(lng).toFixed(5)}`;
+        // El backend puede devolver las coordenadas como texto ("4.65") o número:
+        // se normalizan siempre con Number() para que ni el mapa ni el ranking fallen.
+        const _num = v => (v === null || v === undefined || v === '') ? NaN : Number(v);
+        const latDe = t => _num(t.latitud);
+        const lngDe = t => _num(t.longitud);
+        const tieneUbic = t => Number.isFinite(latDe(t)) && Number.isFinite(lngDe(t));
+        const tipoDe = t => String(t.tipo || '').trim().toLowerCase();
+        // Dos movimientos a <= 75 m cuentan como el MISMO lugar (igual que en los reportes)
+        const RADIO_MISMO_LUGAR_M = 75;
+        function distM(a, b) {
+            const R = 6371000, rad = x => x * Math.PI / 180;
+            const dLat = rad(b.lat - a.lat), dLng = rad(b.lng - a.lng);
+            const h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLng / 2) ** 2;
+            return 2 * R * Math.asin(Math.sqrt(h));
+        }
+        const linkGoogleMaps = (lat, lng) => `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+        const temaEsClaro = () => document.body.classList.contains('tema-claro');
+
+        function capaTiles() {
+            // Mapa de OpenStreetMap: gratis y SIN API key.
+            // En modo oscuro/azul se oscurece con un filtro CSS (.tiles-fb).
+            return L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19, className: 'tiles-fb',
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            });
+        }
+
+        function iconoPin(tipo, emoji) {
+            return L.divIcon({
+                className: '', iconSize: [34, 34], iconAnchor: [17, 38], popupAnchor: [0, -36],
+                html: `<div class="pin-fb ${tipo}"><span>${emoji || '📍'}</span></div>`
+            });
+        }
+
+        // Nombre corto y legible a partir de la respuesta de Nominatim
+        function nombreLugar(r) {
+            if (!r) return '';
+            const a = r.address || {};
+            const via = [a.road, a.house_number].filter(Boolean).join(' #');
+            const zona = a.neighbourhood || a.suburb || a.city_district || a.city || a.town || a.village || '';
+            const partes = [r.name, via, zona].filter(Boolean);
+            const unicas = partes.filter((p, i) => partes.indexOf(p) === i);
+            const nombre = unicas.slice(0, 3).join(', ') || (r.display_name || '').split(',').slice(0, 3).join(',');
+            return nombre.slice(0, 255);
+        }
+
+        async function geocodificarInverso(lat, lng) {
+            try {
+                const res = await fetch(`${NOMINATIM}/reverse?format=jsonv2&addressdetails=1&zoom=18&accept-language=es&lat=${lat}&lon=${lng}`);
+                if (!res.ok) throw 0;
+                return nombreLugar(await res.json()) || 'Ubicación seleccionada';
+            } catch { return 'Ubicación seleccionada'; }
+        }
+
+        function pintarUbicacion(destino) {
+            const suf = destino === 'nueva' ? 'Nueva' : 'Editar';
+            const u = ubic[destino];
+            document.getElementById('ubicAcciones' + suf).style.display = u ? 'none' : 'grid';
+            document.getElementById('ubicElegida' + suf).classList.toggle('visible', !!u);
+            if (u) {
+                document.getElementById('ubicNombre' + suf).textContent = u.nombre;
+                document.getElementById('ubicCoords' + suf).textContent = fmtCoords(u.lat, u.lng);
+            }
+        }
+
+        function quitarUbicacion(destino) { ubic[destino] = null; pintarUbicacion(destino); }
+
+        function obtenerPosicion() {
+            return new Promise((ok, fallo) => {
+                if (!navigator.geolocation) return fallo(new Error('Tu navegador no permite obtener la ubicación.'));
+                navigator.geolocation.getCurrentPosition(
+                    p => ok([p.coords.latitude, p.coords.longitude]),
+                    e => fallo(new Error(e.code === 1
+                        ? 'Diste "Bloquear" al permiso de ubicación. Actívalo en el candado de la barra de direcciones o elige el lugar en el mapa.'
+                        : 'No se pudo obtener tu ubicación. Intenta elegirla en el mapa.')),
+                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 });
+            });
+        }
+
+        async function usarMiUbicacion(destino) {
+            const btn = document.getElementById(destino === 'nueva' ? 'btnUbicActual' : 'btnUbicActualEditar');
+            const html = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Ubicando...';
+            try {
+                const [lat, lng] = await obtenerPosicion();
+                ubic[destino] = { lat, lng, nombre: await geocodificarInverso(lat, lng) };
+                pintarUbicacion(destino);
+            } catch (e) { alert(e.message); }
+            btn.disabled = false;
+            btn.innerHTML = html;
+        }
+
+        // ── Modal selector ──────────────────────────────
+        function abrirSelectorMapa(destino) {
+            destinoMapa = destino;
+            seleccionPicker = ubic[destino] ? { ...ubic[destino] } : null;
+            document.getElementById('mapaBusqueda').value = '';
+            document.getElementById('mapaResultados').classList.remove('visible');
+            document.getElementById('modalMapa').classList.add('visible');
+            if (!mapaPicker) {
+                mapaPicker = L.map('mapaPicker', { zoomControl: true }).setView(BOGOTA, 12);
+                capaTiles().addTo(mapaPicker);
+                mapaPicker.on('click', e => moverPin(e.latlng.lat, e.latlng.lng));
+            }
+            setTimeout(() => {
+                mapaPicker.invalidateSize();
+                if (seleccionPicker) {
+                    ponerPin(seleccionPicker.lat, seleccionPicker.lng);
+                    mapaPicker.setView([seleccionPicker.lat, seleccionPicker.lng], 16);
+                } else {
+                    if (pinPicker) { mapaPicker.removeLayer(pinPicker); pinPicker = null; }
+                    mapaPicker.setView(BOGOTA, 12);
+                }
+                pintarSeleccion();
+            }, 60);
+        }
+
+        function cerrarSelectorMapa() { document.getElementById('modalMapa').classList.remove('visible'); }
+        document.getElementById('modalMapa').addEventListener('click', function(e) { if (e.target === this) cerrarSelectorMapa(); });
+
+        function ponerPin(lat, lng) {
+            if (!pinPicker) {
+                pinPicker = L.marker([lat, lng], { draggable: true, icon: iconoPin('nuevo', '📍') }).addTo(mapaPicker);
+                pinPicker.on('dragend', () => { const p = pinPicker.getLatLng(); moverPin(p.lat, p.lng); });
+            } else pinPicker.setLatLng([lat, lng]);
+        }
+
+        let tokenInverso = 0;
+        async function moverPin(lat, lng, nombre) {
+            ponerPin(lat, lng);
+            seleccionPicker = { lat, lng, nombre: nombre || 'Buscando dirección...' };
+            pintarSeleccion();
+            if (!nombre) {
+                const mio = ++tokenInverso;
+                const n = await geocodificarInverso(lat, lng);
+                if (mio === tokenInverso && seleccionPicker) { seleccionPicker.nombre = n; pintarSeleccion(); }
+            }
+        }
+
+        function pintarSeleccion() {
+            const div = document.getElementById('mapaSeleccion');
+            const btn = document.getElementById('btnConfirmarUbic');
+            if (!seleccionPicker) {
+                div.innerHTML = '<i class="fas fa-location-dot"></i><span>Aún no has elegido un punto</span>';
+                btn.disabled = true; return;
+            }
+            div.innerHTML = `<i class="fas fa-location-dot"></i><span><strong>${escaparHTML(seleccionPicker.nombre)}</strong><br><small style="opacity:.7">${fmtCoords(seleccionPicker.lat, seleccionPicker.lng)}</small></span>`;
+            btn.disabled = seleccionPicker.nombre === 'Buscando dirección...';
+        }
+
+        async function buscarLugar() {
+            const q = document.getElementById('mapaBusqueda').value.trim();
+            const cont = document.getElementById('mapaResultados');
+            if (q.length < 3) return;
+            cont.innerHTML = '<div class="mapa-resultado"><i class="fas fa-spinner fa-spin"></i> Buscando...</div>';
+            cont.classList.add('visible');
+            try {
+                const c = mapaPicker.getCenter();
+                // viewbox: prioriza resultados cerca de donde está el mapa
+                const vb = [c.lng - 0.5, c.lat + 0.5, c.lng + 0.5, c.lat - 0.5].join(',');
+                const res = await fetch(`${NOMINATIM}/search?format=jsonv2&addressdetails=1&limit=6&accept-language=es&countrycodes=co&viewbox=${vb}&q=${encodeURIComponent(q)}`);
+                const datos = res.ok ? await res.json() : [];
+                if (!datos.length) { cont.innerHTML = '<div class="mapa-resultado"><i class="fas fa-circle-info"></i> No se encontró ese lugar. Prueba con otra dirección o toca el mapa.</div>'; return; }
+                window._resultadosMapa = datos;
+                cont.innerHTML = datos.map((r, i) => `
+                    <div class="mapa-resultado" onclick="elegirResultado(${i})">
+                        <i class="fas fa-location-dot"></i><span>${escaparHTML(r.display_name)}</span>
+                    </div>`).join('');
+            } catch {
+                cont.innerHTML = '<div class="mapa-resultado"><i class="fas fa-triangle-exclamation"></i> Sin conexión con el buscador de mapas.</div>';
+            }
+        }
+        document.getElementById('mapaBusqueda').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); buscarLugar(); } });
+
+        function elegirResultado(i) {
+            const r = window._resultadosMapa[i];
+            const lat = parseFloat(r.lat), lng = parseFloat(r.lon);
+            document.getElementById('mapaResultados').classList.remove('visible');
+            mapaPicker.setView([lat, lng], 17);
+            moverPin(lat, lng, nombreLugar(r));
+        }
+
+        async function centrarEnMiUbicacion() {
+            try {
+                const [lat, lng] = await obtenerPosicion();
+                mapaPicker.setView([lat, lng], 17);
+                moverPin(lat, lng);
+            } catch (e) { alert(e.message); }
+        }
+
+        function confirmarUbicacion() {
+            if (!seleccionPicker) return;
+            if (destinoMapa === 'salario') {
+                const u = { ...seleccionPicker };
+                cerrarSelectorMapa();
+                aplicarUbicacionSalario(u);
+                return;
+            }
+            ubic[destinoMapa] = { ...seleccionPicker };
+            pintarUbicacion(destinoMapa);
+            cerrarSelectorMapa();
+        }
+
+        // ── Ubicación del salario automático ─────────────
+        // El salario auto no aparece en la lista (no se puede editar con el lápiz),
+        // así que su lugar de pago se elige desde el banner o el aviso del mapa.
+        const CLAVE_UBIC_SALARIO = 'finanbot_ubic_salario';
+        function leerUbicSalario() {
+            try {
+                const u = JSON.parse(localStorage.getItem(CLAVE_UBIC_SALARIO) || 'null');
+                return (u && Number.isFinite(Number(u.lat)) && Number.isFinite(Number(u.lng))) ? u : null;
+            } catch { return null; }
+        }
+        function datosUbicSalario() {
+            const u = leerUbicSalario();
+            return u ? { ubicacion_nombre: u.nombre, latitud: Number(Number(u.lat).toFixed(7)), longitud: Number(Number(u.lng).toFixed(7)) } : {};
+        }
+        function ubicarSalario() {
+            ubic.salario = leerUbicSalario();
+            abrirSelectorMapa('salario');
+        }
+        async function aplicarUbicacionSalario(u) {
+            localStorage.setItem(CLAVE_UBIC_SALARIO, JSON.stringify(u));
+            const datos = { ubicacion_nombre: u.nombre, latitud: Number(Number(u.lat).toFixed(7)), longitud: Number(Number(u.lng).toFixed(7)) };
+            try {
+                // Se aplica a todos los salarios automáticos ya registrados
+                for (const t of transacciones.filter(esAutoSalario)) {
+                    await fetch(`http://127.0.0.1:8000/api/transacciones/${t.id}`, {
+                        method: 'PUT',
+                        headers: {'Content-Type':'application/json','Authorization':'Bearer '+token},
+                        body: JSON.stringify(datos)
+                    });
+                }
+                await cargarTransacciones();
+            } catch (e) { console.error(e); alert('No se pudo guardar la ubicación del salario.'); }
+        }
+
+        // Datos que se mandan al backend
+        function datosUbicacion(destino) {
+            const u = ubic[destino];
+            if (u) return { ubicacion_nombre: u.nombre, latitud: Number(Number(u.lat).toFixed(7)), longitud: Number(Number(u.lng).toFixed(7)) };
+            if (destino === 'editar' && ubicEditarOriginal) return { quitar_ubicacion: true };
+            return {};
+        }
+
+        // ── Mapa de movimientos ─────────────────────────
+        function setFiltroMapa(clave, valor, btn) {
+            filtroMapa[clave] = valor;
+            const attr = clave === 'tipo' ? 'data-mapa-tipo' : 'data-mapa-periodo';
+            document.querySelectorAll(`[${attr}]`).forEach(b => b.classList.toggle('activo', b === btn));
+            renderMapaMovimientos(true);
+        }
+
+        function pasaFiltroMapa(t) {
+            const mes = obtenerMesActualStr();
+            return (filtroMapa.tipo === 'todos' || tipoDe(t) === filtroMapa.tipo) &&
+                   (filtroMapa.periodo === 'todo' || (t.fecha || '').slice(0, 7) === mes);
+        }
+        function movimientosConUbicacion() {
+            return transacciones.filter(t => tieneUbic(t) && pasaFiltroMapa(t));
+        }
+        // Movimientos del filtro actual que no tienen ubicación (no se pueden dibujar)
+        function movimientosSinUbicacion() {
+            return transacciones.filter(t => !tieneUbic(t) && !esAutoSalario(t) && pasaFiltroMapa(t));
+        }
+
+        function popupMovimiento(t) {
+            return `
+                <div class="popup-fb-cat">${getIcono(t.categoria, t.tipo)} ${escaparHTML(t.categoria)}</div>
+                <div class="popup-fb-monto ${t.tipo}">${t.tipo === 'gasto' ? '-' : '+'}$${Number(t.monto).toLocaleString('es-CO')}</div>
+                <div class="popup-fb-meta">${formatFechaCorta(t.fecha)}${t.descripcion ? ' · ' + escaparHTML(descripcionMostrar(t)) : ''}</div>
+                <div class="popup-fb-meta"><i class="fas fa-location-dot"></i> ${escaparHTML(t.ubicacion_nombre || fmtCoords(t.latitud, t.longitud))}</div>
+                <a class="popup-fb-link" href="${linkGoogleMaps(t.latitud, t.longitud)}" target="_blank" rel="noopener">
+                    <i class="fas fa-arrow-up-right-from-square"></i> Abrir en Google Maps</a>`;
+        }
+
+        function renderMapaMovimientos(ajustarVista = true) {
+            if (!window.L) {
+                document.getElementById('mapaMovimientos').innerHTML = '<div class="mapa-vacio" style="padding:20px">No se pudo cargar el mapa (revisa tu conexión a internet).</div>';
+                return;
+            }
+            if (!mapaMov) {
+                mapaMov = L.map('mapaMovimientos', { scrollWheelZoom: false }).setView(BOGOTA, 12);
+                capaTiles().addTo(mapaMov);
+                capaMov = L.layerGroup().addTo(mapaMov);
+            }
+            capaMov.clearLayers();
+            Object.keys(marcadoresMov).forEach(k => delete marcadoresMov[k]);
+
+            const lista = movimientosConUbicacion();
+            lista.forEach(t => {
+                const m = L.marker([latDe(t), lngDe(t)], { icon: iconoPin(tipoDe(t), getIcono(t.categoria, t.tipo)) })
+                    .bindPopup(popupMovimiento(t));
+                capaMov.addLayer(m);
+                marcadoresMov[t.id] = m;
+            });
+            if (ajustarVista && lista.length) {
+                const b = L.latLngBounds(lista.map(t => [latDe(t), lngDe(t)]));
+                mapaMov.fitBounds(b, { padding: [40, 40], maxZoom: 15 });
+            }
+            renderTopLugares(lista, movimientosSinUbicacion());
+        }
+
+        // Ranking de lugares: gastos, ingresos o ambos según el filtro del mapa
+        function renderTopLugares(lista, sinUbic = []) {
+            const cont = document.getElementById('mapaTopLugares');
+            const titulo = document.getElementById('mapaTopTitulo');
+            const tipoFiltro = filtroMapa.tipo;
+
+            titulo.innerHTML = '<i class="fas fa-ranking-star"></i> ' + (
+                tipoFiltro === 'gasto'   ? 'Lugares donde más gastas' :
+                tipoFiltro === 'ingreso' ? 'Lugares donde más ingresas' :
+                                           'Lugares con más movimiento');
+
+            const tipos = tipoFiltro === 'todos' ? ['gasto', 'ingreso'] : [tipoFiltro];
+
+            // Mismo lugar = a <= RADIO_MISMO_LUGAR_M metros, sin importar cómo se
+            // escribió el nombre. Cada grupo muestra el nombre más frecuente y
+            // las coordenadas promedio (punto exacto).
+            const topPorTipo = tipo => {
+                const grupos = [];
+                lista.filter(t => tipoDe(t) === tipo).forEach(t => {
+                    const p = { lat: latDe(t), lng: lngDe(t) };
+                    let g = grupos.find(x => distM(x, p) <= RADIO_MISMO_LUGAR_M);
+                    if (!g) {
+                        g = { tipo, lat: p.lat, lng: p.lng, sLat: 0, sLng: 0, total: 0, n: 0, id: t.id, nombres: {} };
+                        grupos.push(g);
+                    }
+                    g.n++; g.total += Number(t.monto);
+                    g.sLat += p.lat; g.sLng += p.lng;
+                    g.lat = g.sLat / g.n; g.lng = g.sLng / g.n;
+                    const nom = (t.ubicacion_nombre || '').trim();
+                    if (nom) g.nombres[nom] = (g.nombres[nom] || 0) + 1;
+                });
+                grupos.forEach(g => {
+                    const top = Object.entries(g.nombres).sort((a, b) => b[1] - a[1])[0];
+                    g.nombre = top ? top[0] : fmtCoords(g.lat, g.lng);
+                });
+                return grupos.sort((a, b) => b.total - a.total).slice(0, 5);
+            };
+
+            const items = tipos.flatMap(topPorTipo);
+
+            // Aviso: movimientos del filtro actual que no tienen ubicación
+            const n = sinUbic.length;
+            const palabra = tipoFiltro === 'ingreso' ? 'ingreso' : tipoFiltro === 'gasto' ? 'gasto' : 'movimiento';
+            const salSin = transacciones.filter(t => esAutoSalario(t) && !tieneUbic(t) && pasaFiltroMapa(t));
+            const notaSalario = salSin.length
+                ? `<div class="mapa-vacio"><i class="fas fa-briefcase"></i> Tu <strong>salario automático</strong> no tiene ubicación, por eso no sale en el mapa. <button type="button" class="btn-accion" style="display:inline-flex;margin-top:6px;" onclick="ubicarSalario()"><i class="fas fa-location-dot"></i> Ubicar mi salario en el mapa</button></div>`
+                : '';
+            const nota = notaSalario + (n ? `<div class="mapa-vacio"><i class="fas fa-circle-info"></i> ${n} ${palabra}${n !== 1 ? 's' : ''} sin ubicación (por eso no salen en el mapa). Edítalos con el lápiz <i class="fas fa-pen"></i> y elige <strong>“Mi ubicación”</strong> o <strong>“Elegir en mapa”</strong>.</div>` : '');
+
+            if (!items.length) {
+                const sinNada = !transacciones.some(tieneUbic);
+                cont.innerHTML = `<div class="mapa-vacio">${sinNada
+                    ? '<i class="fas fa-location-dot"></i> Aún no tienes movimientos con ubicación.<br>Al registrar un gasto o ingreso usa <strong>“Mi ubicación”</strong> o <strong>“Elegir en mapa”</strong> y aparecerá aquí.'
+                    : 'No hay movimientos con ubicación para este filtro.'}</div>${nota}`;
+                return;
+            }
+
+            // Numeración independiente por tipo
+            const contador = { gasto: 0, ingreso: 0 };
+            cont.innerHTML = items.map(g => {
+                const rank = ++contador[g.tipo];
+                const pal = g.tipo === 'gasto' ? 'gasto' : 'ingreso';
+                return `
+                <div class="mapa-top-item" onclick="verEnMapa(${g.id})">
+                    <div class="mapa-top-rank">${rank}</div>
+                    <div class="mapa-top-info">
+                        <div class="mapa-top-nombre">${escaparHTML(g.nombre)}</div>
+                        <div class="mapa-top-sub">${g.n} ${pal}${g.n !== 1 ? 's' : ''} · ${fmtCoords(g.lat, g.lng)}</div>
+                    </div>
+                    <div class="mapa-top-monto ${g.tipo}">${g.tipo === 'ingreso' ? '+' : '-'}$${Math.round(g.total).toLocaleString('es-CO')}</div>
+                </div>`;
+            }).join('') + nota;
+        }
+
+        // Desde la lista o el ranking: lleva al mapa y abre el pin
+        function verEnMapa(id) {
+            const t = transacciones.find(x => x.id === id);
+            if (!t || !tieneUbic(t)) return;
+            if (!marcadoresMov[id]) {   // está oculto por el filtro → mostrar todo
+                filtroMapa.tipo = 'todos'; filtroMapa.periodo = 'todo';
+                document.querySelectorAll('[data-mapa-tipo]').forEach(b => b.classList.toggle('activo', b.dataset.mapaTipo === 'todos'));
+                document.querySelectorAll('[data-mapa-periodo]').forEach(b => b.classList.toggle('activo', b.dataset.mapaPeriodo === 'todo'));
+                renderMapaMovimientos(false);
+            }
+            document.getElementById('cardMapa').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            mapaMov.setView([latDe(t), lngDe(t)], 16);
+            setTimeout(() => marcadoresMov[id] && marcadoresMov[id].openPopup(), 350);
         }
 
         // ── INIT ──────────────────────────────────────────

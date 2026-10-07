@@ -10,7 +10,10 @@ from sqlalchemy.orm import Session
 from database import get_db
 from extensions import obtener_usuario_id_opcional
 from finanbot_ia import FinanBotIA
-from models import Transaccion, MetaAhorro, Usuario, Chat, nuevo_conversacion_id, normalizar_categoria
+from models import (
+    Transaccion, MetaAhorro, Usuario, Chat, nuevo_conversacion_id,
+    normalizar_categoria, eliminar_tiendas_sin_transacciones,
+)
 
 
 def obtener_categoria(nombre: str, tipo: str) -> str:
@@ -63,6 +66,67 @@ def _guardar_chat(db: Session, uid: int, conv_id_body, mensaje: str, respuesta: 
 router = APIRouter()
 sesiones   = {}
 _contextos = {}
+
+# ══════════════════════════════════════════════════════════════════
+#  UBICACIÓN REAL Y PRECISA
+#  chat.html manda en cada mensaje:
+#     "ubicacion": {"lat":.., "lng":.., "precision": metros, "nombre": "..."}
+#  Se guarda SOLO si es una lectura real (rango válido, no 0,0 y con
+#  precisión razonable). Nunca se inventan coordenadas ni nombres.
+# ══════════════════════════════════════════════════════════════════
+PRECISION_MAX_GUARDAR_M = 1000   # peor que esto = ubicación por IP/WiFi, no sirve
+PRECISION_BUENA_M = 100
+
+
+def _leer_ubicacion(raw):
+    """Devuelve (ubic|None, precision_rechazada|None)."""
+    if not isinstance(raw, dict):
+        return None, None
+    try:
+        lat = float(raw.get('lat', raw.get('latitud')))
+        lng = float(raw.get('lng', raw.get('longitud')))
+    except (TypeError, ValueError):
+        return None, None
+    if not (-90 <= lat <= 90 and -180 <= lng <= 180) or (lat == 0 and lng == 0):
+        return None, None
+    try:
+        prec = raw.get('precision', raw.get('precision_m'))
+        prec = float(prec) if prec not in (None, '') else None
+    except (TypeError, ValueError):
+        prec = None
+    if prec is not None and prec > PRECISION_MAX_GUARDAR_M:
+        return None, prec
+    nombre = str(raw.get('nombre') or '').strip()[:150] or None
+    return {'lat': round(lat, 7), 'lng': round(lng, 7), 'precision': prec, 'nombre': nombre}, None
+
+
+def _campos_ubic(ctx) -> dict:
+    """kwargs para Transaccion(...) con la ubicación de este mensaje."""
+    u = (ctx or {}).get('ubicacion_actual')
+    if not u:
+        return {}
+    return {'ubicacion_nombre': u['nombre'], 'latitud': u['lat'], 'longitud': u['lng']}
+
+
+def _get(o, k):
+    return o.get(k) if isinstance(o, dict) else getattr(o, k, None)
+
+
+def _datos_ubic(o, ctx=None) -> dict:
+    """Campos de ubicación para devolver en la acción (desde la transacción
+    ya guardada, no desde lo que se pidió). Vacío si no tiene coordenadas."""
+    try:
+        lat, lng = _get(o, 'latitud'), _get(o, 'longitud')
+        if lat is None or lng is None:
+            return {}
+        d = {'ubicacion_nombre': _get(o, 'ubicacion_nombre'),
+             'latitud': float(lat), 'longitud': float(lng)}
+        u = (ctx or {}).get('ubicacion_actual')
+        if u and u.get('precision') is not None:
+            d['precision_m'] = u['precision']
+        return d
+    except (TypeError, ValueError):
+        return {}
 
 # ══════════════════════════════════════════════════════════════════
 #  NORMALIZACIÓN DE TEXTO (sin cambios — es Python puro)
@@ -213,6 +277,10 @@ def mensaje(
     uid = int(usuario_id) if usuario_id else None
     accion = None
 
+    ubic_rechazada = None
+    if ctx is not None:
+        ctx['ubicacion_actual'], ubic_rechazada = _leer_ubicacion(body.get('ubicacion'))
+
     if uid and ctx:
         accion = _resolver_contexto(msg_usuario, uid, ctx, session_key, db)
 
@@ -231,6 +299,13 @@ def mensaje(
     else:
         respuesta, acciones_ui = bot.responder_con_acciones(msg_usuario, ctx, accion)
         respuesta = _agregar_disclaimers_si_necesario(respuesta, msg_usuario)
+
+    # Si se registró algo pero el GPS era demasiado impreciso, se dice claro
+    # (en vez de guardar un lugar falso).
+    if (ubic_rechazada is not None and accion
+            and accion.get('tipo') in ('gasto_registrado', 'ingreso_registrado')):
+        respuesta += (f"\n\n⚠️ *No guardé la ubicación: el GPS tenía una precisión de ±{ubic_rechazada:,.0f} m "
+                      f"y así no sería un lugar real. Actívalo en un lugar abierto o márcalo en el mapa de Mis finanzas.*")
 
     conversacion_id = None
     if uid:
@@ -389,13 +464,14 @@ def _resolver_contexto(msg: str, uid: int, ctx: dict, session_key: str, db: Sess
                 icono = '🍔' if accion_pendiente == 'gasto' else '💰'
                 cat_ok = obtener_categoria(cat_texto, accion_pendiente)
                 t = Transaccion(usuario_id=uid, categoria=cat_ok, tipo=accion_pendiente, monto=monto,
-                                 descripcion=desc or 'Registrado por FinanBot', fecha=date.today())
+                                 descripcion=desc or 'Registrado por FinanBot', fecha=date.today(),
+                                 **_campos_ubic(ctx))
                 db.add(t); db.commit()
                 _contextos[session_key] = {
                     'esperando': None, 'ultimo_tipo': f'{accion_pendiente}_registrado',
                     'datos': {'monto': monto, 'categoria': cat_ok}
                 }
-                return {'tipo': f'{accion_pendiente}_registrado', 'monto': monto, 'categoria': cat_ok, 'id': t.id}
+                return {'tipo': f'{accion_pendiente}_registrado', 'monto': monto, 'categoria': cat_ok, 'id': t.id, **_datos_ubic(t, ctx)}
             except Exception as e:
                 print(f'[FinanBot] {accion_pendiente} categoria contexto: {e}')
         return None
@@ -442,9 +518,13 @@ def _resolver_contexto(msg: str, uid: int, ctx: dict, session_key: str, db: Sess
             if not t or t.usuario_id != uid:
                 return None
             if sub == 'eliminar':
-                db.delete(t); db.commit()
+                tienda_id = t.tienda_id
+                db.delete(t)
+                eliminar_tiendas_sin_transacciones(db, [tienda_id])
+                db.commit()
                 _contextos[session_key] = {'esperando': None, 'ultimo_tipo': f'{entidad}_eliminado', 'datos': {}}
-                return {'tipo': f'{entidad}_eliminado', 'monto': elegido['monto'], 'categoria': elegido['categoria']}
+                return {'tipo': f'{entidad}_eliminado', 'monto': elegido['monto'], 'categoria': elegido['categoria'],
+                        **_datos_ubic(elegido)}
             else:
                 nuevo_monto = extraer_monto(msg) or datos_previos.get('monto')
                 if not (nuevo_monto and nuevo_monto > 0):
@@ -454,7 +534,8 @@ def _resolver_contexto(msg: str, uid: int, ctx: dict, session_key: str, db: Sess
                 db.commit()
                 _contextos[session_key] = {'esperando': None, 'ultimo_tipo': f'{entidad}_editado', 'datos': {}}
                 return {'tipo': f'{entidad}_editado', 'categoria': elegido['categoria'],
-                        'monto': nuevo_monto, 'monto_anterior': anterior, 'id': t.id}
+                        'monto': nuevo_monto, 'monto_anterior': anterior, 'id': t.id,
+                                **_datos_ubic(t)}
         except Exception as e:
             print(f'[FinanBot] {accion_pendiente} contexto: {e}')
         return None
@@ -507,7 +588,8 @@ def _resolver_contexto(msg: str, uid: int, ctx: dict, session_key: str, db: Sess
                     db.commit()
                     _contextos[session_key] = {'esperando': None, 'ultimo_tipo': f'{entidad}_editado', 'datos': {}}
                     return {'tipo': f'{entidad}_editado', 'categoria': datos_previos.get('categoria_objetivo', ''),
-                            'monto': nuevo_monto, 'monto_anterior': anterior, 'id': t.id}
+                            'monto': nuevo_monto, 'monto_anterior': anterior, 'id': t.id,
+                                **_datos_ubic(t)}
             except Exception as e:
                 print(f'[FinanBot] {entidad} editar contexto: {e}')
         return None
@@ -583,10 +665,11 @@ def _resolver_contexto(msg: str, uid: int, ctx: dict, session_key: str, db: Sess
             try:
                 cat_ok = obtener_categoria(cat, 'gasto')
                 t = Transaccion(usuario_id=uid, categoria=cat_ok, tipo='gasto', monto=monto,
-                                 descripcion=desc or 'Registrado por FinanBot', fecha=date.today())
+                                 descripcion=desc or 'Registrado por FinanBot', fecha=date.today(),
+                                 **_campos_ubic(ctx))
                 db.add(t); db.commit()
                 _contextos[session_key] = {'esperando': None, 'ultimo_tipo': 'gasto_registrado', 'datos': {}}
-                return {'tipo': 'gasto_registrado', 'monto': monto, 'categoria': cat_ok, 'id': t.id}
+                return {'tipo': 'gasto_registrado', 'monto': monto, 'categoria': cat_ok, 'id': t.id, **_datos_ubic(t, ctx)}
             except Exception as e:
                 print(f'[FinanBot] Gasto contexto: {e}')
 
@@ -604,10 +687,11 @@ def _resolver_contexto(msg: str, uid: int, ctx: dict, session_key: str, db: Sess
             try:
                 cat_ok = obtener_categoria(cat, 'ingreso')
                 t = Transaccion(usuario_id=uid, categoria=cat_ok, tipo='ingreso', monto=monto,
-                                 descripcion=desc or 'Registrado por FinanBot', fecha=date.today())
+                                 descripcion=desc or 'Registrado por FinanBot', fecha=date.today(),
+                                 **_campos_ubic(ctx))
                 db.add(t); db.commit()
                 _contextos[session_key] = {'esperando': None, 'ultimo_tipo': 'ingreso_registrado', 'datos': {}}
-                return {'tipo': 'ingreso_registrado', 'monto': monto, 'categoria': cat_ok, 'id': t.id}
+                return {'tipo': 'ingreso_registrado', 'monto': monto, 'categoria': cat_ok, 'id': t.id, **_datos_ubic(t, ctx)}
             except Exception as e:
                 print(f'[FinanBot] Ingreso contexto: {e}')
 
@@ -674,7 +758,21 @@ def _cargar_contexto(uid: int, db: Session):
                 'id': t.id, 'tipo': t.tipo, 'monto': float(t.monto),
                 'categoria': t.categoria or 'Otros gastos',
                 'descripcion': t.descripcion, 'fecha': str(t.fecha),
+                'ubicacion_nombre': getattr(t, 'ubicacion_nombre', None),
+                'latitud': float(t.latitud) if getattr(t, 'latitud', None) is not None else None,
+                'longitud': float(t.longitud) if getattr(t, 'longitud', None) is not None else None,
             } for t in sorted(transacciones, key=lambda x: x.fecha, reverse=True)[:10]],
+            # Todos los movimientos del mes actual (para "¿dónde gasto más?").
+            # El salario automático sin coordenadas no cuenta como "sin lugar".
+            'movimientos': [{
+                'id': t.id, 'tipo': t.tipo, 'monto': float(t.monto),
+                'categoria': t.categoria or 'Otros gastos', 'fecha': str(t.fecha),
+                'ubicacion_nombre': getattr(t, 'ubicacion_nombre', None),
+                'latitud': float(t.latitud) if getattr(t, 'latitud', None) is not None else None,
+                'longitud': float(t.longitud) if getattr(t, 'longitud', None) is not None else None,
+            } for t in transacciones
+              if t.fecha and t.fecha.year == date.today().year and t.fecha.month == date.today().month
+              and not (t.descripcion == '__auto_salario__' and getattr(t, 'latitud', None) is None)],
             'ingreso_mensual': float(usuario.ingreso_mensual or 0),
             'meta_ahorro_mensual': float(usuario.meta_ahorro or 0),
             'usuario_id': uid, 'usuario_obj': usuario,
@@ -711,6 +809,10 @@ INGRESO_KW   = ['ingreso','ingresos','salario','sueldo','cobré','cobre','gané'
 SIMULADOR_KW = ['simula','simulacion','simulación','simulador','simular']
 PERFIL_KW    = ['nombre','correo','email','mi nombre','mi correo','llámame','llamame','salario mensual',
                 'ingreso mensual','meta mensual','meta_ahorro']
+LUGAR_KW     = ['donde gasto','dónde gasto','donde he gastado','dónde he gastado','donde gaste','dónde gasté',
+                'donde recibo','dónde recibo','donde cobro','dónde cobro','donde me pagan','dónde me pagan',
+                'mis lugares','lugares donde','lugares en los que','mapa de gastos','mapa de ingresos',
+                'en que lugar','en qué lugar','donde mas gasto','dónde más gasto']
 REPORTE_KW   = ['reporte','informe','exportar','descargar reporte','descargar informe','hazme un reporte',
                 'genera un reporte','quiero el reporte','pdf','excel']
 CALCULO_KW   = ['suma','resta','multiplica','divide','calcula','cuanto es','cuánto es','cuanto son',
@@ -798,6 +900,12 @@ def ejecutar_accion(mensaje: str, uid: int, ctx: dict, db: Session):
                 'resumen': {'balance': ctx.get('balance', 0), 'total_ingresos': ctx.get('total_ingresos', 0),
                             'total_gastos': ctx.get('total_gastos', 0), 'num_metas': ctx.get('num_metas', 0),
                             'num_transacciones': ctx.get('num_transacciones', 0)}}
+
+    if _t(msg, LUGAR_KW):
+        es_ing = _t(msg, ['recibo', 'cobro', 'me pagan', 'ingreso'])
+        tipo_l = 'ingreso' if es_ing else 'gasto'
+        return {'tipo': 'consulta_lugares', 'filtro_tipo': tipo_l,
+                'movimientos': [m for m in ctx.get('movimientos', []) if m['tipo'] == tipo_l]}
 
     if _t(msg, REPORTE_KW):
         tipo_rep = 'excel' if any(p in msg for p in ['excel', 'xlsx']) else 'pdf'
@@ -984,7 +1092,8 @@ def ejecutar_accion(mensaje: str, uid: int, ctx: dict, db: Session):
                         t.monto = nuevo_monto
                         db.commit()
                         return {'tipo': 'gasto_editado', 'categoria': g['categoria'],
-                                'monto': nuevo_monto, 'monto_anterior': anterior, 'id': t.id}
+                                'monto': nuevo_monto, 'monto_anterior': anterior, 'id': t.id,
+                                **_datos_ubic(t)}
                 except Exception as e:
                     print(f'[FinanBot] Gasto editar: {e}')
             return {'tipo': 'pide_monto', 'contexto': 'gasto_editar',
@@ -1000,9 +1109,10 @@ def ejecutar_accion(mensaje: str, uid: int, ctx: dict, db: Session):
                 try:
                     cat_ok = obtener_categoria(cat, 'gasto')
                     t = Transaccion(usuario_id=uid, categoria=cat_ok, tipo='gasto', monto=monto,
-                                     descripcion=desc or 'Registrado por FinanBot', fecha=date.today())
+                                     descripcion=desc or 'Registrado por FinanBot', fecha=date.today(),
+                                 **_campos_ubic(ctx))
                     db.add(t); db.commit()
-                    return {'tipo': 'gasto_registrado', 'monto': monto, 'categoria': cat_ok, 'id': t.id}
+                    return {'tipo': 'gasto_registrado', 'monto': monto, 'categoria': cat_ok, 'id': t.id, **_datos_ubic(t, ctx)}
                 except Exception as e:
                     print(f'[FinanBot] Gasto crear: {e}')
             return {'tipo': 'pide_monto', 'contexto': 'gasto'}
@@ -1017,8 +1127,11 @@ def ejecutar_accion(mensaje: str, uid: int, ctx: dict, db: Session):
             try:
                 t = db.query(Transaccion).get(g['id'])
                 if t and t.usuario_id == uid:
-                    db.delete(t); db.commit()
-                    return {'tipo': 'gasto_eliminado', 'monto': g['monto'], 'categoria': g['categoria']}
+                    tienda_id = t.tienda_id
+                    db.delete(t)
+                    eliminar_tiendas_sin_transacciones(db, [tienda_id])
+                    db.commit()
+                    return {'tipo': 'gasto_eliminado', 'monto': g['monto'], 'categoria': g['categoria'], **_datos_ubic(g)}
             except Exception as e:
                 print(f'[FinanBot] Gasto eliminar: {e}')
 
@@ -1026,7 +1139,8 @@ def ejecutar_accion(mensaje: str, uid: int, ctx: dict, db: Session):
             return {'tipo': 'consulta_gastos', 'num_gastos': ctx.get('num_gastos', 0),
                     'total_gastos': ctx.get('total_gastos', 0),
                     'gastos_por_categoria': ctx.get('gastos_por_categoria', {}),
-                    'recientes': [t for t in ctx.get('transacciones_recientes', []) if t['tipo'] == 'gasto'][:5]}
+                    'recientes': [t for t in ctx.get('transacciones_recientes', []) if t['tipo'] == 'gasto'][:5],
+                    'movimientos': [m for m in ctx.get('movimientos', []) if m['tipo'] == 'gasto']}
 
     # ── INGRESOS ─────────────────────────────────────────────────
     if _t(msg, INGRESO_KW):
@@ -1049,7 +1163,8 @@ def ejecutar_accion(mensaje: str, uid: int, ctx: dict, db: Session):
                         t.monto = nuevo_monto
                         db.commit()
                         return {'tipo': 'ingreso_editado', 'categoria': i['categoria'],
-                                'monto': nuevo_monto, 'monto_anterior': anterior, 'id': t.id}
+                                'monto': nuevo_monto, 'monto_anterior': anterior, 'id': t.id,
+                                **_datos_ubic(t)}
                 except Exception as e:
                     print(f'[FinanBot] Ingreso editar: {e}')
             return {'tipo': 'pide_monto', 'contexto': 'ingreso_editar',
@@ -1065,9 +1180,10 @@ def ejecutar_accion(mensaje: str, uid: int, ctx: dict, db: Session):
                 try:
                     cat_ok = obtener_categoria(cat, 'ingreso')
                     t = Transaccion(usuario_id=uid, categoria=cat_ok, tipo='ingreso', monto=monto,
-                                     descripcion=desc or 'Registrado por FinanBot', fecha=date.today())
+                                     descripcion=desc or 'Registrado por FinanBot', fecha=date.today(),
+                                 **_campos_ubic(ctx))
                     db.add(t); db.commit()
-                    return {'tipo': 'ingreso_registrado', 'monto': monto, 'categoria': cat_ok, 'id': t.id}
+                    return {'tipo': 'ingreso_registrado', 'monto': monto, 'categoria': cat_ok, 'id': t.id, **_datos_ubic(t, ctx)}
                 except Exception as e:
                     print(f'[FinanBot] Ingreso crear: {e}')
             return {'tipo': 'pide_monto', 'contexto': 'ingreso'}
@@ -1082,15 +1198,19 @@ def ejecutar_accion(mensaje: str, uid: int, ctx: dict, db: Session):
             try:
                 t = db.query(Transaccion).get(i['id'])
                 if t and t.usuario_id == uid:
-                    db.delete(t); db.commit()
-                    return {'tipo': 'ingreso_eliminado', 'monto': i['monto'], 'categoria': i['categoria']}
+                    tienda_id = t.tienda_id
+                    db.delete(t)
+                    eliminar_tiendas_sin_transacciones(db, [tienda_id])
+                    db.commit()
+                    return {'tipo': 'ingreso_eliminado', 'monto': i['monto'], 'categoria': i['categoria'], **_datos_ubic(i)}
             except Exception as e:
                 print(f'[FinanBot] Ingreso eliminar: {e}')
 
         if _t(msg, CONSULTAR):
             return {'tipo': 'consulta_ingresos', 'num_ingresos': ctx.get('num_ingresos', 0),
                     'total_ingresos': ctx.get('total_ingresos', 0),
-                    'recientes': [t for t in ctx.get('transacciones_recientes', []) if t['tipo'] == 'ingreso'][:5]}
+                    'recientes': [t for t in ctx.get('transacciones_recientes', []) if t['tipo'] == 'ingreso'][:5],
+                    'movimientos': [m for m in ctx.get('movimientos', []) if m['tipo'] == 'ingreso']}
 
     return None
 

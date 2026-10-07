@@ -187,6 +187,19 @@ body.tema-azul{
 .accion-sug{background:rgba(34,211,238,.08);border:1px solid rgba(34,211,238,.25);color:#67e8f9;border-radius:20px;padding:6px 14px;font-size:12px;display:inline-flex;align-items:center;gap:5px;transition:all .2s;cursor:pointer;font-family:'Segoe UI',sans-serif}
 .accion-sug:hover{background:rgba(34,211,238,.18);border-color:#22d3ee;color:white;transform:translateY(-1px)}
 
+/* LINKS dentro de burbujas (Google Maps, páginas internas) */
+.msg-burbuja a{color:#67e8f9;text-decoration:underline;word-break:break-word}
+.msg-burbuja a:hover{color:white}
+
+/* GPS */
+.btn-gps{background:var(--item-bg);border:1px solid var(--item-brd);color:var(--sec);width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .25s;font-size:15px;flex-shrink:0}
+.btn-gps:hover{border-color:#a855f7;color:white}
+.btn-gps.on{color:#4ade80;border-color:rgba(74,222,128,.55);background:rgba(74,222,128,.1)}
+.btn-gps.busca i{animation:pulsoGps 1s infinite}
+@keyframes pulsoGps{0%,100%{opacity:1}50%{opacity:.3}}
+.gps-estado{display:none;align-items:center;gap:6px;flex-wrap:wrap;font-size:11.5px;color:var(--sec);margin:0 4px 7px}
+.gps-estado.bueno{color:#4ade80}.gps-estado.medio{color:#fbbf24}.gps-estado.malo{color:#f87171}
+
 /* TYPING */
 .typing-wrap{display:flex;align-items:flex-end;gap:9px;margin-bottom:16px}
 .typing-burbuja{background:var(--bot-bg);border:1px solid var(--bot-brd);border-radius:20px;border-bottom-left-radius:5px;padding:13px 16px;display:flex;align-items:center;gap:5px}
@@ -270,7 +283,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
 
   .inp-area { padding: 7px 8px 7px 14px; }
   .chat-inp { font-size: 15px; max-height: 90px; } /* evita zoom automático en iOS */
-  .btn-enviar { width: 36px; height: 36px; }
+  .btn-enviar, .btn-gps { width: 36px; height: 36px; }
 }
 
 @media (max-width: 560px) {
@@ -397,6 +410,8 @@ html, body { overflow-x: hidden; max-width: 100vw; }
       <div class="cap-item"><span>🏷️</span>Calcula descuentos, IVA, repartos y más</div>
       <div class="cap-item"><span>📊</span>Analiza tu situación financiera</div>
       <div class="cap-item"><span>💡</span>Responde cualquier duda de finanzas</div>
+      <div class="cap-item"><span>📍</span>Guarda el lugar real y exacto de cada gasto o ingreso</div>
+      <div class="cap-item"><span>🗺️</span>Dime dónde gastas y dónde recibes tu dinero</div>
     </div>
     <button class="btn-nueva" style="width:auto;padding:13px 34px;font-size:15px" onclick="nuevaConversacion()">
       <i class="fas fa-plus"></i> Comenzar
@@ -418,22 +433,29 @@ html, body { overflow-x: hidden; max-width: 100vw; }
         <button class="sug-btn" onclick="sg('Simula $1.000.000 al 10% por 12 meses')">📈 Simular inversión</button>
         <button class="sug-btn" onclick="sg('¿Qué es un CDT?')">🏦 ¿Qué es un CDT?</button>
         <button class="sug-btn" onclick="sg('¿Cómo puedo ahorrar más?')">💡 Cómo ahorrar</button>
+        <button class="sug-btn" onclick="sg('¿Dónde gasto más?')">📍 ¿Dónde gasto más?</button>
+        <button class="sug-btn" onclick="sg('¿Dónde recibo mis ingresos?')">🗺️ ¿Dónde recibo ingresos?</button>
         <button class="sug-btn" onclick="sg('Hazme un reporte')">📄 Reporte</button>
         <button class="sug-btn" onclick="sg('¿Qué puedes hacer?')">❓ Qué puedes hacer</button>
       </div>
     </div>
 
     <div class="inp-wrap">
+      <div class="gps-estado" id="gpsEstado"></div>
       <div class="inp-area">
         <textarea class="chat-inp" id="chatInp"
           placeholder="Escríbeme algo... ej: 'Gasté $25.000 en el bus'"
-          rows="1" oninput="autoR(this)" onkeydown="tecla(event)"></textarea>
+          rows="1" oninput="autoR(this);calentarGPS(this.value)" onkeydown="tecla(event)"></textarea>
+        <button class="btn-gps" id="btnGps" type="button" onclick="toggleGPS()"
+          title="Guardar el lugar real (GPS) al registrar gastos e ingresos" aria-label="Ubicación GPS">
+          <i class="fas fa-location-dot"></i>
+        </button>
         <button class="btn-enviar" id="btnEnv" onclick="enviar()">
           <i class="fas fa-paper-plane"></i>
         </button>
       </div>
       <div class="inp-hint">
-        <kbd>Enter</kbd> para enviar &nbsp;·&nbsp; <kbd>Shift+Enter</kbd> nueva línea
+        <kbd>Enter</kbd> para enviar &nbsp;·&nbsp; <kbd>Shift+Enter</kbd> nueva línea &nbsp;·&nbsp; <i class="fas fa-location-dot"></i> GPS al registrar
       </div>
     </div>
   </div>
@@ -565,7 +587,7 @@ function md(texto) {
       .filter(l => l.trim())
       .map(l => `<li>${inlinemd(l.replace(/^[•\-\*]\s*/,''))}</li>`)
       .join('');
-    return `<ul class="md-ul">${items}</ul>`;
+    return `<ul class="md-ul">${items}</ul>\n`;
   });
 
   // Listas numeradas
@@ -574,7 +596,7 @@ function md(texto) {
       .filter(l => l.trim())
       .map(l => `<li>${inlinemd(l.replace(/^\d+\.\s*/,''))}</li>`)
       .join('');
-    return `<ol class="md-ol">${items}</ol>`;
+    return `<ol class="md-ol">${items}</ol>\n`;
   });
 
   // Inline markdown + saltos
@@ -593,6 +615,11 @@ function md(texto) {
 
 function inlinemd(t) {
   t = t
+    // [texto](https://...) o [texto](pagina.html) — solo http(s) y páginas internas
+    .replace(/\[([^\]]+)\]\(((?:https?:\/\/|[\w\-]+\.html)[^)\s]*)\)/g, (m, tx, u) => {
+      const ext = /^https?:/.test(u);
+      return `<a href="${u}" target="${ext ? '_blank' : '_self'}" rel="noopener noreferrer">${tx}</a>`;
+    })
     .replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>')
     .replace(/\*\*(.+?)\*\*/g,     '<strong>$1</strong>')
     .replace(/\*(.+?)\*/g,         '<em>$1</em>')
@@ -824,7 +851,10 @@ function renderConvs(lista) {
   });
 }
 
-async function nuevaConversacion() {
+// primerMensaje: si el usuario ya escribió algo, se envía ese; si no, el chat
+// queda vacío esperando que el usuario hable primero (el bot no saluda solo).
+async function nuevaConversacion(primerMensaje) {
+  if (typeof primerMensaje !== 'string') primerMensaje = null;
   if (!token) { iniciarInvitado(); return; }
   try {
     const r = await fetch(`${API}/chat-historial/conversaciones`, {
@@ -836,8 +866,8 @@ async function nuevaConversacion() {
     convId = c.id;   // UUID; la conversación aparece en la lista al guardar el primer mensaje
     abrirChat('💬 Nueva conversación');
     addSep('Hoy');
-    // El primer mensaje viene del backend (bienvenida)
-    enviarYRenderizar('hola');
+    if (primerMensaje) await enviarYRenderizar(primerMensaje);
+    else { addSep('Escribe tu primer mensaje'); document.getElementById('sugsWrap').style.display = 'block'; }
   } catch(e){}
 }
 
@@ -853,7 +883,7 @@ async function selConv(id, titulo, event) {
     const msgs = await r.json();
     document.getElementById('chatBox').innerHTML = '';
     if (!msgs.length) {
-      addMsg(`👋 ¡Hola${usuario.nombre?', **'+usuario.nombre+'**':''}! ¿En qué te puedo ayudar?`, 'bot',[],null,true);
+      addSep('Escribe tu primer mensaje');
     } else {
       addSep('Conversación anterior');
       msgs.forEach(m => { addMsg(m.mensaje,'usuario',[],m.hora); addMsg(m.respuesta,'bot',[],m.hora); });
@@ -884,6 +914,164 @@ function abrirChat(titulo) {
 }
 
 /* ═══════════════════════════════════════════════════
+   UBICACIÓN REAL Y PRECISA (GPS)
+   - Solo se pide al registrar un gasto/ingreso.
+   - Se queda con la MEJOR lectura (menor error) hasta lograr ≤25 m
+     o hasta 12 s. Nunca usa lecturas viejas ni inventa un lugar.
+═══════════════════════════════════════════════════ */
+const GPS_OBJETIVO_M  = 25;
+const GPS_ESPERA_MS   = 12000;
+const GPS_EDAD_MAX_MS = 90000;
+const GPS_BUENA_M     = 100;
+
+let gpsOn = false;
+try {
+  const pref = localStorage.getItem('fb_chat_gps');
+  gpsOn = pref === null ? true : pref === '1';   // activado por defecto
+} catch(e) { gpsOn = true; }
+let gpsWatch = null, gpsTimer = null, gpsMejor = null, gpsError = null;
+let pedirGPSSiguiente = false;   // el bot está esperando categoría/monto de un registro
+const cacheNombres = {};
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const quitarTildes = s => String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+const RE_REGISTRO = /\b(gaste|compre|pague|cobre|gane|recibi|gasto|ingreso|registra|registrar|agrega|agregar|anade|anadir|anota)\b/;
+const RE_NO_REGISTRO = /\b(meta|metas|borra|borrar|elimina|eliminar|quita|cambia|cambiar|edita|editar|modifica|actualiza|simula|reporte|donde|cuanto|cual|ver|muestra|muestrame|resumen)\b/;
+function esRegistro(msg) {
+  const n = quitarTildes(msg);
+  return RE_REGISTRO.test(n) && !RE_NO_REGISTRO.test(n);
+}
+
+function gpsGuardarPref() { try { localStorage.setItem('fb_chat_gps', gpsOn ? '1' : '0'); } catch(e){} }
+function gpsVigente() { return gpsMejor && (Date.now() - gpsMejor.ts) <= GPS_EDAD_MAX_MS ? gpsMejor : null; }
+
+function pintarGPS(buscando=false, textoExtra='') {
+  const btn = document.getElementById('btnGps');
+  const est = document.getElementById('gpsEstado');
+  if (!btn || !est) return;
+  if (!token || esInv || modoInv) { btn.style.display = 'none'; est.style.display = 'none'; return; }
+  btn.style.display = 'flex';
+  btn.classList.toggle('on', gpsOn);
+  btn.classList.toggle('busca', gpsOn && buscando);
+  btn.title = gpsOn ? 'GPS activado: guardo el lugar real al registrar (clic para desactivar)'
+                    : 'GPS desactivado (clic para activar)';
+  if (!gpsOn) { est.style.display = 'none'; return; }
+  const g = gpsVigente();
+  est.className = 'gps-estado';
+  est.style.display = 'flex';
+  if (gpsError === 'denegado') {
+    est.classList.add('malo');
+    est.innerHTML = '<i class="fas fa-triangle-exclamation"></i> Permiso de ubicación denegado. Actívalo en el candado del navegador.';
+  } else if (gpsError === 'sin_api') {
+    est.classList.add('malo');
+    est.innerHTML = '<i class="fas fa-triangle-exclamation"></i> Este navegador/conexión no permite GPS (usa https o localhost).';
+  } else if (g) {
+    const p = Math.round(g.precision);
+    est.classList.add(p <= GPS_OBJETIVO_M ? 'bueno' : p <= GPS_BUENA_M ? 'medio' : 'malo');
+    est.innerHTML = `<i class="fas fa-location-dot"></i> GPS ±${p} m${p > GPS_BUENA_M ? ' · poco preciso, sal a un lugar abierto' : ''} ${textoExtra}`;
+  } else if (buscando) {
+    est.innerHTML = `<i class="fas fa-location-crosshairs"></i> Buscando tu ubicación exacta… ${textoExtra}`;
+  } else {
+    est.innerHTML = '<i class="fas fa-location-dot"></i> GPS activado: guardo el lugar real al registrar un gasto o ingreso.';
+  }
+}
+
+function detenerGPS() {
+  if (gpsWatch !== null && 'geolocation' in navigator) navigator.geolocation.clearWatch(gpsWatch);
+  gpsWatch = null;
+  clearTimeout(gpsTimer); gpsTimer = null;
+  pintarGPS(false);
+}
+
+function iniciarGPS() {
+  if (!gpsOn || gpsWatch !== null || !token || modoInv) return;
+  if (!('geolocation' in navigator) || !window.isSecureContext) { gpsError = 'sin_api'; pintarGPS(); return; }
+  gpsError = null;
+  pintarGPS(true);
+  gpsWatch = navigator.geolocation.watchPosition(pos => {
+    const p = { lat: pos.coords.latitude, lng: pos.coords.longitude,
+                precision: pos.coords.accuracy, ts: Date.now() };
+    const g = gpsVigente();
+    // Se reemplaza si es más preciso o si la guardada ya tiene >15 s
+    if (!g || p.precision < g.precision || (Date.now() - g.ts) > 15000) gpsMejor = p;
+    const mejor = gpsVigente();
+    pintarGPS(!(mejor && mejor.precision <= GPS_OBJETIVO_M));
+    if (mejor && mejor.precision <= GPS_OBJETIVO_M) detenerGPS();   // ya es exacta: ahorra batería
+  }, err => {
+    if (err.code === 1) { gpsError = 'denegado'; }
+    pintarGPS(false);
+  }, { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 });
+  clearTimeout(gpsTimer);
+  gpsTimer = setTimeout(detenerGPS, 40000);
+}
+
+function toggleGPS() {
+  gpsOn = !gpsOn;
+  gpsGuardarPref();
+  if (gpsOn) { gpsError = null; iniciarGPS(); }
+  else { detenerGPS(); gpsMejor = null; }
+  pintarGPS();
+}
+
+// Mientras escribes un gasto/ingreso, el GPS ya se va afinando
+function calentarGPS(texto) {
+  if (gpsOn && token && !modoInv && (esRegistro(texto) || pedirGPSSiguiente)) iniciarGPS();
+}
+
+// Nombre real del lugar (Nominatim/OpenStreetMap). Si falla devuelve ''
+// y el backend guarda "Punto GPS" con las coordenadas: nunca un nombre inventado.
+async function nombreLugar(lat, lng) {
+  const k = lat.toFixed(5) + ',' + lng.toFixed(5);
+  if (k in cacheNombres) return cacheNombres[k];
+  let nombre = '';
+  try {
+    const ctrl = new AbortController();
+    const to = setTimeout(() => ctrl.abort(), 4000);
+    const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1&accept-language=es`,
+                          { signal: ctrl.signal, headers: { 'Accept': 'application/json' } });
+    clearTimeout(to);
+    if (r.ok) {
+      const d = await r.json();
+      const a = d.address || {};
+      const poi = (d.name && d.name !== a.road) ? d.name : '';
+      const via = [a.road, a.house_number].filter(Boolean).join(' ');
+      const barrio = a.neighbourhood || a.suburb || a.quarter || '';
+      nombre = [poi, via, barrio].filter(Boolean)
+        .filter((x, i, arr) => arr.indexOf(x) === i).slice(0, 3).join(', ');
+    }
+  } catch(e) {}
+  if (nombre) cacheNombres[k] = nombre;
+  return nombre;
+}
+
+// Devuelve {ubic, nota}. ubic = {lat,lng,precision,nombre} o null.
+async function obtenerUbicacion() {
+  iniciarGPS();
+  const t0 = Date.now();
+  while (Date.now() - t0 < GPS_ESPERA_MS) {
+    if (gpsError === 'denegado' || gpsError === 'sin_api') break;
+    const g = gpsVigente();
+    if (g && g.precision <= GPS_OBJETIVO_M) break;
+    pintarGPS(true, `(${Math.ceil((GPS_ESPERA_MS - (Date.now() - t0)) / 1000)} s)`);
+    await sleep(250);
+  }
+  const g = gpsVigente();
+  if (!g) {
+    const motivo = gpsError === 'denegado' ? 'el permiso de ubicación está denegado'
+                 : gpsError === 'sin_api'  ? 'este navegador o conexión no permite GPS (usa https o localhost)'
+                 : 'el GPS no dio una lectura a tiempo';
+    return { ubic: null, nota: `📍 No guardé ubicación: ${motivo}. Registré el movimiento sin lugar; puedes marcarlo en el mapa de [Mis finanzas](finanzas.html).` };
+  }
+  const precision = Math.round(g.precision);
+  if (precision > GPS_BUENA_M &&
+      !confirm(`El GPS solo tiene ±${precision} m de precisión (no es exacto).\n\nAceptar: guardar con esta ubicación aproximada.\nCancelar: registrar sin ubicación (luego la marcas en el mapa).`)) {
+    return { ubic: null, nota: '📍 Registré el movimiento sin ubicación. Puedes marcar el punto exacto en el mapa de [Mis finanzas](finanzas.html).' };
+  }
+  const nombre = await nombreLugar(g.lat, g.lng);
+  return { ubic: { lat: +g.lat.toFixed(7), lng: +g.lng.toFixed(7), precision, nombre }, nota: '' };
+}
+
+/* ═══════════════════════════════════════════════════
    ENVÍO
 ═══════════════════════════════════════════════════ */
 async function enviar() {
@@ -899,7 +1087,7 @@ async function enviar() {
   }
 
   if (!convId && !modoInv) {
-    if (token) { await nuevaConversacion(); return; }
+    if (token) { await nuevaConversacion(msg); return; }
     else { iniciarInvitado(); return; }
   }
 
@@ -913,7 +1101,7 @@ async function enviarYRenderizar(msg) {
   inp.value = ''; inp.style.height = 'auto';
   document.getElementById('sugsWrap').style.display = 'none';
 
-  if (msg !== 'hola' || !convId) addMsg(msg, 'usuario');
+  addMsg(msg, 'usuario');
   mostrarTyping();
 
   // Delay mínimo para que el typing se vea natural (simula que "piensa")
@@ -925,6 +1113,16 @@ async function enviarYRenderizar(msg) {
     // El backend guarda el mensaje en la conversación indicada (tabla chats)
     const cuerpo = {mensaje: msg};
     if (token && convId) cuerpo.conversacion_id = convId;
+
+    // Ubicación real: solo al registrar un gasto/ingreso (o al completar uno pendiente)
+    let notaGPS = '';
+    if (token && !modoInv && gpsOn && (esRegistro(msg) || pedirGPSSiguiente)) {
+      const res = await obtenerUbicacion();
+      if (res.ubic) cuerpo.ubicacion = res.ubic;
+      notaGPS = res.nota;
+      pintarGPS(false);
+    }
+    pedirGPSSiguiente = false;
     const r = await fetch(`${API}/chat/mensaje`, {
       method:'POST', headers, body:JSON.stringify(cuerpo)
     });
@@ -940,6 +1138,14 @@ async function enviarYRenderizar(msg) {
       if (modoInv) { msgsInv++; saveInv(); actualizarBanner(); }
 
       addMsg(data.respuesta, 'bot', data.acciones || [], null, true); // true = efecto escritura
+
+      // Si el bot aún espera categoría/monto de un registro, el siguiente mensaje también lleva GPS
+      const ta = data.accion_ejecutada && data.accion_ejecutada.tipo;
+      const ctxA = data.accion_ejecutada && data.accion_ejecutada.contexto;
+      pedirGPSSiguiente = (ta === 'pide_categoria' || ta === 'pide_monto') && (ctxA === 'gasto' || ctxA === 'ingreso');
+      if (notaGPS && (ta === 'gasto_registrado' || ta === 'ingreso_registrado')) {
+        setTimeout(() => addMsg(notaGPS, 'bot', [], null, false), 400);
+      }
 
       // /chat/mensaje ya guardó el mensaje: solo sincronizamos el id y refrescamos la lista
       if (token && !modoInv) {
@@ -980,11 +1186,9 @@ function iniciarInvitado() {
   document.getElementById('chatActivo').style.flexDirection = 'column';
   document.getElementById('convBadge').textContent  = '💬 Modo invitado';
   document.getElementById('bannerInv').style.display = 'flex';
+  pintarGPS();   // en modo invitado no se registra nada: se oculta el GPS
   addSep('Sesión de invitado');
-  addMsg(
-    `👋 ¡Hola! Soy **FinanBot**, tu asistente financiero IA.\n\nEstás en modo invitado con **${LIM_INV} mensajes gratuitos** por sesión.\n\nPuedo responder preguntas de finanzas, calcular descuentos, IVA, simular inversiones y más. Para registrar datos necesitas una cuenta.\n\n¿Sobre qué tema financiero tienes dudas?`,
-    'bot', [{tipo:'link',texto:'🚀 Crear cuenta gratis',link:'registro.html'}], null, true
-  );
+  addSep('Escribe tu primer mensaje');
 }
 
 function cerrarSesion() { localStorage.removeItem('token'); localStorage.removeItem('usuario'); }
@@ -993,7 +1197,7 @@ function cerrarSesion() { localStorage.removeItem('token'); localStorage.removeI
    INIT
 ═══════════════════════════════════════════════════ */
 if (esInv || !token) iniciarInvitado();
-else cargarConvs();
+else { cargarConvs(); pintarGPS(); }
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

@@ -1,5 +1,7 @@
 -- =========================================================
 -- FINANBOT DATABASE (desde cero)
+-- Incluye: catálogo de CATEGORÍAS y tabla de TIENDAS (lugares
+-- con ubicación que se eligen en finanzas.html)
 -- =========================================================
 
 DROP DATABASE IF EXISTS finanbot_db;
@@ -30,33 +32,150 @@ CREATE TABLE usuarios (
 );
 
 -- =========================================================
--- TRANSACCIONES (categoría como ENUM, ya no hay tabla categorias)
+-- CATEGORÍAS (catálogo, igual al CATS de finanzas.html)
+--   tipo 'gasto' | 'ingreso' | 'meta' (movimientos de perfil.html)
+--   El nombre coincide con el ENUM de transacciones.categoria
+-- =========================================================
+
+CREATE TABLE categorias (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(50) NOT NULL UNIQUE,
+    tipo ENUM('gasto','ingreso','meta') NOT NULL,
+    icono VARCHAR(10) NOT NULL,
+    INDEX idx_categorias_tipo (tipo)
+);
+
+INSERT INTO categorias (nombre, tipo, icono) VALUES
+    -- Gastos
+    ('Alimentación','gasto','🍔'),
+    ('Transporte','gasto','🚌'),
+    ('Arriendo','gasto','🏠'),
+    ('Salud','gasto','💊'),
+    ('Entretenimiento','gasto','🎬'),
+    ('Educación','gasto','📚'),
+    ('Ropa','gasto','👗'),
+    ('Servicios','gasto','⚡'),
+    ('Mascotas','gasto','🐾'),
+    ('Regalos','gasto','🎁'),
+    ('Viajes','gasto','✈️'),
+    ('Otros gastos','gasto','📦'),
+    -- Ingresos
+    ('Salario','ingreso','💼'),
+    ('Freelance','ingreso','🧑‍💻'),
+    ('Inversión','ingreso','📈'),
+    ('Negocio','ingreso','🏪'),
+    ('Regalo','ingreso','🎁'),
+    ('Otros ingresos','ingreso','💵'),
+    -- Metas de ahorro
+    ('Ahorro automático','meta','🎯'),
+    ('Aporte manual a meta','meta','🎯'),
+    ('Ajuste de meta','meta','🎯'),
+    ('Retiro de ahorro','meta','🎯');
+
+-- =========================================================
+-- TIENDAS (lugares donde el usuario hace sus movimientos)
+-- Se llena sola: cada vez que una transacción trae ubicación
+-- (ubicacion_nombre + latitud + longitud) un trigger crea la
+-- tienda si no existe y la enlaza con tienda_id.
+-- =========================================================
+
+CREATE TABLE tiendas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    usuario_id INT NOT NULL,
+    nombre VARCHAR(255) NOT NULL,
+    latitud DECIMAL(10,7) NOT NULL,
+    longitud DECIMAL(10,7) NOT NULL,
+    fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (usuario_id)
+        REFERENCES usuarios(id)
+        ON DELETE CASCADE,
+    UNIQUE KEY uq_tienda_usuario_nombre (usuario_id, nombre),
+    INDEX idx_tiendas_coords (usuario_id, latitud, longitud)
+);
+
+-- =========================================================
+-- TRANSACCIONES
 --   Gastos:   Alimentación, Transporte, Arriendo, Salud, Entretenimiento,
 --             Educación, Ropa, Servicios, Mascotas, Regalos, Viajes, Otros gastos
 --   Ingresos: Salario, Freelance, Inversión, Negocio, Regalo, Otros ingresos
 --   Metas (perfil.html): Ahorro automático, Aporte manual a meta,
 --             Ajuste de meta, Retiro de ahorro
+-- Se conservan categoria / ubicacion_nombre / latitud / longitud
+-- para que el backend y el front sigan funcionando igual;
+-- tienda_id se asigna automáticamente con los triggers.
 -- =========================================================
 
 CREATE TABLE transacciones (
     id INT AUTO_INCREMENT PRIMARY KEY,
     usuario_id INT NOT NULL,
-    categoria ENUM(
-        'Alimentación','Transporte','Arriendo','Salud','Entretenimiento','Educación',
-        'Ropa','Servicios','Mascotas','Regalos','Viajes','Otros gastos',
-        'Salario','Freelance','Inversión','Negocio','Regalo','Otros ingresos',
-        'Ahorro automático','Aporte manual a meta','Ajuste de meta','Retiro de ahorro'
-    ) NOT NULL,
+    categoria VARCHAR(50) NOT NULL,   -- unida a categorias(nombre) por FOREIGN KEY
     tipo ENUM('gasto','ingreso') NOT NULL,
     monto DECIMAL(10,2) NOT NULL,
     descripcion VARCHAR(255),
     fecha DATE NOT NULL,
     fecha_registro DATETIME DEFAULT CURRENT_TIMESTAMP,
+    -- Ubicación donde se hizo el movimiento (opcional, se ve en el mapa)
+    ubicacion_nombre VARCHAR(255) NULL,
+    latitud DECIMAL(10,7) NULL,
+    longitud DECIMAL(10,7) NULL,
+    -- Tienda/lugar enlazado (lo llenan los triggers)
+    tienda_id INT NULL,
 
     FOREIGN KEY (usuario_id)
         REFERENCES usuarios(id)
-        ON DELETE CASCADE
+        ON DELETE CASCADE,
+    FOREIGN KEY (categoria)
+        REFERENCES categorias(nombre)
+        ON UPDATE CASCADE
+        ON DELETE RESTRICT,
+    FOREIGN KEY (tienda_id)
+        REFERENCES tiendas(id)
+        ON DELETE SET NULL,
+    INDEX idx_transacciones_ubicacion (usuario_id, latitud, longitud)
 );
+
+-- =========================================================
+-- TRIGGERS: crean/enlazan la tienda automáticamente
+-- =========================================================
+
+DELIMITER $$
+
+CREATE TRIGGER trg_transacciones_tienda_ins
+BEFORE INSERT ON transacciones
+FOR EACH ROW
+BEGIN
+    DECLARE v_tienda INT;
+    IF NEW.ubicacion_nombre IS NOT NULL AND TRIM(NEW.ubicacion_nombre) <> ''
+       AND NEW.latitud IS NOT NULL AND NEW.longitud IS NOT NULL THEN
+        INSERT IGNORE INTO tiendas (usuario_id, nombre, latitud, longitud)
+        VALUES (NEW.usuario_id, NEW.ubicacion_nombre, NEW.latitud, NEW.longitud);
+        SELECT id INTO v_tienda FROM tiendas
+        WHERE usuario_id = NEW.usuario_id AND nombre = NEW.ubicacion_nombre
+        LIMIT 1;
+        SET NEW.tienda_id = v_tienda;
+    END IF;
+END$$
+
+CREATE TRIGGER trg_transacciones_tienda_upd
+BEFORE UPDATE ON transacciones
+FOR EACH ROW
+BEGIN
+    DECLARE v_tienda INT;
+    IF NEW.ubicacion_nombre IS NOT NULL AND TRIM(NEW.ubicacion_nombre) <> ''
+       AND NEW.latitud IS NOT NULL AND NEW.longitud IS NOT NULL THEN
+        INSERT IGNORE INTO tiendas (usuario_id, nombre, latitud, longitud)
+        VALUES (NEW.usuario_id, NEW.ubicacion_nombre, NEW.latitud, NEW.longitud);
+        SELECT id INTO v_tienda FROM tiendas
+        WHERE usuario_id = NEW.usuario_id AND nombre = NEW.ubicacion_nombre
+        LIMIT 1;
+        SET NEW.tienda_id = v_tienda;
+    ELSE
+        SET NEW.tienda_id = NULL;   -- se quitó la ubicación
+    END IF;
+END$$
+
+DELIMITER ;
 
 -- =========================================================
 -- METAS DE AHORRO (incluye modo automático)
@@ -118,6 +237,9 @@ ON transacciones(usuario_id, tipo);
 CREATE INDEX idx_transacciones_usuario_categoria
 ON transacciones(usuario_id, categoria);
 
+CREATE INDEX idx_transacciones_tienda
+ON transacciones(tienda_id);
+
 CREATE INDEX idx_chats_usuario_fecha
 ON chats(usuario_id, fecha);
 
@@ -148,20 +270,58 @@ SELECT
     fecha_registro
 FROM usuarios;
 
--- TRANSACCIONES + usuario
+-- TRANSACCIONES + usuario + categoría (con icono) + tienda
 CREATE VIEW vista_transacciones AS
 SELECT
     t.id,
     t.usuario_id,
     u.nombre AS usuario_nombre,
     t.categoria,
+    c.icono AS categoria_icono,
     t.tipo,
     t.monto,
     t.descripcion,
     t.fecha,
-    t.fecha_registro
+    t.fecha_registro,
+    t.tienda_id,
+    ti.nombre AS tienda,
+    t.latitud,
+    t.longitud
 FROM transacciones t
-JOIN usuarios u ON u.id = t.usuario_id;
+JOIN usuarios u ON u.id = t.usuario_id
+LEFT JOIN categorias c ON c.nombre = t.categoria
+LEFT JOIN tiendas ti ON ti.id = t.tienda_id;
+
+-- TIENDAS con totales (equivale al ranking "lugares con más movimiento" del mapa)
+CREATE VIEW vista_tiendas AS
+SELECT
+    ti.id,
+    ti.usuario_id,
+    u.nombre AS usuario_nombre,
+    ti.nombre AS tienda,
+    ti.latitud,
+    ti.longitud,
+    COUNT(t.id) AS total_movimientos,
+    COALESCE(SUM(CASE WHEN t.tipo = 'gasto'   THEN t.monto END), 0) AS total_gastos,
+    COALESCE(SUM(CASE WHEN t.tipo = 'ingreso' THEN t.monto END), 0) AS total_ingresos,
+    MAX(t.fecha) AS ultimo_movimiento
+FROM tiendas ti
+JOIN usuarios u ON u.id = ti.usuario_id
+LEFT JOIN transacciones t ON t.tienda_id = ti.id
+GROUP BY ti.id, ti.usuario_id, u.nombre, ti.nombre, ti.latitud, ti.longitud;
+
+-- CATEGORÍAS con totales por usuario
+CREATE VIEW vista_categorias_usuario AS
+SELECT
+    t.usuario_id,
+    c.nombre AS categoria,
+    c.icono,
+    c.tipo AS tipo_categoria,
+    COUNT(*) AS total_movimientos,
+    SUM(t.monto) AS total_monto
+FROM transacciones t
+JOIN categorias c ON c.nombre = t.categoria
+GROUP BY t.usuario_id, c.nombre, c.icono, c.tipo;
 
 -- METAS DE AHORRO + usuario
 CREATE VIEW vista_metas_ahorro AS
@@ -217,8 +377,9 @@ GROUP BY ch.conversacion_id, ch.usuario_id, u.nombre;
 -- INSERT INTO usuarios (nombre, correo, contrasena_hash, rol)
 -- VALUES ('Prueba', 'prueba@finanbot.com', 'HASH_AQUI', 'estudiante');
 
--- INSERT INTO transacciones (usuario_id, categoria, tipo, monto, descripcion, fecha)
--- VALUES (1, 'Alimentación', 'gasto', 15000.00, 'Almuerzo', CURDATE());
+-- INSERT INTO transacciones (usuario_id, categoria, tipo, monto, descripcion, fecha, ubicacion_nombre, latitud, longitud)
+-- VALUES (1, 'Alimentación', 'gasto', 15000.00, 'Almuerzo', CURDATE(), 'Éxito Chapinero', 4.6486000, -74.0628000);
+-- (la tienda "Éxito Chapinero" se crea sola en la tabla tiendas)
 
 -- INSERT INTO chats (usuario_id, conversacion_id, titulo, mensaje, respuesta)
 -- VALUES (1, UUID(), 'Mi primera conversación', 'Hola', '¡Hola! ¿En qué te ayudo?');
@@ -227,8 +388,13 @@ GROUP BY ch.conversacion_id, ch.usuario_id, u.nombre;
 -- CONSULTAS DE EJEMPLO
 -- =========================================================
 
--- SELECT * FROM vista_usuarios;
+-- SELECT * FROM categorias;
+-- SELECT * FROM categorias WHERE tipo = 'gasto';
+-- SELECT * FROM tiendas WHERE usuario_id = 1;
+-- SELECT * FROM vista_tiendas WHERE usuario_id = 1 ORDER BY total_gastos DESC;   -- lugares donde más gastas
+-- SELECT * FROM vista_categorias_usuario WHERE usuario_id = 1 ORDER BY total_monto DESC;
 -- SELECT * FROM vista_transacciones;
+-- SELECT * FROM vista_usuarios;
 -- SELECT * FROM vista_metas_ahorro;
 -- SELECT * FROM vista_chats;
 -- SELECT * FROM vista_conversaciones;
