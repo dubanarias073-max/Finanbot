@@ -1,4 +1,5 @@
 import sys
+import uuid
 from datetime import date
 from pathlib import Path
 
@@ -6,9 +7,11 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from models import Base, Categoria, CategoriaUsuario, Transaccion, Usuario, sembrar_categorias
+from models import Base, Categoria, CategoriaUsuario, Chat, Transaccion, Usuario, sembrar_categorias
+import routes.chat_route as chat_routes
 from routes.chat_route import (
     _actualizar_contexto,
+    _conversacion_ia_id,
     _categoria_activa_mencionada,
     _es_comando_categoria,
     _resolver_contexto,
@@ -180,6 +183,66 @@ def test_chat_lista_categorias_activas_tras_eliminacion():
         assert 'Fondo de emergencia' in respuesta
         assert 'Otros gastos' in respuesta
         assert 'Salario' in respuesta
+    finally:
+        db.close()
+        engine.dispose()
+
+
+def test_chat_pasa_el_id_de_conversacion_a_la_ia(monkeypatch):
+    engine, db, usuario = _crear_sesion_con_usuario()
+    conv_id = str(uuid.uuid4())
+    recibido = {}
+
+    class FinanBotFalso:
+        def responder_con_acciones(self, mensaje, ctx, accion, conversacion_id=None):
+            recibido['conversacion_id'] = conversacion_id
+            return 'Respuesta de prueba', []
+
+    monkeypatch.setattr(chat_routes, 'sesiones', {})
+    monkeypatch.setattr(chat_routes, 'FinanBotIA', FinanBotFalso)
+    monkeypatch.setattr(chat_routes, '_cargar_contexto', lambda uid, session: {'usuario_id': uid})
+    monkeypatch.setattr(chat_routes, '_actualizar_contexto', lambda *args: None)
+    monkeypatch.setattr(chat_routes, '_resolver_contexto', lambda *args: None)
+    monkeypatch.setattr(chat_routes, 'ejecutar_accion', lambda *args: None)
+    monkeypatch.setattr(chat_routes, '_agregar_disclaimers_si_necesario', lambda respuesta, mensaje: respuesta)
+    monkeypatch.setattr(chat_routes, '_agregar_avisos_metas', lambda respuesta, ctx, accion: respuesta)
+    monkeypatch.setattr(chat_routes, '_guardar_chat', lambda *args: conv_id)
+
+    try:
+        resultado = chat_routes.mensaje(
+            {'mensaje': '¿Cómo organizo mis gastos?', 'conversacion_id': conv_id},
+            str(usuario.id),
+            db,
+        )
+
+        assert resultado['respuesta'] == 'Respuesta de prueba'
+        assert recibido['conversacion_id'] == conv_id
+        assert f'user:{usuario.id}:conversation:{conv_id}' in chat_routes.sesiones
+    finally:
+        db.close()
+        engine.dispose()
+
+
+def test_ia_no_reutiliza_contexto_de_una_conversacion_ajena():
+    engine, db, usuario = _crear_sesion_con_usuario()
+    otro_usuario = Usuario(
+        nombre='Otro usuario',
+        correo='otro-chat@example.com',
+        contrasena_hash='hash',
+    )
+    conv_id = str(uuid.uuid4())
+    db.add(otro_usuario)
+    db.commit()
+    db.add(Chat(
+        usuario_id=otro_usuario.id,
+        conversacion_id=conv_id,
+        titulo='Conversación ajena',
+        mensaje='Mensaje privado',
+        respuesta='Respuesta privada',
+    ))
+    db.commit()
+    try:
+        assert _conversacion_ia_id(db, usuario.id, conv_id) is None
     finally:
         db.close()
         engine.dispose()

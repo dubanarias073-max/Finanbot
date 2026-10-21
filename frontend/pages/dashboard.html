@@ -4,6 +4,7 @@
     <base target="_top">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="timezone.js"></script>
     <title>FinanBot - Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -187,6 +188,11 @@
         .stat-value.positivo { color: #10B981; }
         .stat-value.negativo { color: #f472b6; }
         .stat-sub   { font-size: 12px; color: var(--muted, #6b7280); margin-top: 5px; }
+        .meta-gasto-resumen { margin-top: 9px; font-size: 11px; color: var(--secondary); }
+        .meta-gasto-resumen.excedida { color: #fca5a5; font-weight: 700; }
+        .meta-gasto-barra { height: 5px; margin-top: 5px; border-radius: 99px; background: rgba(var(--fb-fg),0.12); overflow: hidden; }
+        .meta-gasto-barra i { display: block; height: 100%; border-radius: inherit; background: #10B981; }
+        .meta-gasto-barra.excedida i { background: #ef4444; }
  
         /* ACCESOS */
         .accesos-grid {
@@ -644,6 +650,7 @@
                 <div class="stat-label">Gastos del mes</div>
                 <div class="stat-value negativo" id="totalGastos">$0</div>
                 <div class="stat-sub" id="numGastos">0 registros</div>
+                <div id="metasGastoDashboard"></div>
             </div>
             <div class="stat-card balance">
                 <div class="stat-icon">📊</div>
@@ -828,7 +835,7 @@
         // ── FECHA ─────────────────────────────────────────
         const DIAS  = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
         const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
-        const hoy   = new Date();
+        const hoy   = FinanbotTime.today();
         document.getElementById('fechaHoy').textContent =
             `${DIAS[hoy.getDay()]}, ${hoy.getDate()} de ${MESES[hoy.getMonth()]} de ${hoy.getFullYear()}`;
  
@@ -869,7 +876,7 @@
         async function cargarCategoriasUsuario() {
             if (!token) return false;
             try {
-                const response = await fetch('http://127.0.0.1:8000/api/transacciones/categorias/mias', {
+                const response = await fetch('/api/transacciones/categorias/mias', {
                     headers: { Authorization: 'Bearer ' + token }
                 });
                 if (!response.ok) throw new Error(`No se pudieron cargar las categorías (${response.status})`);
@@ -887,11 +894,11 @@
         // nuevo vuelven a $0 automáticamente. El histórico completo
         // (transaccionesCache) se sigue usando en el calendario.
         function obtenerMesActualStr() {
-            const hoy = new Date();
+            const hoy = FinanbotTime.today();
             return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}`;
         }
         function hoyStr() {
-            const h = new Date();
+            const h = FinanbotTime.today();
             return `${h.getFullYear()}-${String(h.getMonth()+1).padStart(2,'0')}-${String(h.getDate()).padStart(2,'0')}`;
         }
         // Una transacción con fecha futura (mayor a hoy) NO cuenta todavía
@@ -918,7 +925,7 @@
  
             try {
                 // ── Transacciones ──
-                const resTrans = await fetch('http://127.0.0.1:8000/api/transacciones/', {
+                const resTrans = await fetch('/api/transacciones/', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
  
@@ -974,27 +981,31 @@
                 }
  
                 // ── Metas ──
-                const resMetas = await fetch('http://127.0.0.1:8000/api/metas/', {
+                const resMetas = await fetch('/api/metas/', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
  
                 if (resMetas.ok) {
                     const metas = await resMetas.json();
-                    if (metas.length > 0) {
-                        const totObj = metas.reduce((s,m) => s + m.monto_objetivo, 0);
-                        const totAct = metas.reduce((s,m) => s + m.monto_actual,   0);
+                    renderResumenMetaGasto(metas);
+                    const metasAhorro = metas.filter(m => !m.tipo || m.tipo === 'ahorro');
+                    if (metasAhorro.length > 0) {
+                        const totObj = metasAhorro.reduce((s,m) => s + m.monto_objetivo, 0);
+                        const totAct = metasAhorro.reduce((s,m) => s + m.monto_actual,   0);
                         const pct    = totObj > 0 ? Math.min(Math.round(totAct / totObj * 100), 100) : 0;
-                        const comp   = metas.filter(m => m.completada).length;
+                        const comp   = metasAhorro.filter(m => m.completada || m.monto_actual >= m.monto_objetivo).length;
                         document.getElementById('metaGlobal').textContent = pct + '%';
                         document.getElementById('numMetas').textContent =
-                            metas.length + ' meta' + (metas.length !== 1 ? 's' : '') +
+                            metasAhorro.length + ' meta' + (metasAhorro.length !== 1 ? 's' : '') +
                             ' · ' + comp + ' completada' + (comp !== 1 ? 's' : '');
- 
+
                         // ① ALERTAS DE METAS (progreso + fecha límite)
                         if (prefs.notifMetas) {
-                            renderAlertasMetas(metas);
+                            renderAlertasMetas(metasAhorro);
                         }
                     } else {
+                        document.getElementById('metaGlobal').textContent = '0%';
+                        document.getElementById('numMetas').textContent = 'Sin metas de ahorro';
                         document.getElementById('bannerMetas').classList.remove('visible');
                     }
                 }
@@ -1013,8 +1024,9 @@
         //     o menos, y todavía no se completó.
         // ════════════════════════════════════════════════
         function renderAlertasMetas(metas) {
+            metas = metas.filter(m => !m.tipo || m.tipo === 'ahorro');
             const dismissidas = JSON.parse(sessionStorage.getItem('metasDismiss') || '[]');
-            const hoyDate = new Date(); hoyDate.setHours(0,0,0,0);
+            const hoyDate = FinanbotTime.today(); hoyDate.setHours(0,0,0,0);
             const alertas = [];
 
             metas.forEach(m => {
@@ -1040,7 +1052,7 @@
 
                 // Fecha límite — solo si el usuario puso una y la meta no está completa
                 if (!m.completada && m.fecha_limite && !dismissidas.includes('f' + m.id)) {
-                    const limite = new Date(m.fecha_limite + 'T00:00:00');
+                    const limite = FinanbotTime.fromIsoDate(m.fecha_limite);
                     const diffDias = Math.ceil((limite - hoyDate) / 86400000);
                     const faltante = Math.max(0, m.monto_objetivo - m.monto_actual);
 
@@ -1079,6 +1091,29 @@
                 </div>`).join('');
 
             banner.classList.add('visible');
+        }
+
+        function renderResumenMetaGasto(metas) {
+            const contenedor = document.getElementById('metasGastoDashboard');
+            contenedor.replaceChildren();
+            const limites = metas.filter(m => m.tipo === 'gasto_mensual' || m.tipo === 'gasto_anual');
+            limites.forEach(meta => {
+                const porcentaje = Number(meta.porcentaje || 0);
+                const etiqueta = meta.tipo === 'gasto_mensual' ? 'Mes' : 'Año';
+                const resumen = document.createElement('div');
+                resumen.className = `meta-gasto-resumen${meta.excedida ? ' excedida' : ''}`;
+                resumen.textContent = `${etiqueta} ${meta.periodo || ''}: gastado $${Math.round(meta.monto_actual).toLocaleString('es-CO')} · máximo $${Math.round(meta.monto_objetivo).toLocaleString('es-CO')} COP${meta.excedida ? ' · 🚨 Límite alcanzado o excedido' : ''}`;
+                const barra = document.createElement('div');
+                barra.className = `meta-gasto-barra${meta.excedida ? ' excedida' : ''}`;
+                barra.setAttribute('role', 'progressbar');
+                barra.setAttribute('aria-valuemin', '0');
+                barra.setAttribute('aria-valuemax', String(meta.monto_objetivo));
+                barra.setAttribute('aria-valuenow', String(meta.monto_actual));
+                const progreso = document.createElement('i');
+                progreso.style.width = `${Math.min(porcentaje, 100)}%`;
+                barra.append(progreso);
+                contenedor.append(resumen, barra);
+            });
         }
 
         function dismissAlerta(id) {
@@ -1474,11 +1509,11 @@
         // ════════════════════════════════════════════════
         //  CALENDARIO INTERACTIVO (histórico completo)
         // ════════════════════════════════════════════════
-        let calFechaRef = new Date();
+        let calFechaRef = FinanbotTime.today();
         let calDiaSel = null;
 
         function abrirCalendario() {
-            calFechaRef = new Date();
+            calFechaRef = FinanbotTime.today();
             calDiaSel = null;
             document.getElementById('calDiaPanel').style.display = 'none';
             renderCalendarioModal();
@@ -1514,7 +1549,7 @@
             const ultimoDia = new Date(anio, mes + 1, 0);
             const primerIndex = (primerDia.getDay() + 6) % 7;
             const totalDias = ultimoDia.getDate();
-            const hoyStr = new Date().toISOString().split('T')[0];
+            const hoyStr = FinanbotTime.todayIso();
 
             let html = ['D','L','M','M','J','V','S'].map(d => `<div class="cal-header-dia">${d}</div>`).join('');
             for (let i = 0; i < primerIndex; i++) html += `<div class="cal-dia vacio"></div>`;
@@ -1568,7 +1603,7 @@
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando...';
             btn.disabled = true;
             try {
-                const res = await fetch('http://127.0.0.1:8000/api/exportar/pdf', {
+                const res = await fetch('/api/exportar/pdf', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (res.ok) {
@@ -1576,7 +1611,7 @@
                     const url  = window.URL.createObjectURL(blob);
                     const a    = document.createElement('a');
                     a.href = url;
-                    a.download = `FinanBot_${new Date().toLocaleDateString('es-CO').replace(/\//g,'-')}.pdf`;
+                    a.download = `FinanBot_${FinanbotTime.todayLabel().replace(/\//g,'-')}.pdf`;
                     document.body.appendChild(a); a.click(); document.body.removeChild(a);
                     window.URL.revokeObjectURL(url);
                 } else alert('Error al generar el PDF.');
@@ -1595,7 +1630,7 @@
         async function asegurarSalarioMesActual() {
             if (!token) return;
             try {
-                const resPerfil = await fetch('http://127.0.0.1:8000/api/perfil/', {
+                const resPerfil = await fetch('/api/perfil/', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (!resPerfil.ok) return;
@@ -1610,19 +1645,19 @@
                 const diaPago = diaDeFechaStr(perfil.fecha_salario);
                 if (!diaPago) return;
 
-                const resTrans = await fetch('http://127.0.0.1:8000/api/transacciones/', {
+                const resTrans = await fetch('/api/transacciones/', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (!resTrans.ok) return;
                 const todas = await resTrans.json();
 
-                const hoy = new Date();
+                const hoy = FinanbotTime.today();
                 const mesActualStr = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}`;
 
                 // Limpiar salarios auto programados a futuro (no se generan por adelantado)
                 const futuros = todas.filter(t => t.descripcion === '__auto_salario__' && t.fecha && t.fecha.slice(0,7) > mesActualStr);
                 for (const t of futuros) {
-                    await fetch(`http://127.0.0.1:8000/api/transacciones/${t.id}`, {
+                    await fetch(`/api/transacciones/${t.id}`, {
                         method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` }
                     });
                 }
@@ -1637,7 +1672,7 @@
                     if (hoy.getDate() < diaFinal) return; // aún no llega el día de pago este mes
                     const fecha = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-${String(diaFinal).padStart(2,'0')}`;
                     const salarioActivo = categoriasUsuario.ingreso.some(c => c.nombre === 'Salario' && !c.oculta);
-                    await fetch('http://127.0.0.1:8000/api/transacciones/', {
+                    await fetch('/api/transacciones/', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                         body: JSON.stringify({ tipo: 'ingreso', categoria: salarioActivo ? 'Salario' : 'Otros ingresos', icono: salarioActivo ? '💼' : '💵', monto: ingreso, descripcion: '__auto_salario__', fecha })

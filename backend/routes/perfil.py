@@ -1,5 +1,6 @@
 # routes/perfil.py
 from datetime import datetime
+import math
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
@@ -72,6 +73,18 @@ def actualizar_perfil(
     if not usuario:
         raise HTTPException(status_code=404, detail='Usuario no encontrado')
 
+    ingreso_mensual = (
+        body.ingreso_mensual
+        if body.ingreso_mensual is not None
+        else float(usuario.ingreso_mensual or 0)
+    )
+    if body.ingreso_mensual is not None and (
+        not math.isfinite(body.ingreso_mensual) or body.ingreso_mensual < 10000
+    ):
+        raise HTTPException(status_code=400, detail='El ingreso mensual debe ser de al menos $10.000.')
+    if body.onboarding_completado is True and ingreso_mensual < 10000:
+        raise HTTPException(status_code=400, detail='Debes ingresar un monto mensual de al menos $10.000 para completar el onboarding.')
+
     if body.nombre:
         usuario.nombre = body.nombre
 
@@ -86,7 +99,7 @@ def actualizar_perfil(
     if body.meta_ahorro is not None:
         usuario.meta_ahorro = body.meta_ahorro
 
-    if body.fecha_salario is not None:
+    if 'fecha_salario' in body.model_fields_set:
         try:
             usuario.fecha_salario = (
                 datetime.strptime(body.fecha_salario, '%Y-%m-%d').date() if body.fecha_salario else None

@@ -4,6 +4,7 @@
     <base target="_top">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="timezone.js"></script>
     <title>FinanBot - Aprende</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -79,6 +80,10 @@
         .panel-resultados{display:none;margin-bottom:28px;animation:fadeUp .3s ease}
         .panel-resultados.visible{display:block}
         @keyframes fadeUp{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+        .res-ia{background:linear-gradient(135deg,rgba(139,92,246,0.1),rgba(94,234,212,0.05));border:1px solid rgba(139,92,246,0.3);border-radius:18px;padding:20px 24px;margin-bottom:20px}
+        .res-ia-titulo{display:flex;align-items:center;gap:9px;font-size:14px;font-weight:800;color:var(--fb-lav);margin-bottom:10px}
+        .res-ia-respuesta{font-size:14px;color:var(--fb-body-text);line-height:1.75;white-space:pre-wrap}
+        .res-ia-reintentar{display:none;margin-top:12px;background:transparent;border:1px solid rgba(139,92,246,0.35);border-radius:10px;color:var(--fb-lav);padding:8px 12px;cursor:pointer}
 
         /* Artículo destacado (primer resultado) */
         .res-featured{background:var(--card-bg);border:1px solid rgba(139,92,246,0.35);border-radius:22px;padding:0;overflow:hidden;margin-bottom:20px}
@@ -384,6 +389,12 @@
                 </button>
             </div>
 
+            <section class="res-ia" id="resIA" aria-live="polite">
+                <div class="res-ia-titulo"><i class="fas fa-wand-magic-sparkles"></i> Aprende con FinanBot IA</div>
+                <div class="res-ia-respuesta" id="resIARespuesta">Preparando explicación...</div>
+                <button class="res-ia-reintentar" id="resIAReintentar" type="button">Intentar de nuevo</button>
+            </section>
+
             <!-- Artículo destacado (primer resultado) -->
             <div id="resFeatured"></div>
 
@@ -612,8 +623,9 @@
         btn.classList.add('activo');
     }
 
-    const API   = 'http://localhost:8000/api/aprende';
+    const API   = '/api/aprende';
     const TOKEN = localStorage.getItem('token') || '';
+    let tutorRequestId = 0;
 
     async function apiFetch(path, opts={}){
         const r = await fetch(API+path, {
@@ -706,6 +718,37 @@
         btn.disabled = false;
     }
 
+    async function consultarIAAprende(pregunta){
+        const requestId = ++tutorRequestId;
+        const respuestaEl = document.getElementById('resIARespuesta');
+        const reintentarBtn = document.getElementById('resIAReintentar');
+        respuestaEl.textContent = 'FinanBot IA está preparando una explicación...';
+        reintentarBtn.style.display = 'none';
+        reintentarBtn.onclick = () => consultarIAAprende(pregunta);
+
+        try{
+            const response = await fetch(API + '/tutor', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(TOKEN ? {'Authorization': 'Bearer ' + TOKEN} : {})
+                },
+                body: JSON.stringify({pregunta})
+            });
+            const data = await response.json();
+            if(!response.ok) throw new Error(data.detail || 'No se pudo consultar la IA.');
+            if(requestId !== tutorRequestId) return;
+            if(typeof data.respuesta !== 'string' || !data.respuesta.trim()){
+                throw new Error('La IA no devolvió una explicación.');
+            }
+            respuestaEl.textContent = data.respuesta;
+        }catch(_){
+            if(requestId !== tutorRequestId) return;
+            respuestaEl.textContent = 'No se pudo conectar con FinanBot IA. Tus resultados de búsqueda siguen disponibles.';
+            reintentarBtn.style.display = 'inline-block';
+        }
+    }
+
     // ── Render con datos del backend ──────────────────────
     function renderResultados(q, data){
         const panel    = document.getElementById('panelResultados');
@@ -715,8 +758,8 @@
 
         // Label de resultados
         const total = arts.length + glos.length;
-        document.getElementById('resQueryLabel').innerHTML =
-            `Resultados para <strong>"${q}"</strong> — <span class="cnt">${total} encontrado${total!==1?'s':''}</span>`;
+        document.getElementById('resQueryLabel').textContent =
+            `Resultados para "${q}" — ${total} encontrado${total!==1?'s':''}`;
 
         // Sin resultados
         document.getElementById('resVacio').style.display = (!arts.length && !glos.length) ? 'block' : 'none';
@@ -794,6 +837,7 @@
         } else { sugsEl.innerHTML = ''; }
 
         panel.classList.add('visible');
+        consultarIAAprende(q);
         panel.scrollIntoView({behavior:'smooth', block:'start'});
     }
 
@@ -826,6 +870,7 @@
     }
 
     function cerrarResultados(){
+        tutorRequestId++;
         document.getElementById('panelResultados').classList.remove('visible');
         document.getElementById('busquedaInput').value = '';
     }
@@ -1015,7 +1060,7 @@
                 const a2=Math.floor(meses/12),mr=meses%12;
                 let txt=meses+' mes'+(meses!==1?'es':'');
                 if(a2>0)txt=a2+' año'+(a2>1?'s':'')+(mr>0?' y '+mr+' mes'+(mr>1?'es':''):'');
-                const fecha=new Date();fecha.setMonth(fecha.getMonth()+meses);
+                const fecha=FinanbotTime.today();fecha.setMonth(fecha.getMonth()+meses);
                 s('mt-tpo',txt);s('mt-lbl','Para alcanzar '+fmt(obj));s('mt-flt',fmt(falt));s('mt-totv',fmt(bal));
                 s('mt-fch',fecha.toLocaleDateString('es-CO',{month:'long',year:'numeric'}));show('mt');break;
             }

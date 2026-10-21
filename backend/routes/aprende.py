@@ -6,6 +6,8 @@ from typing import Any, Optional
 import math
 import re
 
+from finanbot_ia import FinanBotIA
+
 router = APIRouter()
 
 
@@ -767,6 +769,29 @@ def buscar(q: str = Query(...)):
         'glosario': glosario[:5],
         'sugerencias': sugerencias,
     }
+
+
+class PreguntaAprendizaje(BaseModel):
+    pregunta: str
+
+
+@router.post('/tutor')
+def tutor_ia(body: PreguntaAprendizaje):
+    pregunta = body.pregunta.strip()
+    if not pregunta:
+        raise HTTPException(status_code=400, detail='Escribe un tema para consultar.')
+    if len(pregunta) > 1000:
+        raise HTTPException(status_code=400, detail='La consulta no puede superar 1000 caracteres.')
+
+    bot = FinanBotIA()
+    respuesta, _ = bot.responder_con_acciones(
+        f"Estoy en la sección Aprende. Explícame de forma educativa y clara este tema "
+        f"financiero, con contexto de Colombia cuando aplique: {pregunta}. "
+        "No registres ni modifiques información de mi cuenta.",
+        None,
+        None,
+    )
+    return {'respuesta': respuesta}
 
 
 # ── GET /articulos ────────────────────────────────────────────

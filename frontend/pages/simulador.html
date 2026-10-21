@@ -4,6 +4,7 @@
     <base target="_top">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="timezone.js"></script>
     <title>FinanBot - Simulador</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -290,7 +291,6 @@
             border-radius: 14px; padding: 16px; font-size: 13px;
             color: var(--fb-lav); line-height: 1.75;
         }
-
         /* COMPARADOR */
         .comparador-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-top: 14px; }
         .comp-item    { background: var(--item-bg); border: 1px solid var(--item-border); border-radius: 12px; padding: 14px; text-align: center; }
@@ -758,7 +758,7 @@
                 retencion, saldoNeto, rentabilidad, pctGanancia,
                 nombreTipo,
                 labels, valoresCrecimiento, valoresCapital,
-                fecha: new Date().toLocaleDateString('es-CO')
+                fecha: FinanbotTime.todayLabel()
             };
             localStorage.setItem('finanbot_simulacion_realizada', 'true');
 
@@ -898,7 +898,7 @@
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando...';
 
             try {
-                const res = await fetch('http://127.0.0.1:8000/api/simulaciones/exportar', {
+                const res = await fetch('/api/simulaciones/exportar', {
                     method: 'POST',
                     headers: {
                         'Content-Type':  'application/json',
@@ -923,7 +923,7 @@
                 const url  = URL.createObjectURL(blob);
                 const a    = document.createElement('a');
                 a.href     = url;
-                a.download = `FinanBot_Simulacion_${s.nombreTipo.replace(/\s+/g,'_')}_${new Date().toLocaleDateString('es-CO').replace(/\//g,'-')}.xlsx`;
+                a.download = `FinanBot_Simulacion_${s.nombreTipo.replace(/\s+/g,'_')}_${FinanbotTime.todayLabel().replace(/\//g,'-')}.xlsx`;
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);

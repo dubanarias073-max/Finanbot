@@ -1,6 +1,5 @@
 # routes/chat_route.py
 import re, ast, operator, uuid, unicodedata
-from datetime import date
 from collections import defaultdict
 from typing import Optional
 
@@ -15,9 +14,11 @@ from models import (
     CATEGORIAS_GASTO, CATEGORIAS_INGRESO,
     normalizar_categoria, eliminar_tiendas_sin_transacciones,
 )
+from timezone import bogota_today
 from routes.transacciones import (
     CategoriaCrear, crear_mi_categoria, eliminar_mi_categoria, _mis_categorias,
 )
+from routes.metas import obtener_metas_calculadas
 
 
 def obtener_categoria(nombre: str, tipo: str, uid: int | None = None, db: Session | None = None) -> str:
@@ -89,6 +90,21 @@ def _guardar_chat(db: Session, uid: int, conv_id_body, mensaje: str, respuesta: 
                 mensaje=mensaje, respuesta=respuesta, es_invitado=False))
     db.commit()
     return conv_id
+
+
+def _conversacion_ia_id(db: Session, uid: int | None, conv_id_body) -> str | None:
+    if uid is None or not conv_id_body:
+        return None
+    try:
+        conv_id = str(uuid.UUID(str(conv_id_body)))
+    except (AttributeError, TypeError, ValueError):
+        return None
+
+    pertenece_a_otro = db.query(Chat.id).filter(
+        Chat.conversacion_id == conv_id,
+        Chat.usuario_id != uid,
+    ).first()
+    return None if pertenece_a_otro else conv_id
 
 
 router = APIRouter()
@@ -367,13 +383,18 @@ def mensaje(
 
     msg_usuario = _normalizar(msg_original)
 
-    session_key = usuario_id or 'invitado'
+    uid = int(usuario_id) if usuario_id else None
+    conversacion_id = _conversacion_ia_id(db, uid, body.get('conversacion_id'))
+    session_key = (
+        f'user:{uid}:conversation:{conversacion_id}'
+        if uid is not None and conversacion_id
+        else usuario_id or 'invitado'
+    )
     if session_key not in sesiones:
         sesiones[session_key] = FinanBotIA()
     bot = sesiones[session_key]
 
-    ctx = _cargar_contexto(int(usuario_id), db) if usuario_id else None
-    uid = int(usuario_id) if usuario_id else None
+    ctx = _cargar_contexto(uid, db) if uid is not None else None
     accion = None
 
     ubic_rechazada = None
@@ -397,6 +418,23 @@ def mensaje(
     if uid:
         _actualizar_contexto(session_key, accion, msg_usuario)
 
+    if uid and ctx and accion and accion.get('tipo') in {
+        'gasto_registrado', 'gasto_editado', 'gasto_eliminado',
+        'meta_abonada', 'meta_actualizada',
+    }:
+        metas_actualizadas = obtener_metas_calculadas(uid, db)
+        ctx['metas'] = [{
+            'id': meta['id'], 'nombre': meta['nombre'], 'objetivo': meta['monto_objetivo'],
+            'actual': meta['monto_actual'], 'porcentaje': meta['porcentaje'],
+            'completada': meta['completada'], 'tipo': meta['tipo'],
+            'modo': meta['modo'], 'monto_automatico': meta['monto_automatico'],
+            'dia_automatico': meta['dia_automatico'],
+        } for meta in metas_actualizadas if meta['tipo'] == 'ahorro']
+        ctx['limites_gasto_excedidos'] = [
+            meta for meta in metas_actualizadas
+            if meta['tipo'] in ('gasto_mensual', 'gasto_anual') and meta['excedida']
+        ]
+
     if accion and accion.get('tipo') in _TIPOS_RESPUESTA_LOCAL:
         # Preguntas de ayuda y "¿cuál de estos?" se responden aquí mismo,
         # con el texto exacto ligado a los datos que ya extrajimos —
@@ -407,7 +445,9 @@ def mensaje(
         respuesta = _texto_respuesta_local(accion)
         acciones_ui = []
     else:
-        respuesta, acciones_ui = bot.responder_con_acciones(msg_usuario, ctx, accion)
+        respuesta, acciones_ui = bot.responder_con_acciones(
+            msg_usuario, ctx, accion, conversacion_id=conversacion_id,
+        )
         respuesta = _agregar_disclaimers_si_necesario(respuesta, msg_usuario)
 
     # Si se registró algo pero el GPS era demasiado impreciso, se dice claro
@@ -416,6 +456,8 @@ def mensaje(
             and accion.get('tipo') in ('gasto_registrado', 'ingreso_registrado')):
         respuesta += (f"\n\n⚠️ *No guardé la ubicación: el GPS tenía una precisión de ±{ubic_rechazada:,.0f} m "
                       f"y así no sería un lugar real. Actívalo en un lugar abierto o márcalo en el mapa de Mis finanzas.*")
+
+    respuesta = _agregar_avisos_metas(respuesta, ctx, accion)
 
     conversacion_id = None
     if uid:
@@ -433,6 +475,39 @@ def mensaje(
         'estado': 'ok',
         'es_ia': True,
     }
+
+
+def _agregar_avisos_metas(respuesta: str, ctx: dict | None, accion: dict | None) -> str:
+    if not ctx:
+        return respuesta
+
+    limites = ctx.get('limites_gasto_excedidos', [])
+    if limites:
+        detalle = '; '.join(
+            f"{meta['nombre']} ({'mensual' if meta['tipo'] == 'gasto_mensual' else 'anual'}): "
+            f"${meta['monto_actual']:,.0f} de ${meta['monto_objetivo']:,.0f}"
+            for meta in limites
+        )
+        respuesta += (
+            '\n\n🚨 **Alerta: alcanzaste o superaste un límite de gasto.** '
+            f'{detalle}. Esto no es una felicitación: pausa gastos no esenciales y revisa '
+            'tus movimientos y el tope en Mi Perfil.'
+        )
+
+    if accion and accion.get('tipo') in ('meta_abonada', 'meta_actualizada'):
+        ahorro = next((
+            meta for meta in ctx.get('metas', [])
+            if (accion.get('id') and meta['id'] == accion['id'])
+            or meta['nombre'] == accion.get('nombre')
+        ), None)
+        nuevo_total = accion.get('nuevo_total', accion.get('nuevo_monto'))
+        if ahorro and nuevo_total is not None and float(nuevo_total) >= ahorro['objetivo']:
+            respuesta += (
+                f"\n\n🎉 **¡Felicitaciones! Completaste tu meta de ahorro "
+                f"«{ahorro['nombre']}»** con ${float(nuevo_total):,.0f}. "
+                'Este sí es un logro: es distinto a alcanzar un límite de gasto.'
+            )
+    return respuesta
 
 
 def _agregar_disclaimers_si_necesario(respuesta: str, mensaje: str) -> str:
@@ -603,7 +678,7 @@ def _resolver_contexto(msg: str, uid: int, ctx: dict, session_key: str, db: Sess
                 cat_ok = obtener_categoria(cat_texto, accion_pendiente, uid, db)
                 ubic, desc = _campos_ubic_lugar(ctx, datos_previos.get('lugar'), desc)
                 t = Transaccion(usuario_id=uid, categoria=cat_ok, tipo=accion_pendiente, monto=monto,
-                                 descripcion=desc or 'Registrado por FinanBot', fecha=date.today(),
+                                 descripcion=desc or 'Registrado por FinanBot', fecha=bogota_today(),
                                  **ubic)
                 db.add(t); db.commit()
                 _contextos[session_key] = {
@@ -810,7 +885,7 @@ def _resolver_contexto(msg: str, uid: int, ctx: dict, session_key: str, db: Sess
                 cat_ok = obtener_categoria(cat, 'gasto', uid, db)
                 ubic, desc = _campos_ubic_lugar(ctx, lugar, desc)
                 t = Transaccion(usuario_id=uid, categoria=cat_ok, tipo='gasto', monto=monto,
-                                 descripcion=desc or 'Registrado por FinanBot', fecha=date.today(),
+                                 descripcion=desc or 'Registrado por FinanBot', fecha=bogota_today(),
                                  **ubic)
                 db.add(t); db.commit()
                 _contextos[session_key] = {'esperando': None, 'ultimo_tipo': 'gasto_registrado', 'datos': {}}
@@ -838,7 +913,7 @@ def _resolver_contexto(msg: str, uid: int, ctx: dict, session_key: str, db: Sess
                 cat_ok = obtener_categoria(cat, 'ingreso', uid, db)
                 ubic, desc = _campos_ubic_lugar(ctx, lugar, desc)
                 t = Transaccion(usuario_id=uid, categoria=cat_ok, tipo='ingreso', monto=monto,
-                                 descripcion=desc or 'Registrado por FinanBot', fecha=date.today(),
+                                 descripcion=desc or 'Registrado por FinanBot', fecha=bogota_today(),
                                  **ubic)
                 db.add(t); db.commit()
                 _contextos[session_key] = {'esperando': None, 'ultimo_tipo': 'ingreso_registrado', 'datos': {}}
@@ -872,6 +947,7 @@ def _cargar_contexto(uid: int, db: Session):
     try:
         transacciones = db.query(Transaccion).filter_by(usuario_id=uid).all()
         metas         = db.query(MetaAhorro).filter_by(usuario_id=uid).all()
+        metas_calculadas = obtener_metas_calculadas(uid, db)
         usuario       = db.query(Usuario).get(uid)
         categorias_activas = _categorias_activas(uid, db)
         categorias_gasto = [categoria['nombre'] for categoria in categorias_activas['gasto']]
@@ -897,19 +973,21 @@ def _cargar_contexto(uid: int, db: Session):
             'num_transacciones': len(transacciones),
             'num_gastos':   sum(1 for t in transacciones if t.tipo == 'gasto'),
             'num_ingresos': sum(1 for t in transacciones if t.tipo == 'ingreso'),
-            'num_metas': len(metas),
+            'num_metas': len([m for m in metas_calculadas if m['tipo'] == 'ahorro']),
             'categoria_mayor_gasto': cat_mayor,
             'monto_mayor_gasto': cats[cat_mayor] if cat_mayor else 0,
             'gastos_por_categoria': dict(cats),
             'metas': [{
-                'id': m.id, 'nombre': m.nombre, 'objetivo': float(m.monto_objetivo),
-                'actual': float(m.monto_actual),
-                'porcentaje': min(round(float(m.monto_actual)/float(m.monto_objetivo)*100), 100) if m.monto_objetivo > 0 else 0,
-                'completada': m.completada,
-                'modo': getattr(m, 'modo', 'manual') or 'manual',
-                'monto_automatico': float(m.monto_automatico) if getattr(m, 'monto_automatico', None) is not None else None,
-                'dia_automatico': getattr(m, 'dia_automatico', None),
-            } for m in metas],
+                'id': m['id'], 'nombre': m['nombre'], 'objetivo': m['monto_objetivo'],
+                'actual': m['monto_actual'], 'porcentaje': m['porcentaje'],
+                'completada': m['completada'], 'tipo': m['tipo'],
+                'modo': m['modo'], 'monto_automatico': m['monto_automatico'],
+                'dia_automatico': m['dia_automatico'],
+            } for m in metas_calculadas if m['tipo'] == 'ahorro'],
+            'limites_gasto_excedidos': [
+                m for m in metas_calculadas
+                if m['tipo'] in ('gasto_mensual', 'gasto_anual') and m['excedida']
+            ],
             'transacciones_recientes': [{
                 'id': t.id, 'tipo': t.tipo, 'monto': float(t.monto),
                 'categoria': t.categoria or 'Otros gastos',
@@ -927,7 +1005,7 @@ def _cargar_contexto(uid: int, db: Session):
                 'latitud': float(t.latitud) if getattr(t, 'latitud', None) is not None else None,
                 'longitud': float(t.longitud) if getattr(t, 'longitud', None) is not None else None,
             } for t in transacciones
-              if t.fecha and t.fecha.year == date.today().year and t.fecha.month == date.today().month
+              if t.fecha and t.fecha.year == bogota_today().year and t.fecha.month == bogota_today().month
               and not (t.descripcion == '__auto_salario__' and getattr(t, 'latitud', None) is None)],
             'ingreso_mensual': float(usuario.ingreso_mensual or 0),
             'meta_ahorro_mensual': float(usuario.meta_ahorro or 0),
@@ -1342,7 +1420,7 @@ def ejecutar_accion(mensaje: str, uid: int, ctx: dict, db: Session):
                     cat_ok = obtener_categoria(cat, 'gasto', uid, db)
                     ubic, desc = _campos_ubic_lugar(ctx, lugar, desc)
                     t = Transaccion(usuario_id=uid, categoria=cat_ok, tipo='gasto', monto=monto,
-                                     descripcion=desc or 'Registrado por FinanBot', fecha=date.today(),
+                                     descripcion=desc or 'Registrado por FinanBot', fecha=bogota_today(),
                                      **ubic)
                     db.add(t); db.commit()
                     return {'tipo': 'gasto_registrado', 'monto': monto, 'categoria': cat_ok, 'id': t.id, **_datos_ubic(t, ctx)}
@@ -1418,7 +1496,7 @@ def ejecutar_accion(mensaje: str, uid: int, ctx: dict, db: Session):
                     cat_ok = obtener_categoria(cat, 'ingreso', uid, db)
                     ubic, desc = _campos_ubic_lugar(ctx, lugar, desc)
                     t = Transaccion(usuario_id=uid, categoria=cat_ok, tipo='ingreso', monto=monto,
-                                     descripcion=desc or 'Registrado por FinanBot', fecha=date.today(),
+                                     descripcion=desc or 'Registrado por FinanBot', fecha=bogota_today(),
                                      **ubic)
                     db.add(t); db.commit()
                     return {'tipo': 'ingreso_registrado', 'monto': monto, 'categoria': cat_ok, 'id': t.id, **_datos_ubic(t, ctx)}

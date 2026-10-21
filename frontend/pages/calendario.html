@@ -4,6 +4,7 @@
     <base target="_top">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="timezone.js"></script>
     <title>FinanBot - Calendario</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -254,7 +255,7 @@
 
 <script>
     const token = localStorage.getItem('token');
-    const API = 'http://127.0.0.1:8000/api';
+    const API = '/api';
 
     // ── TEMA ──────────────────────────────────────────────
     (function() {
@@ -398,7 +399,7 @@
     }
 
     // ── ESTADO ────────────────────────────────────────────
-    const hoy = new Date();
+    const hoy = FinanbotTime.today();
     let anioActual = hoy.getFullYear();
     let mesActual  = hoy.getMonth() + 1; // 1-12
     let diaSeleccionado = null;
@@ -453,7 +454,7 @@
         const ultimoDia = new Date(anioActual, mesActual, 0);
         const primerIndex = primerDia.getDay(); // 0=domingo
         const totalDias = ultimoDia.getDate();
-        const hoyStr = new Date().toISOString().split('T')[0];
+        const hoyStr = FinanbotTime.todayIso();
 
         const porDia = {};
         movimientosMes.forEach(m => {

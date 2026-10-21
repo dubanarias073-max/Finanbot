@@ -36,7 +36,40 @@ const legacyScreens = {
 }
 
 function LegacyPage({ file }) {
-  return <iframe className="legacy-screen" src={`/legacy/${file}`} title={`FinanBot ${file}`} />
+  const [exceededGoals, setExceededGoals] = useState([])
+  useEffect(() => {
+    const refreshLimits = () => {
+      const token = localStorage.getItem('token')
+      if (!token) return
+      fetch(`${API}/metas/`, { headers: { Authorization: `Bearer ${token}` } })
+        .then(async (response) => {
+          const data = await response.json()
+          if (!response.ok) throw new Error(data.detail || 'No se pudieron revisar tus límites de gasto')
+          setExceededGoals(data.filter((goal) =>
+            ['gasto_mensual', 'gasto_anual'].includes(goal.tipo) &&
+            (goal.excedida ?? Number(goal.monto_actual) > Number(goal.monto_objetivo))
+          ))
+        })
+        .catch((error) => console.error('No se pudieron revisar los límites de gasto:', error))
+    }
+    refreshLimits()
+    const timer = window.setInterval(refreshLimits, 60000)
+    window.addEventListener('focus', refreshLimits)
+    return () => {
+      window.clearInterval(timer)
+      window.removeEventListener('focus', refreshLimits)
+    }
+  }, [])
+  return <div className="legacy-layout">
+    {exceededGoals.length > 0 && <div className="global-spending-alert" role="alert">
+      <span aria-hidden="true">🚨</span>
+      <div><strong>🚨 Límite de gasto alcanzado o excedido</strong><p>{exceededGoals.map((goal) =>
+        `${goal.nombre} (${goal.tipo === 'gasto_mensual' ? 'mensual' : 'anual'}): ${money(goal.monto_actual)} de ${money(goal.monto_objetivo)}`
+      ).join(' · ')}</p></div>
+      <a href="/perfil">Revisar metas</a>
+    </div>}
+    <iframe className="legacy-screen" src={`/legacy/${file}`} title={`FinanBot ${file}`} />
+  </div>
 }
 
 function money(value) { return `$${Number(value || 0).toLocaleString('es-CO')}` }

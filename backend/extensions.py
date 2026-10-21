@@ -34,7 +34,11 @@ def create_access_token(data: dict) -> str:
 
 def create_token_para_usuario(usuario: Usuario) -> str:
     """Atajo para login/registro: mete id y rol en el token."""
-    return create_access_token({"sub": str(usuario.id), "rol": usuario.rol})
+    return create_access_token({
+        "sub": str(usuario.id),
+        "rol": usuario.rol,
+        "token_version": usuario.token_version,
+    })
 
 
 def decode_access_token(token: str) -> dict | None:
@@ -73,6 +77,9 @@ def _resolver_usuario_desde_token(
 
     if not usuario:
         return _fallar(status.HTTP_404_NOT_FOUND, "Usuario no encontrado")
+
+    if payload.get("token_version", 0) != usuario.token_version:
+        return _fallar(status.HTTP_401_UNAUTHORIZED, "La sesión fue revocada. Inicia sesión nuevamente.")
 
     return usuario
 

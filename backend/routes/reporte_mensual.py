@@ -7,6 +7,8 @@ from collections import defaultdict
 from datetime import datetime, date
 from io import BytesIO
 from xml.sax.saxutils import escape as xml_escape
+from application.services.reportes_narrativa import resumen_mensual
+from timezone import bogota_now
 
 MESES_ES = [
     '', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -288,7 +290,7 @@ def generar_reporte_pdf_mensual(usuario, transacciones, anio: int, mes: int) -> 
     story = []
 
     # ── ENCABEZADO ─────────────────────────────────────────
-    fecha_str = datetime.now().strftime('%d/%m/%Y  %H:%M')
+    fecha_str = bogota_now().strftime('%d/%m/%Y  %H:%M')
     detalles = Table([
         [Paragraph(f'<b>{nombre_pdf}</b>', st('un', fontSize=11, fontName='Helvetica-Bold'))],
         [Paragraph(_limpiar(usuario.correo), st('uc', fontSize=9, textColor=GRIS))],
@@ -336,6 +338,12 @@ def generar_reporte_pdf_mensual(usuario, transacciones, anio: int, mes: int) -> 
     tarjetas.setStyle(TableStyle([('LEFTPADDING', (0, 0), (-1, -1), 4), ('RIGHTPADDING', (0, 0), (-1, -1), 4),
                                    ('TOPPADDING', (0, 0), (-1, -1), 0), ('BOTTOMPADDING', (0, 0), (-1, -1), 0)]))
     story += [tarjetas, Spacer(1, 18)]
+    story += [
+        Paragraph(xml_escape(resumen_mensual(nombre_mes, anio, r)),
+                  st('resumen_narrativo', fontSize=9, textColor=GRIS, leading=14,
+                     leftIndent=8, rightIndent=8)),
+        Spacer(1, 18),
+    ]
 
     # ── RESUMEN SEMANA A SEMANA ────────────────────────────
     if r['por_semana']:
@@ -483,8 +491,8 @@ def generar_reporte_excel_mensual(usuario, transacciones, anio: int, mes: int) -
 
     P = {
         'mo': 'C026D3', 'md': '7E22CE', 'cy': '06B6D4', 've': '22C55E',
-        'ro': 'F472B6', 'am': 'F59E0B', 're': 'EF4444', 'bg': '0F0F2D',
-        'ca': '1A1A4E', 'li': '2D1B69', 'bl': 'FFFFFF', 'gr': '9CA3AF', 'mu': '6B7280',
+        'ro': 'F472B6', 'am': 'F59E0B', 're': 'EF4444', 'bg': 'FFFFFF',
+        'ca': 'FFFFFF', 'li': 'E8EAF6', 'bl': '1F2937', 'gr': '475569', 'mu': '64748B',
     }
 
     wb = openpyxl.Workbook()
@@ -494,7 +502,7 @@ def generar_reporte_excel_mensual(usuario, transacciones, anio: int, mes: int) -
         return Font(color=h or P['bl'], bold=bold, size=sz, italic=italic, name='Segoe UI')
     def al(h='center', v='center', wrap=False): return Alignment(horizontal=h, vertical=v, wrapText=wrap)
     def bd(col=None):
-        s = Side(style='thin', color=col or P['li'])
+        s = Side(style='thin', color=col or 'CBD5E1')
         return Border(left=s, right=s, top=s, bottom=s)
     def cw(ws, col, w): ws.column_dimensions[get_column_letter(col)].width = w
     def rh(ws, row, h): ws.row_dimensions[row].height = h
@@ -522,9 +530,9 @@ def generar_reporte_excel_mensual(usuario, transacciones, anio: int, mes: int) -
         fondo_hoja(ws)
         rh(ws, 1, 46); rh(ws, 2, 20)
         ws.merge_cells(f'A1:{get_column_letter(cols)}1')
-        c1 = ws['A1']; c1.value = titulo; c1.fill = fl(P['mo']); c1.font = fn(P['bl'], bold=True, sz=18); c1.alignment = al()
+        c1 = ws['A1']; c1.value = titulo; c1.fill = fl(P['li']); c1.font = fn(P['mo'], bold=True, sz=18); c1.alignment = al()
         ws.merge_cells(f'A2:{get_column_letter(cols)}2')
-        c2 = ws['A2']; c2.value = sub; c2.fill = fl(P['md']); c2.font = fn(P['gr'], sz=9, italic=True); c2.alignment = al()
+        c2 = ws['A2']; c2.value = sub; c2.fill = fl(P['ca']); c2.font = fn(P['gr'], sz=9, italic=True); c2.alignment = al()
 
     def enc_fila(ws, row, defs, bg=None):
         rh(ws, row, 26)
@@ -549,7 +557,7 @@ def generar_reporte_excel_mensual(usuario, transacciones, anio: int, mes: int) -
     ws1 = wb.active; ws1.title = 'Resumen del mes'
     ws1.sheet_properties.tabColor = P['mo']
     cabecera(ws1, f'FinanBot — {nombre_mes} {anio}',
-             f'Usuario: {usuario.nombre}  ·  {usuario.correo}  ·  Generado {datetime.now().strftime("%d/%m/%Y %H:%M")}', 7)
+             f'Usuario: {usuario.nombre}  ·  {usuario.correo}  ·  Generado {bogota_now().strftime("%d/%m/%Y %H:%M")}', 7)
 
     kpi_block(ws1, 4, [
         ('INGRESOS DEL MES', f"${r['total_ingresos']:,.0f}", P['cy']),
@@ -559,6 +567,15 @@ def generar_reporte_excel_mensual(usuario, transacciones, anio: int, mes: int) -
         ('DÍAS CON DATOS',   f"{r['dias_con_datos']}/{r['ultimo_dia_mes']}", P['gr']),
         ('CON LUGAR',        f"{r['con_ubicacion']}/{len(transacciones)}", P['cy']),
     ])
+
+    ws1.merge_cells('A3:G3')
+    resumen_cell = ws1['A3']
+    resumen_cell.value = resumen_mensual(nombre_mes, anio, r)
+    resumen_cell.fill = fl(P['ca'])
+    resumen_cell.font = fn(P['gr'], sz=9, italic=True)
+    resumen_cell.alignment = al('left', wrap=True)
+    resumen_cell.border = bd()
+    rh(ws1, 3, 42)
 
     rh(ws1, 7, 5)
     for i in range(1, 8):
@@ -630,7 +647,7 @@ def generar_reporte_excel_mensual(usuario, transacciones, anio: int, mes: int) -
              f"{len(r['cat_gastos'])} categorías de gasto  ·  {len(r['cat_ingresos'])} fuentes de ingreso", 6)
 
     wr(ws3, 4, 1, '💸  GASTOS POR CATEGORÍA', P['li'], P['mo'], bold=True, sz=11, h='left')
-    enc_fila(ws3, 5, [('Categoría', 24), ('Monto', 15), ('% del total', 13), ('Distribución', 20)], P['re'])
+    enc_fila(ws3, 5, [('Categoría', 24), ('Monto', 15), ('% del total', 13), ('Distribución', 20)])
     fila = 6
     categorias_gasto_ordenadas = CATEGORIAS_GASTO_ORDEN + sorted(set(r['cat_gastos']) - set(CATEGORIAS_GASTO_ORDEN))
     for cat in categorias_gasto_ordenadas:
@@ -649,7 +666,7 @@ def generar_reporte_excel_mensual(usuario, transacciones, anio: int, mes: int) -
 
     fila_ing_titulo = fila + 1
     wr(ws3, fila_ing_titulo, 1, '💰  INGRESOS POR FUENTE', P['li'], P['cy'], bold=True, sz=11, h='left')
-    enc_fila(ws3, fila_ing_titulo + 1, [('Fuente', 24), ('Monto', 15), ('% del total', 13)], P['ve'])
+    enc_fila(ws3, fila_ing_titulo + 1, [('Fuente', 24), ('Monto', 15), ('% del total', 13)])
     fila2 = fila_ing_titulo + 2
     categorias_ingreso_ordenadas = CATEGORIAS_INGRESO_ORDEN + sorted(set(r['cat_ingresos']) - set(CATEGORIAS_INGRESO_ORDEN))
     for cat in categorias_ingreso_ordenadas:

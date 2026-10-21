@@ -8,8 +8,6 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@700&display=swap" rel="stylesheet">
-    <!-- reCAPTCHA v2 -->
-    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     <style>
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -76,6 +74,8 @@
             backdrop-filter: blur(24px);
             box-shadow: 0 28px 70px rgba(0,0,0,0.55), 0 0 0 1px rgba(94,234,212,0.06);
         }
+        .google-signin { display:flex; justify-content:center; min-height:40px; margin:0 0 18px; }
+        .google-status { color:var(--muted); font-size:12px; text-align:center; margin:-8px 0 14px; }
         /* Línea superior degradada */
         .card-login::before {
             content: '';
@@ -362,7 +362,7 @@
             <button class="modal-close" onclick="cerrarModal()">✕</button>
 
             <div class="modal-titulo">🔑 Recuperar contraseña</div>
-            <div class="modal-sub">Verifica tu identidad en 3 pasos</div>
+            <div class="modal-sub">Elige cómo quieres verificar tu cuenta. Para la pregunta de seguridad no necesitas acceder al correo.</div>
 
             <!-- Stepper -->
             <div class="modal-stepper">
@@ -372,69 +372,67 @@
                 </div>
                 <div class="ms-item">
                     <div class="ms-circle" id="ms2">2</div>
-                    <div class="ms-line" id="ml2"></div>
                 </div>
-                <div class="ms-circle" id="ms3">3</div>
             </div>
 
             <!-- Alertas -->
             <div class="alerta-modal alerta-modal-error" id="alertaResetError"><i class="fas fa-circle-exclamation"></i><span id="txtResetError"></span></div>
             <div class="alerta-modal alerta-modal-exito" id="alertaResetExito"><i class="fas fa-circle-check"></i><span id="txtResetExito"></span></div>
 
-            <!-- PASO 1: Correo + reCAPTCHA -->
+            <!-- PASO 1: seleccionar método -->
             <div id="paso1Reset">
                 <div class="m-campo">
-                    <label class="m-label"><i class="fas fa-envelope" style="color:var(--purple);margin-right:5px"></i>Correo electrónico</label>
+                    <label class="m-label"><i class="fas fa-envelope" style="color:var(--purple);margin-right:5px"></i>Correo registrado en tu cuenta</label>
                     <input type="email" class="m-input" id="resetCorreo" placeholder="tu@correo.com">
                 </div>
-
-                <!-- reCAPTCHA v2 de Google -->
-                <div class="recaptcha-wrap">
-                    <div class="g-recaptcha"
-                         data-sitekey="6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"
-                         data-theme="dark"
-                         data-size="normal">
-                    </div>
-                </div>
-                <!-- NOTA: La sitekey "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI" es la clave de TEST de Google.
-                     Funciona en cualquier dominio para pruebas. Para producción reemplázala por tu clave real
-                     obtenida en https://www.google.com/recaptcha/admin -->
-
                 <button class="btn-modal" onclick="buscarCuenta()">
-                    <i class="fas fa-search"></i> Buscar mi cuenta
+                    <i class="fas fa-paper-plane"></i> Enviar código
+                </button>
+                <button class="btn-modal" style="margin-top:10px" onclick="buscarPreguntaSeguridad()">
+                    <i class="fas fa-shield-alt"></i> Recuperar con pregunta de seguridad
                 </button>
             </div>
 
-            <!-- PASO 2: Pregunta de seguridad -->
+            <!-- PASO 2: código y nueva contraseña -->
             <div id="paso2Reset" style="display:none">
-                <div class="pregunta-box" id="preguntaMostrada">🔐 Cargando pregunta...</div>
                 <div class="m-campo">
-                    <label class="m-label"><i class="fas fa-key" style="color:var(--purple);margin-right:5px"></i>Tu respuesta secreta</label>
-                    <input type="text" class="m-input" id="resetRespuesta" placeholder="Escribe tu respuesta">
+                    <label class="m-label"><i class="fas fa-key" style="color:var(--purple);margin-right:5px"></i>Código recibido por correo</label>
+                    <input type="text" class="m-input" id="resetCodigo" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="Código de 6 dígitos">
                 </div>
-                <button class="btn-modal" onclick="verificarRespuesta()">
-                    <i class="fas fa-check"></i> Verificar respuesta
-                </button>
-            </div>
-
-            <!-- PASO 3: Nueva contraseña -->
-            <div id="paso3Reset" style="display:none">
                 <div class="m-campo">
                     <label class="m-label"><i class="fas fa-lock" style="color:var(--purple);margin-right:5px"></i>Nueva contraseña</label>
-                    <div class="m-input-row">
-                        <input type="password" class="m-input" id="resetContrasena" placeholder="Mínimo 6 caracteres" oninput="verificarMatchReset()">
-                        <button class="m-ojo" type="button" onclick="togglePwd('resetContrasena',this)"><i class="fas fa-eye"></i></button>
-                    </div>
+                    <input type="password" class="m-input" id="resetContrasena" placeholder="Mínimo 6 caracteres" oninput="verificarMatchReset()">
                 </div>
                 <div class="m-campo">
                     <label class="m-label"><i class="fas fa-lock" style="color:var(--purple);margin-right:5px"></i>Confirmar contraseña</label>
-                    <div class="m-input-row">
-                        <input type="password" class="m-input" id="resetConfirmar" placeholder="Repite tu contraseña" oninput="verificarMatchReset()">
-                        <button class="m-ojo" type="button" onclick="togglePwd('resetConfirmar',this)"><i class="fas fa-eye"></i></button>
-                    </div>
+                    <input type="password" class="m-input" id="resetConfirmar" placeholder="Repite tu contraseña" oninput="verificarMatchReset()">
                     <div class="match-hint" id="matchReset"></div>
                 </div>
                 <button class="btn-modal" onclick="resetearContrasena()">
+                    <i class="fas fa-key"></i> Cambiar contraseña
+                </button>
+                <button class="btn-modal" id="btnReenviarCodigo" style="margin-top:10px" onclick="reenviarCodigo()" disabled>
+                    Reenviar código (60 s)
+                </button>
+            </div>
+
+            <!-- PASO 2 ALTERNATIVO: pregunta y nueva contraseña -->
+            <div id="pasoPreguntaReset" style="display:none">
+                <div class="pregunta-box" id="textoPreguntaSeguridad"></div>
+                <div class="m-campo">
+                    <label class="m-label"><i class="fas fa-key" style="color:var(--purple);margin-right:5px"></i>Tu respuesta</label>
+                    <input type="text" class="m-input" id="resetRespuestaSeguridad" autocomplete="off">
+                </div>
+                <div class="m-campo">
+                    <label class="m-label"><i class="fas fa-lock" style="color:var(--purple);margin-right:5px"></i>Nueva contraseña</label>
+                    <input type="password" class="m-input" id="resetContrasenaPregunta" placeholder="Mínimo 6 caracteres" oninput="verificarMatchPregunta()">
+                </div>
+                <div class="m-campo">
+                    <label class="m-label"><i class="fas fa-lock" style="color:var(--purple);margin-right:5px"></i>Confirmar contraseña</label>
+                    <input type="password" class="m-input" id="resetConfirmarPregunta" placeholder="Repite tu contraseña" oninput="verificarMatchPregunta()">
+                    <div class="match-hint" id="matchPregunta"></div>
+                </div>
+                <button class="btn-modal" onclick="resetearConPregunta()">
                     <i class="fas fa-key"></i> Cambiar contraseña
                 </button>
             </div>
@@ -458,7 +456,6 @@
         <!-- Alertas -->
         <div class="alerta alerta-error" id="alertaError"><i class="fas fa-circle-exclamation"></i><span id="mensajeError"></span></div>
         <div class="alerta alerta-exito" id="alertaExito"><i class="fas fa-circle-check"></i><span id="mensajeExito"></span></div>
-
         <!-- Correo -->
         <div class="campo">
             <label class="campo-label">Correo electrónico</label>
@@ -486,6 +483,9 @@
         <a href="#" class="link-olvide" onclick="abrirModal(); return false;">
             ¿Olvidaste tu contraseña?
         </a>
+
+        <div class="google-signin" id="googleButton"></div>
+        <p class="google-status" id="googleStatus"></p>
 
         <!-- Botón ingresar -->
         <button class="btn-login" id="btnLogin" onclick="login()">
@@ -542,7 +542,7 @@
             btn.innerHTML = '<span class="spinner"></span> Ingresando...';
 
             try {
-                const res  = await fetch('http://127.0.0.1:8000/api/auth/login', {
+                const res  = await fetch('/api/auth/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ correo, contrasena })
@@ -552,11 +552,11 @@
                 if (res.ok) {
                     localStorage.setItem('token',   data.token);
                     localStorage.setItem('usuario', JSON.stringify(data.usuario));
-                    mostrarExito('¡Bienvenido ' + data.usuario.nombre + '! Redirigiendo...');
+                    mostrarExito(data.aviso_seguridad || ('¡Bienvenido ' + data.usuario.nombre + '! Redirigiendo...'));
 
                     setTimeout(async () => {
                         try {
-                            const rp = await fetch('http://127.0.0.1:8000/api/perfil/', {
+                            const rp = await fetch('/api/perfil/', {
     headers: { 'Authorization': 'Bearer ' + data.token }
 });
                             const perfil = await rp.json();
@@ -579,41 +579,57 @@
         // ══════════════════════════════════════════════
         //  MODAL OLVIDÉ MI CONTRASEÑA
         // ══════════════════════════════════════════════
+        let timerReenvio = null;
+
         function abrirModal() {
             document.getElementById('modalOlvide').classList.add('visible');
         }
 
         function cerrarModal() {
+            if (timerReenvio) clearInterval(timerReenvio);
+            timerReenvio = null;
             document.getElementById('modalOlvide').classList.remove('visible');
-            // Resetear pasos
             document.getElementById('paso1Reset').style.display = 'block';
             document.getElementById('paso2Reset').style.display = 'none';
-            document.getElementById('paso3Reset').style.display = 'none';
-            // Limpiar inputs
-            ['resetCorreo','resetRespuesta','resetContrasena','resetConfirmar'].forEach(id => {
+            document.getElementById('pasoPreguntaReset').style.display = 'none';
+            ['resetCorreo','resetCodigo','resetContrasena','resetConfirmar','resetRespuestaSeguridad','resetContrasenaPregunta','resetConfirmarPregunta'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.value = '';
             });
-            // Limpiar alertas
+            document.getElementById('textoPreguntaSeguridad').textContent = '';
             document.getElementById('alertaResetError').classList.remove('visible');
             document.getElementById('alertaResetExito').classList.remove('visible');
-            // Resetear stepper
             actualizarStepper(1);
-            // Reset reCAPTCHA
-            if (typeof grecaptcha !== 'undefined') grecaptcha.reset();
+        }
+
+        function iniciarTemporizadorReenvio() {
+            if (timerReenvio) clearInterval(timerReenvio);
+            const boton = document.getElementById('btnReenviarCodigo');
+            let segundos = 65;
+            boton.disabled = true;
+            boton.textContent = 'Reenviar código (' + segundos + ' s)';
+            timerReenvio = setInterval(() => {
+                segundos -= 1;
+                if (segundos <= 0) {
+                    clearInterval(timerReenvio);
+                    timerReenvio = null;
+                    boton.disabled = false;
+                    boton.innerHTML = '<i class="fas fa-redo"></i> Reenviar código';
+                    return;
+                }
+                boton.textContent = 'Reenviar código (' + segundos + ' s)';
+            }, 1000);
         }
 
         function actualizarStepper(paso) {
-            for (let i = 1; i <= 3; i++) {
+            for (let i = 1; i <= 2; i++) {
                 const c = document.getElementById('ms' + i);
                 c.classList.remove('activo', 'hecho');
                 if (i < paso)       { c.classList.add('hecho'); c.innerHTML = '<i class="fas fa-check" style="font-size:10px"></i>'; }
                 else if (i === paso) { c.classList.add('activo'); c.textContent = i; }
                 else                 { c.textContent = i; }
             }
-            for (let i = 1; i <= 2; i++) {
-                document.getElementById('ml' + i).classList.toggle('activa', i < paso);
-            }
+            document.getElementById('ml1').classList.toggle('activa', paso > 1);
         }
 
         function mostrarErrorModal(msg) {
@@ -627,7 +643,7 @@
             document.getElementById('alertaResetError').classList.remove('visible');
         }
 
-        // PASO 1: buscar cuenta con validación de reCAPTCHA
+        // PASO 1: enviar el código de recuperación al correo
         async function buscarCuenta() {
             const correo = document.getElementById('resetCorreo').value.trim();
             document.getElementById('alertaResetError').classList.remove('visible');
@@ -635,57 +651,76 @@
             if (!correo) { mostrarErrorModal('Ingresa tu correo electrónico.'); return; }
             if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) { mostrarErrorModal('Ingresa un correo válido.'); return; }
 
-            // Verificar reCAPTCHA
-            const recaptchaResp = typeof grecaptcha !== 'undefined' ? grecaptcha.getResponse() : '';
-            if (!recaptchaResp) {
-                mostrarErrorModal('Por favor completa la verificación reCAPTCHA.');
-                return;
-            }
-
             try {
-                const res  = await fetch('http://127.0.0.1:8000/api/auth/obtener-pregunta', {
+                const res  = await fetch('/api/auth/solicitar-recuperacion', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ correo, recaptcha: recaptchaResp })
+                    body: JSON.stringify({ correo })
                 });
                 const data = await res.json();
 
                 if (res.ok) {
-                    document.getElementById('preguntaMostrada').textContent = '🔐 ' + data.pregunta;
+                    mostrarExitoModal(data.mensaje || 'Si existe una cuenta, enviaremos un código a tu correo.');
                     document.getElementById('paso1Reset').style.display = 'none';
                     document.getElementById('paso2Reset').style.display = 'block';
                     actualizarStepper(2);
+                    iniciarTemporizadorReenvio();
                 } else {
-                    mostrarErrorModal(data.detail || data.mensaje || 'No se encontró la cuenta.');
-                    if (typeof grecaptcha !== 'undefined') grecaptcha.reset();
+                    mostrarErrorModal(data.detail || 'No se pudo enviar el código.');
                 }
             } catch {
                 mostrarErrorModal('No se pudo conectar con el servidor.');
             }
         }
 
-        // PASO 2: verificar respuesta de seguridad
-        async function verificarRespuesta() {
-            const correo   = document.getElementById('resetCorreo').value.trim();
-            const respuesta= document.getElementById('resetRespuesta').value.trim();
+        async function reenviarCodigo() {
+            const correo = document.getElementById('resetCorreo').value.trim();
+            const boton = document.getElementById('btnReenviarCodigo');
             document.getElementById('alertaResetError').classList.remove('visible');
-
-            if (!respuesta) { mostrarErrorModal('Escribe tu respuesta de seguridad.'); return; }
+            boton.disabled = true;
 
             try {
-                const res  = await fetch('http://127.0.0.1:8000/api/auth/verificar-seguridad', {
+                const res = await fetch('/api/auth/reenviar-codigo-recuperacion', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ correo, respuesta })
+                    body: JSON.stringify({ correo })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    mostrarExitoModal(data.mensaje || 'Si existe una cuenta, enviaremos un nuevo código.');
+                    iniciarTemporizadorReenvio();
+                } else {
+                    mostrarErrorModal(data.detail || 'No se pudo reenviar el código.');
+                    boton.disabled = false;
+                }
+            } catch {
+                mostrarErrorModal('No se pudo conectar con el servidor.');
+                boton.disabled = false;
+            }
+        }
+
+        async function buscarPreguntaSeguridad() {
+            const correo = document.getElementById('resetCorreo').value.trim();
+            document.getElementById('alertaResetError').classList.remove('visible');
+
+            if (!correo) { mostrarErrorModal('Ingresa el correo registrado en tu cuenta.'); return; }
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) { mostrarErrorModal('Ingresa un correo válido.'); return; }
+
+            try {
+                const res = await fetch('/api/auth/pregunta-seguridad', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ correo })
                 });
                 const data = await res.json();
 
                 if (res.ok) {
-                    document.getElementById('paso2Reset').style.display = 'none';
-                    document.getElementById('paso3Reset').style.display = 'block';
-                    actualizarStepper(3);
+                    document.getElementById('textoPreguntaSeguridad').textContent = data.pregunta_seguridad;
+                    document.getElementById('paso1Reset').style.display = 'none';
+                    document.getElementById('pasoPreguntaReset').style.display = 'block';
+                    actualizarStepper(2);
                 } else {
-                    mostrarErrorModal(data.detail || data.mensaje || 'Respuesta incorrecta.');
+                    mostrarErrorModal(data.detail || 'No se pudo cargar la pregunta de seguridad.');
                 }
             } catch {
                 mostrarErrorModal('No se pudo conectar con el servidor.');
@@ -705,23 +740,24 @@
                 : '<i class="fas fa-times-circle"></i> Las contraseñas no coinciden';
         }
 
-        // PASO 3: resetear contraseña
+        // PASO 2: validar el código y actualizar la contraseña
         async function resetearContrasena() {
             const correo    = document.getElementById('resetCorreo').value.trim();
-            const respuesta = document.getElementById('resetRespuesta').value.trim();
+            const codigo    = document.getElementById('resetCodigo').value.trim();
             const nueva     = document.getElementById('resetContrasena').value;
             const confirmar = document.getElementById('resetConfirmar').value;
             document.getElementById('alertaResetError').classList.remove('visible');
 
-            if (!nueva || !confirmar) { mostrarErrorModal('Completa todos los campos.'); return; }
+            if (!codigo || !nueva || !confirmar) { mostrarErrorModal('Completa todos los campos.'); return; }
+            if (!/^\d{6}$/.test(codigo)) { mostrarErrorModal('El código debe tener 6 dígitos.'); return; }
             if (nueva.length < 6)     { mostrarErrorModal('La contraseña debe tener mínimo 6 caracteres.'); return; }
             if (nueva !== confirmar)   { mostrarErrorModal('Las contraseñas no coinciden.'); return; }
 
             try {
-                const res  = await fetch('http://127.0.0.1:8000/api/auth/resetear-contrasena', {
+                const res  = await fetch('/api/auth/restablecer-contrasena', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ correo, respuesta, nueva_contrasena: nueva })
+                    body: JSON.stringify({ correo, codigo, nueva_contrasena: nueva })
                 });
                 const data = await res.json();
 
@@ -735,6 +771,94 @@
                 mostrarErrorModal('No se pudo conectar con el servidor.');
             }
         }
+
+        function verificarMatchPregunta() {
+            const nueva = document.getElementById('resetContrasenaPregunta').value;
+            const confirmar = document.getElementById('resetConfirmarPregunta').value;
+            const hint = document.getElementById('matchPregunta');
+            if (!confirmar) { hint.style.display = 'none'; return; }
+            const coincide = nueva === confirmar;
+            hint.style.cssText = 'display:flex;align-items:center;gap:5px;font-size:11px;margin-top:6px;color:' + (coincide ? 'var(--green)' : 'var(--red)');
+            hint.textContent = coincide ? 'Las contraseñas coinciden' : 'Las contraseñas no coinciden';
+        }
+
+        async function resetearConPregunta() {
+            const correo = document.getElementById('resetCorreo').value.trim();
+            const respuesta_seguridad = document.getElementById('resetRespuestaSeguridad').value.trim();
+            const nueva_contrasena = document.getElementById('resetContrasenaPregunta').value;
+            const confirmar = document.getElementById('resetConfirmarPregunta').value;
+            document.getElementById('alertaResetError').classList.remove('visible');
+
+            if (!respuesta_seguridad || !nueva_contrasena || !confirmar) { mostrarErrorModal('Completa todos los campos.'); return; }
+            if (nueva_contrasena.length < 6) { mostrarErrorModal('La contraseña debe tener mínimo 6 caracteres.'); return; }
+            if (nueva_contrasena !== confirmar) { mostrarErrorModal('Las contraseñas no coinciden.'); return; }
+
+            try {
+                const res = await fetch('/api/auth/restablecer-con-pregunta', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ correo, respuesta_seguridad, nueva_contrasena })
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    mostrarExitoModal('✅ Contraseña cambiada. Ya puedes iniciar sesión.');
+                    setTimeout(() => cerrarModal(), 3000);
+                } else {
+                    mostrarErrorModal(data.detail || data.mensaje || 'No se pudo cambiar la contraseña.');
+                }
+            } catch {
+                mostrarErrorModal('No se pudo conectar con el servidor.');
+            }
+        }
+
+        async function manejarGoogle(googleResponse) {
+            try {
+                const res = await fetch('/api/auth/google', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ credential: googleResponse.credential })
+                });
+                const data = await res.json();
+                if (!res.ok) { mostrarError(data.detail || 'No se pudo iniciar sesión con Google.'); return; }
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('usuario', JSON.stringify(data.usuario));
+                if (data.aviso_seguridad) {
+                    mostrarError(data.aviso_seguridad);
+                    setTimeout(() => {
+                        window.top.location.href = data.usuario.onboarding_completado ? 'dashboard.html' : 'onboarding.html';
+                    }, 3500);
+                } else {
+                    window.top.location.href = data.usuario.onboarding_completado ? 'dashboard.html' : 'onboarding.html';
+                }
+            } catch {
+                mostrarError('No se pudo conectar con el servidor.');
+            }
+        }
+
+        async function cargarGoogle() {
+            const estado = document.getElementById('googleStatus');
+            try {
+                const response = await fetch('/api/auth/google-config');
+                const { client_id } = await response.json();
+                if (!client_id) { estado.textContent = 'Inicio con Google disponible cuando se configure el servidor.'; return; }
+                const script = document.createElement('script');
+                script.src = 'https://accounts.google.com/gsi/client';
+                script.async = true;
+                script.onload = () => {
+                    google.accounts.id.initialize({ client_id, callback: manejarGoogle });
+                    google.accounts.id.renderButton(document.getElementById('googleButton'), {
+                        theme: 'outline', size: 'large', text: 'continue_with',
+                        shape: 'rectangular', width: document.getElementById('googleButton').clientWidth
+                    });
+                };
+                script.onerror = () => { estado.textContent = 'No se pudo cargar el inicio con Google.'; };
+                document.head.appendChild(script);
+            } catch {
+                estado.textContent = 'No se pudo conectar con el servidor para cargar Google.';
+            }
+        }
+        cargarGoogle();
     </script>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

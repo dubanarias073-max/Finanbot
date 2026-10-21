@@ -48,6 +48,7 @@ def _migrar_esquema() -> None:
 
     inspector = inspect(engine)
     columnas = {c['name']: c for c in inspector.get_columns('transacciones')}
+    columnas_usuario = {c['name'] for c in inspector.get_columns('usuarios')}
     columnas_categoria_usuario = {
         c['name'] for c in inspector.get_columns('categorias_usuario')
     }
@@ -58,6 +59,38 @@ def _migrar_esquema() -> None:
         'tienda_id': 'INT NULL',
     }
     with engine.begin() as conn:
+        columnas_usuario_nuevas = {
+            'token_version': 'INT NOT NULL DEFAULT 0',
+            'requiere_cambio_contrasena': 'BOOLEAN NOT NULL DEFAULT FALSE',
+        }
+        for nombre, tipo in columnas_usuario_nuevas.items():
+            if nombre not in columnas_usuario:
+                conn.execute(text(f'ALTER TABLE usuarios ADD COLUMN {nombre} {tipo}'))
+                print(f'Columna usuarios.{nombre} agregada')
+
+        columnas_meta = {c['name'] for c in inspector.get_columns('meta')}
+        columnas_meta_nuevas = {
+            'icono': 'VARCHAR(10) NULL',
+            'categoria': 'VARCHAR(50) NULL',
+            'prioridad': "VARCHAR(10) NOT NULL DEFAULT 'media'",
+        }
+        for nombre, tipo in columnas_meta_nuevas.items():
+            if nombre not in columnas_meta:
+                conn.execute(text(f'ALTER TABLE meta ADD COLUMN {nombre} {tipo}'))
+                print(f'Columna meta.{nombre} agregada')
+                columnas_meta.add(nombre)
+
+        if 'tipo' not in columnas_meta:
+            conn.execute(text(
+                "ALTER TABLE meta ADD COLUMN tipo "
+                "ENUM('ahorro','gasto_mensual','gasto_anual') "
+                "NOT NULL DEFAULT 'ahorro'"
+                if engine.dialect.name == 'mysql'
+                else "ALTER TABLE meta ADD COLUMN tipo "
+                     "VARCHAR(20) NOT NULL DEFAULT 'ahorro'"
+            ))
+            print('Columna meta.tipo agregada')
+
         for nombre, tipo in nuevas.items():
             if nombre not in columnas:
                 conn.execute(text(f'ALTER TABLE transacciones ADD COLUMN {nombre} {tipo}'))
@@ -69,6 +102,20 @@ def _migrar_esquema() -> None:
                 'ADD COLUMN eliminada BOOLEAN NOT NULL DEFAULT FALSE'
             ))
             print('Columna categorias_usuario.eliminada agregada')
+
+        if 'vista_metas_ahorro' in inspector.get_view_names():
+            conn.execute(text('DROP VIEW vista_metas_ahorro'))
+            conn.execute(text("""
+                CREATE VIEW vista_metas_ahorro AS
+                SELECT m.id, m.usuario_id, u.nombre AS usuario_nombre,
+                       m.nombre AS meta, m.monto_objetivo, m.monto_actual,
+                       m.fecha_limite, m.completada, m.tipo, m.modo,
+                       m.monto_automatico, m.dia_automatico, m.icono,
+                       m.categoria, m.prioridad, m.fecha_creacion
+                FROM meta m
+                JOIN usuarios u ON u.id = m.usuario_id
+            """))
+            print('Vista vista_metas_ahorro actualizada')
 
         if engine.dialect.name != 'mysql':
             return
@@ -154,11 +201,29 @@ def _migrar_esquema() -> None:
                 print(f'Trigger {nombre} agregado')
 
 
+def _migrar_tabla_metas() -> None:
+    """Renombra la tabla existente sin perder los registros de metas."""
+    from sqlalchemy import inspect, text
+
+    inspector = inspect(engine)
+    tablas = set(inspector.get_table_names())
+    if 'metas_ahorro' in tablas and 'meta' in tablas:
+        raise RuntimeError(
+            'Existen las tablas meta y metas_ahorro simultáneamente; '
+            'se requiere revisar la migración antes de continuar.'
+        )
+    if 'metas_ahorro' in tablas:
+        with engine.begin() as conn:
+            conn.execute(text('ALTER TABLE metas_ahorro RENAME TO meta'))
+        print('Tabla metas_ahorro renombrada a meta')
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     from models import sembrar_categorias
 
     import models  # noqa: F401 - registra los modelos antes de crear tablas
+    _migrar_tabla_metas()
     Base.metadata.create_all(bind=engine)
     with SessionLocal() as db:
         sembrar_categorias(db)

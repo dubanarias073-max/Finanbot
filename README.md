@@ -2,6 +2,8 @@
 
 **FinanBot** es una plataforma web modular diseñada para la gestión de finanzas personales. Integra un **asistente inteligente con IA**, simuladores financieros avanzados, calendarios de pagos y herramientas de exportación de reportes.
 
+La fecha y hora de negocio de la aplicación usan `America/Bogota` (UTC−5, sin horario de verano), independientemente de la zona horaria del servidor o del navegador. Las expiraciones de seguridad se calculan en UTC.
+
 La arquitectura sigue un enfoque de **monolito modular por capas** orientado a MVC, donde un backend en **FastAPI** sirve tanto una API REST como pantallas legadas (`/legacy`), complementado por un frontend moderno en **React + Vite**.
 
 ---
@@ -69,7 +71,7 @@ Usa esta opción si prefieres administrar los servicios de forma local directame
 3. Busca y abre el archivo `Mysql(base de datos)/finanbot_db.sql`.
 4. Haz clic en el icono del **rayo** en la barra de herramientas para ejecutar todo el script. Esto creará la base de datos y todas las tablas del sistema.
 
-> **Importante:** el script SQL crea la base desde cero y elimina `finanbot_db` si ya existe. No lo vuelvas a ejecutar sobre una base con datos que quieras conservar. Al iniciar, el backend agrega las tablas/columnas nuevas que falten, migra el catálogo de categorías y configura las tiendas asociadas a ubicaciones.
+
 
 ### 3. Archivo de entorno `.env` para XAMPP
 En la raíz de la carpeta `backend/`, crea un archivo llamado `.env` sin contraseña en la cadena de conexión (configuración por defecto de XAMPP):
@@ -86,6 +88,7 @@ GEMINI_API_KEY="PEGA_AQUI_TU_CLAVE"
 ```
 
 ---
+
 
 ## ⚙️ Inicialización del Proyecto
 
@@ -117,9 +120,131 @@ El backend no sirve la interfaz de usuario de forma directa de manera nativa. En
 npm install
 
 # 2. Levantar el servidor de desarrollo de Vite
-npm run dev
+npm run dev -- --host
 ```
-Abre `http://localhost:5173` en tu navegador. Vite redirige automáticamente las peticiones de `/api`, `/legacy` e `/images` hacia el backend en el puerto `8000`.
+Abre la dirección `Network` que muestra Vite (por ejemplo, `http://192.168.1.10:5173`) desde otro dispositivo conectado a la misma red Wi-Fi. Vite redirige automáticamente las peticiones de `/api`, `/legacy` e `/images` al backend local en el puerto `8000`; deja el backend ejecutándose y permite el acceso de Node.js/Vite en el firewall de Windows si aparece una solicitud.
+
+---
+
+## 📧 Registro con Gmail y recuperación por correo
+
+Para que FinanBot pueda enviar códigos de recuperación y avisos de inicio de sesión, configura una cuenta emisora que controles. Esta dirección puede ser una cuenta dedicada al proyecto; no tiene que ser la misma dirección que usan los clientes. En `backend/.env`, agrega tus propios valores (**cada variable en su propia línea**):
+
+```env
+SMTP_PORT="587"
+SMTP_USERNAME="finanbot.sena@gmail.com"
+SMTP_APP_PASSWORD="inqlxalpizdplvgo"
+SMTP_FROM="finanbot.sena@gmail.com"
+
+GOOGLE_CLIENT_ID="315416890012-ffvd56diopltc438ev5e8bgrqd2q931m.apps.googleusercontent.com"
+GOOGLE_CLIENT_SECRET=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ASSWORD_RESET_URL="http://(tu ip):8000/legacy/pages/login.html"
+PUBLIC_BASE_URL=http://TU_IP_DE_RED:5173
+```
+
+Los correos de recuperación contienen un código de 6 dígitos y un enlace directo para establecer una contraseña nueva. Si reportas un inicio de sesión con “No fui yo”, se cierran las sesiones y aparece el formulario para cambiar la contraseña inmediatamente en esa misma página.
+
+
+---
+
+## 🌐 Acceso desde otros dispositivos y enlaces del correo (guía de configuración)
+
+El enlace que llega por correo (recuperar contraseña, "Sí, fui yo" / "No fui yo") se construye con `PUBLIC_BASE_URL`. Si esa dirección no es válida o no es alcanzable desde el dispositivo donde se abre el correo, el enlace no carga (`ERR_CONNECTION_TIMED_OUT`) o la app muestra *"Configura PUBLIC_BASE_URL con una dirección accesible..."*.
+
+### Archivos que se modificaron para que funcione
+
+| Archivo | Cambio | Por qué |
+|---|---|---|
+| `backend/.env` | Corregir `PUBLIC_BASE_URL` (sin espacios, sin comillas raras, sin caracteres sueltos al final) y poner **cada variable en su propia línea** | Con un espacio dentro de las comillas o `GOOGLE_CLIENT_SECRET` pegado a la línea siguiente, el backend rechaza la URL como inválida y el secret de Google se lee mal |
+| `backend/.env` | Poner en `PUBLIC_BASE_URL` la IP actual de red (o la URL del túnel) | La IP del Wi-Fi cambia según la red; una IP vieja da *timeout* |
+| `frontend/vite.config.js` | Agregar `allowedHosts` dentro de `server` | Vite 6+ bloquea dominios desconocidos (como el del túnel) con "Blocked request" |
+| Regla de firewall de Windows | Permitir entrada TCP al puerto 5173 | Windows bloquea por defecto las conexiones entrantes desde otros dispositivos |
+| *(opcional)* `backend/routes/auth.py` | Que `solicitar_recuperacion` y `reenviar_codigo_recuperacion` reciban `request: Request` y usen `_base_url_publica(request)` | Así el enlace usa la URL desde la que se entra a la app aunque `PUBLIC_BASE_URL` no esté bien. Hay que ajustar los tests que llaman estas funciones |
+
+### 1. `frontend/vite.config.js`
+
+```javascript
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+export default defineConfig({
+  plugins: [react()],
+  server: {
+    host: '0.0.0.0',
+    port: 5173,
+    allowedHosts: true, // o ['.trycloudflare.com'] para limitarlo al túnel
+    proxy: {
+      '/api': 'http://127.0.0.1:8000',
+      '/legacy': 'http://127.0.0.1:8000',
+      '/images': 'http://127.0.0.1:8000',
+    },
+  },
+})
+```
+
+Vite no recarga en caliente los cambios de `server`: reinícialo (`Ctrl + C` y `npm run dev`).
+
+### 2. `PUBLIC_BASE_URL` en `backend/.env`
+
+Reglas: debe empezar por `http://` o `https://`, ser solo host y puerto (sin ruta como `/api`), sin espacios, sin comillas internas y **nunca** `localhost` ni `127.0.0.1`.
+
+```env
+# Red local (usa la IP de la línea "Network ... Wi-Fi" que muestra Vite)
+PUBLIC_BASE_URL=http://(tu ip):5173
+
+# O con túnel público
+PUBLIC_BASE_URL=https://tu-subdominio.trycloudflare.com
+
+RECORDAR: poner el dominio en https://console.cloud.google.com/apis/credentials?project=finanbot-512414 y editar (cliente web 1 de finanbot.sena@gmail.com) solo el url ej: https://tu-subdominio.trycloudflare.com
+
+```
+
+Reinicia el backend después de editar el `.env`.
+
+### 3. Firewall de Windows (PowerShell como administrador)
+
+```powershell
+New-NetFirewallRule -DisplayName "Vite 5173" -Direction Inbound -Protocol TCP -LocalPort 5173 -Action Allow -Profile Any
+```
+
+### 4. Túnel público con Cloudflare (funciona desde cualquier red)
+
+Útil cuando la red tiene *aislamiento de clientes* (común en redes institucionales como la del SENA), cuando la IP cambia seguido o cuando el dispositivo que abre el correo no está en el mismo Wi-Fi.
+
+```powershell
+# Instalar (una sola vez) y reabrir PowerShell
+winget install --id Cloudflare.cloudflared
+
+# Abrir el túnel (deja esta ventana abierta mientras pruebas)
+cloudflared tunnel --url http://localhost:5173
+
+Si sigue sin reconocerlo, actualiza el PATH de la sesión actual sin cerrar nada y vuelve a ejecutar el de arriba :
+
+powershell
+$env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+cloudflared tunnel --url http://localhost:5173
+```
+
+1. Copia la URL `https://....trycloudflare.com` que muestra la terminal.
+2. Ponla en `PUBLIC_BASE_URL` del `backend/.env`.
+3. Verifica `allowedHosts` en `vite.config.js` y reinicia Vite y el backend.
+4. Abre la app **desde la URL del túnel** (no desde `localhost`), pide el código de recuperación y abre el correo desde cualquier dispositivo.
+
+
+> La URL del túnel gratuito **cambia cada vez que reinicias `cloudflared`**: hay que actualizar `PUBLIC_BASE_URL` y reiniciar el backend. Mientras el túnel esté abierto, la app es accesible desde internet; ciérralo cuando termines de probar.
+
+### Solución de problemas
+
+| Síntoma | Causa probable | Solución |
+|---|---|---|
+| `ERR_CONNECTION_TIMED_OUT` al abrir el enlace del correo | La IP de `PUBLIC_BASE_URL` ya no es la del equipo (cambió de red) o hay firewall/aislamiento de clientes | Revisa la IP en la línea `Network` de Vite o con `ipconfig`, actualiza `.env`, abre el firewall o usa el túnel |
+| "Configura PUBLIC_BASE_URL con una dirección accesible..." | `PUBLIC_BASE_URL` vacío, con `localhost`, sin `http://`, con espacios o con ruta | Corrige el valor y reinicia el backend |
+| "Blocked request. This host is not allowed" | Falta `allowedHosts` o no se reinició Vite | Agrégalo en `vite.config.js` y reinicia Vite |
+| El enlace carga en tu PC pero no en el celular | Firewall de Windows o aislamiento de clientes del Wi-Fi | Regla de firewall, hotspot del celular o túnel |
+| Error 502 / 1033 en la URL del túnel | El túnel aún se propaga o Vite no está corriendo | Espera unos segundos y confirma que `npm run dev` está activo |
+| "El enlace no es válido o ya venció" | Los enlaces y códigos duran 10 minutos y son de un solo uso | Solicita uno nuevo |
+| El inicio con Google falla | `GOOGLE_CLIENT_SECRET` pegado a la línea siguiente en el `.env` | Una variable por línea |
+
+**Alternativa sin correo ni URL:** el botón **"Recuperar con pregunta de seguridad"** permite cambiar la contraseña sin depender de `PUBLIC_BASE_URL`. El código de 6 dígitos del correo también funciona sin abrir el enlace.
 
 ---
 
@@ -144,27 +269,9 @@ En `backend/.env` agrega (o completa) la línea:
 GEMINI_API_KEY="AIza...tu_clave"
 ```
 
-### 3. Verificar que `app.py` carga el `.env`
-`backend/app.py` debe quedar así (el `load_dotenv` va **antes** de importar la app):
 
-```python
-from pathlib import Path
-from dotenv import load_dotenv
 
-load_dotenv(Path(__file__).resolve().parent / ".env")
-
-from presentation.api import create_app
-
-app = create_app()
-```
-
-Si aparece `ModuleNotFoundError: No module named 'dotenv'`:
-
-```powershell
-pip install python-dotenv
-```
-
-### 4. Reiniciar y probar
+### 3. Reiniciar y probar
 Reinicia el backend y escribe en el chat algo libre, por ejemplo *"¿cómo voy este mes y qué me recomiendas?"*. En la terminal debe aparecer:
 
 ```text

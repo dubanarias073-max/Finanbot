@@ -26,6 +26,8 @@ from sqlalchemy.orm import Session
 from database import get_db
 from extensions import obtener_usuario_id_requerido
 from models import Transaccion, MetaAhorro, Usuario, Tienda
+from routes.metas import obtener_metas_calculadas
+from timezone import bogota_today
 
 router = APIRouter()
 
@@ -80,7 +82,7 @@ def filtrar_transacciones_recientes(transacciones, dias=7):
     if not transacciones:
         return []
 
-    limite = date.today() - timedelta(days=dias)
+    limite = bogota_today() - timedelta(days=dias)
     resultado = []
     for transaccion in transacciones:
         valor_fecha = (
@@ -197,7 +199,7 @@ def obtener_recomendaciones(
     if nec + des + aho != 100:
         nec, des, aho = 50, 30, 20
 
-    hoy = date.today()
+    hoy = bogota_today()
     dias_mes = calendar.monthrange(hoy.year, hoy.month)[1]
     anio_ant, mes_ant = _mes_anterior(hoy)
 
@@ -210,8 +212,19 @@ def obtener_recomendaciones(
     tramo_pasado = [t for t in mes_pasado if _fecha(t.fecha).day <= hoy.day]
 
     metas = db.query(MetaAhorro).filter_by(usuario_id=uid).all()
-    metas_activas = [m for m in metas if not m.completada]
-    metas_completas = [m for m in metas if m.completada]
+    metas_ahorro = [m for m in metas if (m.tipo or 'ahorro') == 'ahorro']
+    metas_activas = [
+        m for m in metas_ahorro
+        if not m.completada and float(m.monto_actual or 0) < float(m.monto_objetivo or 0)
+    ]
+    metas_completas = [
+        m for m in metas_ahorro
+        if m.completada or float(m.monto_actual or 0) >= float(m.monto_objetivo or 0)
+    ]
+    limites_gasto = [
+        meta for meta in obtener_metas_calculadas(uid, db, hoy)
+        if meta['tipo'] in ('gasto_mensual', 'gasto_anual')
+    ]
 
     act = Resumen(del_mes)
     ant = Resumen(tramo_pasado)
@@ -224,6 +237,27 @@ def obtener_recomendaciones(
     nombre_mes = MESES[hoy.month - 1]
 
     recs = []
+
+    for limite in limites_gasto:
+        if not limite['excedida']:
+            continue
+        periodo = 'mensual' if limite['tipo'] == 'gasto_mensual' else 'anual'
+        excedente = max(0, limite['monto_actual'] - limite['monto_objetivo'])
+        recs.append(_nueva(
+            'alerta', 'Alta', '🚨',
+            f'Límite de gasto {periodo} alcanzado: {limite["nombre"]}',
+            f'Has gastado {_pesos(limite["monto_actual"])} de un máximo de '
+            f'{_pesos(limite["monto_objetivo"])} para {limite["periodo"]}. '
+            + ('Ya superaste el límite por ' + _pesos(excedente) + '. ' if excedente else '')
+            + 'Es una señal de alerta, no un logro de ahorro. Pausa gastos no esenciales y revisa tus movimientos.',
+            'Revisar mis gastos', 'finanzas.html',
+            ['Evita compras no esenciales hasta el próximo periodo',
+             'Revisa la categoría que más aumentó',
+             'Consulta tu límite y ajusta el plan en Mi Perfil'],
+            dato_clave=f'🚨 Tope {periodo}: {_pesos(limite["monto_objetivo"])} · '
+            f'Gastado: {_pesos(limite["monto_actual"])}',
+            progreso=limite['porcentaje'],
+        ))
 
     # ─────────────────────────────────────────────────────
     # 0. SIN NINGÚN DATO
@@ -565,8 +599,8 @@ def obtener_recomendaciones(
     # 13. SIN METAS / FONDO DE EMERGENCIA
     # ─────────────────────────────────────────────────────
     gasto_mensual = max(ant_completo.gastos, act.gastos / hoy.day * dias_mes if act.gastos else 0)
-    tiene_fondo = any(re.search(r'emergencia|imprevisto', (m.nombre or ''), re.I) for m in metas)
-    if not metas and len(pasadas) >= 3:
+    tiene_fondo = any(re.search(r'emergencia|imprevisto', (m.nombre or ''), re.I) for m in metas_ahorro)
+    if not metas_ahorro and len(pasadas) >= 3:
         recs.append(_nueva(
             'advertencia', 'Media', '🎯', 'Crea tu primera meta de ahorro',
             'El dinero sin destino se gasta solo. Una meta concreta le da propósito a cada peso, '
