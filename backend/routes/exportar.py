@@ -2,7 +2,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
-from datetime import datetime
 from collections import defaultdict
 from xml.sax.saxutils import escape as xml_escape
 import io
@@ -11,6 +10,8 @@ import math
 from database import get_db
 from extensions import obtener_usuario_id_requerido
 from models import Usuario, Transaccion, MetaAhorro
+from application.services.reportes_narrativa import resumen_financiero
+from timezone import bogota_now
 
 try:
     from reportlab.lib.pagesizes import A4
@@ -267,7 +268,7 @@ def exportar_pdf(
     story = []
 
     # ── ENCABEZADO ────────────────────────────────────────
-    fecha_str  = datetime.now().strftime('%d/%m/%Y  %H:%M')
+    fecha_str  = bogota_now().strftime('%d/%m/%Y  %H:%M')
     nombre_pdf = limpiar(user.nombre)
     correo_pdf = limpiar(user.correo)
 
@@ -337,6 +338,14 @@ def exportar_pdf(
         ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
     ]))
     story.append(tarjetas)
+    texto_resumen = resumen_financiero(
+        ingresos_t, gastos_t, balance, len(trans), cat_mayor, monto_cat_mayor
+    )
+    story.append(Spacer(1, 8))
+    story.append(Paragraph(xml_escape(texto_resumen), st(
+        'resumen_narrativo', fontSize=9, textColor=GRIS, leading=14,
+        leftIndent=8, rightIndent=8,
+    )))
     story.append(Spacer(1, 18))
 
     # ── ANÁLISIS FINANCIERO ───────────────────────────────
@@ -578,7 +587,7 @@ def exportar_pdf(
 
     nombre_archivo = (
         f'FinanBot_{nombre_pdf.replace(" ", "_")}'
-        f'_{datetime.now().strftime("%d-%m-%Y")}.pdf'
+        f'_{bogota_now().strftime("%d-%m-%Y")}.pdf'
     )
 
     return StreamingResponse(

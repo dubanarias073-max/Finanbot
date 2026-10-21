@@ -429,6 +429,8 @@
             font-family: 'Segoe UI', sans-serif;
             margin-top: 6px;
         }
+        .google-signin { display:flex; justify-content:center; min-height:40px; margin:0 0 18px; }
+        .google-status { color:var(--muted); font-size:12px; text-align:center; margin:-8px 0 14px; }
 
         .btn-registrar:hover:not(:disabled) {
             transform: translateY(-2px);
@@ -571,7 +573,6 @@
         <div class="alerta alerta-exito" id="alertaExito">
             <i class="fas fa-circle-check"></i><span id="mensajeExito"></span>
         </div>
-
         <!-- NOMBRE -->
         <div class="campo">
             <label class="campo-label"> Nombre completo</label>
@@ -589,6 +590,29 @@
                 <div class="campo-prefix"><i class="fas fa-envelope"></i></div>
                 <input type="email" id="correo" class="campo-input" placeholder="tu@correo.com"
                     oninput="validarCorreoRT()">
+            </div>
+        </div>
+
+        <!-- RECUPERACIÓN SIN ACCESO AL CORREO -->
+        <div class="campo">
+            <label class="campo-label" for="preguntaSeguridad">Pregunta para recuperar tu contraseña</label>
+            <div class="campo-row">
+                <div class="campo-prefix"><i class="fas fa-shield-alt"></i></div>
+                <select id="preguntaSeguridad" class="campo-select">
+                    <option value="">Elige una pregunta</option>
+                    <option value="¿En qué ciudad naciste?">¿En qué ciudad naciste?</option>
+                    <option value="¿Cómo se llamaba tu primera mascota?">¿Cómo se llamaba tu primera mascota?</option>
+                    <option value="¿Cuál era el apodo de tu infancia?">¿Cuál era el apodo de tu infancia?</option>
+                    <option value="¿Cuál fue tu primer colegio?">¿Cuál fue tu primer colegio?</option>
+                </select>
+            </div>
+        </div>
+        <div class="campo">
+            <label class="campo-label" for="respuestaSeguridad">Respuesta de seguridad</label>
+            <div class="campo-row">
+                <div class="campo-prefix"><i class="fas fa-key"></i></div>
+                <input type="text" id="respuestaSeguridad" class="campo-input"
+                    placeholder="Guarda esta respuesta; la necesitarás para recuperar">
             </div>
         </div>
 
@@ -629,38 +653,8 @@
             <div class="match-hint" id="matchHint"></div>
         </div>
 
-        <!-- SEPARADOR -->
-        <div class="sep">
-            <div class="sep-line"></div>
-            <div class="sep-txt">Seguridad</div>
-            <div class="sep-line"></div>
-        </div>
-
-        <!-- PREGUNTA -->
-        <div class="campo">
-            <label class="campo-label"> Pregunta de
-                seguridad</label>
-            <div class="campo-row">
-                <div class="campo-prefix"><i class="fas fa-question"></i></div>
-                <select id="pregunta" class="campo-select">
-                    <option value="">Selecciona una pregunta...</option>
-                    <option value="¿Cuál es el nombre de tu mascota?">¿Cuál es el nombre de tu mascota?</option>
-                    <option value="¿En qué ciudad naciste?">¿En qué ciudad naciste?</option>
-                    <option value="¿Cuál es tu comida favorita?">¿Cuál es tu comida favorita?</option>
-                    <option value="¿Cuál es el nombre de tu colegio?">¿Cuál es el nombre de tu colegio?</option>
-                    <option value="¿Cuál es el apellido de tu madre?">¿Cuál es el apellido de tu madre?</option>
-                </select>
-            </div>
-        </div>
-
-        <!-- RESPUESTA -->
-        <div class="campo">
-            <label class="campo-label"> Respuesta de seguridad</label>
-            <div class="campo-row">
-                <div class="campo-prefix"><i class="fas fa-lock"></i></div>
-                <input type="text" id="respuestaSeguridad" class="campo-input" placeholder="Tu respuesta secreta">
-            </div>
-        </div>
+        <div class="google-signin" id="googleButton"></div>
+        <p class="google-status" id="googleStatus"></p>
 
         <!-- BOTÓN -->
         <button class="btn-registrar" id="btnRegistrar" onclick="registrar()">
@@ -753,14 +747,14 @@
             const correo = document.getElementById('correo').value.trim();
             const contrasena = document.getElementById('contrasena').value;
             const confirmar = document.getElementById('confirmar').value;
-            const pregunta = document.getElementById('pregunta').value;
-            const respuesta = document.getElementById('respuestaSeguridad').value.trim();
+            const pregunta_seguridad = document.getElementById('preguntaSeguridad').value;
+            const respuesta_seguridad = document.getElementById('respuestaSeguridad').value.trim();
             const btn = document.getElementById('btnRegistrar');
 
             document.getElementById('alertaError').classList.remove('visible');
             document.getElementById('alertaExito').classList.remove('visible');
 
-            if (!nombre || !correo || !contrasena || !confirmar || !pregunta || !respuesta) {
+            if (!nombre || !correo || !contrasena || !confirmar || !pregunta_seguridad || !respuesta_seguridad) {
                 mostrarError('Todos los campos son obligatorios.'); return;
             }
             if (nombre.length < 3) { mostrarError('El nombre debe tener mínimo 3 caracteres.'); return; }
@@ -774,13 +768,11 @@
             btn.innerHTML = '<span class="spinner"></span> Creando cuenta...';
 
             try {
-                const res = await fetch('http://127.0.0.1:8000/api/auth/registro', {
+                const res = await fetch('/api/auth/registro', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        nombre, correo, contrasena,
-                        pregunta_seguridad: pregunta,
-                        respuesta_seguridad: respuesta
+                        nombre, correo, contrasena, pregunta_seguridad, respuesta_seguridad
                     })
                 });
                 const data = await res.json();
@@ -790,7 +782,7 @@
                     ['nombre', 'correo', 'contrasena', 'confirmar', 'respuestaSeguridad'].forEach(id =>
                         document.getElementById(id).value = ''
                     );
-                    document.getElementById('pregunta').value = '';
+                    document.getElementById('preguntaSeguridad').value = '';
                     setTimeout(() => window.top.location.href = 'login.html', 2000);
                 } else {
                     mostrarError(data.mensaje || 'Error al registrar usuario.');
@@ -802,6 +794,54 @@
                 btn.innerHTML = '<i class="fas fa-user-plus"></i> Crear mi cuenta';
             }
         }
+
+        async function manejarGoogle(googleResponse) {
+            try {
+                const res = await fetch('/api/auth/google', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ credential: googleResponse.credential })
+                });
+                const data = await res.json();
+                if (!res.ok) { mostrarError(data.detail || 'No se pudo crear la cuenta con Google.'); return; }
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('usuario', JSON.stringify(data.usuario));
+                if (data.aviso_seguridad) {
+                    mostrarError(data.aviso_seguridad);
+                } else {
+                    mostrarExito('Cuenta de Google verificada. Redirigiendo...');
+                }
+                setTimeout(() => {
+                    window.top.location.href = data.usuario.onboarding_completado ? 'dashboard.html' : 'onboarding.html';
+                }, data.aviso_seguridad ? 3500 : 500);
+            } catch {
+                mostrarError('No se pudo conectar con el servidor.');
+            }
+        }
+
+        async function cargarGoogle() {
+            const estado = document.getElementById('googleStatus');
+            try {
+                const response = await fetch('/api/auth/google-config');
+                const { client_id } = await response.json();
+                if (!client_id) { estado.textContent = 'Registro con Google disponible cuando se configure el servidor.'; return; }
+                const script = document.createElement('script');
+                script.src = 'https://accounts.google.com/gsi/client';
+                script.async = true;
+                script.onload = () => {
+                    google.accounts.id.initialize({ client_id, callback: manejarGoogle });
+                    google.accounts.id.renderButton(document.getElementById('googleButton'), {
+                        theme: 'outline', size: 'large', text: 'continue_with',
+                        shape: 'rectangular', width: document.getElementById('googleButton').clientWidth
+                    });
+                };
+                script.onerror = () => { estado.textContent = 'No se pudo cargar el registro con Google.'; };
+                document.head.appendChild(script);
+            } catch {
+                estado.textContent = 'No se pudo conectar con el servidor para cargar Google.';
+            }
+        }
+        cargarGoogle();
 
         document.addEventListener('keydown', e => { if (e.key === 'Enter') registrar(); });
     </script>

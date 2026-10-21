@@ -4,13 +4,14 @@ from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import Optional
-from datetime import datetime
 import io
 
 import openpyxl
 from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
 from openpyxl.chart import LineChart, BarChart, Reference
 from openpyxl.utils import get_column_letter
+from application.services.reportes_narrativa import resumen_simulacion
+from timezone import bogota_now
 
 router = APIRouter()
 
@@ -105,14 +106,14 @@ def exportar_simulacion_excel(body: SimulacionExportInput):
         mr = plazo % 12
         plazo_texto = f'{a} año{"s" if a > 1 else ""} y {mr} mes{"es" if mr > 1 else ""}'
 
-    # ── PALETA OSCURA ─────────────────────────────────────
+    # ── PALETA CLARA ──────────────────────────────────────
     P = {
         'mo': 'C026D3', 'md': '7E22CE', 'mp': 'A855F7',
         'cy': '06B6D4', 'ce': '22D3EE', 've': '22C55E', 'vl': '4ADE80',
         'ro': 'F472B6', 'am': 'F59E0B', 'ac': 'FBBF24', 're': 'EF4444',
-        'bg': '0F0F2D', 'ca': '1A1A4E', 'c2': '14143C',
-        'li': '2D1B69', 'lc': '3D2B79', 'bl': 'FFFFFF',
-        'gr': '9CA3AF', 'gd': 'C4B5FD', 'mu': '6B7280',
+        'bg': 'FFFFFF', 'ca': 'FFFFFF', 'c2': 'F8FAFC',
+        'li': 'E8EAF6', 'lc': 'CBD5E1', 'bl': '1F2937',
+        'gr': '475569', 'gd': '5B21B6', 'mu': '64748B',
     }
 
     wb = openpyxl.Workbook()
@@ -128,7 +129,7 @@ def exportar_simulacion_excel(body: SimulacionExportInput):
         return Alignment(horizontal=h, vertical=v, wrapText=wrap)
 
     def bd(col=None, style='thin'):
-        s = Side(style=style, color=col or P['li'])
+        s = Side(style=style, color=col or 'CBD5E1')
         return Border(left=s, right=s, top=s, bottom=s)
 
     def bd_bottom(col=None, sz='medium'):
@@ -192,12 +193,12 @@ def exportar_simulacion_excel(body: SimulacionExportInput):
     rh(ws1, 1, 56)
     merge_cel(ws1, 1, 1, 1, 8,
               val='FinanBot — Simulación de Inversión',
-              bg=P['mo'], fg=P['bl'], bold=True, sz=20)
+              bg=P['li'], fg=P['mo'], bold=True, sz=20)
 
     rh(ws1, 2, 22)
     merge_cel(ws1, 2, 1, 2, 8,
-              val=f'{nombre_tipo}  ·  {plazo_texto}  ·  Generado: {datetime.now().strftime("%d/%m/%Y %H:%M")}',
-              bg=P['md'], fg=P['gd'], sz=9, italic=True)
+              val=f'{nombre_tipo}  ·  {plazo_texto}  ·  Generado: {bogota_now().strftime("%d/%m/%Y %H:%M")}',
+              bg=P['c2'], fg=P['gd'], sz=9, italic=True)
 
     rh(ws1, 3, 6)
     for i in range(1, 9):
@@ -320,7 +321,7 @@ def exportar_simulacion_excel(body: SimulacionExportInput):
     rh(ws2, 2, 20)
     merge_cel(ws2, 2, 1, 2, 6,
               val=f'{nombre_tipo}  ·  Capital: ${capital:,.0f}  ·  Tasa: {tasa}%  ·  Plazo: {plazo_texto}',
-              bg=P['ce'], fg=P['bg'], sz=9)
+              bg=P['ce'], fg=P['bl'], sz=9)
 
     rh(ws2, 3, 6)
     for i in range(1, 7):
@@ -407,7 +408,7 @@ def exportar_simulacion_excel(body: SimulacionExportInput):
     rh(ws3, 2, 20)
     merge_cel(ws3, 2, 1, 2, 7,
               val=f'Capital: ${capital:,.0f}  ·  Aporte mensual: ${aporte_mensual:,.0f}  ·  Plazo: {plazo_texto}',
-              bg=P['ac'], fg=P['bg'], sz=9)
+              bg=P['c2'], fg=P['bl'], sz=9)
 
     rh(ws3, 3, 6)
     for i in range(1, 8):
@@ -489,12 +490,12 @@ def exportar_simulacion_excel(body: SimulacionExportInput):
     rh(ws4, 1, 50)
     merge_cel(ws4, 1, 1, 1, 6,
               val='Análisis Financiero Detallado',
-              bg=P['ve'], fg=P['bl'], bold=True, sz=16)
+              bg=P['li'], fg=P['ve'], bold=True, sz=16)
 
     rh(ws4, 2, 20)
     merge_cel(ws4, 2, 1, 2, 6,
               val=f'Regla 50/30/20  ·  Fondo de emergencia  ·  Proyecciones de ahorro',
-              bg=P['vl'], fg=P['bg'], sz=9)
+              bg=P['c2'], fg=P['ve'], sz=9)
 
     rh(ws4, 3, 6)
     for i in range(1, 7):
@@ -573,13 +574,11 @@ def exportar_simulacion_excel(body: SimulacionExportInput):
               val='💡  CONSEJO FINANCIERO',
               bg=P['li'], fg=P['ac'], bold=True, sz=11, h='left')
 
-    consejo = (
-        f'Con una tasa del {tasa}% anual durante {plazo_texto}, '
-        f'tu dinero creció un {rentabilidad:.1f}%. '
-        f'El interés compuesto generó ${ganancia:,.0f} adicionales sobre tu inversión. '
-        f'Recuerda que el tiempo es tu mejor aliado: a mayor plazo, mayor rendimiento.'
+    consejo = resumen_simulacion(
+        nombre_tipo, plazo_texto, capital, aporte_mensual, total_invertido,
+        valor_final, ganancia, retencion, saldo_neto, tasa,
     )
-    rh(ws4, 25, 52)
+    rh(ws4, 25, 80)
     merge_cel(ws4, 25, 1, 25, 4,
               val=consejo,
               bg=P['ca'], fg=P['gd'], sz=9, italic=True, wrap=True)
@@ -590,7 +589,7 @@ def exportar_simulacion_excel(body: SimulacionExportInput):
     wb.save(output)
     output.seek(0)
 
-    fecha_str = datetime.now().strftime('%d-%m-%Y')
+    fecha_str = bogota_now().strftime('%d-%m-%Y')
     nombre_archivo = (
         f'FinanBot_Simulacion_{nombre_tipo.replace(" ","_").replace("/","_")}_{fecha_str}.xlsx'
     )

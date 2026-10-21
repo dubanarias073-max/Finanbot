@@ -4,6 +4,7 @@
     <base target="_top">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="timezone.js"></script>
     <title>FinanBot - Mis Finanzas</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -1020,11 +1021,11 @@
                 t.descripcion.includes('salario mensual'));
 
         function obtenerMesActualStr() {
-            const hoy = new Date();
+            const hoy = FinanbotTime.today();
             return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}`;
         }
         function hoyStr() {
-            const h = new Date();
+            const h = FinanbotTime.today();
             return `${h.getFullYear()}-${String(h.getMonth()+1).padStart(2,'0')}-${String(h.getDate()).padStart(2,'0')}`;
         }
         // Una transacción con fecha futura (mayor a hoy) NO cuenta todavía —
@@ -1061,7 +1062,7 @@
         [...CATS.gasto,...CATS.ingreso].forEach(c => { ICONOS_MAP[c.nombre] = c.emoji; });
         const getIcono = (cat, tipo) => ICONOS_MAP[cat] || (tipo==='ingreso'?'💰':'💸');
 
-        const API_CATS = 'http://127.0.0.1:8000/api/transacciones/categorias/mias';
+        const API_CATS = '/api/transacciones/categorias/mias';
         async function cargarMisCategorias() {
             if (!token) return;
             try {
@@ -1081,7 +1082,7 @@
             } catch (e) { console.error('Error cargando categorías:', e); }
         }
 
-        document.getElementById('fecha').value = new Date().toISOString().split('T')[0];
+        document.getElementById('fecha').value = FinanbotTime.todayIso();
 
         // ── TIPO (formulario nuevo) ───────────────────────
         function seleccionarTipo(tipo) {
@@ -1116,7 +1117,7 @@
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
 
             try {
-                const res = await fetch('http://127.0.0.1:8000/api/transacciones/', {
+                const res = await fetch('/api/transacciones/', {
                     method: 'POST',
                     headers: {'Content-Type':'application/json','Authorization':'Bearer '+token},
                     body: JSON.stringify({tipo:tipoSeleccionado, categoria:cat, icono:ICONOS_MAP[cat]||'💸', monto, descripcion:desc, fecha, ...datosUbicacion('nueva')})
@@ -1138,7 +1139,7 @@
         async function eliminarTransaccion(id) {
             if (!confirm('¿Eliminar esta transacción?')) return;
             try {
-                const res = await fetch(`http://127.0.0.1:8000/api/transacciones/${id}`, {
+                const res = await fetch(`/api/transacciones/${id}`, {
                     method: 'DELETE', headers: {'Authorization':'Bearer '+token}
                 });
                 if (res.ok) await cargarTransacciones();
@@ -1216,7 +1217,7 @@
             btn.innerHTML = '<span class="spinner"></span> Guardando...';
 
             try {
-                const res = await fetch(`http://127.0.0.1:8000/api/transacciones/${editandoId}`, {
+                const res = await fetch(`/api/transacciones/${editandoId}`, {
                     method: 'PUT',
                     headers: {'Content-Type':'application/json','Authorization':'Bearer '+token},
                     body: JSON.stringify({ tipo: editTipo, categoria: cat, icono: ICONOS_MAP[cat] || '💸', monto, descripcion: desc, fecha, ...datosUbicacion('editar') })
@@ -1258,7 +1259,7 @@
         async function cargarTransacciones() {
             if (!token) return;
             try {
-                const res = await fetch('http://127.0.0.1:8000/api/transacciones/', {
+                const res = await fetch('/api/transacciones/', {
                     headers: {'Authorization':'Bearer '+token}
                 });
                 if (res.ok) {
@@ -1367,7 +1368,7 @@
             const cont = document.getElementById('compararPeriodos');
             if (!token) return;
             try {
-                const res = await fetch('http://127.0.0.1:8000/api/transacciones/periodos', {
+                const res = await fetch('/api/transacciones/periodos', {
                     headers: {'Authorization':'Bearer '+token}
                 });
                 if (!res.ok) throw new Error('No se pudieron cargar los periodos');
@@ -1416,7 +1417,7 @@
                 : '¿Seguro que quieres borrar este periodo y todos sus movimientos?';
             if (!confirm(mensaje)) return;
             try {
-                const res = await fetch(`http://127.0.0.1:8000/api/transacciones/periodos/${id}`, {
+                const res = await fetch(`/api/transacciones/periodos/${id}`, {
                     method: 'DELETE',
                     headers: {'Authorization':'Bearer '+token}
                 });
@@ -1669,12 +1670,12 @@
         // ════════════════════════════════════════════════
         //  CALENDARIO INTERACTIVO
         // ════════════════════════════════════════════════
-        let calFechaRef = new Date();
+        let calFechaRef = FinanbotTime.today();
         let calDiaSel = null;
         let calTipoSel = 'gasto';
 
         function abrirCalendario() {
-            calFechaRef = new Date();
+            calFechaRef = FinanbotTime.today();
             calDiaSel = null;
             document.getElementById('calDiaPanel').style.display = 'none';
             renderCalendarioModal();
@@ -1710,7 +1711,7 @@
             const ultimoDia = new Date(anio, mes + 1, 0);
             const primerIndex = (primerDia.getDay() + 6) % 7;
             const totalDias = ultimoDia.getDate();
-            const hoyStr = new Date().toISOString().split('T')[0];
+            const hoyStr = FinanbotTime.todayIso();
 
             let html = ['D','L','M','M','J','V','S'].map(d => `<div class="cal-header-dia">${d}</div>`).join('');
             for (let i = 0; i < primerIndex; i++) html += `<div class="cal-dia vacio"></div>`;
@@ -1766,7 +1767,7 @@
         async function asegurarSalarioMesActual() {
             if (!token) return;
             try {
-                const resPerfil = await fetch('http://127.0.0.1:8000/api/perfil/', {
+                const resPerfil = await fetch('/api/perfil/', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (!resPerfil.ok) return;
@@ -1781,19 +1782,19 @@
                 const diaPago = diaDeFechaStr(perfil.fecha_salario);
                 if (!diaPago) return;
 
-                const resTrans = await fetch('http://127.0.0.1:8000/api/transacciones/', {
+                const resTrans = await fetch('/api/transacciones/', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (!resTrans.ok) return;
                 const todas = await resTrans.json();
 
-                const hoy = new Date();
+                const hoy = FinanbotTime.today();
                 const mesActualStr = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}`;
 
                 // Limpiar salarios auto programados a futuro (no se generan por adelantado)
                 const futuros = todas.filter(t => esAutoSalario(t) && t.fecha && t.fecha.slice(0,7) > mesActualStr);
                 for (const t of futuros) {
-                    await fetch(`http://127.0.0.1:8000/api/transacciones/${t.id}`, {
+                    await fetch(`/api/transacciones/${t.id}`, {
                         method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` }
                     });
                 }
@@ -1807,7 +1808,7 @@
                     const diaFinal = Math.min(diaPago, ultimoDia);
                     if (hoy.getDate() < diaFinal) return; // aún no llega el día de pago este mes
                     const fecha = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-${String(diaFinal).padStart(2,'0')}`;
-                    await fetch('http://127.0.0.1:8000/api/transacciones/', {
+                    await fetch('/api/transacciones/', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                         body: JSON.stringify({ tipo: 'ingreso', categoria: 'Salario', icono: '💼', monto: ingreso, descripcion: '__auto_salario__', fecha, ...datosUbicSalario() })
@@ -1876,7 +1877,7 @@
         //  Vienen de /api/transacciones/lugares-cercanos
         //  (OpenStreetMap). Se muestran al acercarse (zoom ≥ 16).
         // ════════════════════════════════════════════════
-        const API_LUGARES = 'http://127.0.0.1:8000/api/transacciones/lugares-cercanos';
+        const API_LUGARES = '/api/transacciones/lugares-cercanos';
         const ZOOM_LUGARES = 16, ZOOM_ETIQUETAS = 17;
         const COLOR_GRUPO = {
             comida: '#F2994A', compras: '#4285F4', salud: '#EA4335', dinero: '#34A853',
@@ -2208,7 +2209,7 @@
             try {
                 // Se aplica a todos los salarios automáticos ya registrados
                 for (const t of transacciones.filter(esAutoSalario)) {
-                    await fetch(`http://127.0.0.1:8000/api/transacciones/${t.id}`, {
+                    await fetch(`/api/transacciones/${t.id}`, {
                         method: 'PUT',
                         headers: {'Content-Type':'application/json','Authorization':'Bearer '+token},
                         body: JSON.stringify(datos)

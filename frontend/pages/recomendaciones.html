@@ -4,6 +4,7 @@
     <base target="_top">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="timezone.js"></script>
     <title>FinanBot - Recomendaciones</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -633,11 +634,11 @@
     // generadas) se calculan SOLO con las transacciones del mes en
     // curso, para ser consistentes con Dashboard y Mis Finanzas.
     function obtenerMesActualStr() {
-        const hoy = new Date();
+        const hoy = FinanbotTime.today();
         return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}`;
     }
     function hoyStr() {
-        const h = new Date();
+        const h = FinanbotTime.today();
         return `${h.getFullYear()}-${String(h.getMonth()+1).padStart(2,'0')}-${String(h.getDate()).padStart(2,'0')}`;
     }
     // Una transacción con fecha futura no cuenta todavía — se queda "en
@@ -886,10 +887,10 @@
         if (!token) { window.top.location.href = 'login.html'; return; }
         try {
             const [rT, rM, rR, rP] = await Promise.all([
-                fetch('http://127.0.0.1:8000/api/transacciones/',  { headers:{'Authorization':`Bearer ${token}`} }),
-                fetch('http://127.0.0.1:8000/api/metas/',           { headers:{'Authorization':`Bearer ${token}`} }),
-                fetch(`http://127.0.0.1:8000/api/recomendaciones/?nec=${getRegla().nec}&des=${getRegla().des}&aho=${getRegla().aho}`, { headers:{'Authorization':`Bearer ${token}`} }),
-                fetch('http://127.0.0.1:8000/api/perfil/',          { headers:{'Authorization':`Bearer ${token}`} }),
+                fetch('/api/transacciones/',  { headers:{'Authorization':`Bearer ${token}`} }),
+                fetch('/api/metas/',           { headers:{'Authorization':`Bearer ${token}`} }),
+                fetch(`/api/recomendaciones/?nec=${getRegla().nec}&des=${getRegla().des}&aho=${getRegla().aho}`, { headers:{'Authorization':`Bearer ${token}`} }),
+                fetch('/api/perfil/',          { headers:{'Authorization':`Bearer ${token}`} }),
             ]);
 
             const transTodas = rT.ok ? await rT.json() : [];

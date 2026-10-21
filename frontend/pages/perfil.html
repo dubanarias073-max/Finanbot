@@ -4,6 +4,7 @@
     <base target="_top">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="timezone.js"></script>
     <title>FinanBot - Mi Perfil</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -109,14 +110,14 @@
         .form-label { color: var(--fb-lav); font-size: 12px; font-weight: 600; margin-bottom: 7px; display: block; text-transform: uppercase; letter-spacing: 0.5px; }
         .form-group { margin-bottom: 16px; }
         .form-row   { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-        .form-control { background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 12px; color: var(--fb-text); padding: 12px 16px; font-size: 14px; width: 100%; outline: none; transition: all 0.3s; font-family: 'Segoe UI', sans-serif; }
+        .form-control { background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 12px; color: var(--fb-text); -webkit-text-fill-color: var(--fb-text); padding: 12px 16px; font-size: 14px; width: 100%; outline: none; transition: all 0.3s; font-family: 'Segoe UI', sans-serif; }
         .form-control:focus { background: rgba(139,92,246,0.07); border-color: #8B5CF6; box-shadow: 0 0 0 3px rgba(139,92,246,0.12); }
-        .form-control::placeholder { color: var(--text-muted); }
+        .form-control::placeholder { color: var(--text-secondary); opacity: 1; }
         .form-control:disabled { opacity: 0.4; cursor: not-allowed; }
         .input-icon-wrap { position: relative; }
         .input-icon-wrap .form-control { padding-left: 44px; }
         .input-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #8B5CF6; font-size: 14px; }
-        .pass-toggle { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: #6b7280; cursor: pointer; font-size: 14px; z-index: 2; transition: color 0.2s; }
+        .pass-toggle { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); cursor: pointer; font-size: 14px; z-index: 2; transition: color 0.2s; }
         .pass-toggle:hover { color: #8B5CF6; }
         .input-suffix { display: flex; }
         .input-suffix .form-control { border-radius: 12px 0 0 12px; border-right: none; }
@@ -179,7 +180,7 @@
         .suma-val.ok { color: #10B981; } .suma-val.err { color: #ef4444; }
         .nombre-regla-input { width: 100%; background: rgba(var(--fb-fg),0.05); border: 1px solid rgba(139,92,246,0.25); border-radius: 9px; color: var(--fb-text); padding: 8px 12px; font-size: 12px; outline: none; margin-bottom: 12px; font-family: 'Segoe UI', sans-serif; transition: all 0.3s; }
         .nombre-regla-input:focus { border-color: #8B5CF6; }
-        .nombre-regla-input::placeholder { color: #6b7280; }
+        .nombre-regla-input::placeholder { color: var(--text-secondary); opacity: 1; }
         .panel-btns-sm { display: flex; gap: 8px; }
         .btn-guardar-regla-sm { background: linear-gradient(135deg,#6D5BD0,#8B5CF6); color: var(--fb-text); border: none; border-radius: 9px; padding: 9px 16px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.3s; flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; }
         .btn-guardar-regla-sm:disabled { opacity: 0.4; cursor: not-allowed; }
@@ -234,6 +235,45 @@
         .meta-item::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: linear-gradient(180deg,#6D5BD0,#8B5CF6); border-radius: 0 0 0 18px; }
         .meta-item.completada::before { background: linear-gradient(180deg,#10B981,#5EEAD4); }
         .meta-item:hover { border-color: rgba(139,92,246,0.25); transform: translateX(4px); box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
+        .meta-item.presupuesto-meta { padding: 20px; background: linear-gradient(135deg,rgba(139,92,246,0.09),rgba(17,17,43,0.45)); }
+        .meta-item.presupuesto-meta::before { background: linear-gradient(180deg,#38bdf8,#8B5CF6); }
+        .meta-item.presupuesto-meta.anual::before { background: linear-gradient(180deg,#f59e0b,#f472b6); }
+        .meta-item.presupuesto-meta.excedida { border-color: rgba(248,113,113,0.45); background: linear-gradient(135deg,rgba(127,29,29,0.2),rgba(17,17,43,0.55)); }
+        .meta-item.presupuesto-meta.excedida::before { background: linear-gradient(180deg,#fb7185,#ef4444); }
+        .presupuesto-tipo { display: inline-flex; align-items: center; gap: 7px; padding: 5px 10px; border-radius: 99px; color: #7dd3fc; background: rgba(56,189,248,0.1); border: 1px solid rgba(56,189,248,0.22); font-size: 10px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+        .presupuesto-meta.anual .presupuesto-tipo { color: #fcd34d; background: rgba(245,158,11,0.1); border-color: rgba(245,158,11,0.25); }
+        .presupuesto-meta.excedida .presupuesto-tipo { color: #fca5a5; background: rgba(239,68,68,0.12); border-color: rgba(248,113,113,0.3); }
+        .presupuesto-meta .meta-nombre { margin-top: 8px; font-size: 16px; }
+        .presupuesto-meta .meta-badge { color: #7dd3fc; background: rgba(56,189,248,0.1); border-color: rgba(56,189,248,0.22); }
+        .presupuesto-meta.anual .meta-badge { color: #fcd34d; background: rgba(245,158,11,0.1); border-color: rgba(245,158,11,0.25); }
+        .presupuesto-meta.excedida .meta-badge { color: #fca5a5; background: rgba(239,68,68,0.12); border-color: rgba(248,113,113,0.3); }
+        .presupuesto-meta .progress-fill { background: linear-gradient(90deg,#0ea5e9,#38bdf8); }
+        .presupuesto-meta.anual .progress-fill { background: linear-gradient(90deg,#d97706,#fbbf24); }
+        .presupuesto-meta.excedida .progress-fill { background: linear-gradient(90deg,#ef4444,#fb7185); }
+        .presupuesto-resumen { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0 9px; }
+        .presupuesto-cifra { min-width: 0; padding: 11px 13px; background: rgba(var(--fb-fg),0.035); border: 1px solid var(--item-border); border-radius: 12px; }
+        .presupuesto-cifra span { display: block; margin-bottom: 5px; color: var(--text-muted); font-size: 10px; text-transform: uppercase; letter-spacing: .06em; }
+        .presupuesto-cifra strong { color: var(--fb-text); font-family: 'Space Mono',monospace; font-size: clamp(12px,2vw,15px); overflow-wrap: anywhere; }
+        .presupuesto-maximo { border-color: rgba(56,189,248,0.22); }
+        .presupuesto-meta.anual .presupuesto-maximo { border-color: rgba(245,158,11,0.25); }
+        .presupuesto-meta.excedida .presupuesto-maximo { border-color: rgba(248,113,113,0.3); }
+        .presupuesto-restante { display: flex; justify-content: space-between; gap: 10px; margin: 0 0 11px; color: var(--text-muted); font-size: 11px; }
+        .presupuesto-restante strong { color: #34d399; text-align: right; }
+        .presupuesto-restante strong.excedida { color: #fca5a5; }
+        .tipo-meta-ayuda { display: none; margin: 8px 0 14px; padding: 11px 13px; color: #a5f3fc; background: rgba(34,211,238,0.07); border: 1px solid rgba(34,211,238,0.16); border-radius: 11px; font-size: 11px; line-height: 1.5; }
+        .tipo-meta-ayuda.visible { display: block; }
+        body.tema-claro .meta-item.presupuesto-meta { background: linear-gradient(135deg,#F0EDFF,#F8F7FF); }
+        body.tema-claro .meta-item.presupuesto-meta.excedida { background: linear-gradient(135deg,#FFF1F2,#FFF7F7); }
+        body.tema-claro .presupuesto-meta .presupuesto-tipo, body.tema-claro .presupuesto-meta .meta-badge { color: #075985; }
+        body.tema-claro .presupuesto-meta.anual .presupuesto-tipo, body.tema-claro .presupuesto-meta.anual .meta-badge { color: #92400E; }
+        body.tema-claro .presupuesto-meta.excedida .presupuesto-tipo, body.tema-claro .presupuesto-meta.excedida .meta-badge { color: #B91C1C; }
+        body.tema-claro .presupuesto-restante strong { color: #047857; }
+        body.tema-claro .presupuesto-restante strong.excedida { color: #B91C1C; }
+        body.tema-claro .tipo-meta-ayuda { color: #155E75; }
+        #metaTipo { border-color: rgba(139,92,246,0.4); background-color: rgba(139,92,246,0.08); font-weight: 700; }
+        #metaObjetivo { font-size: 16px; font-weight: 700; }
+        .presupuesto-meta .meta-top { align-items: center; }
+        .presupuesto-meta .meta-badge { max-width: 145px; text-align: center; }
         .meta-top     { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; gap: 10px; }
         .meta-nombre  { font-size: 15px; font-weight: 700; color: var(--fb-text); margin-bottom: 3px; }
         .meta-fecha   { font-size: 11px; color: var(--text-muted); display: flex; align-items: center; gap: 4px; }
@@ -301,15 +341,16 @@
         .modal-box::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 3px; background: linear-gradient(90deg,#6D5BD0,#8B5CF6,#5EEAD4); border-radius: 24px 24px 0 0; }
         .modal-header { padding: 26px 28px 0; flex-shrink: 0; }
         .modal-body-scroll { overflow-y: auto; padding: 18px 28px 28px; flex: 1; }
-        .modal-close { position: absolute; top: 16px; right: 18px; background: rgba(var(--fb-fg),0.06); border: 1px solid rgba(var(--fb-fg),0.08); color: #9ca3af; font-size: 14px; cursor: pointer; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.3s; }
+        .modal-close { position: absolute; top: 16px; right: 18px; background: rgba(var(--fb-fg),0.06); border: 1px solid rgba(var(--fb-fg),0.08); color: var(--text-secondary); font-size: 14px; cursor: pointer; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.3s; }
         .modal-close:hover { background: rgba(239,68,68,0.2); color: #ef4444; }
         .modal-title    { font-size: 18px; font-weight: 700; color: var(--fb-lav); margin-bottom: 3px; }
-        .modal-subtitle { font-size: 13px; color: #6b7280; margin-bottom: 4px; }
+        .modal-subtitle { font-size: 13px; color: var(--text-secondary); margin-bottom: 4px; }
+        .modal-description { color: var(--text-secondary); line-height: 1.6; }
         .emoji-selector { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 14px; }
         .emoji-btn { width: 38px; height: 38px; border-radius: 10px; background: rgba(var(--fb-fg),0.05); border: 1px solid rgba(var(--fb-fg),0.08); font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
         .emoji-btn:hover, .emoji-btn.sel { background: rgba(139,92,246,0.15); border-color: #8B5CF6; transform: scale(1.15); }
         .cat-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 14px; }
-        .cat-btn { padding: 10px 6px; border-radius: 12px; background: rgba(var(--fb-fg),0.04); border: 1px solid rgba(var(--fb-fg),0.08); font-size: 11px; font-weight: 500; color: #9ca3af; cursor: pointer; text-align: center; transition: all 0.2s; }
+        .cat-btn { padding: 10px 6px; border-radius: 12px; background: rgba(var(--fb-fg),0.04); border: 1px solid rgba(var(--fb-fg),0.08); font-size: 11px; font-weight: 500; color: var(--text-secondary); cursor: pointer; text-align: center; transition: all 0.2s; }
         .cat-btn:hover, .cat-btn.sel { background: rgba(139,92,246,0.12); border-color: #8B5CF6; color: var(--fb-text); }
         .cat-icon { font-size: 20px; display: block; margin-bottom: 4px; }
         .prio-selector { display: flex; gap: 8px; margin-bottom: 14px; }
@@ -318,7 +359,7 @@
         .prio-media { color: var(--fb-yellow); } .prio-media.sel { background: rgba(251,191,36,0.15); border-color: #fbbf24; }
         .prio-alta  { color: #f472b6; } .prio-alta.sel  { background: rgba(244,114,182,0.15); border-color: #f472b6; }
         .modo-selector { display: flex; gap: 8px; margin-bottom: 14px; }
-        .modo-btn { flex: 1; padding: 12px 8px; border-radius: 12px; border: 1px solid rgba(var(--fb-fg),0.08); background: rgba(var(--fb-fg),0.04); font-size: 12px; font-weight: 700; cursor: pointer; text-align: center; transition: all 0.2s; color: #9ca3af; }
+        .modo-btn { flex: 1; padding: 12px 8px; border-radius: 12px; border: 1px solid rgba(var(--fb-fg),0.08); background: rgba(var(--fb-fg),0.04); font-size: 12px; font-weight: 700; cursor: pointer; text-align: center; transition: all 0.2s; color: var(--text-secondary); }
         .modo-btn i { display: block; font-size: 16px; margin-bottom: 4px; }
         .modo-btn.sel { background: rgba(94,234,212,0.12); border-color: #5EEAD4; color: var(--fb-teal); }
         .modo-auto-panel { display: none; background: rgba(94,234,212,0.05); border: 1px solid rgba(94,234,212,0.2); border-radius: 14px; padding: 14px 16px; margin-bottom: 14px; }
@@ -328,9 +369,20 @@
         .meta-calc-titulo { font-size: 11px; font-weight: 700; color: #8B5CF6; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
         .calc-row { display: flex; justify-content: space-between; font-size: 13px; color: var(--fb-lav); margin-bottom: 6px; }
         .calc-row span:last-child { font-weight: 700; color: var(--fb-text); font-family: 'Space Mono', monospace; }
-        .mini-input { background: rgba(var(--fb-fg),0.05); border: 1px solid rgba(139,92,246,0.25); border-radius: 12px; color: var(--fb-text); padding: 11px 15px; font-size: 14px; width: 100%; outline: none; transition: all 0.3s; font-family: 'Segoe UI', sans-serif; }
+        .mini-input { background: rgba(var(--fb-fg),0.05); border: 1px solid rgba(139,92,246,0.25); border-radius: 12px; color: var(--fb-text); -webkit-text-fill-color: var(--fb-text); padding: 11px 15px; font-size: 14px; width: 100%; outline: none; transition: all 0.3s; font-family: 'Segoe UI', sans-serif; }
         .mini-input:focus { border-color: #8B5CF6; box-shadow: 0 0 0 3px rgba(139,92,246,0.12); }
-        .mini-input::placeholder { color: #6b7280; }
+        .mini-input::placeholder { color: var(--text-secondary); opacity: 1; -webkit-text-fill-color: var(--text-secondary); }
+        select.mini-input, select.form-control { color-scheme: dark; cursor: pointer; }
+        select.mini-input option, select.form-control option { background: #1A1A3D; color: #F8FAFC; }
+        input.form-control:-webkit-autofill, input.mini-input:-webkit-autofill {
+            -webkit-text-fill-color: var(--fb-text);
+            box-shadow: 0 0 0 1000px var(--card-bg) inset;
+            transition: background-color 9999s ease-out;
+        }
+        body.tema-claro .form-control, body.tema-claro .mini-input { color: #1E1B4B; -webkit-text-fill-color: #1E1B4B; }
+        body.tema-claro .form-control::placeholder, body.tema-claro .mini-input::placeholder, body.tema-claro .nombre-regla-input::placeholder { color: #666382; -webkit-text-fill-color: #666382; }
+        body.tema-claro select.mini-input, body.tema-claro select.form-control { color-scheme: light; }
+        body.tema-claro select.mini-input option, body.tema-claro select.form-control option { background: #FFFFFF; color: #1E1B4B; }
         .mini-input-izq { border-radius: 12px 0 0 12px; border-right: none; }
         .mini-suffix { background: rgba(139,92,246,0.1); border: 1px solid rgba(139,92,246,0.25); border-left: none; border-radius: 0 12px 12px 0; padding: 11px 12px; font-size: 12px; font-weight: 600; color: #8B5CF6; display: flex; align-items: center; }
         .btn-crear-modal { background: linear-gradient(135deg,#6D5BD0,#8B5CF6); color: var(--fb-text); border: none; border-radius: 13px; padding: 13px; font-size: 15px; font-weight: 700; width: 100%; cursor: pointer; transition: all 0.3s; box-shadow: 0 6px 24px rgba(109,91,208,0.35); margin-top: 8px; font-family: 'Segoe UI', sans-serif; }
@@ -386,6 +438,9 @@
             .presets-row { gap: 5px; }
             .preset-btn { font-size: 10px; padding: 4px 9px; }
             .meta-top { flex-direction: column; }
+            .presupuesto-resumen { grid-template-columns: 1fr; }
+            .presupuesto-meta .meta-top { flex-direction: row; }
+            .presupuesto-meta .meta-badge { max-width: 120px; font-size: 10px; }
         }
     </style>
     <link rel="stylesheet" href="temas.css">
@@ -426,10 +481,24 @@
     <div class="modal-box">
         <button class="modal-close" onclick="cerrarModal()">✕</button>
         <div class="modal-header">
-            <div class="modal-title">🎯 Nueva meta de ahorro</div>
+            <div class="modal-title">🎯 Nueva meta</div>
             <div class="modal-subtitle">Define tu objetivo y te ayudo a planificarlo</div>
         </div>
         <div class="modal-body-scroll">
+            <div class="form-group">
+                <label class="form-label">Tipo de meta</label>
+                <select id="metaTipo" class="mini-input" onchange="selTipoMeta(this.value)">
+                    <option value="ahorro">Meta de ahorro</option>
+                    <option value="gasto_mensual">Límite de gasto mensual</option>
+                    <option value="gasto_anual">Límite de gasto anual</option>
+                </select>
+                <div class="tipo-meta-ayuda" id="tipoMetaAyuda"></div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Nombre de la meta *</label>
+                <input type="text" id="metaNombre" class="mini-input" placeholder="Ej: Vacaciones en la playa">
+            </div>
+            <div id="ahorroControles">
             <div style="margin-bottom:14px;">
                 <label class="form-label">Elige un icono</label>
                 <div class="emoji-selector">
@@ -449,11 +518,7 @@
                     <button class="emoji-btn" onclick="selEmoji(this,'🏥')">🏥</button>
                     <button class="emoji-btn" onclick="selEmoji(this,'🎵')">🎵</button>
                 </div>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Nombre de la meta *</label>
-                <input type="text" id="metaNombre" class="mini-input" placeholder="Ej: Vacaciones en la playa">
-            </div>
+                </div>
             <label class="form-label">Categoría</label>
             <div class="cat-grid" style="margin-bottom:14px;">
                 <div class="cat-btn sel" onclick="selCat(this,'viaje')"><span class="cat-icon">✈️</span>Viaje</div>
@@ -465,9 +530,9 @@
             </div>
             <label class="form-label">Prioridad</label>
             <div class="prio-selector">
-                <div class="prio-btn prio-baja"       onclick="selPrio(this)">🟢 Baja</div>
-                <div class="prio-btn prio-media sel"   onclick="selPrio(this)">🟡 Media</div>
-                <div class="prio-btn prio-alta"        onclick="selPrio(this)">🔴 Alta</div>
+                <div class="prio-btn prio-baja" onclick="selPrio(this)">🟢 Baja</div>
+                <div class="prio-btn prio-media sel" onclick="selPrio(this)">🟡 Media</div>
+                <div class="prio-btn prio-alta" onclick="selPrio(this)">🔴 Alta</div>
             </div>
             <label class="form-label">¿Cómo quieres ahorrar para esta meta?</label>
             <div class="modo-selector">
@@ -497,32 +562,37 @@
                     Ese día de cada mes se descontará este monto de tu sueldo (como un gasto) y se sumará automáticamente a esta meta.
                 </div>
             </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
-                <div>
-                    <label class="form-label">Monto objetivo *</label>
-                    <div style="display:flex;">
-                        <input type="number" id="metaObjetivo" class="mini-input mini-input-izq" placeholder="2.000.000" oninput="calcProy()">
-                        <span class="mini-suffix">COP</span>
-                    </div>
-                </div>
-                <div>
-                    <label class="form-label">Ya tengo ahorrado</label>
-                    <div style="display:flex;">
-                        <input type="number" id="metaActual" class="mini-input mini-input-izq" placeholder="0" value="0" oninput="calcProy()">
+            </div>
+            <div style="display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:12px;">
+            <div>
+                <label class="form-label" id="metaObjetivoLabel">Monto objetivo *</label>
+                <div style="display:flex;">
+                        <input type="number" id="metaObjetivo" class="mini-input mini-input-izq" min="1" step="1" placeholder="Ej: 1.000.000" oninput="calcProy()">
                         <span class="mini-suffix">COP</span>
                     </div>
                 </div>
             </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
-                <div>
-                    <label class="form-label">Fecha límite (opcional)</label>
-                    <input type="date" id="metaFecha" class="mini-input" oninput="calcProy()">
+            <div id="ahorroExtras">
+                <div style="display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:12px;">
+                    <div>
+                        <label class="form-label">Ya tengo ahorrado</label>
+                        <div style="display:flex;">
+                            <input type="number" id="metaActual" class="mini-input mini-input-izq" placeholder="0" value="0" oninput="calcProy()">
+                            <span class="mini-suffix">COP</span>
+                        </div>
+                    </div>
                 </div>
-                <div id="metaMensualManualWrap">
-                    <label class="form-label">Ahorro mensual estimado</label>
-                    <div style="display:flex;">
-                        <input type="number" id="metaMensual" class="mini-input mini-input-izq" placeholder="0" oninput="calcProy()">
-                        <span class="mini-suffix">COP</span>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+                    <div>
+                        <label class="form-label">Fecha límite (opcional)</label>
+                        <input type="date" id="metaFecha" class="mini-input" oninput="calcProy()">
+                    </div>
+                    <div id="metaMensualManualWrap">
+                        <label class="form-label">Ahorro mensual estimado</label>
+                        <div style="display:flex;">
+                            <input type="number" id="metaMensual" class="mini-input mini-input-izq" placeholder="0" oninput="calcProy()">
+                            <span class="mini-suffix">COP</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -534,7 +604,7 @@
                 <div class="calc-row" id="cInteresRow" style="display:none;"><span>🚀 Con interés 8% anual:</span><span id="cInteres">—</span></div>
             </div>
             <button class="btn-crear-modal" onclick="crearMeta()">
-                <i class="fas fa-plus me-2"></i> Crear meta de ahorro
+                <i class="fas fa-plus me-2"></i> Crear meta
             </button>
         </div>
     </div>
@@ -546,7 +616,7 @@
         <button class="modal-close" onclick="cerrarModalAnadir()" style="background:rgba(16,185,129,0.1);border-color:rgba(16,185,129,0.2);">✕</button>
         <div style="font-size:28px;margin-bottom:8px;">➕</div>
         <div class="modal-title">Añadir ahorro</div>
-        <div style="font-size:13px;color:#6b7280;margin-bottom:22px;">Suma dinero manualmente a esta meta. Este monto siempre se añade, nunca resta.</div>
+        <div class="modal-description" style="font-size:13px;margin-bottom:22px;">Suma dinero manualmente a esta meta. Este monto siempre se añade, nunca resta.</div>
         <label class="form-label">Monto a añadir</label>
         <div style="display:flex;margin-bottom:18px;">
             <input type="number" id="anadirMonto" class="mini-input mini-input-izq" placeholder="50.000" min="0">
@@ -564,8 +634,8 @@
         <button class="modal-close" onclick="cerrarModalRetirar()" style="background:rgba(16,185,129,0.1);border-color:rgba(16,185,129,0.2);">✕</button>
         <div style="font-size:28px;margin-bottom:8px;">💸</div>
         <div class="modal-title">Retirar dinero de tu meta</div>
-        <div style="font-size:13px;color:#6b7280;margin-bottom:10px;">Esta meta ya está completada 🎉 Al retirar se te devuelve <strong id="retirarMontoTexto" style="color:#10B981;">$0</strong> a tu sueldo/balance, y como ya cumplió su propósito, la meta se elimina.</div>
-        <div style="font-size:12px;color:#9ca3af;margin-bottom:22px;">Si prefieres seguir ahorrando en ella en vez de retirar, cierra esto y usa "Editar monto".</div>
+        <div class="modal-description" style="font-size:13px;margin-bottom:10px;">Esta meta ya está completada 🎉 Al retirar se te devuelve <strong id="retirarMontoTexto" style="color:#10B981;">$0</strong> a tu sueldo/balance, y como ya cumplió su propósito, la meta se elimina.</div>
+        <div class="modal-description" style="font-size:12px;margin-bottom:22px;">Si prefieres seguir ahorrando en ella en vez de retirar, cierra esto y usa "Editar monto".</div>
         <button class="btn-crear-modal" style="background:linear-gradient(135deg,#059669,#10B981);color:#0f2d1a;" onclick="confirmarRetiro()">
             <i class="fas fa-hand-holding-dollar me-2"></i> Retirar y eliminar meta
         </button>
@@ -578,7 +648,7 @@
         <button class="modal-close" onclick="cerrarModalAbonar()">✕</button>
         <div style="font-size:28px;margin-bottom:8px;">✏️</div>
         <div class="modal-title">Editar monto total</div>
-        <div style="font-size:13px;color:#6b7280;margin-bottom:22px;">Reemplaza el total ahorrado de esta meta. A diferencia de "Añadir ahorro", este valor sí puede bajar — útil para retirar tu ahorro a tu sueldo, incluso si la meta ya estaba completada.</div>
+        <div class="modal-description" style="font-size:13px;margin-bottom:22px;">Reemplaza el total ahorrado de esta meta. A diferencia de "Añadir ahorro", este valor sí puede bajar — útil para retirar tu ahorro a tu sueldo, incluso si la meta ya estaba completada.</div>
         <label class="form-label">Nuevo monto total ahorrado</label>
         <div style="display:flex;margin-bottom:18px;">
             <input type="number" id="abonarMonto" class="mini-input mini-input-izq" placeholder="0">
@@ -596,7 +666,7 @@
         <button class="modal-close" onclick="cerrarConfirmarReduccion()" style="background:rgba(239,68,68,0.1);border-color:rgba(239,68,68,0.25);">✕</button>
         <div style="font-size:28px;margin-bottom:8px;">⚠️</div>
         <div class="modal-title" style="color:#f87171;">Vas a reducir tu ahorro</div>
-        <div style="font-size:13px;color:#9ca3af;margin-bottom:22px;line-height:1.6;" id="msgConfirmarReduccion"></div>
+        <div class="modal-description" style="font-size:13px;margin-bottom:22px;" id="msgConfirmarReduccion"></div>
         <div style="display:flex;gap:10px;">
             <button class="btn-crear-modal" style="background:rgba(var(--fb-fg),0.06);color:#9ca3af;flex:1;box-shadow:none;" onclick="cerrarConfirmarReduccion()">
                 Cancelar
@@ -646,7 +716,7 @@
                     <div class="salario-badge" id="salarioBadge" style="display:none;">
                         <span class="salario-badge-icon">💼</span>
                         <div class="salario-badge-info">
-                            <div class="salario-badge-label">Salario mensual activo</div>
+                            <div class="salario-badge-label">Ingreso mensual registrado</div>
                             <div class="salario-badge-val" id="salarioBadgeVal">$0</div>
                         </div>
                         <div class="salario-badge-dot"></div>
@@ -680,25 +750,25 @@
                     <hr class="divider-fancy">
                     <div class="card-header" style="margin-bottom:16px;">
                         <div class="card-icon" style="background:rgba(251,191,36,0.15);">💰</div>
-                        <div><div class="card-title">Información financiera</div><div class="card-subtitle">Tu salario se registra automáticamente en Mis Finanzas</div></div>
+                        <div><div class="card-title">Información financiera</div><div class="card-subtitle">Tu ingreso promedio mensual es obligatorio; el día de pago es opcional</div></div>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Ingreso mensual (Salario)</label>
+                        <label class="form-label">Ingreso mensual promedio *</label>
                         <div class="input-suffix">
-                            <input type="number" class="form-control" id="ingresoMensual" placeholder="2.500.000" oninput="actualizarDist()">
+                            <input type="number" class="form-control" id="ingresoMensual" placeholder="2.500.000" min="10000" required oninput="actualizarDist()">
                             <span class="suffix-tag">COP</span>
                         </div>
                         <div class="form-group" style="margin-top:10px;margin-bottom:0;">
-                            <label class="form-label">Día de pago mensual</label>
-                            <input type="number" class="form-control" id="diaPago" min="1" max="31" placeholder="Ej: 30">
+                            <label class="form-label">Día de pago (opcional)</label>
+                            <input type="number" class="form-control" id="diaPago" min="1" max="31" placeholder="Ej: 30" oninput="actualizarDist()">
                             <div style="font-size:11px;color:var(--text-muted);margin-top:6px;line-height:1.5;">
-                                FinanBot registrará tu salario automáticamente ese día, mes a mes (no se adelanta a meses futuros). Si cambias el día, los meses ya pasados no se modifican.
+                                Si no sabes con certeza cuándo recibirás el dinero, déjalo vacío. En ese caso no se programarán ingresos automáticos; podrás registrar cada pago cuando lo recibas.
                             </div>
                         </div>
                         <!-- INFO BOX SALARIO -->
                         <div class="ingreso-info-box" id="ingresoInfoBox" style="display:none;">
                             <i class="fas fa-info-circle"></i>
-                            <p>Este valor se registrará automáticamente como un <strong>ingreso de Salario</strong> en Mis Finanzas al guardar. Puedes editarlo aquí en cualquier momento.</p>
+                            <p></p>
                         </div>
                     </div>
 
@@ -809,7 +879,7 @@
         <div class="card">
             <div class="metas-header">
                 <div>
-                    <h3 style="font-size:17px;font-weight:700;color:var(--fb-text);margin-bottom:4px;">🎯 Mis Metas de Ahorro</h3>
+                    <h3 style="font-size:17px;font-weight:700;color:var(--fb-text);margin-bottom:4px;">🎯 Mis Metas</h3>
                     <p style="font-size:13px;color:var(--text-muted);">Define objetivos claros y sigue tu progreso</p>
                 </div>
                 <button class="btn-primary" onclick="abrirModal()"><i class="fas fa-plus"></i> Nueva meta</button>
@@ -941,7 +1011,7 @@
 </div>
 
 <script>
-const API = 'http://127.0.0.1:8000/api';
+const API = '/api';
 const token = localStorage.getItem('token');
     let metaSeleccionada = null;
     let montoOriginalAbono = 0;
@@ -949,7 +1019,7 @@ const token = localStorage.getItem('token');
     let metaRetirarId = null;
     let metaRetirarActual = 0;
     let metaRetirarObjetivo = 0;
-    let emoji = '🏖️', catSel = 'viaje', prioSel = 'media', modoSel = 'manual';
+    let emoji = '🏖️', catSel = 'viaje', prioSel = 'media', modoSel = 'manual', tipoMetaSel = 'ahorro';
     let transaccionesCache = [];
 
     // ── MENÚ MÓVIL ────────────────────────────────────────
@@ -1000,7 +1070,7 @@ const token = localStorage.getItem('token');
         esAutoMeta(t, metaId) || esManualMeta(t, metaId) || esAjusteMeta(t, metaId);
 
     function fechaHoyStr() {
-        const h = new Date();
+        const h = FinanbotTime.today();
         return `${h.getFullYear()}-${String(h.getMonth()+1).padStart(2,'0')}-${String(h.getDate()).padStart(2,'0')}`;
     }
 
@@ -1009,7 +1079,7 @@ const token = localStorage.getItem('token');
     // registraron este mes. El resto del resumen financiero (Ingresos,
     // Gastos, Balance) sigue siendo histórico y NO se reinicia.
     function obtenerMesActualStr() {
-        const hoy = new Date();
+        const hoy = FinanbotTime.today();
         return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}`;
     }
 
@@ -1021,7 +1091,7 @@ const token = localStorage.getItem('token');
     // lado). Revisa las transacciones ya registradas de esta meta
     // (aportes automáticos, manuales y ajustes) fechadas este mes.
     async function calcularRetiroSplit(metaId, montoRetiro) {
-        const hoy = new Date();
+        const hoy = FinanbotTime.today();
         const mesActualStr = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}`;
         try {
             const res = await fetch(`${API}/transacciones/`, { headers:{'Authorization':`Bearer ${token}`} });
@@ -1173,8 +1243,12 @@ const token = localStorage.getItem('token');
 
     function actualizarDist() {
         const ing = parseFloat(document.getElementById('ingresoMensual').value) || 0;
+        const diaPago = document.getElementById('diaPago').value;
         // Mostrar/ocultar info box del salario
         document.getElementById('ingresoInfoBox').style.display = ing > 0 ? 'flex' : 'none';
+        document.querySelector('#ingresoInfoBox p').textContent = diaPago
+            ? `Si recibes este ingreso el día ${diaPago}, se programará automáticamente en Mis Finanzas.`
+            : 'El ingreso promedio se guardará en tu perfil. Sin un día de pago definido, registra cada ingreso cuando lo recibas.';
         document.getElementById('distWrap').style.display = ing > 0 ? 'block' : 'none';
         // Actualizar badge del avatar
         const salarioBadge = document.getElementById('salarioBadge');
@@ -1282,7 +1356,9 @@ const token = localStorage.getItem('token');
     // ── MODAL META ───────────────────────────────────────
     function abrirModal() {
         document.getElementById('modalMeta').classList.add('visible');
-        document.getElementById('metaFecha').min = new Date().toISOString().split('T')[0];
+        document.getElementById('metaTipo').value = 'ahorro';
+        selTipoMeta('ahorro');
+        document.getElementById('metaFecha').min = FinanbotTime.todayIso();
         const ing = parseFloat(document.getElementById('ingresoMensual').value) || 0;
         const r = getRegla();
         if (ing > 0 && !document.getElementById('metaMensual').value)
@@ -1312,7 +1388,29 @@ const token = localStorage.getItem('token');
         calcProy();
     }
 
+    function selTipoMeta(tipo) {
+        tipoMetaSel = tipo;
+        const esAhorro = tipo === 'ahorro';
+        const esMensual = tipo === 'gasto_mensual';
+        document.getElementById('ahorroControles').style.display = esAhorro ? 'block' : 'none';
+        document.getElementById('ahorroExtras').style.display = esAhorro ? 'block' : 'none';
+        document.getElementById('metaObjetivoLabel').textContent = esAhorro ? 'Monto objetivo *' : 'Máximo de gasto permitido *';
+        document.getElementById('metaObjetivo').placeholder = esAhorro
+            ? 'Ej: 1.000.000'
+            : esMensual ? 'Máximo para el mes · Ej: 1.000.000' : 'Máximo para el año · Ej: 50.000.000';
+        const ayuda = document.getElementById('tipoMetaAyuda');
+        ayuda.textContent = esAhorro ? '' :
+            `Define el máximo que quieres gastar ${esMensual ? 'durante cada mes' : 'durante todo el año'}. FinanBot comparará ese tope con tus gastos registrados del período.`;
+        ayuda.classList.toggle('visible', !esAhorro);
+        if (!esAhorro) selModo('manual');
+        calcProy();
+    }
+
     function calcProy() {
+        if (tipoMetaSel !== 'ahorro') {
+            document.getElementById('metaCalc').style.display = 'none';
+            return;
+        }
         const obj = parseFloat(document.getElementById('metaObjetivo').value) || 0;
         const act = parseFloat(document.getElementById('metaActual').value)   || 0;
         const men = modoSel === 'automatico'
@@ -1338,7 +1436,7 @@ const token = localStorage.getItem('token');
             } else document.getElementById('cInteresRow').style.display='none';
         }
         if (fechaStr) {
-            const diff = Math.max(1, Math.ceil((new Date(fechaStr)-new Date())/(1000*60*60*24*30)));
+            const diff = Math.max(1, Math.ceil((FinanbotTime.fromIsoDate(fechaStr)-FinanbotTime.today())/(1000*60*60*24*30)));
             document.getElementById('cMensual').textContent = '$'+Math.round(faltante/diff).toLocaleString('es-CO')+'/mes';
         } else { document.getElementById('cMensual').textContent = men>0?'$'+men.toLocaleString('es-CO')+'/mes':'—'; }
     }
@@ -1430,7 +1528,7 @@ const token = localStorage.getItem('token');
         const automaticas = metas.filter(m => m.modo === 'automatico' && !m.completada && m.monto_automatico > 0 && m.dia_automatico);
         if (!automaticas.length) return metas;
 
-        const hoy = new Date();
+        const hoy = FinanbotTime.today();
         const mesActualStr = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}`;
 
         for (const m of automaticas) {
@@ -1441,7 +1539,7 @@ const token = localStorage.getItem('token');
             // "retroactivo" en el mes de creación — el primer aporte real
             // será el día configurado del mes siguiente.
             if (m.fecha_creacion) {
-                const creada = new Date(m.fecha_creacion);
+                const creada = FinanbotTime.fromIsoDate(m.fecha_creacion.slice(0, 10));
                 const creadaEsteMes = creada.getFullYear() === hoy.getFullYear() && creada.getMonth() === hoy.getMonth();
                 if (creadaEsteMes && creada.getDate() > m.dia_automatico) continue;
             }
@@ -1493,29 +1591,48 @@ const token = localStorage.getItem('token');
         lista.innerHTML = metas.map(m => {
             const faltante = m.monto_objetivo - m.monto_actual;
             const pct = m.porcentaje || 0;
+            const esPresupuesto = m.tipo === 'gasto_mensual' || m.tipo === 'gasto_anual';
+            const excedida = esPresupuesto && (m.excedida || faltante < 0);
             const esAuto = m.modo === 'automatico';
             const modoTag = esAuto
                 ? `<span class="meta-modo-tag auto"><i class="fas fa-rotate"></i> Automático · $${Math.round(m.monto_automatico||0).toLocaleString('es-CO')}/mes día ${m.dia_automatico}</span>`
                 : `<span class="meta-modo-tag manual"><i class="fas fa-hand-holding-dollar"></i> Manual</span>`;
+            const clasePresupuesto = esPresupuesto
+                ? `presupuesto-meta ${m.tipo === 'gasto_anual' ? 'anual' : 'mensual'}${excedida ? ' excedida' : ''}`
+                : '';
+            const periodoLabel = m.tipo === 'gasto_mensual'
+                ? `Presupuesto mensual · ${m.periodo || ''}`
+                : `Presupuesto anual · ${m.periodo || ''}`;
             return `
-            <div class="meta-item ${m.completada?'completada':''}">
+            <div class="meta-item ${m.completada?'completada':''} ${clasePresupuesto}">
                 <div class="meta-top">
                     <div>
-                        <div class="meta-nombre">${m.nombre} ${m.completada?'🎉':''}</div>
-                        ${m.fecha_limite ? `<div class="meta-fecha"><i class="fas fa-calendar-alt" style="color:#8B5CF6;font-size:10px;"></i> Límite: ${m.fecha_limite}</div>` : ''}
-                        <div>${modoTag}</div>
+                        ${esPresupuesto ? `<span class="presupuesto-tipo"><i class="fas ${m.tipo === 'gasto_mensual' ? 'fa-calendar-day' : 'fa-calendar'}"></i> ${periodoLabel}</span>` : ''}
+                        <div class="meta-nombre">${m.icono && !m.nombre.startsWith(m.icono) ? `${m.icono} ` : ''}${m.nombre} ${m.completada?'🎉':''}</div>
+                        ${!esPresupuesto && (m.categoria || m.prioridad) ? `<div class="meta-fecha">${m.categoria ? `📂 ${m.categoria}` : ''}${m.categoria && m.prioridad ? ' · ' : ''}${m.prioridad ? `Prioridad ${m.prioridad}` : ''}</div>` : ''}
+                        ${!esPresupuesto && m.fecha_limite ? `<div class="meta-fecha"><i class="fas fa-calendar-alt" style="color:#8B5CF6;font-size:10px;"></i> Límite: ${m.fecha_limite}</div>` : ''}
+                        ${!esPresupuesto ? `<div>${modoTag}</div>` : ''}
                     </div>
-                    <span class="meta-badge ${m.completada?'ok':''}">${m.completada?'✅ Completada':pct+'%'}</span>
+                    <span class="meta-badge ${m.completada?'ok':''}">${esPresupuesto ? (excedida ? 'Tope excedido' : pct >= 100 ? 'Tope alcanzado' : `${pct}% usado`) : (m.completada?'✅ Completada':pct+'%')}</span>
                 </div>
-                <div class="progress-track"><div class="progress-fill ${m.completada?'ok':''}" style="width:${pct}%"></div></div>
-                <div class="meta-montos">
-                    <span class="meta-ahorrado">💰 $${Math.round(m.monto_actual).toLocaleString('es-CO')}</span>
-                    <span class="meta-faltante">${!m.completada ? '🎯 Faltan $'+Math.round(faltante).toLocaleString('es-CO') : '✅ $'+Math.round(m.monto_objetivo).toLocaleString('es-CO')}</span>
-                </div>
+                ${esPresupuesto ? `
+                    <div class="presupuesto-resumen">
+                        <div class="presupuesto-cifra"><span>Gastado ${m.tipo === 'gasto_mensual' ? 'este mes' : 'este año'}</span><strong>$${Math.round(m.monto_actual).toLocaleString('es-CO')}</strong></div>
+                        <div class="presupuesto-cifra presupuesto-maximo"><span>Máximo permitido</span><strong>$${Math.round(m.monto_objetivo).toLocaleString('es-CO')}</strong></div>
+                    </div>
+                    <div class="progress-track"><div class="progress-fill" style="width:${Math.min(pct,100)}%"></div></div>
+                    <div class="presupuesto-restante"><span>${excedida ? 'Te excediste por' : 'Disponible para gastar'}</span><strong class="${excedida ? 'excedida' : ''}">$${Math.round(Math.abs(faltante)).toLocaleString('es-CO')}</strong></div>
+                ` : `
+                    <div class="progress-track"><div class="progress-fill ${m.completada?'ok':''}" style="width:${Math.min(pct,100)}%"></div></div>
+                    <div class="meta-montos">
+                        <span class="meta-ahorrado">💰 Ahorrado $${Math.round(m.monto_actual).toLocaleString('es-CO')}</span>
+                        <span class="meta-faltante">${!m.completada ? '🎯 Faltan $'+Math.round(faltante).toLocaleString('es-CO') : '✅ $'+Math.round(m.monto_objetivo).toLocaleString('es-CO')}</span>
+                    </div>
+                `}
                 <div class="meta-acciones">
-                    ${!m.completada ? `<button class="btn-success" onclick="abrirAnadir(${m.id},${m.monto_actual})"><i class="fas fa-plus"></i> Añadir ahorro</button>` : ''}
-                    ${m.completada ? `<button class="btn-retirar" onclick="abrirRetirar(${m.id},${m.monto_actual},${m.monto_objetivo})"><i class="fas fa-hand-holding-dollar"></i> Retirar dinero</button>` : ''}
-                    <button class="btn-outline-sm" onclick="abrirAbonar(${m.id},${m.monto_actual},${m.monto_objetivo})"><i class="fas fa-pen"></i> Editar monto</button>
+                    ${!esPresupuesto && !m.completada ? `<button class="btn-success" onclick="abrirAnadir(${m.id},${m.monto_actual})"><i class="fas fa-plus"></i> Añadir ahorro</button>` : ''}
+                    ${!esPresupuesto && m.completada ? `<button class="btn-retirar" onclick="abrirRetirar(${m.id},${m.monto_actual},${m.monto_objetivo})"><i class="fas fa-hand-holding-dollar"></i> Retirar dinero</button>` : ''}
+                    ${!esPresupuesto ? `<button class="btn-outline-sm" onclick="abrirAbonar(${m.id},${m.monto_actual},${m.monto_objetivo})"><i class="fas fa-pen"></i> Editar monto</button>` : ''}
                     <button class="btn-danger-sm" onclick="eliminarMeta(${m.id})"><i class="fas fa-trash"></i> Eliminar</button>
                 </div>
             </div>`;
@@ -1545,19 +1662,25 @@ const token = localStorage.getItem('token');
                 method:'POST',
                 headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},
                 body: JSON.stringify({
-                    nombre:`${emoji} ${nombre}`,
+                    nombre:tipoMetaSel === 'ahorro' ? `${emoji} ${nombre}` : nombre,
+                    tipo: tipoMetaSel,
                     monto_objetivo:parseFloat(obj),
                     monto_actual:parseFloat(act),
                     fecha_limite:fecha||null,
                     modo: modoSel,
                     monto_automatico: modoSel === 'automatico' ? montoAuto : null,
-                    dia_automatico: modoSel === 'automatico' ? diaAuto : null
+                    dia_automatico: modoSel === 'automatico' ? diaAuto : null,
+                    icono: tipoMetaSel === 'ahorro' ? emoji : null,
+                    categoria: tipoMetaSel === 'ahorro' ? catSel : null,
+                    prioridad: tipoMetaSel === 'ahorro' ? prioSel : 'media'
                 })
             });
             if (res.ok) {
                 cerrarModal();
                 ['metaNombre','metaObjetivo','metaFecha','metaMensual','metaMontoAuto','metaDiaAuto'].forEach(id=>document.getElementById(id).value='');
                 document.getElementById('metaActual').value='0';
+                document.getElementById('metaTipo').value='ahorro';
+                selTipoMeta('ahorro');
                 selModo('manual');
                 await cargarMetas(false); toast('🎯','Meta creada con éxito');
             } else toast('❌','Error al crear la meta.');
@@ -1817,16 +1940,21 @@ const token = localStorage.getItem('token');
         const ingreso = document.getElementById('ingresoMensual').value;
         const diaPagoStr = document.getElementById('diaPago').value;
         if (!nombre) { toast('⚠️','El nombre no puede estar vacío.'); return; }
+        if (!ingreso || !Number.isFinite(Number(ingreso)) || Number(ingreso) < 10000) {
+            toast('⚠️','Ingresa un monto mensual válido de al menos $10.000.');
+            document.getElementById('ingresoMensual').focus();
+            return;
+        }
 
         let fechaSalario = null;
         let diaPagoNum = null;
         if (diaPagoStr) {
-            diaPagoNum = parseInt(diaPagoStr, 10);
-            if (!diaPagoNum || diaPagoNum < 1 || diaPagoNum > 31) {
+            diaPagoNum = Number(diaPagoStr);
+            if (!Number.isInteger(diaPagoNum) || diaPagoNum < 1 || diaPagoNum > 31) {
                 toast('⚠️','El día de pago debe estar entre 1 y 31.');
                 return;
             }
-            const hoy = new Date();
+            const hoy = FinanbotTime.today();
             fechaSalario = fechaSalarioParaMes(hoy.getFullYear(), hoy.getMonth(), 0, diaPagoNum);
         }
 
@@ -1860,9 +1988,7 @@ if (res.ok) {
                 u.nombre = nombre; localStorage.setItem('usuario', JSON.stringify(u));
 
                 // ── SINCRONIZAR SALARIO AUTOMÁTICO ────────
-                if (ingreso && parseFloat(ingreso) > 0 && diaPagoNum) {
-                    await sincronizarSalarioAuto(parseFloat(ingreso), diaPagoNum);
-                }
+                await sincronizarSalarioAuto(parseFloat(ingreso), diaPagoNum);
                 // ─────────────────────────────────────────
 
                 await cargarStats(); // Refrescar balance con nuevo salario
@@ -1896,17 +2022,25 @@ if (res.ok) {
             const todas = await res.json();
 
             // 2. Calcular el mes actual (frontera pasado/futuro)
-            const hoy = new Date();
+            const hoy = FinanbotTime.today();
             const mesActualStr = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}`;
+            const hoyStr = `${mesActualStr}-${String(hoy.getDate()).padStart(2,'0')}`;
 
             // 3. Borrar auto-salarios del mes actual en adelante
             //    (incluye limpiar meses futuros que hubiera de antes)
-            const aReemplazar = todas.filter(t => esAutoSalario(t) && t.fecha && t.fecha.slice(0,7) >= mesActualStr);
+            const aReemplazar = todas.filter(t => esAutoSalario(t) && t.fecha && (
+                diaPago ? t.fecha.slice(0,7) >= mesActualStr : t.fecha >= hoyStr
+            ));
             for (const t of aReemplazar) {
                 await fetch(`${API}/transacciones/${t.id}`, {
                     method: 'DELETE',
                     headers: {'Authorization': `Bearer ${token}`}
                 });
+            }
+
+            if (!diaPago) {
+                toast('ℹ️', 'Día de pago sin definir: no se programarán ingresos automáticos.');
+                return;
             }
 
             // 4. Crear el salario del mes actual con el nuevo día — SOLO si
@@ -1985,7 +2119,7 @@ if (res.ok) {
             const res=await fetch(API + '/exportar/pdf',{headers:{'Authorization':`Bearer ${token}`}});
             if (res.ok) {
                 const blob=await res.blob(), url=window.URL.createObjectURL(blob), a=document.createElement('a');
-                a.href=url; a.download=`FinanBot_${new Date().toLocaleDateString('es-CO').replace(/\//g,'-')}.pdf`;
+                a.href=url; a.download=`FinanBot_${FinanbotTime.todayLabel().replace(/\//g,'-')}.pdf`;
                 document.body.appendChild(a); a.click(); document.body.removeChild(a); window.URL.revokeObjectURL(url);
                 toast('📄','PDF generado y descargado');
             } else toast('❌','Error al generar el PDF.');
@@ -2001,7 +2135,7 @@ if (res.ok) {
             const res=await fetch(API + '/exportar/excel',{headers:{'Authorization':`Bearer ${token}`}});
             if (res.ok) {
                 const blob=await res.blob(), url=window.URL.createObjectURL(blob), a=document.createElement('a');
-                a.href=url; a.download=`FinanBot_${new Date().toLocaleDateString('es-CO').replace(/\//g,'-')}.xlsx`;
+                a.href=url; a.download=`FinanBot_${FinanbotTime.todayLabel().replace(/\//g,'-')}.xlsx`;
                 document.body.appendChild(a); a.click(); document.body.removeChild(a); window.URL.revokeObjectURL(url);
                 toast('📊','Excel generado y descargado');
             } else toast('❌','Error al generar el Excel.');

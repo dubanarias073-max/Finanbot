@@ -1,6 +1,6 @@
 # models.py
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import (
     Column, Integer, String, Numeric, Boolean, DateTime, Date, Text,
     ForeignKey, Enum, UniqueConstraint, func,
@@ -8,6 +8,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship
 
 from database import Base
+from timezone import bogota_now
 
 
 class Usuario(Base):
@@ -25,12 +26,73 @@ class Usuario(Base):
     pregunta_seguridad = Column(String(255), nullable=True)
     respuesta_seguridad = Column(String(255), nullable=True)
     onboarding_completado = Column(Boolean, default=False)
-    fecha_registro = Column(DateTime, default=datetime.utcnow)
+    token_version = Column(Integer, nullable=False, default=0)
+    requiere_cambio_contrasena = Column(Boolean, nullable=False, default=False)
+    fecha_registro = Column(DateTime, default=bogota_now)
 
     transacciones = relationship('Transaccion', back_populates='usuario')
     tiendas = relationship('Tienda', back_populates='usuario')
     metas = relationship('MetaAhorro', back_populates='usuario')
     chats = relationship('Chat', back_populates='usuario')
+
+
+class PasswordResetCode(Base):
+    __tablename__ = 'password_reset_codes'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    usuario_id = Column(Integer, ForeignKey('usuarios.id', ondelete='CASCADE'), nullable=False, index=True)
+    code_hash = Column(String(64), nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    attempts = Column(Integer, nullable=False, default=0)
+    created_at = Column(
+        DateTime,
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc).replace(tzinfo=None),
+    )
+
+
+class PasswordResetLink(Base):
+    __tablename__ = 'password_reset_links'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    usuario_id = Column(Integer, ForeignKey('usuarios.id', ondelete='CASCADE'), nullable=False, index=True)
+    token_hash = Column(String(64), nullable=False, unique=True)
+    expires_at = Column(DateTime, nullable=False)
+    used_at = Column(DateTime, nullable=True)
+    created_at = Column(
+        DateTime,
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc).replace(tzinfo=None),
+    )
+
+
+class LoginAlertToken(Base):
+    __tablename__ = 'login_alert_tokens'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    usuario_id = Column(Integer, ForeignKey('usuarios.id', ondelete='CASCADE'), nullable=False, index=True)
+    token_hash = Column(String(64), nullable=False, unique=True)
+    expires_at = Column(DateTime, nullable=False)
+    used_at = Column(DateTime, nullable=True)
+    created_at = Column(
+        DateTime,
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc).replace(tzinfo=None),
+    )
+
+
+class SecurityResetAttempt(Base):
+    __tablename__ = 'security_reset_attempts'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    usuario_id = Column(
+        Integer,
+        ForeignKey('usuarios.id', ondelete='CASCADE'),
+        nullable=False,
+        unique=True,
+    )
+    attempts = Column(Integer, nullable=False, default=0)
+    locked_until = Column(DateTime, nullable=True)
 
 
 # =========================================================
@@ -175,7 +237,7 @@ class Transaccion(Base):
     monto = Column(Numeric(10, 2), nullable=False)
     descripcion = Column(String(255))
     fecha = Column(Date, nullable=False)
-    fecha_registro = Column(DateTime, default=datetime.utcnow)
+    fecha_registro = Column(DateTime, default=bogota_now)
     # Ubicación donde se hizo el gasto/ingreso (opcional).
     # DECIMAL(10,7) da precisión de ~1 cm, suficiente para un mapa.
     ubicacion_nombre = Column(String(255), nullable=True)
@@ -218,7 +280,7 @@ def eliminar_tiendas_sin_transacciones(db, tienda_ids) -> None:
 
 
 class MetaAhorro(Base):
-    __tablename__ = 'metas_ahorro'
+    __tablename__ = 'meta'
 
     id = Column(Integer, primary_key=True)
     usuario_id = Column(Integer, ForeignKey('usuarios.id'), nullable=False)
@@ -227,13 +289,21 @@ class MetaAhorro(Base):
     monto_actual = Column(Numeric(10, 2), default=0.00)
     fecha_limite = Column(Date)
     completada = Column(Boolean, default=False)
-    fecha_creacion = Column(DateTime, default=datetime.utcnow)
+    fecha_creacion = Column(DateTime, default=bogota_now)
+    tipo = Column(
+        Enum('ahorro', 'gasto_mensual', 'gasto_anual', name='tipo_meta_enum'),
+        nullable=False,
+        default='ahorro',
+    )
     # Modo de ahorro: 'manual' (el usuario abona cuando quiera) o
     # 'automatico' (FinanBot descuenta monto_automatico del sueldo cada
     # mes, el día dia_automatico, y lo suma solo a esta meta).
     modo = Column(Enum('manual', 'automatico', name='modo_meta_enum'), nullable=False, default='manual')
     monto_automatico = Column(Numeric(10, 2), nullable=True)
     dia_automatico = Column(Integer, nullable=True)
+    icono = Column(String(10), nullable=True)
+    categoria = Column(String(50), nullable=True)
+    prioridad = Column(String(10), nullable=False, default='media')
 
     usuario = relationship('Usuario', back_populates='metas')
 
@@ -255,6 +325,6 @@ class Chat(Base):
     mensaje = Column(Text, nullable=False)
     respuesta = Column(Text, nullable=False)
     es_invitado = Column(Boolean, default=False)
-    fecha = Column(DateTime, default=datetime.utcnow)
+    fecha = Column(DateTime, default=bogota_now)
 
     usuario = relationship('Usuario', back_populates='chats')

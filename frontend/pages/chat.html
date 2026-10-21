@@ -4,6 +4,7 @@
     <base target="_top">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="timezone.js"></script>
 <title>FinanBot - Chat IA</title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -519,7 +520,7 @@ document.querySelectorAll('.nav-item').forEach(a => a.addEventListener('click', 
 /* ═══════════════════════════════════════════════════
    VARIABLES
 ═══════════════════════════════════════════════════ */
-const API      = 'http://127.0.0.1:8000/api';
+const API      = '/api';
 const token    = localStorage.getItem('token');
 const usuario  = JSON.parse(localStorage.getItem('usuario') || '{}');
 const esInv    = new URLSearchParams(location.search).get('invitado') === 'true';
@@ -631,7 +632,7 @@ function inlinemd(t) {
 /* ═══════════════════════════════════════════════════
    UTILS
 ═══════════════════════════════════════════════════ */
-const hora = () => new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
+const hora = () => FinanbotTime.currentTimeLabel();
 // Escapa texto del usuario antes de meterlo en innerHTML
 const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 function autoR(el){ el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,120)+'px'; }
@@ -829,8 +830,8 @@ function renderConvs(lista) {
     el.innerHTML = `<div class="sin-conv"><i class="fas fa-comments" style="font-size:34px;opacity:.12"></i><span>Sin conversaciones.<br>¡Crea una!</span></div>`;
     return;
   }
-  const hoy  = new Date().toLocaleDateString('es-CO');
-  const ayer = new Date(Date.now()-86400000).toLocaleDateString('es-CO');
+  const hoy  = FinanbotTime.todayLabel();
+  const ayer = FinanbotTime.yesterday().toLocaleDateString('es-CO');
   let html='', grp='';
   lista.forEach(c => {
     const g = c.fecha===hoy?'Hoy':c.fecha===ayer?'Ayer':'Anteriores';
@@ -1166,7 +1167,7 @@ async function enviarYRenderizar(msg) {
     }
   } catch(e) {
     quitarTyping();
-    addMsg('⚠️ **No pude conectar con el servidor.** Verifica que FastAPI esté corriendo en http://127.0.0.1:8000 y vuelve a intentarlo.','bot',[],null,false);
+    addMsg('⚠️ **No pude conectar con el servidor.** Verifica que FastAPI esté corriendo en el equipo que sirve la página y vuelve a intentarlo.','bot',[],null,false);
   }
 
   enviando = false;

@@ -2,6 +2,8 @@
 
 **FinanBot** es una plataforma web modular diseñada para la gestión de finanzas personales. Integra un **asistente inteligente con IA**, simuladores financieros avanzados, calendarios de pagos y herramientas de exportación de reportes.
 
+La fecha y hora de negocio de la aplicación usan `America/Bogota` (UTC−5, sin horario de verano), independientemente de la zona horaria del servidor o del navegador. Las expiraciones de seguridad se calculan en UTC.
+
 La arquitectura sigue un enfoque de **monolito modular por capas** orientado a MVC, donde un backend en **FastAPI** sirve tanto una API REST como pantallas legadas (`/legacy`), complementado por un frontend moderno en **React + Vite**.
 
 ---
@@ -69,7 +71,7 @@ Usa esta opción si prefieres administrar los servicios de forma local directame
 3. Busca y abre el archivo `Mysql(base de datos)/finanbot_db.sql`.
 4. Haz clic en el icono del **rayo** en la barra de herramientas para ejecutar todo el script. Esto creará la base de datos y todas las tablas del sistema.
 
-> **Importante:** el script SQL crea la base desde cero y elimina `finanbot_db` si ya existe. No lo vuelvas a ejecutar sobre una base con datos que quieras conservar. Al iniciar, el backend agrega las tablas/columnas nuevas que falten, migra el catálogo de categorías y configura las tiendas asociadas a ubicaciones.
+> **Importante:** el script SQL crea la base desde cero y elimina `finanbot_db` si ya existe. No lo vuelvas a ejecutar sobre una base con datos que quieras conservar. Al iniciar, el backend agrega las tablas/columnas nuevas que falten, renombra `metas_ahorro` a `meta` conservando sus registros, agrega el tipo de meta, migra el catálogo de categorías y configura las tiendas asociadas a ubicaciones.
 
 ### 3. Archivo de entorno `.env` para XAMPP
 En la raíz de la carpeta `backend/`, crea un archivo llamado `.env` sin contraseña en la cadena de conexión (configuración por defecto de XAMPP):
@@ -117,11 +119,31 @@ El backend no sirve la interfaz de usuario de forma directa de manera nativa. En
 npm install
 
 # 2. Levantar el servidor de desarrollo de Vite
-npm run dev
+npm run dev -- --host
 ```
-Abre `http://localhost:5173` en tu navegador. Vite redirige automáticamente las peticiones de `/api`, `/legacy` e `/images` hacia el backend en el puerto `8000`.
+Abre la dirección `Network` que muestra Vite (por ejemplo, `http://192.168.1.10:5173`) desde otro dispositivo conectado a la misma red Wi-Fi. Vite redirige automáticamente las peticiones de `/api`, `/legacy` e `/images` al backend local en el puerto `8000`; deja el backend ejecutándose y permite el acceso de Node.js/Vite en el firewall de Windows si aparece una solicitud.
 
----
+### Registro con Gmail y recuperación por correo
+
+Para que FinanBot pueda enviar códigos de recuperación y avisos de inicio de sesión, configura una cuenta emisora que controles. Esta dirección puede ser una cuenta dedicada al proyecto; no tiene que ser la misma dirección que usan los clientes. En `backend/.env`, agrega tus propios valores:
+
+```env
+SMTP_PORT="587"
+SMTP_USERNAME="finanbot.sena@gmail.com"
+SMTP_APP_PASSWORD="inqlxalpizdplvgo"
+SMTP_FROM="finanbot.sena@gmail.com"
+
+GOOGLE_CLIENT_ID="315416890012-ffvd56diopltc438ev5e8bgrqd2q931m.apps.googleusercontent.com"
+GOOGLE_CLIENT_SECRET=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ASSWORD_RESET_URL="http://192.168.0.10:8000/legacy/pages/login.html"
+PASSWORD_RESET_URL="http://192.168.0.10:8000/legacy/pages/login.html"
+PUBLIC_BASE_URL="http://192.168.0.10:5173"
+```
+
+Para que los enlaces del correo abran desde otros dispositivos, `PUBLIC_BASE_URL` debe ser la dirección de red del frontend o el dominio público, nunca `localhost` ni `127.0.0.1`. En la red local, reemplaza la IP de ejemplo por la IP del equipo que ejecuta Vite; en producción, usa el dominio HTTPS. Los correos de recuperación contienen un código y un enlace directo para establecer una contraseña nueva. Además, si reportas un inicio de sesión con “No fui yo”, se cierran las sesiones y aparece el formulario para cambiar la contraseña inmediatamente en esa misma página.
+
+No publiques contraseñas de aplicación ni credenciales de OAuth. Si alguna credencial real se compartió o quedó en el historial del repositorio, revócala y genera una nueva antes de usarla.
+
+
 
 ## 🤖 Activar FinanBot IA 2 (Gemini, gratis)
 

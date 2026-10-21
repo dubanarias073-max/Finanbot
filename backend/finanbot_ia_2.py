@@ -31,7 +31,7 @@ import time
 import urllib.error
 import urllib.request
 from collections import deque
-from datetime import date
+from timezone import bogota_today
 
 TIMEOUT_S = 25
 TIMEOUT_POR_MODELO_S = 12      # cuánto se espera a cada modelo Gemini
@@ -91,7 +91,7 @@ def disponible() -> bool:
 # ──────────────────────────────────────────────────────────────────
 
 def _prompt_sistema(categorias_gasto, categorias_ingreso, ejemplos: dict, rutas: dict) -> str:
-    hoy = date.today()
+    hoy = bogota_today()
     cmds = '\n'.join(f'- {v}' for v in ejemplos.values())
     paginas = ', '.join(f'{k} → {v}' for k, v in rutas.items())
     return f"""Eres FinanBot IA 2, el asistente de finanzas personales de una app colombiana hecha por aprendices del SENA.
@@ -149,7 +149,7 @@ def _contexto_usuario(ctx: dict | None) -> str:
     if not ctx:
         return 'No hay datos financieros del usuario disponibles (puede ser invitado o no ha registrado nada).'
 
-    hoy = date.today()
+    hoy = bogota_today()
     lineas = [f'Mes analizado: {_MESES[hoy.month - 1]} {hoy.year} (día {hoy.day}).']
     if ctx.get('nombre'):
         lineas.append(f"Nombre: {ctx['nombre']}")

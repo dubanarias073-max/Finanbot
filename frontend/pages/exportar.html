@@ -1411,9 +1411,6 @@ body{
 
 <script>
 
-const API =
-'http://127.0.0.1:8000';
-
 const token =
 localStorage.getItem('token');
 
@@ -1470,7 +1467,7 @@ async function descargar(tipo){
     : '/api/exportar/pdf';
 
     const response =
-    await fetch(API + endpoint,{
+    await fetch(endpoint,{
 
       method:'GET',
 

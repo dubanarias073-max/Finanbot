@@ -2,14 +2,15 @@
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
-from datetime import datetime
-from collections import defaultdict
+from  collections import defaultdict
 import io
 import math
 
 from database import get_db
 from extensions import obtener_usuario_id_requerido
 from models import Usuario, Transaccion, MetaAhorro
+from application.services.reportes_narrativa import resumen_financiero
+from timezone import bogota_now
 
 import openpyxl
 from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
@@ -130,9 +131,9 @@ def exportar_excel(
     # ── Paleta ────────────────────────────────────────────
     P = {
         'mo':'C026D3','md':'7E22CE','cy':'06B6D4','ve':'22C55E',
-        'ro':'F472B6','am':'F59E0B','re':'EF4444','bg':'0F0F2D',
-        'ca':'1A1A4E','li':'2D1B69','bl':'FFFFFF','gr':'9CA3AF',
-        'mu':'6B7280','az':'0EA5E9','os':'1E293B',
+        'ro':'F472B6','am':'F59E0B','re':'EF4444','bg':'FFFFFF',
+        'ca':'FFFFFF','li':'E8EAF6','bl':'1F2937','gr':'475569',
+        'mu':'64748B','az':'0EA5E9','os':'F8FAFC',
     }
 
     wb = openpyxl.Workbook()
@@ -145,7 +146,7 @@ def exportar_excel(
     def al(h='center', v='center', wrap=False):
         return Alignment(horizontal=h, vertical=v, wrapText=wrap)
     def bd(col=None):
-        s = Side(style='thin', color=col or P['li'])
+        s = Side(style='thin', color=col or 'CBD5E1')
         return Border(left=s, right=s, top=s, bottom=s)
     def cw(ws, col, w):
         ws.column_dimensions[get_column_letter(col)].width = w
@@ -178,11 +179,11 @@ def exportar_excel(
         rh(ws, 1, 46); rh(ws, 2, 20)
         ws.merge_cells(f'A1:{get_column_letter(cols)}1')
         c1 = ws['A1']; c1.value = titulo
-        c1.fill = fl(P['mo']); c1.font = fn(P['bl'], bold=True, sz=18)
+        c1.fill = fl(P['li']); c1.font = fn(P['mo'], bold=True, sz=18)
         c1.alignment = al()
         ws.merge_cells(f'A2:{get_column_letter(cols)}2')
         c2 = ws['A2']; c2.value = sub
-        c2.fill = fl(P['md']); c2.font = fn(P['gr'], sz=9, italic=True)
+        c2.fill = fl(P['ca']); c2.font = fn(P['gr'], sz=9, italic=True)
         c2.alignment = al()
 
     def enc_fila(ws, row, defs, bg=None):
@@ -246,7 +247,7 @@ def exportar_excel(
     ws1.sheet_properties.tabColor = P['mo']
     cabecera(ws1,
         'FinanBot — Reporte Financiero',
-        f'Usuario: {user.nombre}  ·  {user.correo}  ·  {datetime.now().strftime("%d/%m/%Y %H:%M")}',
+        f'Usuario: {user.nombre}  ·  {user.correo}  ·  {bogota_now().strftime("%d/%m/%Y %H:%M")}',
         8)
 
     kpi_block(ws1, 4, [
@@ -258,6 +259,19 @@ def exportar_excel(
         ('% GASTOS',  f'{pct_g}%',      P['ve'] if pct_g < 70 else P['am'] if pct_g < 90 else P['re']),
         ('METAS',     str(len(metas)),   P['cy']),
     ])
+
+    texto_resumen = resumen_financiero(
+        ing_t, gas_t, bal_t, len(trans), cat_mayor,
+        gastos_cat[cat_mayor] if cat_mayor else 0,
+    )
+    ws1.merge_cells('A3:G3')
+    resumen_cell = ws1['A3']
+    resumen_cell.value = texto_resumen
+    resumen_cell.fill = fl(P['ca'])
+    resumen_cell.font = fn(P['gr'], sz=9, italic=True)
+    resumen_cell.alignment = al('left', wrap=True)
+    resumen_cell.border = bd()
+    rh(ws1, 3, 42)
 
     # Separador
     rh(ws1, 7, 5)
@@ -404,7 +418,7 @@ def exportar_excel(
     enc_fila(ws3, 5, [
         ('Categoría', 24), ('Total', 16), ('% del total', 12),
         ('# Transac.', 12), ('Promedio', 14), ('Máximo', 14), ('Nivel', 14),
-    ], P['re'])
+    ])
 
     for i, (cat, st) in enumerate(sorted(cat_stats.items(), key=lambda x: x[1]['total'], reverse=True), 6):
         bg_     = P['ca'] if i % 2 == 0 else P['bg']
@@ -426,7 +440,7 @@ def exportar_excel(
     enc_fila(ws3, fi+1, [
         ('Fuente', 24), ('Total', 16), ('% del total', 12),
         ('# Transac.', 12), ('Promedio', 14), ('Máximo', 14), ('Tendencia', 14),
-    ], P['ve'])
+    ])
 
     for i, (cat, st) in enumerate(sorted(ing_stats.items(), key=lambda x: x[1]['total'], reverse=True), fi+2):
         bg_     = P['ca'] if i % 2 == 0 else P['bg']
@@ -666,7 +680,7 @@ def exportar_excel(
     output = io.BytesIO()
     wb.save(output)
     output.seek(0)
-    nombre = f'FinanBot_{user.nombre.replace(" ","_")}_{datetime.now().strftime("%d-%m-%Y")}.xlsx'
+    nombre = f'FinanBot_{user.nombre.replace(" ","_")}_{bogota_now().strftime("%d-%m-%Y")}.xlsx'
 
     return StreamingResponse(
         output,

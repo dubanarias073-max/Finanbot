@@ -1,10 +1,10 @@
 # finanbot_ia.py
 
-from datetime import datetime
 from collections import deque
 import random
 import re
 import unicodedata
+from timezone import bogota_now
 
 try:                                   # mismo paquete (routes/, services/…)
     from . import finanbot_ia_2
@@ -205,7 +205,7 @@ def _sin_tildes(texto: str) -> str:
 
 
 def _mes_actual_num_anio():
-    hoy = datetime.now()
+    hoy = bogota_now()
     return hoy.month, hoy.year
 
 
@@ -1560,7 +1560,7 @@ class FinanBotIA:
         accion: dict | None,
         conversacion_id: str | None = None,
     ) -> tuple[str, list[dict]]:
-        ts = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        ts = bogota_now().strftime('%Y-%m-%d %H:%M:%S')
         self._clave_conv = self._clave_conversacion(ctx, conversacion_id)
         self._respuesta_de_ia2 = False
         self.historial.append({'rol': 'usuario', 'msg': mensaje, 'timestamp': ts})
@@ -1721,7 +1721,7 @@ class FinanBotIA:
     def _bienvenida(self, a, ctx):
         nombre  = a.get('nombre', 'Usuario')
         resumen = a.get('resumen', {})
-        hora    = datetime.now().hour
+        hora    = bogota_now().hour
         saludo  = "¡Buenos días" if hora < 12 else ("¡Buenas tardes" if hora < 18 else "¡Buenas noches")
         emoji   = "🌅" if hora < 12 else ("☀️" if hora < 18 else "🌙")
 

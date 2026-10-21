@@ -1,5 +1,5 @@
 import sys
-from datetime import date, timedelta
+from datetime import timedelta
 from pathlib import Path
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
@@ -8,6 +8,7 @@ from finanbot_ia import FinanBotIA
 from routes.aprende import ENCICLOPEDIA
 from routes.chat_route import extraer_categoria
 from routes.recomendaciones import filtrar_transacciones_recientes
+from timezone import bogota_today
 
 
 def test_conserva_signo_porcentaje_en_calculadora():
@@ -74,7 +75,7 @@ def test_aprende_incluye_contexto_de_metas_de_ahorro():
 
 
 def test_filtra_transacciones_de_ultimos_7_dias():
-    hoy = date.today()
+    hoy = bogota_today()
     transacciones = [
         {'fecha': (hoy - timedelta(days=10)).isoformat(), 'monto': 100000},
         {'fecha': (hoy - timedelta(days=2)).isoformat(), 'monto': 50000},

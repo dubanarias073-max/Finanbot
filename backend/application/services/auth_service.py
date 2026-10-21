@@ -1,11 +1,29 @@
+import hashlib
+import hmac
+import secrets
+
 from sqlalchemy.orm import Session
 
+from config import settings
 from extensions import create_access_token, hash_password, verify_password
 from models import Usuario
 
 
 class AuthService:
     """Casos de uso de autenticacion, independiente del controlador HTTP."""
+
+    @staticmethod
+    def normalizar_respuesta_seguridad(respuesta: str) -> str:
+        return ' '.join(respuesta.strip().casefold().split())
+
+    @staticmethod
+    def hash_respuesta_seguridad(respuesta: str) -> str:
+        normalizada = AuthService.normalizar_respuesta_seguridad(respuesta)
+        return hmac.new(
+            settings.SECRET_KEY.encode(),
+            normalizada.encode(),
+            hashlib.sha256,
+        ).hexdigest()
 
     @staticmethod
     def usuario_publico(usuario: Usuario) -> dict:
@@ -23,6 +41,7 @@ class AuthService:
     def registrar(db: Session, *, nombre: str, correo: str, contrasena: str,
                   pregunta_seguridad: str | None = None,
                   respuesta_seguridad: str = '') -> Usuario:
+        correo = correo.strip().lower()
         usuario_existente = db.query(Usuario).filter_by(correo=correo).first()
         if usuario_existente:
             raise ValueError('El correo ya esta registrado')
@@ -32,7 +51,11 @@ class AuthService:
             correo=correo,
             contrasena_hash=hash_password(contrasena),
             pregunta_seguridad=pregunta_seguridad,
-            respuesta_seguridad=respuesta_seguridad.lower().strip(),
+            respuesta_seguridad=(
+                AuthService.hash_respuesta_seguridad(respuesta_seguridad)
+                if respuesta_seguridad.strip()
+                else ''
+            ),
             onboarding_completado=False,
         )
         db.add(usuario)
@@ -42,9 +65,31 @@ class AuthService:
 
     @staticmethod
     def autenticar(db: Session, *, correo: str, contrasena: str) -> Usuario | None:
-        usuario = db.query(Usuario).filter_by(correo=correo).first()
-        if not usuario or not verify_password(contrasena, usuario.contrasena_hash):
+        usuario = db.query(Usuario).filter_by(correo=correo.strip().lower()).first()
+        if (
+            not usuario
+            or usuario.requiere_cambio_contrasena
+            or not verify_password(contrasena, usuario.contrasena_hash)
+        ):
             return None
+        return usuario
+
+    @staticmethod
+    def autenticar_google(db: Session, *, correo: str, nombre: str) -> Usuario:
+        correo = correo.strip().lower()
+        usuario = db.query(Usuario).filter_by(correo=correo).first()
+        if usuario:
+            return usuario
+
+        usuario = Usuario(
+            nombre=nombre.strip()[:100] or correo.split('@', 1)[0],
+            correo=correo,
+            contrasena_hash=hash_password(secrets.token_urlsafe(32)),
+            onboarding_completado=False,
+        )
+        db.add(usuario)
+        db.commit()
+        db.refresh(usuario)
         return usuario
 
     @staticmethod
@@ -53,4 +98,5 @@ class AuthService:
             'sub': str(usuario.id),
             'user_id': usuario.id,
             'rol': usuario.rol,
+            'token_version': usuario.token_version,
         })

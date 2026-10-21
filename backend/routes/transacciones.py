@@ -19,6 +19,7 @@ from models import (
     CATEGORIAS, CATEGORIAS_GASTO, CATEGORIAS_INGRESO, ICONOS_CATEGORIA,
     normalizar_categoria, icono_categoria,
 )
+from timezone import bogota_today
 
 router = APIRouter()
 
@@ -711,7 +712,7 @@ def obtener_periodos(
     db: Session = Depends(get_db),
 ):
     uid = int(usuario_id)
-    hoy = datetime.now().date()
+    hoy = bogota_today()
 
     transacciones = db.query(Transaccion).filter_by(usuario_id=uid).all()
 
@@ -748,7 +749,7 @@ def reset_periodo_actual(
     """Borra SOLO las transacciones del mes actual. Los meses pasados
     nunca se tocan."""
     uid = int(usuario_id)
-    hoy = datetime.now().date()
+    hoy = bogota_today()
 
     query = (
         db.query(Transaccion)

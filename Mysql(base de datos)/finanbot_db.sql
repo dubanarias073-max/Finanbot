@@ -10,6 +10,7 @@
 
 -- Emojis de los iconos: el cliente debe enviar utf8mb4
 SET NAMES utf8mb4;
+SET time_zone = '-05:00';
 
 DROP DATABASE IF EXISTS finanbot_db;
 
@@ -35,7 +36,33 @@ CREATE TABLE usuarios (
     onboarding_completado BOOLEAN DEFAULT FALSE,
     pregunta_seguridad VARCHAR(255),
     respuesta_seguridad VARCHAR(255),
+    token_version INT NOT NULL DEFAULT 0,
+    requiere_cambio_contrasena BOOLEAN NOT NULL DEFAULT FALSE,
     fecha_registro DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE login_alert_tokens (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    usuario_id INT NOT NULL,
+    token_hash CHAR(64) NOT NULL UNIQUE,
+    expires_at DATETIME NOT NULL,
+    used_at DATETIME NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_login_alert_tokens_usuario_id (usuario_id),
+    CONSTRAINT fk_login_alert_tokens_usuario
+        FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+);
+
+CREATE TABLE password_reset_links (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    usuario_id INT NOT NULL,
+    token_hash CHAR(64) NOT NULL UNIQUE,
+    expires_at DATETIME NOT NULL,
+    used_at DATETIME NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_password_reset_links_usuario_id (usuario_id),
+    CONSTRAINT fk_password_reset_links_usuario
+        FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
 );
 
 -- =========================================================
@@ -219,10 +246,10 @@ END$$
 DELIMITER ;
 
 -- =========================================================
--- METAS DE AHORRO (incluye modo automático)
+-- METAS: ahorro y límites de gasto por mes/año
 -- =========================================================
 
-CREATE TABLE metas_ahorro (
+CREATE TABLE meta (
     id INT AUTO_INCREMENT PRIMARY KEY,
     usuario_id INT NOT NULL,
     nombre VARCHAR(100) NOT NULL,
@@ -230,9 +257,13 @@ CREATE TABLE metas_ahorro (
     monto_actual DECIMAL(10,2) DEFAULT 0.00,
     fecha_limite DATE,
     completada BOOLEAN DEFAULT FALSE,
+    tipo ENUM('ahorro','gasto_mensual','gasto_anual') NOT NULL DEFAULT 'ahorro',
     modo ENUM('manual','automatico') NOT NULL DEFAULT 'manual',
     monto_automatico DECIMAL(10,2) NULL,
     dia_automatico INT NULL,
+    icono VARCHAR(10) NULL,
+    categoria VARCHAR(50) NULL,
+    prioridad VARCHAR(10) NOT NULL DEFAULT 'media',
     fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP,
 
     FOREIGN KEY (usuario_id)
@@ -288,10 +319,10 @@ CREATE INDEX idx_chats_conversacion_fecha
 ON chats(conversacion_id, fecha);
 
 CREATE INDEX idx_metas_usuario
-ON metas_ahorro(usuario_id);
+ON meta(usuario_id);
 
 CREATE INDEX idx_metas_usuario_completada
-ON metas_ahorro(usuario_id, completada);
+ON meta(usuario_id, completada);
 
 -- =========================================================
 -- VISTAS DE LECTURA
@@ -400,11 +431,12 @@ SELECT
     m.monto_actual,
     m.fecha_limite,
     m.completada,
+    m.tipo,
     m.modo,
     m.monto_automatico,
     m.dia_automatico,
     m.fecha_creacion
-FROM metas_ahorro m
+FROM meta m
 JOIN usuarios u ON u.id = m.usuario_id;
 
 -- CHATS (mensajes) + nombre de usuario
