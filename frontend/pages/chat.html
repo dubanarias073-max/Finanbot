@@ -197,6 +197,18 @@ body.tema-azul{
 .btn-gps:hover{border-color:#8B5CF6;color:var(--fb-text)}
 .btn-gps.on{color:#10B981;border-color:rgba(16,185,129,.55);background:rgba(16,185,129,.1)}
 .btn-gps.busca i{animation:pulsoGps 1s infinite}
+.btn-adjunto{background:var(--item-bg);border:1px solid var(--item-brd);color:var(--sec);width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .25s;font-size:15px;flex-shrink:0}
+.btn-adjunto:hover{border-color:#8B5CF6;color:var(--fb-text)}
+.btn-adjunto:disabled{opacity:.45;cursor:not-allowed}
+.adjuntos-pendientes{display:flex;gap:8px;flex-wrap:wrap;margin:0 4px 8px}
+.adjunto-chip{display:flex;align-items:center;gap:7px;max-width:230px;padding:6px 9px;border-radius:10px;background:var(--item-bg);border:1px solid var(--item-brd);font-size:11px;color:var(--sec)}
+.adjunto-chip img{width:28px;height:28px;object-fit:cover;border-radius:6px}
+.adjunto-chip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.adjunto-quitar{border:0;background:transparent;color:var(--sec);cursor:pointer;padding:2px 4px}
+.doc-descargas{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px}
+.doc-descargas span{font-size:12px;color:var(--muted)}
+.doc-descargas button{background:var(--item-bg);border:1px solid var(--item-brd);color:var(--fb-lav);border-radius:8px;padding:6px 11px;font-size:12px;cursor:pointer}
+.doc-descargas button:hover{border-color:#8B5CF6}
 @keyframes pulsoGps{0%,100%{opacity:1}50%{opacity:.3}}
 .gps-estado{display:none;align-items:center;gap:6px;flex-wrap:wrap;font-size:11.5px;color:var(--sec);margin:0 4px 7px}
 .gps-estado.bueno{color:#10B981}.gps-estado.medio{color:var(--fb-yellow)}.gps-estado.malo{color:#f87171}
@@ -284,7 +296,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
 
   .inp-area { padding: 7px 8px 7px 14px; }
   .chat-inp { font-size: 15px; max-height: 90px; } /* evita zoom automático en iOS */
-  .btn-enviar, .btn-gps { width: 36px; height: 36px; }
+  .btn-enviar, .btn-gps, .btn-adjunto { width: 36px; height: 36px; }
 }
 
 @media (max-width: 560px) {
@@ -444,7 +456,14 @@ html, body { overflow-x: hidden; max-width: 100vw; }
 
     <div class="inp-wrap">
       <div class="gps-estado" id="gpsEstado"></div>
+      <div class="adjuntos-pendientes" id="adjuntosPendientes"></div>
       <div class="inp-area">
+        <input id="chatArchivos" type="file" hidden multiple
+          accept=".pdf,.docx,.xlsx,.csv,.txt,.jpg,.jpeg,.png,.webp,.gif,.bmp,.tif,.tiff,.ico">
+        <button class="btn-adjunto" id="btnAdjunto" type="button" onclick="abrirSelectorAdjuntos()"
+          title="Adjuntar documentos o imágenes" aria-label="Adjuntar archivos">
+          <i class="fas fa-paperclip"></i>
+        </button>
         <textarea class="chat-inp" id="chatInp"
           placeholder="Escríbeme algo... ej: 'Gasté $25.000 en el bus'"
           rows="1" oninput="autoR(this);calentarGPS(this.value)" onkeydown="tecla(event)"></textarea>
@@ -524,6 +543,8 @@ const API      = '/api';
 const token    = localStorage.getItem('token');
 const usuario  = JSON.parse(localStorage.getItem('usuario') || '{}');
 const esInv    = new URLSearchParams(location.search).get('invitado') === 'true';
+let adjuntosPendientes = [];
+let subiendoAdjuntos = false;
 
 const LIM_INV  = 20;
 const COOL_MS  = 2 * 60 * 60 * 1000;
@@ -686,7 +707,7 @@ function escribir(burbuja, htmlFinal, acciones, onDone) {
 /* ═══════════════════════════════════════════════════
    RENDERIZAR MENSAJE
 ═══════════════════════════════════════════════════ */
-function addMsg(texto, tipo, acciones=[], h=null, conEfecto=false) {
+function addMsg(texto, tipo, acciones=[], h=null, conEfecto=false, adjuntos=[], documento=null) {
   const box     = document.getElementById('chatBox');
   const inicial = (usuario.nombre||'U').charAt(0).toUpperCase();
   const hText   = h || hora();
@@ -696,13 +717,44 @@ function addMsg(texto, tipo, acciones=[], h=null, conEfecto=false) {
   wrap.className = `msg ${tipo}`;
 
   if (tipo === 'usuario') {
+    const textoMensaje = String(texto || '');
+    const regexAdjunto = /\[\[archivo:([0-9a-f-]{36})\|([^\]]*)\]\]/gi;
+    const adjuntosHistoricos = [...textoMensaje.matchAll(regexAdjunto)].map(match => {
+      let nombreArchivo = 'Archivo adjunto';
+      try { nombreArchivo = decodeURIComponent(match[2]); } catch(e) {}
+      return {id:match[1], nombre:nombreArchivo};
+    });
+    const textoVisible = textoMensaje.replace(regexAdjunto, '').trim();
+    const todosAdjuntos = [...adjuntos, ...adjuntosHistoricos];
     wrap.innerHTML = `
       <div class="msg-av usr">${inicial}</div>
       <div class="msg-body">
         <div class="msg-nombre">${esc(nombre)}</div>
-        <div class="msg-burbuja">${esc(texto).replace(/\n/g,'<br>')}</div>
+        <div class="msg-burbuja"></div>
         <div class="msg-meta"><span class="msg-hora">${hText}</span><span class="msg-leido"><i class="fas fa-check-double"></i></span></div>
       </div>`;
+    const burbuja = wrap.querySelector('.msg-burbuja');
+    todosAdjuntos.forEach(adjunto => {
+      if (adjunto.previewUrl && adjunto.mime_type && adjunto.mime_type.startsWith('image/')) {
+        const imagen = document.createElement('img');
+        imagen.src = adjunto.previewUrl;
+        imagen.alt = adjunto.nombre;
+        imagen.style.cssText = 'max-width:180px;max-height:140px;border-radius:10px;display:block;margin-bottom:6px';
+        burbuja.appendChild(imagen);
+      }
+      if (!adjunto.id) return;
+      const enlace = document.createElement('button');
+      enlace.type = 'button';
+      enlace.className = 'adjunto-chip';
+      enlace.textContent = `📎 ${adjunto.nombre} · Descargar`;
+      enlace.addEventListener('click', () => descargarAdjunto(adjunto.id, adjunto.nombre));
+      burbuja.appendChild(enlace);
+    });
+    if (textoVisible) {
+      const textoNodo = document.createElement('span');
+      textoNodo.innerHTML = esc(textoVisible).replace(/\n/g,'<br>');
+      burbuja.appendChild(textoNodo);
+    }
     box.appendChild(wrap);
     scroll();
     return;
@@ -725,9 +777,11 @@ function addMsg(texto, tipo, acciones=[], h=null, conEfecto=false) {
   const htmlFinal = md(texto);
 
   const mostrarAcciones = () => {
-    if (!acciones || !acciones.length) return;
-    const acWrap = document.createElement('div');
-    acWrap.className = 'msg-acciones';
+    const body = wrap.querySelector('.msg-body');
+    let acWrap = null;
+    if (acciones && acciones.length) {
+      acWrap = document.createElement('div');
+      acWrap.className = 'msg-acciones';
     acciones.forEach(a => {
       const tipo_a = a.tipo || (a.link ? 'link' : 'sugerencia');
       const txt    = a.texto || a.label || '';
@@ -746,7 +800,21 @@ function addMsg(texto, tipo, acciones=[], h=null, conEfecto=false) {
       }
       acWrap.appendChild(el);
     });
-    wrap.querySelector('.msg-body').appendChild(acWrap);
+      body.appendChild(acWrap);
+    }
+    if (token && documento && ['pdf','docx','xlsx'].includes(documento.formato) &&
+        typeof documento.contenido === 'string' && documento.contenido.trim()) {
+      const descargas = document.createElement('div');
+      descargas.className = 'doc-descargas';
+      const titulo = document.createElement('span');
+      titulo.textContent = `Documento creado: ${documento.titulo || 'Documento FinanBot'}`;
+      const boton = document.createElement('button');
+      boton.type = 'button';
+      boton.textContent = `Descargar ${documento.formato.toUpperCase()}`;
+      boton.addEventListener('click', () => descargarRespuesta(documento, boton));
+      descargas.append(titulo, boton);
+      body.appendChild(descargas);
+    }
   };
 
   if (conEfecto) {
@@ -1091,8 +1159,8 @@ async function obtenerUbicacion() {
 ═══════════════════════════════════════════════════ */
 async function enviar() {
   const inp = document.getElementById('chatInp');
-  const msg = inp.value.trim();
-  if (!msg || enviando) return;
+  const msg = inp.value.trim() || (adjuntosPendientes.length ? 'Analiza los archivos adjuntos.' : '');
+  if (!msg || enviando || subiendoAdjuntos) return;
 
   if (modoInv && enCooldown()) return;
   if (modoInv && msgsInv >= LIM_INV) {
@@ -1111,12 +1179,14 @@ async function enviar() {
 
 async function enviarYRenderizar(msg) {
   const inp = document.getElementById('chatInp');
+  const adjuntosEnviados = [...adjuntosPendientes];
   enviando  = true;
   document.getElementById('btnEnv').disabled = true;
+  document.getElementById('btnAdjunto').disabled = true;
   inp.value = ''; inp.style.height = 'auto';
   document.getElementById('sugsWrap').style.display = 'none';
 
-  addMsg(msg, 'usuario');
+  addMsg(msg, 'usuario', [], null, false, adjuntosEnviados);
   mostrarTyping();
 
   // Delay mínimo para que el typing se vea natural (simula que "piensa")
@@ -1126,7 +1196,7 @@ async function enviarYRenderizar(msg) {
     const headers = {'Content-Type':'application/json'};
     if (token) headers['Authorization'] = 'Bearer '+token;
     // El backend guarda el mensaje en la conversación indicada (tabla chats)
-    const cuerpo = {mensaje: msg};
+    const cuerpo = {mensaje: msg, adjuntos: adjuntosEnviados.map(a => a.id)};
     if (token && convId) cuerpo.conversacion_id = convId;
 
     // Ubicación real: solo al registrar un gasto/ingreso (o al completar uno pendiente)
@@ -1150,9 +1220,10 @@ async function enviarYRenderizar(msg) {
     quitarTyping();
 
     if (r.ok && !data.error && data.respuesta) {
+      limpiarAdjuntosPendientes();
       if (modoInv) { msgsInv++; saveInv(); actualizarBanner(); }
 
-      addMsg(data.respuesta, 'bot', data.acciones || [], null, true); // true = efecto escritura
+      addMsg(data.respuesta, 'bot', data.acciones || [], null, true, [], data.documento); // true = efecto escritura
 
       // Si el bot aún espera categoría/monto de un registro, el siguiente mensaje también lleva GPS
       const ta = data.accion_ejecutada && data.accion_ejecutada.tipo;
@@ -1190,8 +1261,181 @@ async function enviarYRenderizar(msg) {
   }
 
   enviando = false;
+  document.getElementById('btnAdjunto').disabled = false;
   document.getElementById('btnEnv').disabled = enCooldown();
   document.getElementById('chatInp').focus();
+}
+
+function abrirSelectorAdjuntos() {
+  if (!token) {
+    addMsg('Inicia sesión para adjuntar documentos o imágenes al chat.', 'bot', [], null, false);
+    return;
+  }
+  document.getElementById('chatArchivos').click();
+}
+
+document.getElementById('chatArchivos').addEventListener('change', async event => {
+  const archivos = Array.from(event.target.files || []);
+  event.target.value = '';
+  subiendoAdjuntos = true;
+  document.getElementById('btnEnv').disabled = true;
+  document.getElementById('btnAdjunto').disabled = true;
+  try {
+    for (const archivo of archivos) {
+      if (adjuntosPendientes.length >= 3) {
+        addMsg('Puedes adjuntar hasta 3 archivos por mensaje.', 'bot', [], null, false);
+        break;
+      }
+      if (archivo.size > 8 * 1024 * 1024) {
+        addMsg(`El archivo «${archivo.name}» supera el límite de 8 MB.`, 'bot', [], null, false);
+        continue;
+      }
+      try {
+        const formulario = new FormData();
+        formulario.append('archivo', archivo);
+        const respuesta = await fetch(`${API}/chat/adjuntos`, {
+          method:'POST',
+          headers:{'Authorization':'Bearer '+token},
+          body:formulario
+        });
+        const datos = await respuesta.json();
+        if (!respuesta.ok) throw new Error(datos.detail || datos.error || 'No se pudo adjuntar el archivo.');
+        let previewUrl = '';
+        if (datos.mime_type.startsWith('image/')) {
+          try { previewUrl = await generarVistaPrevia(archivo); }
+          catch(error) { console.warn('No se pudo generar la vista previa de la imagen adjunta.', error); }
+        }
+        adjuntosPendientes.push({...datos, previewUrl});
+        renderAdjuntosPendientes();
+      } catch (error) {
+        addMsg(`No pude adjuntar «${archivo.name}»: ${error.message}`, 'bot', [], null, false);
+      }
+    }
+  } finally {
+    subiendoAdjuntos = false;
+    document.getElementById('btnAdjunto').disabled = false;
+    document.getElementById('btnEnv').disabled = enviando || enCooldown();
+  }
+});
+
+function renderAdjuntosPendientes() {
+  const contenedor = document.getElementById('adjuntosPendientes');
+  contenedor.innerHTML = '';
+  adjuntosPendientes.forEach(adjunto => {
+    const chip = document.createElement('div');
+    chip.className = 'adjunto-chip';
+    if (adjunto.previewUrl) {
+      const imagen = document.createElement('img');
+      imagen.src = adjunto.previewUrl;
+      imagen.alt = '';
+      chip.appendChild(imagen);
+    } else {
+      const icono = document.createElement('i');
+      icono.className = 'fas fa-file-alt';
+      chip.appendChild(icono);
+    }
+    const nombre = document.createElement('span');
+    nombre.textContent = adjunto.nombre;
+    chip.appendChild(nombre);
+    const quitar = document.createElement('button');
+    quitar.type = 'button';
+    quitar.className = 'adjunto-quitar';
+    quitar.setAttribute('aria-label', `Quitar ${adjunto.nombre}`);
+    quitar.textContent = '×';
+    quitar.addEventListener('click', () => quitarAdjunto(adjunto.id));
+    chip.appendChild(quitar);
+    contenedor.appendChild(chip);
+  });
+}
+
+async function generarVistaPrevia(archivo) {
+  const url = URL.createObjectURL(archivo);
+  try {
+    const imagen = new Image();
+    imagen.src = url;
+    await imagen.decode();
+    const escala = Math.min(1, 180 / Math.max(imagen.naturalWidth, imagen.naturalHeight));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(imagen.naturalWidth * escala));
+    canvas.height = Math.max(1, Math.round(imagen.naturalHeight * escala));
+    canvas.getContext('2d').drawImage(imagen, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL('image/jpeg', 0.65);
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+async function quitarAdjunto(id) {
+  const adjunto = adjuntosPendientes.find(a => a.id === id);
+  if (!adjunto) return;
+  try {
+    const respuesta = await fetch(`${API}/chat/adjuntos/${encodeURIComponent(id)}`, {
+      method:'DELETE',
+      headers:{'Authorization':'Bearer '+token}
+    });
+    if (!respuesta.ok) {
+      addMsg('No se pudo eliminar el archivo adjunto.', 'bot', [], null, false);
+      return;
+    }
+  } catch(error) {
+    addMsg(`No se pudo eliminar el archivo adjunto: ${error.message}`, 'bot', [], null, false);
+    return;
+  }
+  adjuntosPendientes = adjuntosPendientes.filter(a => a.id !== id);
+  renderAdjuntosPendientes();
+}
+
+function limpiarAdjuntosPendientes() {
+  adjuntosPendientes = [];
+  renderAdjuntosPendientes();
+}
+
+async function descargarRespuesta(documento, boton) {
+  boton.disabled = true;
+  try {
+    const respuesta = await fetch(`${API}/chat/documentos`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+      body:JSON.stringify({contenido:documento.contenido, formato:documento.formato})
+    });
+    if (!respuesta.ok) {
+      const error = await respuesta.json().catch(() => ({}));
+      throw new Error(error.detail || 'No se pudo crear el documento.');
+    }
+    const url = URL.createObjectURL(await respuesta.blob());
+    const enlace = document.createElement('a');
+    enlace.href = url;
+    const nombre = (documento.titulo || 'documento-finanbot')
+      .normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9_-]+/g, '-')
+      .replace(/^-+|-+$/g, '').slice(0, 60) || 'documento-finanbot';
+    enlace.download = `${nombre}.${documento.formato}`;
+    enlace.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  } catch (error) {
+    addMsg(`No pude crear el documento: ${error.message}`, 'bot', [], null, false);
+  } finally {
+    boton.disabled = false;
+  }
+}
+
+async function descargarAdjunto(id, nombre) {
+  try {
+    const respuesta = await fetch(`${API}/chat/adjuntos/${encodeURIComponent(id)}`, {
+      headers:{'Authorization':'Bearer '+token}
+    });
+    if (!respuesta.ok) {
+      const error = await respuesta.json().catch(() => ({}));
+      throw new Error(error.detail || 'No se pudo descargar el archivo.');
+    }
+    const url = URL.createObjectURL(await respuesta.blob());
+    const enlace = document.createElement('a');
+    enlace.href = url;
+    enlace.download = nombre || 'archivo';
+    enlace.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  } catch(error) {
+    addMsg(`No pude descargar el archivo: ${error.message}`, 'bot', [], null, false);
+  }
 }
 
 /* ═══════════════════════════════════════════════════

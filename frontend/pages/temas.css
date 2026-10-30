@@ -203,3 +203,90 @@ body.tema-claro .popup-fb-meta { color: #6B6890; }
 
 /* Barras de scroll */
 body.tema-claro ::-webkit-scrollbar-thumb { background: rgba(109,91,208,0.30); }
+
+/* Ajustes compartidos para que las páginas legadas sigan siendo utilizables en celular. */
+html,
+body {
+    width: 100%;
+    min-width: 320px;
+}
+
+img,
+video,
+canvas,
+svg {
+    max-width: 100%;
+}
+
+main,
+section,
+article,
+.container,
+.content,
+.main-content,
+.page-content,
+.page-container,
+.contenido,
+.contenido-principal {
+    min-width: 0;
+}
+
+@media (max-width: 760px) {
+    html {
+        overflow-x: clip;
+    }
+
+    body {
+        overflow-x: clip;
+    }
+
+    h1,
+    h2,
+    h3 {
+        overflow-wrap: anywhere;
+    }
+
+    input,
+    select,
+    textarea {
+        max-width: 100%;
+        font-size: 16px;
+    }
+
+    button,
+    [role="button"],
+    input[type="button"],
+    input[type="submit"] {
+        min-height: 44px;
+        touch-action: manipulation;
+    }
+
+    table {
+        display: block;
+        width: max-content;
+        max-width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .modal-overlay,
+    .modal-art {
+        padding: 12px;
+    }
+
+    .modal-box,
+    .modal-content,
+    .modal-abonar-box,
+    .modal-editar-box {
+        box-sizing: border-box;
+        max-width: 100%;
+        max-height: calc(100vh - 24px);
+        max-height: calc(100dvh - 24px);
+        overflow-y: auto;
+    }
+
+    .notif-panel {
+        box-sizing: border-box;
+        max-width: calc(100vw - 20px);
+    }
+}

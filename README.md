@@ -2,8 +2,6 @@
 
 **FinanBot** es una plataforma web modular diseñada para la gestión de finanzas personales. Integra un **asistente inteligente con IA**, simuladores financieros avanzados, calendarios de pagos y herramientas de exportación de reportes.
 
-La fecha y hora de negocio de la aplicación usan `America/Bogota` (UTC−5, sin horario de verano), independientemente de la zona horaria del servidor o del navegador. Las expiraciones de seguridad se calculan en UTC.
-
 La arquitectura sigue un enfoque de **monolito modular por capas** orientado a MVC, donde un backend en **FastAPI** sirve tanto una API REST como pantallas legadas (`/legacy`), complementado por un frontend moderno en **React + Vite**.
 
 ---

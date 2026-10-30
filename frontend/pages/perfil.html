@@ -85,7 +85,10 @@
         .avatar-ring { position: absolute; inset: -5px; border-radius: 50%; background: conic-gradient(#6D5BD0,#8B5CF6,#5EEAD4,#10B981,#6D5BD0); animation: girar 4s linear infinite; filter: blur(1px); }
         @keyframes girar { to { transform: rotate(360deg); } }
         .avatar-ring-inner { position: absolute; inset: 2px; border-radius: 50%; background: var(--card-bg); }
-        .avatar-circle { position: relative; z-index: 2; width: 100px; height: 100px; border-radius: 50%; background: linear-gradient(135deg,#6D5BD0,#8B5CF6,#5EEAD4); display: flex; align-items: center; justify-content: center; font-size: 42px; font-weight: 800; color: var(--fb-text); font-family: 'Space Mono', monospace; box-shadow: 0 0 30px rgba(139,92,246,0.5); margin: 5px auto 0; }
+        .avatar-circle { position: relative; z-index: 2; width: 100px; height: 100px; border-radius: 50%; background: linear-gradient(135deg,#6D5BD0,#8B5CF6,#5EEAD4); display: flex; align-items: center; justify-content: center; font-size: 42px; font-weight: 800; color: var(--fb-text); font-family: 'Space Mono', monospace; box-shadow: 0 0 30px rgba(139,92,246,0.5); margin: 5px auto 0; overflow:hidden; }
+        .avatar-circle img { width:100%;height:100%;object-fit:cover; }
+        .avatar-foto-acciones { display:flex;justify-content:center;gap:8px;margin:-5px 0 14px; }
+        .avatar-foto-acciones button { border:1px solid rgba(139,92,246,.3);background:rgba(139,92,246,.08);color:#8B5CF6;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:600;cursor:pointer; }
         .avatar-nombre { font-size: 18px; font-weight: 700; color: var(--fb-text); margin-bottom: 3px; }
         .avatar-correo { font-size: 12px; color: var(--text-muted); margin-bottom: 14px; }
         .avatar-badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.25); color: #10B981; border-radius: 50px; padding: 4px 14px; font-size: 11px; font-weight: 600; margin-bottom: 20px; }
@@ -702,10 +705,15 @@
                     <div class="avatar-ring-wrap">
                         <div class="avatar-ring"></div>
                         <div class="avatar-ring-inner"></div>
-                        <div class="avatar-circle"><span id="avatarLetra">U</span></div>
+                        <div class="avatar-circle"><span id="avatarLetra">U</span><img id="avatarFoto" alt="Foto de perfil" style="display:none"></div>
                     </div>
                     <div class="avatar-nombre" id="avatarNombre">Usuario</div>
                     <div class="avatar-correo" id="avatarCorreo">usuario@correo.com</div>
+                    <input type="file" id="fotoPerfilArchivo" accept="image/*" hidden onchange="subirFotoPerfil(event)">
+                    <div class="avatar-foto-acciones">
+                        <button type="button" onclick="document.getElementById('fotoPerfilArchivo').click()">Cambiar foto</button>
+                        <button type="button" id="quitarFotoPerfil" onclick="eliminarFotoPerfil()" style="display:none">Quitar</button>
+                    </div>
                     <div class="avatar-stats">
                         <div class="avatar-stat"><div class="avatar-stat-val" id="totalTrans">0</div><div class="avatar-stat-label">Transacciones</div></div>
                         <div class="avatar-stat"><div class="avatar-stat-val" id="totalMetas">0</div><div class="avatar-stat-label">Metas</div></div>
@@ -1013,6 +1021,7 @@
 <script>
 const API = '/api';
 const token = localStorage.getItem('token');
+let fotoPerfilUrl = null;
     let metaSeleccionada = null;
     let montoOriginalAbono = 0;
     let metaObjetivoAbono = 0;
@@ -1451,6 +1460,7 @@ const token = localStorage.getItem('token');
                 document.getElementById('avatarLetra').textContent  = u.nombre.charAt(0).toUpperCase();
                 document.getElementById('avatarNombre').textContent = u.nombre;
                 document.getElementById('avatarCorreo').textContent = u.correo;
+                await cargarFotoPerfil(Boolean(u.tiene_foto_perfil));
                 document.getElementById('nombre').value        = u.nombre;
                 document.getElementById('correo').value        = u.correo;
                 document.getElementById('ingresoMensual').value = u.ingreso_mensual || '';
@@ -1459,6 +1469,62 @@ const token = localStorage.getItem('token');
                 localStorage.setItem('usuario', JSON.stringify(u));
             }
         } catch(e) { console.error(e); }
+    }
+
+    async function cargarFotoPerfil(tieneFoto) {
+        const foto = document.getElementById('avatarFoto');
+        const letra = document.getElementById('avatarLetra');
+        const botonQuitar = document.getElementById('quitarFotoPerfil');
+        if (fotoPerfilUrl) URL.revokeObjectURL(fotoPerfilUrl);
+        fotoPerfilUrl = null;
+        foto.style.display = 'none';
+        letra.style.display = 'inline';
+        botonQuitar.style.display = tieneFoto ? 'inline-block' : 'none';
+        if (!tieneFoto) return;
+        const respuesta = await fetch(API + '/perfil/foto', {headers:{'Authorization':'Bearer '+token}});
+        if (!respuesta.ok) throw new Error('No se pudo cargar la foto de perfil.');
+        fotoPerfilUrl = URL.createObjectURL(await respuesta.blob());
+        foto.src = fotoPerfilUrl;
+        foto.style.display = 'block';
+        letra.style.display = 'none';
+    }
+
+    async function subirFotoPerfil(event) {
+        const archivo = event.target.files && event.target.files[0];
+        event.target.value = '';
+        if (!archivo) return;
+        if (archivo.size > 6 * 1024 * 1024) {
+            alert('La imagen no puede superar 6 MB.');
+            return;
+        }
+        try {
+            const formulario = new FormData();
+            formulario.append('archivo', archivo);
+            const respuesta = await fetch(API + '/perfil/foto', {
+                method:'POST',
+                headers:{'Authorization':'Bearer '+token},
+                body:formulario
+            });
+            const datos = await respuesta.json();
+            if (!respuesta.ok) throw new Error(datos.detail || 'No se pudo guardar la foto.');
+            await cargarFotoPerfil(true);
+        } catch(error) {
+            alert(error.message);
+        }
+    }
+
+    async function eliminarFotoPerfil() {
+        try {
+            const respuesta = await fetch(API + '/perfil/foto', {
+                method:'DELETE',
+                headers:{'Authorization':'Bearer '+token}
+            });
+            const datos = await respuesta.json();
+            if (!respuesta.ok) throw new Error(datos.detail || 'No se pudo quitar la foto.');
+            await cargarFotoPerfil(false);
+        } catch(error) {
+            alert(error.message);
+        }
     }
 
     async function cargarStats() {

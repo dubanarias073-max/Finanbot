@@ -10,6 +10,7 @@ from database import Base, engine, SessionLocal
 
 def _register_routers(app: FastAPI) -> None:
     from routes.aprende import router as aprende_router
+    from routes.archivos import router as archivos_router
     from routes.auth import router as auth_router
     from routes.calendario import router as calendario_router
     from routes.chat_historial import router as chat_historial_router
@@ -25,6 +26,7 @@ def _register_routers(app: FastAPI) -> None:
 
     routers = (
         (auth_router, '/api/auth'),
+        (archivos_router, '/api/chat'),
         (excel_sim_router, '/api/simulaciones'),
         (chat_router, '/api/chat'),
         (transacciones_router, '/api/transacciones'),
@@ -62,6 +64,7 @@ def _migrar_esquema() -> None:
         columnas_usuario_nuevas = {
             'token_version': 'INT NOT NULL DEFAULT 0',
             'requiere_cambio_contrasena': 'BOOLEAN NOT NULL DEFAULT FALSE',
+            'foto_perfil': 'VARCHAR(100) NULL',
         }
         for nombre, tipo in columnas_usuario_nuevas.items():
             if nombre not in columnas_usuario:

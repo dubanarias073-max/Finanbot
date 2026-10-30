@@ -28,6 +28,7 @@ class Usuario(Base):
     onboarding_completado = Column(Boolean, default=False)
     token_version = Column(Integer, nullable=False, default=0)
     requiere_cambio_contrasena = Column(Boolean, nullable=False, default=False)
+    foto_perfil = Column(String(100), nullable=True)
     fecha_registro = Column(DateTime, default=bogota_now)
 
     transacciones = relationship('Transaccion', back_populates='usuario')
@@ -328,3 +329,15 @@ class Chat(Base):
     fecha = Column(DateTime, default=bogota_now)
 
     usuario = relationship('Usuario', back_populates='chats')
+
+
+class ChatAdjunto(Base):
+    __tablename__ = 'chat_adjuntos'
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    usuario_id = Column(Integer, ForeignKey('usuarios.id', ondelete='CASCADE'), nullable=False, index=True)
+    nombre = Column(String(255), nullable=False)
+    ruta = Column(String(500), nullable=False)
+    mime_type = Column(String(100), nullable=False)
+    texto_extraido = Column(Text, nullable=False, default='')
+    fecha = Column(DateTime, nullable=False, default=bogota_now)

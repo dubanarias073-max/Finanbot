@@ -192,6 +192,7 @@ def test_chat_pasa_el_id_de_conversacion_a_la_ia(monkeypatch):
     engine, db, usuario = _crear_sesion_con_usuario()
     conv_id = str(uuid.uuid4())
     recibido = {}
+    acciones_locales = []
 
     class FinanBotFalso:
         def responder_con_acciones(self, mensaje, ctx, accion, conversacion_id=None):
@@ -203,20 +204,22 @@ def test_chat_pasa_el_id_de_conversacion_a_la_ia(monkeypatch):
     monkeypatch.setattr(chat_routes, '_cargar_contexto', lambda uid, session: {'usuario_id': uid})
     monkeypatch.setattr(chat_routes, '_actualizar_contexto', lambda *args: None)
     monkeypatch.setattr(chat_routes, '_resolver_contexto', lambda *args: None)
-    monkeypatch.setattr(chat_routes, 'ejecutar_accion', lambda *args: None)
+    monkeypatch.setattr(chat_routes, 'ejecutar_accion', lambda *args: acciones_locales.append(args))
     monkeypatch.setattr(chat_routes, '_agregar_disclaimers_si_necesario', lambda respuesta, mensaje: respuesta)
     monkeypatch.setattr(chat_routes, '_agregar_avisos_metas', lambda respuesta, ctx, accion: respuesta)
     monkeypatch.setattr(chat_routes, '_guardar_chat', lambda *args: conv_id)
 
     try:
         resultado = chat_routes.mensaje(
-            {'mensaje': '¿Cómo organizo mis gastos?', 'conversacion_id': conv_id},
+            {'mensaje': 'Crea un documento de presupuesto mensual', 'conversacion_id': conv_id},
             str(usuario.id),
             db,
         )
 
         assert resultado['respuesta'] == 'Respuesta de prueba'
         assert recibido['conversacion_id'] == conv_id
+        assert resultado['documento'] is None
+        assert acciones_locales == []
         assert f'user:{usuario.id}:conversation:{conv_id}' in chat_routes.sesiones
     finally:
         db.close()
