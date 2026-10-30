@@ -159,7 +159,7 @@
         .filter-chip.tipo-ingreso.activo { background: rgba(94,234,212,0.15); border-color: #5EEAD4; color: var(--fb-cyan-soft); }
 
         /* TRANSACCIONES */
-        .trans-item { display: flex; align-items: center; padding: 14px 16px; border-radius: 14px; margin-bottom: 8px; background: var(--item-bg); border: 1px solid var(--item-border); transition: all 0.3s; }
+        .trans-item { display: flex; align-items: flex-start; padding: 14px 16px; border-radius: 14px; margin-bottom: 8px; background: var(--item-bg); border: 1px solid var(--item-border); transition: all 0.3s; }
         .trans-item:hover { background: rgba(139,92,246,0.06); border-color: rgba(139,92,246,0.2); transform: translateX(3px); }
         .trans-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; margin-right: 14px; flex-shrink: 0; transition: transform 0.3s; }
         .trans-item:hover .trans-icon { transform: scale(1.08); }
@@ -167,7 +167,7 @@
         .trans-icon.ingreso { background: rgba(94,234,212,0.15); }
         .trans-info { flex: 1; min-width: 0; }
         .trans-nombre { font-size: 14px; font-weight: 600; color: var(--fb-text); margin-bottom: 2px; overflow-wrap: anywhere; }
-        .trans-detalle { font-size: 12px; color: var(--muted, #6b7280); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .trans-detalle { font-size: 12px; color: var(--muted, #6b7280); white-space: normal; overflow-wrap: anywhere; word-break: break-word; line-height: 1.45; }
         .trans-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
         .trans-monto { font-size: 15px; font-weight: 700; }
         .trans-monto.gasto   { color: #f472b6; }
@@ -321,8 +321,10 @@
             background: var(--item-bg); border: 1px solid var(--item-border);
             border-radius: 10px; padding: 9px 12px; font-size: 12px; margin-bottom: 6px;
         }
-        .cal-mov-titulo { font-weight: 600; color: var(--fb-text); }
-        .cal-mov-desc { font-size: 11px; color: var(--muted, #6b7280); margin-top: 2px; }
+        .cal-mov-item > div { flex: 1; min-width: 0; }
+        .cal-mov-item .monto { flex-shrink: 0; white-space: nowrap; }
+        .cal-mov-titulo { font-weight: 600; color: var(--fb-text); overflow-wrap: anywhere; word-break: break-word; }
+        .cal-mov-desc { font-size: 11px; color: var(--muted, #6b7280); margin-top: 2px; overflow-wrap: anywhere; word-break: break-word; }
         .cal-sin-datos { font-size: 12px; color: var(--muted, #6b7280); margin-bottom: 10px; text-align: center; padding: 10px 0; }
         .cal-mov-item .monto.gasto { color: #f472b6; font-weight: 700; }
         .cal-mov-item .monto.ingreso { color: #10B981; font-weight: 700; }
@@ -361,19 +363,20 @@
         .btn-ubic:hover { background: rgba(139,92,246,0.1); border-color: #8B5CF6; border-style: solid; color: var(--fb-text); }
         .btn-ubic i { color: #8B5CF6; }
         .btn-ubic:disabled { opacity: .6; cursor: wait; }
-        .ubic-elegida { display: none; align-items: center; gap: 10px; background: rgba(139,92,246,0.08); border: 1px solid rgba(139,92,246,0.3); border-radius: 12px; padding: 10px 12px; }
+        .ubic-elegida { display: none; align-items: flex-start; gap: 10px; background: rgba(139,92,246,0.08); border: 1px solid rgba(139,92,246,0.3); border-radius: 12px; padding: 10px 12px; }
         .ubic-elegida.visible { display: flex; }
         .ubic-elegida-pin { width: 34px; height: 34px; border-radius: 10px; background: rgba(139,92,246,0.18); color: var(--fb-lav); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
         .ubic-elegida-texto { flex: 1; min-width: 0; }
-        .ubic-elegida-nombre { font-size: 13px; font-weight: 600; color: var(--fb-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .ubic-elegida-nombre { font-size: 13px; font-weight: 600; color: var(--fb-text); overflow-wrap: anywhere; word-break: break-word; }
         .ubic-elegida-coords { font-size: 11px; color: var(--muted, #6b7280); }
         .ubic-elegida button { background: none; border: none; color: var(--muted, #6b7280); cursor: pointer; padding: 6px; border-radius: 8px; font-size: 13px; }
         .ubic-elegida button:hover { color: #8B5CF6; background: rgba(139,92,246,0.1); }
         .ubic-elegida button.quitar:hover { color: #ef4444; background: rgba(239,68,68,0.1); }
 
-        .trans-lugar { display: inline-flex; align-items: center; gap: 5px; margin-top: 4px; font-size: 11.5px; color: var(--fb-lav); background: rgba(139,92,246,0.1); border: 1px solid rgba(139,92,246,0.2); border-radius: 999px; padding: 2px 9px; cursor: pointer; max-width: 100%; transition: all .2s; }
+        .trans-lugar { display: inline-flex; align-items: flex-start; gap: 5px; margin-top: 4px; font-size: 11.5px; color: var(--fb-lav); background: rgba(139,92,246,0.1); border: 1px solid rgba(139,92,246,0.2); border-radius: 12px; padding: 4px 9px; cursor: pointer; max-width: 100%; transition: all .2s; }
         .trans-lugar:hover { background: rgba(139,92,246,0.2); border-color: #8B5CF6; }
-        .trans-lugar span { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .trans-lugar i { flex-shrink: 0; margin-top: 2px; }
+        .trans-lugar span { min-width: 0; overflow-wrap: anywhere; word-break: break-word; }
 
         /* Modal selector de ubicación */
         .modal-box.modal-mapa { max-width: 640px; padding: 26px 24px; }
@@ -407,12 +410,12 @@
         body.tema-claro .mapa-aviso-zoom { background: rgba(255,255,255,0.95); color: #1E1B4B; }
         .mapa-filtros { display: flex; gap: 8px; flex-wrap: wrap; margin-left: auto; }
         .mapa-top-titulo { font-size: 11px; color: var(--secondary, #9ca3af); text-transform: uppercase; letter-spacing: .8px; margin-bottom: 10px; font-weight: 600; }
-        .mapa-top-item { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 12px; background: var(--item-bg); border: 1px solid var(--item-border); margin-bottom: 7px; cursor: pointer; transition: all .2s; }
+        .mapa-top-item { display: flex; align-items: flex-start; gap: 10px; padding: 9px 10px; border-radius: 12px; background: var(--item-bg); border: 1px solid var(--item-border); margin-bottom: 7px; cursor: pointer; transition: all .2s; min-width: 0; }
         .mapa-top-item:hover { border-color: rgba(139,92,246,0.4); transform: translateX(2px); }
         .mapa-top-rank { width: 24px; height: 24px; border-radius: 8px; background: rgba(139,92,246,0.15); color: var(--fb-lav); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
         .mapa-top-info { flex: 1; min-width: 0; }
-        .mapa-top-nombre { font-size: 13px; font-weight: 600; color: var(--fb-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .mapa-top-sub { font-size: 11px; color: var(--muted, #6b7280); }
+        .mapa-top-nombre { font-size: 13px; font-weight: 600; color: var(--fb-text); overflow-wrap: anywhere; word-break: break-word; }
+        .mapa-top-sub { font-size: 11px; color: var(--muted, #6b7280); overflow-wrap: anywhere; }
         .mapa-top-monto { font-size: 13px; font-weight: 700; color: #f472b6; white-space: nowrap; }
         .mapa-top-monto.ingreso { color: #10B981; }
         .mapa-vacio { font-size: 12.5px; color: var(--muted, #6b7280); line-height: 1.6; padding: 6px 2px; }
@@ -490,7 +493,9 @@
         .popup-fb-cat { font-weight: 700; font-size: 14px; }
         .popup-fb-monto.gasto { color: #f472b6; font-weight: 800; font-size: 15px; }
         .popup-fb-monto.ingreso { color: #10B981; font-weight: 800; font-size: 15px; }
-        .popup-fb-meta { color: #9ca3af; font-size: 12px; }
+        .popup-fb-meta { color: #9ca3af; font-size: 12px; overflow-wrap: anywhere; word-break: break-word; }
+        .popup-fb-cat { overflow-wrap: anywhere; word-break: break-word; }
+        .popup-fb .popup-fb-meta { max-width: 100%; }
         .popup-fb-link { display: inline-flex; align-items: center; gap: 5px; margin-top: 6px; color: var(--fb-lav); font-weight: 600; font-size: 12px; text-decoration: none; }
         .popup-fb-link:hover { color: #8B5CF6; }
 
@@ -544,7 +549,7 @@
             .monto-btn { font-size: 11px; padding: 5px 10px; }
 
             .trans-item { padding: 11px 12px; }
-            .trans-detalle { max-width: 140px; }
+            .trans-detalle { max-width: none; }
             .btn-trans-accion { padding: 5px 7px; }
 
             .card-title { font-size: 14px; }
@@ -1886,6 +1891,10 @@
         const cacheLugares = {};
         window._lugaresPorId = {};
 
+        function normalizarLongitud(longitud) {
+            return ((longitud + 180) % 360 + 360) % 360 - 180;
+        }
+
         function iconoLugar(l) {
             const c = COLOR_GRUPO[l.grupo] || '#4285F4';
             return L.divIcon({
@@ -1936,7 +1945,9 @@
                     return;
                 }
                 const b = mapa.getBounds();
-                const clave = [b.getSouth(), b.getWest(), b.getNorth(), b.getEast()].map(v => v.toFixed(3)).join(',');
+                const oeste = normalizarLongitud(b.getWest());
+                const este = normalizarLongitud(b.getEast());
+                const clave = [b.getSouth(), oeste, b.getNorth(), este].map(v => v.toFixed(3)).join(',');
                 const mio = ++peticion;
                 let lugares = cacheLugares[clave];
                 if (!lugares) {
@@ -1945,7 +1956,7 @@
                     if (ctrl) ctrl.abort();
                     ctrl = new AbortController();
                     try {
-                        const q = `s=${b.getSouth()}&w=${b.getWest()}&n=${b.getNorth()}&e=${b.getEast()}`;
+                        const q = `s=${b.getSouth()}&w=${oeste}&n=${b.getNorth()}&e=${este}`;
                         const res = await fetch(`${API_LUGARES}?${q}`, { headers: { 'Authorization': 'Bearer ' + token }, signal: ctrl.signal });
                         if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || 'error');
                         lugares = await res.json();
@@ -2135,8 +2146,11 @@
             try {
                 const c = mapaPicker.getCenter();
                 // viewbox: prioriza resultados cerca de donde está el mapa
-                const vb = [c.lng - 0.5, c.lat + 0.5, c.lng + 0.5, c.lat - 0.5].join(',');
-                const res = await fetch(`${NOMINATIM}/search?format=jsonv2&addressdetails=1&limit=6&accept-language=es&countrycodes=co&viewbox=${vb}&q=${encodeURIComponent(q)}`);
+                const west = c.lng - 0.5, east = c.lng + 0.5;
+                const viewbox = west >= -180 && east <= 180
+                    ? `&viewbox=${[west, Math.min(90, c.lat + 0.5), east, Math.max(-90, c.lat - 0.5)].join(',')}`
+                    : '';
+                const res = await fetch(`${NOMINATIM}/search?format=jsonv2&addressdetails=1&limit=6&accept-language=es${viewbox}&q=${encodeURIComponent(q)}`);
                 const datos = res.ok ? await res.json() : [];
                 if (!datos.length) { cont.innerHTML = '<div class="mapa-resultado"><i class="fas fa-circle-info"></i> No se encontró ese lugar. Prueba con otra dirección o toca el mapa.</div>'; return; }
                 window._resultadosMapa = datos;

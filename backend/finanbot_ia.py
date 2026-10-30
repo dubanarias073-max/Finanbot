@@ -854,6 +854,7 @@ Si mencionas el **nombre exacto** de una categoría, uso siempre esa — sin adi
 • 🧮 Resolver cualquier cálculo matemático
 • 💡 Recibir consejos y respuestas sobre finanzas
 • 📄 Generar reportes — del **mes actual** o el **histórico completo**, en PDF o Excel
+• 📎 Analizar los documentos y reportes que me adjuntes, o convertirlos, resumirlos y reescribirlos en PDF, Word o Excel
 • 📅 Consultar el Calendario para ver o descargar el reporte de meses anteriores
 • 👤 Actualizar tu perfil (nombre, salario, metas)
 
@@ -869,6 +870,7 @@ Si mencionas el **nombre exacto** de una categoría, uso siempre esa — sin adi
 • *"¿Qué es un CDT?"* → te explico
 • *"Cambia mi nombre a Juan"* → actualiza tu perfil
 • *"Hazme un reporte de este mes"* → genera el PDF/Excel del mes actual
+• *(adjuntando un archivo)* *"Analízalo"* o *"Pásalo a Excel"* → lo leo y hago lo que pidas
 
 No necesitas comandos exactos. Habla como le escribirías a un amigo.""",
     "sug": "¿Por dónde quieres empezar?",
@@ -916,6 +918,12 @@ No necesitas comandos exactos. Habla como le escribirías a un amigo.""",
 **📄 Reportes:**
 • *"Hazme un reporte de este mes"* → PDF/Excel solo del mes actual
 • *"Hazme un reporte completo"* → PDF/Excel con todo el histórico
+
+**📎 Documentos (adjunta uno o varios archivos):**
+• *"Analiza este reporte"* / *"Analiza estos documentos"* — leo todos y te doy cifras clave, hallazgos y acciones
+• *"Pásalo a Excel"* / *"Conviértelo a Word"* — te devuelvo el archivo listo
+• *"Hazme un resumen en PDF de este documento"* · *"Reescribe esta carta"* · *"Extrae la tabla"*
+• *"Analiza el reporte que me diste"* — uso el último documento de esta conversación
 
 **📅 Meses anteriores:**
 • *"Quiero ver julio"* / *"Reporte de julio"* → te llevo al Calendario (ahí sí puedes consultarlos y descargarlos, pero no editarlos)
@@ -1559,12 +1567,29 @@ class FinanBotIA:
         ctx: dict | None,
         accion: dict | None,
         conversacion_id: str | None = None,
+        imagenes: list[dict] | None = None,
     ) -> tuple[str, list[dict]]:
         ts = bogota_now().strftime('%Y-%m-%d %H:%M:%S')
         self._clave_conv = self._clave_conversacion(ctx, conversacion_id)
         self._respuesta_de_ia2 = False
+        self._imagenes_actuales = imagenes or []
+        self._documento_generado = None
+
+        # ¿Qué quiere la persona? reporte | documento | analisis | chat
+        self._intencion = finanbot_ia_2.clasificar_intencion(
+            mensaje, self._imagenes_actuales, self._clave_conv)
+        # Con adjuntos, o si pide analizar, el parser no debe convertir el texto
+        # del archivo en cálculos o movimientos (ej. un "IVA" dentro del PDF).
+        # Los reportes estándar y los comandos sin adjuntos no se tocan.
+        if accion is not None and (
+            self._intencion == 'analisis'
+            or (self._intencion == 'documento'
+                and finanbot_ia_2.tiene_adjuntos(mensaje, self._imagenes_actuales))
+        ):
+            accion = None
+
         self.historial.append({'rol': 'usuario', 'msg': mensaje, 'timestamp': ts})
-        self._actualizar_memoria(mensaje, ctx)
+        self._actualizar_memoria(finanbot_ia_2.solo_mensaje_usuario(mensaje), ctx)
 
         # Bloqueo: no se crea/edita/elimina nada fuera del mes actual.
         if accion is not None and accion.get('tipo') in self._TIPOS_QUE_MODIFICAN:
@@ -1579,7 +1604,8 @@ class FinanBotIA:
         else:
             respuesta = self._personalizar_respuesta(respuesta, mensaje, ctx, accion)
             # la IA conversacional también "ve" lo que hicieron las reglas
-            finanbot_ia_2.recordar(self._clave_conv, 'user', mensaje)
+            # (sin el texto completo de los adjuntos)
+            finanbot_ia_2.recordar(self._clave_conv, 'user', finanbot_ia_2.solo_mensaje_usuario(mensaje))
             finanbot_ia_2.recordar(self._clave_conv, 'bot', respuesta)
         self.historial.append({'rol': 'bot', 'msg': respuesta[:200], 'timestamp': ts})
         return respuesta, acciones_ui
@@ -1761,7 +1787,8 @@ class FinanBotIA:
         lineas.append("• 💸 Registrar, **editar** y **borrar** gastos e ingresos (detecto la categoría, o uso la exacta si la nombras)  •  🎯 Crear metas manuales o automáticas")
         lineas.append("• 📈 Simular inversiones  •  🏷️ Calcular descuentos e IVA (19% por defecto)")
         lineas.append("• 🧮 Resolver cálculos  •  💬 Responder dudas financieras")
-        lineas.append("• 📄 Generar reportes (de este mes o completos)  •  👤 Actualizar tu perfil\n")
+        lineas.append("• 📄 Generar reportes (de este mes o completos)  •  👤 Actualizar tu perfil")
+        lineas.append("• 📎 Analizar tus documentos y reportes, o convertirlos a PDF, Word o Excel\n")
         lineas.append("*Habla conmigo de forma natural. No necesitas comandos exactos.* 😊\n")
         lineas.append("_🔒 Tus datos están protegidos. Confidencialidad garantizada._")
 
@@ -2252,7 +2279,8 @@ class FinanBotIA:
                 f"📅 **Reporte de {_mes_actual_label()} listo.**\n\n"
                 f"Este es el reporte **mensual** — solo incluye los movimientos de este mes "
                 f"(ingresos, gastos por categoría, resumen semana a semana y detalle día a día).\n\n"
-                f"Ve al Calendario y descárgalo en {formato_txt} desde ahí ↓"
+                f"Ve al Calendario y descárgalo en {formato_txt} desde ahí ↓\n\n"
+                f"💡 *Cuando lo tengas, adjúntalo aquí y te lo analizo.*"
             )
         detalle = (
             "ingresos, gastos por categoría, metas, simulaciones y balance"
@@ -2263,7 +2291,8 @@ class FinanBotIA:
             f"📄 **Reporte {formato_txt} completo listo para descargar.**\n\n"
             f"Este es el reporte **histórico completo** — incluye {detalle} de todas tus transacciones.\n"
             f"Si prefieres solo el mes actual, dime *\"reporte de este mes\"*.\n\n"
-            "Haz clic en el botón ↓"
+            "Haz clic en el botón ↓\n\n"
+            "💡 *Cuando lo tengas, adjúntalo aquí y te lo analizo.*"
         )
 
     # ══════════════════════════════════════════════════════════════
@@ -2396,6 +2425,9 @@ class FinanBotIA:
         eco de los últimos mensajes del usuario; eso se quitó."""
         if not respuesta:
             return respuesta
+
+        # Solo lo que escribió la persona, nunca el texto de los adjuntos
+        mensaje = finanbot_ia_2.solo_mensaje_usuario(mensaje)
 
         tema = self._detectar_tema(mensaje)
         self.memoria['ultimo_tema'] = tema
@@ -2657,19 +2689,45 @@ class FinanBotIA:
 
         return None
 
+    @staticmethod
+    def _aviso_documento_no_disponible() -> str:
+        return ("⏳ No pude trabajar con tu documento en este momento (la IA no respondió). "
+                "Intenta de nuevo en un minuto; prefiero no darte una respuesta genérica "
+                "que no tenga que ver con tu archivo.")
+
     def _sin_accion(self, mensaje: str, ctx) -> tuple[str, list[dict]]:
-        msg = mensaje.lower()
+        # Solo lo que escribió la persona: el texto de los adjuntos nunca
+        # debe activar reglas por palabras clave (IVA, categorías, etc.).
+        msg = finanbot_ia_2.solo_mensaje_usuario(mensaje).lower()
+        imagenes = getattr(self, '_imagenes_actuales', None)
+        intencion = getattr(self, '_intencion', None) or finanbot_ia_2.clasificar_intencion(
+            mensaje, imagenes, getattr(self, '_clave_conv', None))
         con_ia2 = finanbot_ia_2.disponible()
+        trabaja_ia = intencion in ('analisis', 'documento')
 
         # Lo exacto (reportes, lugares reales, guías de editar/borrar, % de X)
         # siempre lo resuelven las reglas; los consejos, la IA si está activa.
-        respuesta_contextual = self._respuesta_inteligente_contextual(mensaje, ctx, incluir_consejos=not con_ia2)
+        respuesta_contextual = None
+        if not trabaja_ia:
+            respuesta_contextual = self._respuesta_inteligente_contextual(
+                mensaje, ctx, incluir_consejos=not con_ia2,
+            )
         if respuesta_contextual:
             return respuesta_contextual, []
 
-        directa = self._resolver_operacion_directa(mensaje)
+        # Reporte estándar que el parser no resolvió: se entrega el reporte
+        if intencion == 'reporte':
+            fmt = 'excel' if any(p in msg for p in ('excel', 'xlsx', 'hoja de c')) else 'pdf'
+            alcance = 'mes' if self._es_solicitud_reporte_mensual(msg) else 'completo'
+            return self._reporte(fmt, alcance), _btns_reporte(fmt, alcance)
+
+        directa = None if trabaja_ia else self._resolver_operacion_directa(mensaje)
         if directa is not None:
             return directa[0], directa[1]
+
+        # Analizar o transformar documentos requiere la IA: las reglas no improvisan.
+        if trabaja_ia and not con_ia2:
+            return self._aviso_documento_no_disponible(), _btns_finanzas()
 
         # ── FinanBot IA 2 (conversación inteligente) ────────────────
         if con_ia2:
@@ -2678,13 +2736,18 @@ class FinanBotIA:
             resultado = finanbot_ia_2.responder(
                 mensaje, ctx, getattr(self, '_clave_conv', None),
                 categorias_gasto=list(categorias_gasto), categorias_ingreso=list(categorias_ingreso),
-                ejemplos=EJEMPLOS, rutas=RUTAS, referencia=self._referencia_base(msg),
+                ejemplos=EJEMPLOS, rutas=RUTAS,
+                referencia=None if trabaja_ia else self._referencia_base(msg),
+                imagenes=imagenes,
             )
             if resultado:
+                self._documento_generado = resultado.get('documento')
                 self._respuesta_de_ia2 = True
                 acciones = [_sug(s) for s in resultado['sugerencias']]
                 acciones += [_btn(_ETIQUETAS_RUTA.get(k, k.capitalize()), RUTAS[k]) for k in resultado['enlaces']]
                 return resultado['respuesta'], acciones
+            elif trabaja_ia:
+                return self._aviso_documento_no_disponible(), _btns_finanzas()
         # si no hay IA o falló, siguen las respuestas de siempre
 
         # 1. Buscar en base de conocimiento CON RAZONAMIENTO
@@ -2773,11 +2836,6 @@ class FinanBotIA:
                 "Puedes registrarlo desde Mis finanzas.",
                 _btns_finanzas(),
             )
-            info = CATEGORIAS_INGRESO.get(cat_i)
-            detalle = f"\n\n💡 {info['tip']}" if info else ''
-            return (f"🏷️ Eso suena a un ingreso de **{info['emoji'] if info else '🏷️'} {cat_i}**."
-                    f"{detalle}\n\n"
-                    f"Dime el monto y te lo registro en el mes actual."), _btns_finanzas()
 
         # 2. Instrucciones de uso
         if any(p in msg for p in ['cómo registro','como registro','cómo agrego','como agrego',
@@ -2813,7 +2871,8 @@ class FinanBotIA:
                 "• Simular inversiones con interés compuesto\n"
                 "• Responder preguntas sobre CDT, deudas, ahorro, impuestos (IVA 19% por defecto)\n"
                 "• Calcular descuentos, IVA, repartos\n"
-                "• Generar reportes del mes actual o el histórico completo\n\n"
+                "• Generar reportes del mes actual o el histórico completo\n"
+                "• Analizar los documentos y reportes que me adjuntes, y convertirlos o resumirlos en PDF, Word o Excel\n\n"
                 "¡Cuéntame qué necesitas! 💬"
             ), []
 
@@ -2893,6 +2952,11 @@ class FinanBotIA:
             "• *'Reporte de este mes'* → PDF/Excel solo del mes actual\n"
             "• *'Reporte completo'* → PDF/Excel con todo el histórico\n"
             "• *'Quiero ver julio'* → te llevo al Calendario\n\n"
+            "**Documentos (adjunta uno o varios archivos):**\n"
+            "• *'Analiza este reporte'* → leo todos los archivos y te doy cifras clave, hallazgos y acciones\n"
+            "• *'Pásalo a Excel'* / *'Conviértelo a Word'* → te devuelvo el archivo listo\n"
+            "• *'Hazme un resumen en PDF de este documento'* · *'Reescribe esta carta'*\n"
+            "• *'Analiza el reporte que me diste'* → uso el último documento de esta conversación\n\n"
             "**Preguntas:**\n"
             "• *'¿Qué es el interés compuesto?'*\n"
             "• *'¿Cómo salgo de deudas?'*\n"

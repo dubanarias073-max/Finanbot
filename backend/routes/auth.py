@@ -9,8 +9,9 @@ from datetime import datetime, timedelta, timezone
 from email.message import EmailMessage
 from urllib.parse import urlsplit
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import HTMLResponse
+from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
@@ -481,6 +482,25 @@ def login(body: LoginSchema, request: Request, db: Session = Depends(get_db)):
     if not usuario:
         raise HTTPException(status_code=401, detail='Correo o contraseña incorrectos')
     return _respuesta_login(usuario, db, request)
+
+
+@router.post('/token', tags=['auth'])
+def obtener_token(
+    form: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(get_db),
+):
+    usuario = AuthService.autenticar(
+        db,
+        correo=form.username,
+        contrasena=form.password,
+    )
+    if not usuario:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail='Correo o contraseña incorrectos',
+            headers={'WWW-Authenticate': 'Bearer'},
+        )
+    return {'access_token': AuthService.token(usuario), 'token_type': 'bearer'}
 
 
 @router.get('/google-config')

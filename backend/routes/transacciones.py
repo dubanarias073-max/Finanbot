@@ -524,15 +524,27 @@ def lugares_cercanos(
 ):
     """Lugares con nombre (tiendas, restaurantes, bancos, farmacias,
     gasolineras…) dentro del rectángulo visible del mapa."""
-    if not (-90 <= s < n <= 90) or not (-180 <= w < e <= 180):
+    if not (-90 <= s < n <= 90) or not (-180 <= w <= 180 and -180 <= e <= 180) or w == e:
         raise HTTPException(status_code=400, detail='Rectángulo de mapa inválido')
-    if (n - s) > _LUGARES_MAX_SPAN or (e - w) > _LUGARES_MAX_SPAN:
+    ancho = (e - w) % 360
+    if (n - s) > _LUGARES_MAX_SPAN or ancho > _LUGARES_MAX_SPAN:
         raise HTTPException(status_code=400, detail='Acércate más al mapa para ver los lugares')
 
     # Se redondea el rectángulo para que pequeños movimientos del mapa
     # reutilicen la misma consulta guardada en caché.
-    s_r, w_r = round(s - 0.002, 3), round(w - 0.002, 3)
-    n_r, e_r = round(n + 0.002, 3), round(e + 0.002, 3)
+    s_r = round(max(-90, s - 0.002), 3)
+    n_r = round(min(90, n + 0.002), 3)
+    inicio = ((w - 0.002 + 180) % 360) - 180
+    ancho_ampliado = ancho + 0.004
+    fin = inicio + ancho_ampliado
+    if fin <= 180:
+        rectangulos = [(round(inicio, 3), round(fin, 3))]
+    else:
+        rectangulos = [
+            (round(inicio, 3), 180),
+            (-180, round(fin - 360, 3)),
+        ]
+    w_r, e_r = rectangulos[0][0], rectangulos[-1][1]
     clave = (s_r, w_r, n_r, e_r)
     ahora = time.time()
 
@@ -542,12 +554,15 @@ def lugares_cercanos(
             return guardado[1]
 
     vistos, lugares = set(), []
-    for el in _consultar_overpass(s_r, w_r, n_r, e_r):
-        lugar = _formatear_lugar(el)
-        if not lugar or lugar['id'] in vistos:
-            continue
-        vistos.add(lugar['id'])
-        lugares.append(lugar)
+    for w_consulta, e_consulta in rectangulos:
+        for el in _consultar_overpass(s_r, w_consulta, n_r, e_consulta):
+            lugar = _formatear_lugar(el)
+            if not lugar or lugar['id'] in vistos:
+                continue
+            vistos.add(lugar['id'])
+            lugares.append(lugar)
+            if len(lugares) >= _LUGARES_MAX_RESULTADOS:
+                break
         if len(lugares) >= _LUGARES_MAX_RESULTADOS:
             break
 

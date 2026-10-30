@@ -2,13 +2,20 @@
 from passlib.context import CryptContext
 from jose import jwt, JWTError
 from datetime import datetime, timedelta, timezone
-from fastapi import Depends, Header, HTTPException, status
+from fastapi import Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from typing import Optional
 
 from config import settings
 from database import get_db
 from models import Usuario
+
+oauth2_scheme = OAuth2PasswordBearer(
+    tokenUrl='/api/auth/token',
+    description='Ingresa el correo y la contraseña de tu cuenta de FinanBot.',
+    auto_error=False,
+)
 
 # ── BCRYPT (reemplaza flask_bcrypt) ────────────────────────
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -87,19 +94,21 @@ def _resolver_usuario_desde_token(
 # ── Dependencias: ID (compatibles con el código existente) ─
 
 def obtener_usuario_id_opcional(
-    authorization: Optional[str] = Header(None),
+    token: Optional[str] = Depends(oauth2_scheme),
     db: Session = Depends(get_db),
 ) -> Optional[str]:
     """Devuelve el ID del usuario si hay token válido, o None si no hay (invitado)."""
+    authorization = f'Bearer {token}' if token else None
     usuario = _resolver_usuario_desde_token(authorization, db, requerir_usuario=False)
     return str(usuario.id) if usuario else None
 
 
 def obtener_usuario_id_requerido(
-    authorization: Optional[str] = Header(None),
+    token: Optional[str] = Depends(oauth2_scheme),
     db: Session = Depends(get_db),
 ) -> str:
     """Igual que la versión opcional, pero EXIGE el token (como @jwt_required())."""
+    authorization = f'Bearer {token}' if token else None
     usuario = _resolver_usuario_desde_token(authorization, db, requerir_usuario=True)
     return str(usuario.id)
 
@@ -107,8 +116,9 @@ def obtener_usuario_id_requerido(
 # ── Dependencia: usuario completo (incluye su rol) ─────────
 
 def obtener_usuario_actual(
-    authorization: Optional[str] = Header(None),
+    token: Optional[str] = Depends(oauth2_scheme),
     db: Session = Depends(get_db),
 ) -> Usuario:
     """Devuelve el objeto Usuario (con su rol). Exige token."""
+    authorization = f'Bearer {token}' if token else None
     return _resolver_usuario_desde_token(authorization, db, requerir_usuario=True)

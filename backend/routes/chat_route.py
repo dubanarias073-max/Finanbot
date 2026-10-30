@@ -2,15 +2,17 @@
 import re, ast, operator, uuid, unicodedata
 from collections import defaultdict
 from typing import Optional
+from urllib.parse import quote
 
-from fastapi import APIRouter, Depends, Body
+from fastapi import APIRouter, Depends, Body, HTTPException
 from sqlalchemy.orm import Session
 
 from database import get_db
 from extensions import obtener_usuario_id_opcional
 from finanbot_ia import FinanBotIA
+import finanbot_ia_2
 from models import (
-    Transaccion, MetaAhorro, Usuario, Chat, Categoria, CategoriaUsuario, nuevo_conversacion_id,
+    Transaccion, MetaAhorro, Usuario, Chat, ChatAdjunto, Categoria, CategoriaUsuario, nuevo_conversacion_id,
     CATEGORIAS_GASTO, CATEGORIAS_INGRESO,
     normalizar_categoria, eliminar_tiendas_sin_transacciones,
 )
@@ -19,6 +21,7 @@ from routes.transacciones import (
     CategoriaCrear, crear_mi_categoria, eliminar_mi_categoria, _mis_categorias,
 )
 from routes.metas import obtener_metas_calculadas
+from routes.archivos import preparar_adjuntos_chat
 
 
 def obtener_categoria(nombre: str, tipo: str, uid: int | None = None, db: Session | None = None) -> str:
@@ -57,7 +60,14 @@ def _categorias_activas(uid: int, db: Session) -> dict[str, list[dict]]:
 TITULO_POR_DEFECTO = 'Nueva conversación'
 
 
-def _guardar_chat(db: Session, uid: int, conv_id_body, mensaje: str, respuesta: str) -> str:
+def _guardar_chat(
+    db: Session,
+    uid: int,
+    conv_id_body,
+    mensaje: str,
+    respuesta: str,
+    documento: dict | None = None,
+) -> str:
     """Guarda el mensaje en la tabla chats y devuelve el conversacion_id usado.
     Prioridad: el conversacion_id que manda el frontend → la última
     conversación del usuario → una nueva."""
@@ -87,7 +97,7 @@ def _guardar_chat(db: Session, uid: int, conv_id_body, mensaje: str, respuesta: 
                .update({Chat.titulo: titulo}, synchronize_session=False))
 
     db.add(Chat(usuario_id=uid, conversacion_id=conv_id, titulo=titulo,
-                mensaje=mensaje, respuesta=respuesta, es_invitado=False))
+                mensaje=mensaje, respuesta=respuesta, documento=documento, es_invitado=False))
     db.commit()
     return conv_id
 
@@ -374,16 +384,43 @@ def mensaje(
     usuario_id: Optional[str] = Depends(obtener_usuario_id_opcional),
     db: Session = Depends(get_db),
 ):
-    if not body or not body.get('mensaje'):
+    if not body:
         return {'error': 'Mensaje vacío'}
-
-    msg_original = body['mensaje'].strip()
+    adjuntos_ids = body.get('adjuntos') or []
+    msg_original = body.get('mensaje') or ''
+    if not isinstance(msg_original, str):
+        return {'error': 'El mensaje no es válido.'}
+    msg_original = msg_original.strip()
+    if not msg_original and not adjuntos_ids:
+        return {'error': 'Escribe un mensaje o adjunta un archivo.'}
+    if not isinstance(adjuntos_ids, list) or not all(isinstance(item, str) for item in adjuntos_ids):
+        return {'error': 'La lista de archivos adjuntos no es válida.'}
     if len(msg_original) > 1000:
         return {'error': 'Mensaje demasiado largo'}
 
     msg_usuario = _normalizar(msg_original)
+    # pide_archivo cubre "créame un documento…" y también "pásalo a excel"
+    solicitud_documento = (
+        (
+            finanbot_ia_2.pide_archivo(msg_original)
+            or (
+                bool(adjuntos_ids)
+                and finanbot_ia_2.pide_incluir_imagenes_adjuntas(msg_original)
+            )
+        )
+        and (
+            bool(adjuntos_ids)
+            or not finanbot_ia_2.es_reporte_financiero_estandar(msg_original)
+        )
+    )
 
     uid = int(usuario_id) if usuario_id else None
+    if adjuntos_ids and uid is None:
+        return {'error': 'Inicia sesión para adjuntar archivos al chat.'}
+    texto_adjuntos, imagenes_adjuntas = preparar_adjuntos_chat(db, uid, adjuntos_ids) if uid else ('', [])
+    mensaje_ia = msg_original
+    if texto_adjuntos:
+        mensaje_ia += '\n\nARCHIVOS ADJUNTOS:\n' + texto_adjuntos
     conversacion_id = _conversacion_ia_id(db, uid, body.get('conversacion_id'))
     session_key = (
         f'user:{uid}:conversation:{conversacion_id}'
@@ -393,6 +430,7 @@ def mensaje(
     if session_key not in sesiones:
         sesiones[session_key] = FinanBotIA()
     bot = sesiones[session_key]
+    documento_previo = finanbot_ia_2.ultimo_documento(session_key)
 
     ctx = _cargar_contexto(uid, db) if uid is not None else None
     accion = None
@@ -401,18 +439,20 @@ def mensaje(
     if ctx is not None:
         ctx['ubicacion_actual'], ubic_rechazada = _leer_ubicacion(body.get('ubicacion'))
 
-    if uid and ctx and _es_comando_categoria(msg_usuario):
+    if adjuntos_ids:
+        accion = None
+    elif uid and ctx and _es_comando_categoria(msg_usuario) and not solicitud_documento:
         accion = ejecutar_accion(msg_usuario, uid, ctx, db)
-    elif uid is None and _es_comando_categoria(msg_usuario):
+    elif uid is None and _es_comando_categoria(msg_usuario) and not solicitud_documento:
         accion = {
             'tipo': 'error_categoria',
             'mensaje': 'Inicia sesión para crear o eliminar tus categorías.',
         }
 
-    if accion is None and uid and ctx:
+    if not adjuntos_ids and accion is None and uid and ctx and not solicitud_documento:
         accion = _resolver_contexto(msg_usuario, uid, ctx, session_key, db)
 
-    if accion is None and uid and ctx:
+    if not adjuntos_ids and accion is None and uid and ctx and not solicitud_documento:
         accion = ejecutar_accion(msg_usuario, uid, ctx, db)
 
     if uid:
@@ -445,9 +485,17 @@ def mensaje(
         respuesta = _texto_respuesta_local(accion)
         acciones_ui = []
     else:
-        respuesta, acciones_ui = bot.responder_con_acciones(
-            msg_usuario, ctx, accion, conversacion_id=conversacion_id,
-        )
+        # Evita que un documento de una respuesta anterior se vuelva a entregar
+        bot._documento_generado = None
+        if imagenes_adjuntas:
+            respuesta, acciones_ui = bot.responder_con_acciones(
+                mensaje_ia, ctx, accion, conversacion_id=conversacion_id,
+                imagenes=imagenes_adjuntas,
+            )
+        else:
+            respuesta, acciones_ui = bot.responder_con_acciones(
+                mensaje_ia, ctx, accion, conversacion_id=conversacion_id,
+            )
         respuesta = _agregar_disclaimers_si_necesario(respuesta, msg_usuario)
 
     # Si se registró algo pero el GPS era demasiado impreciso, se dice claro
@@ -460,9 +508,58 @@ def mensaje(
     respuesta = _agregar_avisos_metas(respuesta, ctx, accion)
 
     conversacion_id = None
+    documento = None
+    if (solicitud_documento
+            and not (accion and accion.get('tipo') in _TIPOS_RESPUESTA_LOCAL)):
+        documento = getattr(bot, '_documento_generado', None)
+    if documento:
+        documento = dict(documento)
+        anterior = documento_previo
+        eliminar_imagenes = re.search(
+            r'\b(?:quitar|eliminar|borrar|sin)\b.{0,30}\b(?:imagen|foto)s?\b',
+            unicodedata.normalize('NFD', msg_original.lower()).encode('ascii', 'ignore').decode(),
+        )
+        pide_imagenes = finanbot_ia_2.pide_incluir_imagenes_adjuntas(msg_original)
+        if pide_imagenes and uid and adjuntos_ids:
+            imagenes_ids = db.query(ChatAdjunto.id).filter(
+                ChatAdjunto.usuario_id == uid,
+                ChatAdjunto.id.in_(adjuntos_ids),
+                ChatAdjunto.mime_type.like('image/%'),
+            ).all()
+            documento['imagenes'] = [fila[0] for fila in imagenes_ids]
+        elif (
+            anterior and anterior.get('imagenes') and not eliminar_imagenes
+            and not finanbot_ia_2.es_solicitud_documento(msg_original)
+        ):
+            documento['imagenes'] = anterior['imagenes']
+        if pide_imagenes and not documento.get('imagenes'):
+            respuesta += (
+                '\n\nNo encontré fotos entre los archivos adjuntos. '
+                'Adjunta una imagen JPG, PNG o WEBP para incluirla en el documento.'
+            )
+        if uid:
+            finanbot_ia_2.recordar_documento(
+                session_key, documento.get('titulo'), documento.get('formato'),
+                documento.get('contenido'), documento.get('graficos'),
+                documento.get('imagenes'),
+            )
     if uid:
         try:
-            conversacion_id = _guardar_chat(db, uid, body.get('conversacion_id'), msg_original, respuesta)
+            mensaje_guardado = msg_original
+            if adjuntos_ids:
+                if not mensaje_guardado:
+                    mensaje_guardado = 'Analiza los archivos adjuntos.'
+                archivos = db.query(ChatAdjunto.id, ChatAdjunto.nombre).filter(
+                    ChatAdjunto.usuario_id == uid,
+                    ChatAdjunto.id.in_(adjuntos_ids),
+                ).all()
+                mensaje_guardado += '\n\n' + '\n'.join(
+                    f'[[archivo:{identificador}|{quote(nombre, safe="")}]]'
+                    for identificador, nombre in archivos
+                )
+            conversacion_id = _guardar_chat(
+                db, uid, body.get('conversacion_id'), mensaje_guardado, respuesta, documento,
+            )
         except Exception as e:
             db.rollback()
             print(f'[FinanBot] Error guardar conversación: {e}')
@@ -471,6 +568,7 @@ def mensaje(
         'respuesta': respuesta,
         'acciones': acciones_ui,
         'accion_ejecutada': accion,
+        'documento': documento,
         'conversacion_id': conversacion_id,
         'estado': 'ok',
         'es_ia': True,

@@ -5,9 +5,9 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.orm import sessionmaker
-from models import Base, Categoria, CategoriaUsuario, Chat, Transaccion, Usuario, sembrar_categorias
+from models import Base, Categoria, CategoriaUsuario, Chat, ChatAdjunto, Transaccion, Usuario, sembrar_categorias
 import routes.chat_route as chat_routes
 from routes.chat_route import (
     _actualizar_contexto,
@@ -17,7 +17,9 @@ from routes.chat_route import (
     _resolver_contexto,
     _texto_respuesta_local,
     ejecutar_accion,
+    _guardar_chat,
 )
+from routes.chat_historial import obtener_mensajes
 from routes.transacciones import eliminar_mi_categoria
 
 
@@ -80,7 +82,6 @@ def test_chat_crea_categoria_personalizada():
     finally:
         db.close()
         engine.dispose()
-
 
 def test_chat_pregunta_tipo_si_no_se_especifica_al_crear_categoria():
     engine, db, usuario = _crear_sesion_con_usuario()
@@ -192,6 +193,7 @@ def test_chat_pasa_el_id_de_conversacion_a_la_ia(monkeypatch):
     engine, db, usuario = _crear_sesion_con_usuario()
     conv_id = str(uuid.uuid4())
     recibido = {}
+    acciones_locales = []
 
     class FinanBotFalso:
         def responder_con_acciones(self, mensaje, ctx, accion, conversacion_id=None):
@@ -203,21 +205,164 @@ def test_chat_pasa_el_id_de_conversacion_a_la_ia(monkeypatch):
     monkeypatch.setattr(chat_routes, '_cargar_contexto', lambda uid, session: {'usuario_id': uid})
     monkeypatch.setattr(chat_routes, '_actualizar_contexto', lambda *args: None)
     monkeypatch.setattr(chat_routes, '_resolver_contexto', lambda *args: None)
-    monkeypatch.setattr(chat_routes, 'ejecutar_accion', lambda *args: None)
+    monkeypatch.setattr(chat_routes, 'ejecutar_accion', lambda *args: acciones_locales.append(args))
     monkeypatch.setattr(chat_routes, '_agregar_disclaimers_si_necesario', lambda respuesta, mensaje: respuesta)
     monkeypatch.setattr(chat_routes, '_agregar_avisos_metas', lambda respuesta, ctx, accion: respuesta)
     monkeypatch.setattr(chat_routes, '_guardar_chat', lambda *args: conv_id)
 
     try:
         resultado = chat_routes.mensaje(
-            {'mensaje': '¿Cómo organizo mis gastos?', 'conversacion_id': conv_id},
+            {'mensaje': 'Crea un documento de presupuesto mensual', 'conversacion_id': conv_id},
             str(usuario.id),
             db,
         )
 
         assert resultado['respuesta'] == 'Respuesta de prueba'
         assert recibido['conversacion_id'] == conv_id
+        assert resultado['documento'] is None
+        assert acciones_locales == []
         assert f'user:{usuario.id}:conversation:{conv_id}' in chat_routes.sesiones
+    finally:
+        db.close()
+        engine.dispose()
+
+
+def test_documento_generado_se_conserva_en_el_historial_del_chat():
+    engine, db, usuario = _crear_sesion_con_usuario()
+    conversacion_id = str(uuid.uuid4())
+    documento = {
+        'titulo': 'Presupuesto mensual',
+        'formato': 'pdf',
+        'contenido': '# Resumen\nAhorro recomendado',
+    }
+    try:
+        _guardar_chat(
+            db, int(usuario.id), conversacion_id, 'Crea el documento',
+            'Documento listo.', documento,
+        )
+
+        mensajes = obtener_mensajes(conversacion_id, str(usuario.id), db)
+
+        assert mensajes[0]['documento'] == documento
+    finally:
+        db.close()
+        engine.dispose()
+
+
+def test_migracion_agrega_documento_a_tabla_de_chat_existente(monkeypatch):
+    from presentation import api as api_routes
+
+    engine = create_engine('sqlite:///:memory:')
+    tablas = [tabla for tabla in Base.metadata.sorted_tables if tabla.name != 'chats']
+    Base.metadata.create_all(bind=engine, tables=tablas)
+    with engine.begin() as conexion:
+        conexion.execute(text(
+            'CREATE TABLE chats ('
+            'id INTEGER PRIMARY KEY, usuario_id INTEGER, conversacion_id VARCHAR(36) NOT NULL, '
+            'titulo VARCHAR(100) NOT NULL, mensaje TEXT NOT NULL, respuesta TEXT NOT NULL, '
+            'es_invitado BOOLEAN, fecha DATETIME)'
+        ))
+    monkeypatch.setattr(api_routes, 'engine', engine)
+    try:
+        api_routes._migrar_esquema()
+
+        columnas = {columna['name'] for columna in inspect(engine).get_columns('chats')}
+
+        assert 'documento' in columnas
+    finally:
+        engine.dispose()
+
+
+def test_solicitud_de_documento_devuelve_archivo_y_lo_guarda(monkeypatch):
+    engine, db, usuario = _crear_sesion_con_usuario()
+    conversacion_id = str(uuid.uuid4())
+    documento = {
+        'titulo': 'Presupuesto mensual',
+        'formato': 'docx',
+        'contenido': '# Resumen\nAhorro recomendado',
+    }
+
+    class FinanBotFalso:
+        def responder_con_acciones(self, mensaje, ctx, accion, conversacion_id=None):
+            self._documento_generado = documento
+            return 'Documento preparado.', []
+
+    monkeypatch.setattr(chat_routes, 'sesiones', {})
+    monkeypatch.setattr(chat_routes, 'FinanBotIA', FinanBotFalso)
+    monkeypatch.setattr(chat_routes, '_cargar_contexto', lambda uid, session: {'usuario_id': uid})
+    monkeypatch.setattr(chat_routes, '_actualizar_contexto', lambda *args: None)
+    monkeypatch.setattr(chat_routes, '_resolver_contexto', lambda *args: None)
+    monkeypatch.setattr(chat_routes, '_agregar_disclaimers_si_necesario', lambda respuesta, mensaje: respuesta)
+    monkeypatch.setattr(chat_routes, '_agregar_avisos_metas', lambda respuesta, ctx, accion: respuesta)
+
+    try:
+        resultado = chat_routes.mensaje(
+            {'mensaje': 'Créame un documento de presupuesto mensual', 'conversacion_id': conversacion_id},
+            str(usuario.id),
+            db,
+        )
+
+        historial = obtener_mensajes(conversacion_id, str(usuario.id), db)
+
+        assert resultado['documento'] == documento
+        assert historial[0]['documento'] == documento
+    finally:
+        db.close()
+        engine.dispose()
+
+
+def test_documento_en_chat_conserva_referencia_a_foto_adjunta(monkeypatch):
+    engine, db, usuario = _crear_sesion_con_usuario()
+    conversacion_id = str(uuid.uuid4())
+    adjunto_id = str(uuid.uuid4())
+    db.add(ChatAdjunto(
+        id=adjunto_id,
+        usuario_id=usuario.id,
+        nombre='foto presupuesto.png',
+        ruta=f'chat/{usuario.id}/{adjunto_id}.png',
+        mime_type='image/png',
+        texto_extraido='',
+    ))
+    db.commit()
+    documento = {
+        'titulo': 'Presupuesto visual',
+        'formato': 'pdf',
+        'contenido': '# Resumen\nPresupuesto con foto adjunta.',
+        'graficos': [],
+    }
+
+    class FinanBotFalso:
+        def responder_con_acciones(
+            self, mensaje, ctx, accion, conversacion_id=None, imagenes=None,
+        ):
+            self._documento_generado = documento
+            return 'Documento preparado.', []
+
+    monkeypatch.setattr(chat_routes, 'sesiones', {})
+    monkeypatch.setattr(chat_routes, 'FinanBotIA', FinanBotFalso)
+    monkeypatch.setattr(
+        chat_routes, 'preparar_adjuntos_chat',
+        lambda *args: ('', [{'mime_type': 'image/png', 'data': b'foto'}]),
+    )
+    monkeypatch.setattr(chat_routes, '_cargar_contexto', lambda uid, session: {'usuario_id': uid})
+    monkeypatch.setattr(chat_routes, '_actualizar_contexto', lambda *args: None)
+    monkeypatch.setattr(chat_routes, '_resolver_contexto', lambda *args: None)
+    monkeypatch.setattr(chat_routes, '_agregar_disclaimers_si_necesario', lambda respuesta, mensaje: respuesta)
+    monkeypatch.setattr(chat_routes, '_agregar_avisos_metas', lambda respuesta, ctx, accion: respuesta)
+
+    try:
+        resultado = chat_routes.mensaje(
+            {
+                'mensaje': 'Incluye las fotos adjuntas en el documento',
+                'adjuntos': [adjunto_id],
+                'conversacion_id': conversacion_id,
+            },
+            str(usuario.id),
+            db,
+        )
+
+        assert resultado['documento']['imagenes'] == [adjunto_id]
+        assert obtener_mensajes(conversacion_id, str(usuario.id), db)[0]['documento'] == resultado['documento']
     finally:
         db.close()
         engine.dispose()

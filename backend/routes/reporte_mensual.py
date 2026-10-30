@@ -8,6 +8,7 @@ from datetime import datetime, date
 from io import BytesIO
 from xml.sax.saxutils import escape as xml_escape
 from application.services.reportes_narrativa import resumen_mensual
+from application.services.graficos_documento import renderizar_grafico
 from timezone import bogota_now
 
 MESES_ES = [
@@ -234,7 +235,7 @@ def generar_reporte_pdf_mensual(usuario, transacciones, anio: int, mes: int) -> 
     from reportlab.lib import colors
     from reportlab.lib.units import mm
     from reportlab.platypus import (SimpleDocTemplate, Paragraph, Spacer,
-                                     Table, TableStyle, HRFlowable)
+                                     Table, TableStyle, HRFlowable, Image as PdfImage)
     from reportlab.lib.styles import ParagraphStyle
     from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT
 
@@ -361,6 +362,25 @@ def generar_reporte_pdf_mensual(usuario, transacciones, anio: int, mes: int) -> 
             ])
         story += [mk_tabla(['Semana', 'Rango', 'Ingresos', 'Gastos', 'Balance'], filas_sem,
                             [W * 0.16, W * 0.26, W * 0.19, W * 0.19, W * 0.20]), Spacer(1, 18)]
+        if any(s['ingresos'] or s['gastos'] for s in r['por_semana']):
+            story += [
+                Paragraph('Ingresos y gastos por semana', S_SEC),
+                PdfImage(
+                    renderizar_grafico({
+                        'tipo': 'barras',
+                        'titulo': f'Ingresos y gastos — {nombre_mes}',
+                        'etiquetas': [f"Semana {s['numero']}" for s in r['por_semana']],
+                        'series': [
+                            {'nombre': 'Ingresos', 'valores': [s['ingresos'] for s in r['por_semana']]},
+                            {'nombre': 'Gastos', 'valores': [s['gastos'] for s in r['por_semana']]},
+                        ],
+                    }),
+                    width=W,
+                    height=W * 0.51,
+                    kind='proportional',
+                ),
+                Spacer(1, 18),
+            ]
 
     # ── GASTOS POR CATEGORÍA ────────────────────────────────
     if r['cat_gastos']:
@@ -378,6 +398,27 @@ def generar_reporte_pdf_mensual(usuario, transacciones, anio: int, mes: int) -> 
             ])
         story += [mk_tabla(['Categoría', 'Monto', '%', 'Distribución'], filas_cat,
                             [W * 0.26, W * 0.17, W * 0.10, W * 0.47]), Spacer(1, 18)]
+        story += [
+            Paragraph('Distribución de gastos', S_SEC),
+            PdfImage(
+                renderizar_grafico({
+                    'tipo': 'barras',
+                    'titulo': f'Gastos por categoría — {nombre_mes}',
+                    'etiquetas': list(sorted(r['cat_gastos'], key=r['cat_gastos'].get, reverse=True))[:16],
+                    'series': [{
+                        'nombre': 'Gastos',
+                        'valores': [
+                            r['cat_gastos'][cat]
+                            for cat in sorted(r['cat_gastos'], key=r['cat_gastos'].get, reverse=True)[:16]
+                        ],
+                    }],
+                }),
+                width=W,
+                height=W * 0.51,
+                kind='proportional',
+            ),
+            Spacer(1, 18),
+        ]
 
     # ── INGRESOS POR CATEGORÍA ──────────────────────────────
     if r['cat_ingresos']:

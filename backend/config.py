@@ -1,5 +1,6 @@
 # config.py - Configuración de FinanBot
 import os
+from pathlib import Path
 
 
 class Settings:
@@ -20,6 +21,10 @@ class Settings:
     SMTP_APP_PASSWORD = os.getenv('SMTP_APP_PASSWORD', '').replace(' ', '')
     SMTP_FROM = os.getenv('SMTP_FROM', '')
     PUBLIC_BASE_URL = os.getenv('PUBLIC_BASE_URL', '').rstrip('/')
+    UPLOADS_DIR = Path(os.getenv(
+        'FINANBOT_UPLOADS_DIR',
+        str(Path(__file__).resolve().parent / 'uploads'),
+    ))
 
     # Roles = perfil elegido en el onboarding (usuarios.rol)
     ROLES = ('estudiante', 'empleado', 'independiente', 'emprendedor')

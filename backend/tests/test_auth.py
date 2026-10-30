@@ -4,18 +4,22 @@ from datetime import timedelta
 from pathlib import Path
 
 import pytest
-from fastapi import HTTPException
+from fastapi import FastAPI, HTTPException
+from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 from starlette.requests import Request
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 import routes.auth as auth_routes
 from application.services.auth_service import AuthService
+from database import get_db
 from google.auth.transport import requests as google_requests
 from google.oauth2 import id_token
 from models import Base, LoginAlertToken, PasswordResetCode, PasswordResetLink, Usuario
+from presentation.api import create_app
 
 
 def _crear_db():
@@ -62,6 +66,54 @@ def test_registro_normaliza_correo_y_login_tolera_mayusculas():
     finally:
         db.close()
         engine.dispose()
+
+
+def test_swagger_authorize_obtiene_token_con_correo_y_contrasena():
+    engine = create_engine(
+        'sqlite://',
+        connect_args={'check_same_thread': False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(bind=engine)
+    db = sessionmaker(bind=engine)()
+    try:
+        usuario = AuthService.registrar(
+            db,
+            nombre='Usuario de prueba',
+            correo='swagger@example.com',
+            contrasena='ClaveSegura123',
+        )
+        app = FastAPI()
+        app.include_router(auth_routes.router, prefix='/api/auth')
+        app.dependency_overrides[get_db] = lambda: db
+
+        with TestClient(app) as cliente:
+            respuesta = cliente.post(
+                '/api/auth/token',
+                data={'username': usuario.correo, 'password': 'ClaveSegura123'},
+            )
+            credenciales_invalidas = cliente.post(
+                '/api/auth/token',
+                data={'username': usuario.correo, 'password': 'incorrecta'},
+            )
+
+        assert respuesta.status_code == 200
+        assert respuesta.json()['token_type'] == 'bearer'
+        assert respuesta.json()['access_token']
+        assert credenciales_invalidas.status_code == 401
+    finally:
+        db.close()
+        engine.dispose()
+
+
+def test_openapi_expone_oauth2_y_token_url_para_swagger():
+    openapi = create_app().openapi()
+    esquemas = openapi['components']['securitySchemes']
+
+    flujo = next(iter(esquemas.values()))['flows']['password']
+    assert flujo['tokenUrl'] == '/api/auth/token'
+    assert openapi['paths']['/api/chat/mensaje']['post']['security']
+    assert 'security' not in openapi['paths']['/api/auth/token']['post']
 
 
 def test_pregunta_seguridad_permite_recuperar_sin_acceso_al_correo():

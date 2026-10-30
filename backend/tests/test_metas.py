@@ -235,7 +235,7 @@ def test_chat_advierte_limites_y_felicita_solo_ahorro_completado():
         {'tipo': 'meta_abonada', 'id': 7, 'nombre': 'Viaje', 'nuevo_total': 500_000},
     )
 
-    assert 'Límite de gasto alcanzado o superado' in respuesta
+    assert 'Alerta: alcanzaste o superaste un límite de gasto' in respuesta
     assert 'no es una felicitación' in respuesta
     assert '¡Felicitaciones! Completaste tu meta de ahorro' in respuesta
 
@@ -258,7 +258,13 @@ def test_recomendaciones_trata_tope_de_gasto_alcanzado_como_alerta(db_sessions):
         ))
         db.commit()
 
-        recomendaciones = obtener_recomendaciones(str(usuario.id), db=db)
+        recomendaciones = obtener_recomendaciones(
+            nec=50,
+            des=30,
+            aho=20,
+            usuario_id=str(usuario.id),
+            db=db,
+        )
 
     alertas = [item for item in recomendaciones if item['tipo'] == 'alerta']
     assert any('Límite de gasto mensual alcanzado' in item['titulo'] for item in alertas)

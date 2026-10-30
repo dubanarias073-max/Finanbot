@@ -10,6 +10,7 @@ from database import Base, engine, SessionLocal
 
 def _register_routers(app: FastAPI) -> None:
     from routes.aprende import router as aprende_router
+    from routes.archivos import router as archivos_router
     from routes.auth import router as auth_router
     from routes.calendario import router as calendario_router
     from routes.chat_historial import router as chat_historial_router
@@ -25,6 +26,7 @@ def _register_routers(app: FastAPI) -> None:
 
     routers = (
         (auth_router, '/api/auth'),
+        (archivos_router, '/api/chat'),
         (excel_sim_router, '/api/simulaciones'),
         (chat_router, '/api/chat'),
         (transacciones_router, '/api/transacciones'),
@@ -52,6 +54,7 @@ def _migrar_esquema() -> None:
     columnas_categoria_usuario = {
         c['name'] for c in inspector.get_columns('categorias_usuario')
     }
+    columnas_chat = {c['name'] for c in inspector.get_columns('chats')}
     nuevas = {
         'ubicacion_nombre': 'VARCHAR(255) NULL',
         'latitud': 'DECIMAL(10,7) NULL',
@@ -62,6 +65,7 @@ def _migrar_esquema() -> None:
         columnas_usuario_nuevas = {
             'token_version': 'INT NOT NULL DEFAULT 0',
             'requiere_cambio_contrasena': 'BOOLEAN NOT NULL DEFAULT FALSE',
+            'foto_perfil': 'VARCHAR(100) NULL',
         }
         for nombre, tipo in columnas_usuario_nuevas.items():
             if nombre not in columnas_usuario:
@@ -102,6 +106,10 @@ def _migrar_esquema() -> None:
                 'ADD COLUMN eliminada BOOLEAN NOT NULL DEFAULT FALSE'
             ))
             print('Columna categorias_usuario.eliminada agregada')
+
+        if 'documento' not in columnas_chat:
+            conn.execute(text('ALTER TABLE chats ADD COLUMN documento JSON NULL'))
+            print('Columna chats.documento agregada')
 
         if 'vista_metas_ahorro' in inspector.get_view_names():
             conn.execute(text('DROP VIEW vista_metas_ahorro'))

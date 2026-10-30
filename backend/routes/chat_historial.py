@@ -167,6 +167,7 @@ def obtener_mensajes(
         'id': m.id,
         'mensaje': m.mensaje,
         'respuesta': m.respuesta,
+        'documento': m.documento,
         'hora': m.fecha.strftime('%I:%M %p')
     } for m in mensajes]
 

@@ -2,8 +2,6 @@
 
 **FinanBot** es una plataforma web modular diseñada para la gestión de finanzas personales. Integra un **asistente inteligente con IA**, simuladores financieros avanzados, calendarios de pagos y herramientas de exportación de reportes.
 
-La fecha y hora de negocio de la aplicación usan `America/Bogota` (UTC−5, sin horario de verano), independientemente de la zona horaria del servidor o del navegador. Las expiraciones de seguridad se calculan en UTC.
-
 La arquitectura sigue un enfoque de **monolito modular por capas** orientado a MVC, donde un backend en **FastAPI** sirve tanto una API REST como pantallas legadas (`/legacy`), complementado por un frontend moderno en **React + Vite**.
 
 ---
@@ -112,6 +110,10 @@ fastapi dev app.py
 ```
 > El backend estará disponible en `http://127.0.0.1:8000` con documentación interactiva en `/docs`. También puedes usar `uvicorn app:app --reload`.
 
+Para probar rutas protegidas desde Swagger, abre `/docs`, pulsa **Authorize** e
+ingresa el correo de tu cuenta en `username` y tu contraseña. FastAPI obtiene y
+aplica el bearer token automáticamente mediante `/api/auth/token`.
+
 ### Paso 2: Levantar el Frontend (React + Vite)
 El backend no sirve la interfaz de usuario de forma directa de manera nativa. En una **nueva terminal**, navega a la carpeta `frontend/`:
 
@@ -137,7 +139,8 @@ SMTP_APP_PASSWORD="inqlxalpizdplvgo"
 SMTP_FROM="finanbot.sena@gmail.com"
 
 GOOGLE_CLIENT_ID="315416890012-ffvd56diopltc438ev5e8bgrqd2q931m.apps.googleusercontent.com"
-GOOGLE_CLIENT_SECRET=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ASSWORD_RESET_URL="http://(tu ip):8000/legacy/pages/login.html"
+GOOGLE_CLIENT_SECRET=GOCSPX-KGKeGYtQTEHJrPACG90VSPDN85w
+PASSWORD_RESET_URL="http://(tu ip):8000/legacy/pages/login.html"
 PUBLIC_BASE_URL=http://TU_IP_DE_RED:5173
 ```
 
@@ -255,6 +258,14 @@ El chat tiene dos cerebros:
 * **FinanBot (reglas):** registra, edita y borra movimientos, metas, IVA, descuentos y reportes. Funciona siempre, sin internet ni claves.
 * **FinanBot IA 2:** responde las preguntas libres ("¿cómo voy este mes?", "¿me alcanza para viajar en diciembre?") usando los datos reales del usuario y propone botones con el siguiente paso. **Necesita una clave de Gemini.** Sin clave, el chat sigue funcionando solo con las reglas.
 
+### Documentos y reportes desde el chat
+
+En el chat, «reporte», «informe», «documento» y «archivo» se interpretan según la intención y los datos financieros solicitados. Los reportes financieros estándar se descargan en PDF o Excel; para pedir Word, se genera un documento personalizado. Cuando el usuario lo solicite, los documentos también pueden incluir gráficos hechos con los datos disponibles e imágenes que haya adjuntado. Las fotos solo se insertan si pertenecen a la cuenta y se piden explícitamente.
+
+### Mapa global
+
+El mapa permite buscar lugares en todo el mundo, admite zonas cercanas al antimeridiano y presenta la interfaz y las respuestas en español neutral.
+
 ### 1. Crear tu clave (cada integrante crea la suya)
 1. Entra a [aistudio.google.com/apikey](https://aistudio.google.com/apikey) con tu cuenta de Google.
 2. Clic en **Crear clave de API** → acepta el proyecto por defecto. Queda en **Nivel gratuito** (no pide tarjeta).
@@ -352,3 +363,5 @@ pytest -q tests
 ```
 
 ⚠️ **Advertencia de desarrollo:** Si todo no responde  correctamente o devuelve respuestas genéricas vacías, se debe a una pérdida de sincronía con la base de datos tras un reinicio del servidor de FastAPI. Detén el proceso (`Ctrl + C`) y levanta el backend nuevamente con `fastapi dev app.py`.
+
+Ademas cuando el usuario se loguea , la base de datos ya no creara el diagrama  en workbench , intentar cambiar el nombre de la base de datos para crear otra y ver el diagrama y las tablas que componen la base de datos 

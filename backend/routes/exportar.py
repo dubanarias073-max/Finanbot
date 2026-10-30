@@ -11,6 +11,7 @@ from database import get_db
 from extensions import obtener_usuario_id_requerido
 from models import Usuario, Transaccion, MetaAhorro
 from application.services.reportes_narrativa import resumen_financiero
+from application.services.graficos_documento import renderizar_grafico
 from timezone import bogota_now
 
 try:
@@ -18,7 +19,7 @@ try:
     from reportlab.lib import colors
     from reportlab.lib.units import mm
     from reportlab.platypus import (SimpleDocTemplate, Paragraph, Spacer,
-                                     Table, TableStyle, HRFlowable)
+                                     Table, TableStyle, HRFlowable, Image as PdfImage)
     from reportlab.lib.styles import ParagraphStyle
     from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT
 except ImportError:
@@ -446,6 +447,23 @@ def exportar_pdf(
             ['Categoria', 'Monto', '%', 'Distribucion'],
             filas_cat,
             [W*0.28, W*0.18, W*0.10, W*0.44]
+        ))
+        categorias_grafico = sorted(gastos_cat, key=gastos_cat.get, reverse=True)[:16]
+        story.append(Spacer(1, 8))
+        story.append(Paragraph('Vista visual de gastos por categoría', S_SEC))
+        story.append(PdfImage(
+            renderizar_grafico({
+                'tipo': 'barras',
+                'titulo': 'Gastos por categoría',
+                'etiquetas': categorias_grafico,
+                'series': [{
+                    'nombre': 'Gastos',
+                    'valores': [gastos_cat[categoria] for categoria in categorias_grafico],
+                }],
+            }),
+            width=W,
+            height=W * 0.51,
+            kind='proportional',
         ))
         story.append(Spacer(1, 18))
 

@@ -6,3 +6,5 @@ frontend/dist/
 
 
 .env
+backend/uploads/
+backend/routes/__pycache__/
