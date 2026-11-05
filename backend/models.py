@@ -82,6 +82,26 @@ class LoginAlertToken(Base):
     )
 
 
+class DispositivoConocido(Base):
+    __tablename__ = 'dispositivos_conocidos'
+    __table_args__ = (
+        UniqueConstraint(
+            'usuario_id',
+            'fingerprint_hash',
+            name='uq_dispositivos_conocidos_usuario_fingerprint',
+        ),
+    )
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    usuario_id = Column(Integer, ForeignKey('usuarios.id', ondelete='CASCADE'), nullable=False, index=True)
+    fingerprint_hash = Column(String(64), nullable=False)
+    created_at = Column(
+        DateTime,
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc).replace(tzinfo=None),
+    )
+
+
 class SecurityResetAttempt(Base):
     __tablename__ = 'security_reset_attempts'
 

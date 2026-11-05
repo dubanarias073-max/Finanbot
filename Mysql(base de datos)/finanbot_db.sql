@@ -53,6 +53,17 @@ CREATE TABLE login_alert_tokens (
         FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
 );
 
+CREATE TABLE dispositivos_conocidos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    usuario_id INT NOT NULL,
+    fingerprint_hash CHAR(64) NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_dispositivos_conocidos_usuario_fingerprint (usuario_id, fingerprint_hash),
+    INDEX idx_dispositivos_conocidos_usuario_id (usuario_id),
+    CONSTRAINT fk_dispositivos_conocidos_usuario
+        FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+);
+
 CREATE TABLE password_reset_links (
     id INT AUTO_INCREMENT PRIMARY KEY,
     usuario_id INT NOT NULL,

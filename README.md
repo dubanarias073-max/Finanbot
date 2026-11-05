@@ -130,12 +130,12 @@ Abre la dirección `Network` que muestra Vite (por ejemplo, `http://192.168.1.10
 
 ## 📧 Registro con Gmail y recuperación por correo
 
-Para que FinanBot pueda enviar códigos de recuperación y avisos de inicio de sesión, configura una cuenta emisora que controles. Esta dirección puede ser una cuenta dedicada al proyecto; no tiene que ser la misma dirección que usan los clientes. En `backend/.env`, agrega tus propios valores (**cada variable en su propia línea**):
+Para que FinanBot pueda enviar códigos de recuperación y avisos de seguridad, configura una cuenta emisora que controles. Los avisos se envían al registrarse y al iniciar sesión desde un dispositivo nuevo; los inicios posteriores desde un dispositivo reconocido no generan correos. El dispositivo se reconoce mediante una cookie segura del navegador. Esta dirección puede ser una cuenta dedicada al proyecto; no tiene que ser la misma dirección que usan los clientes. En `backend/.env`, agrega tus propios valores (**cada variable en su propia línea**):
 
 ```env
 SMTP_PORT="587"
 SMTP_USERNAME="finanbot.sena@gmail.com"
-SMTP_APP_PASSWORD="inqlxalpizdplvgo"
+SMTP_APP_PASSWORD="contraseña de aplicacion(se ve en la cuenta finanbot)"
 SMTP_FROM="finanbot.sena@gmail.com"
 
 GOOGLE_CLIENT_ID="315416890012-ffvd56diopltc438ev5e8bgrqd2q931m.apps.googleusercontent.com"

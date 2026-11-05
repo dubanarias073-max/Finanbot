@@ -778,7 +778,10 @@
                 const data = await res.json();
 
                 if (res.ok) {
-                    mostrarExito('¡Cuenta creada exitosamente! Redirigiendo...');
+                    mostrarExito(
+                        data.aviso_seguridad ||
+                        '¡Cuenta creada y aviso de seguridad enviado! Redirigiendo...'
+                    );
                     ['nombre', 'correo', 'contrasena', 'confirmar', 'respuestaSeguridad'].forEach(id =>
                         document.getElementById(id).value = ''
                     );

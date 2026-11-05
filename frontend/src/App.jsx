@@ -82,9 +82,44 @@ function LandingPage() { return <ReactShell title="Tu dinero, más claro." subti
 function Metric({ value, label }) { return <div className="metric"><strong>{value}</strong><span>{label}</span></div> }
 
 function AuthPage({ register = false }) {
-  const [form, setForm] = useState({ nombre: '', correo: '', contrasena: '' }); const [message, setMessage] = useState('')
-  async function submit(event) { event.preventDefault(); const endpoint = register ? 'registro' : 'login'; const response = await fetch(`/api/auth/${endpoint}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) }); const data = await response.json(); if (!response.ok) { setMessage(data.detail || 'No se pudo completar la solicitud'); return } if (!register) { localStorage.setItem('token', data.token); localStorage.setItem('usuario', JSON.stringify(data.usuario)); location.href = '/dashboard' } else { setMessage('Cuenta creada. Ya puedes iniciar sesión.'); } }
-  return <div className="auth-screen"><div className="auth-card"><div className="auth-logo"><img src="/images/logo.png" alt="FinanBot" /></div><p className="eyebrow">FinanBot</p><h1>{register ? 'Crea tu cuenta' : 'Qué bueno verte.'}</h1><p className="muted">{register ? 'Empieza a tomar el control de tus finanzas.' : 'Ingresa para continuar con tu plan financiero.'}</p>{message && <div className="inline-alert">{message}</div>}<form onSubmit={submit}>{register && <label>Nombre completo<input required value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} /></label>}<label>Correo electrónico<input required type="email" value={form.correo} onChange={(e) => setForm({ ...form, correo: e.target.value })} /></label><label>Contraseña<input required type="password" value={form.contrasena} onChange={(e) => setForm({ ...form, contrasena: e.target.value })} /></label><button className="primary-action" type="submit">{register ? 'Crear cuenta →' : 'Iniciar sesión →'}</button></form><a className="auth-link" href={register ? '/login' : '/registro'}>{register ? 'Ya tengo una cuenta' : 'Crear una cuenta nueva'}</a></div></div>
+  const [form, setForm] = useState({
+    nombre: '',
+    correo: '',
+    contrasena: '',
+    pregunta_seguridad: '',
+    respuesta_seguridad: '',
+  })
+  const [message, setMessage] = useState('')
+  async function submit(event) {
+    event.preventDefault()
+    const endpoint = register ? 'registro' : 'login'
+    const payload = register
+      ? form
+      : { correo: form.correo, contrasena: form.contrasena }
+    const response = await fetch(`/api/auth/${endpoint}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+    const data = await response.json()
+    if (!response.ok) {
+      setMessage(data.detail || 'No se pudo completar la solicitud')
+      return
+    }
+    if (!register) {
+      localStorage.setItem('token', data.token)
+      localStorage.setItem('usuario', JSON.stringify(data.usuario))
+      if (data.aviso_seguridad) {
+        setMessage(data.aviso_seguridad)
+        window.setTimeout(() => { location.href = '/dashboard' }, 2500)
+      } else {
+        location.href = '/dashboard'
+      }
+    } else {
+      setMessage(data.aviso_seguridad || 'Cuenta creada y aviso de seguridad enviado. Ya puedes iniciar sesión.')
+    }
+  }
+  return <div className="auth-screen"><div className="auth-card"><div className="auth-logo"><img src="/images/logo.png" alt="FinanBot" /></div><p className="eyebrow">FinanBot</p><h1>{register ? 'Crea tu cuenta' : 'Qué bueno verte.'}</h1><p className="muted">{register ? 'Empieza a tomar el control de tus finanzas.' : 'Ingresa para continuar con tu plan financiero.'}</p>{message && <div className="inline-alert">{message}</div>}<form onSubmit={submit}>{register && <label>Nombre completo<input required value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} /></label>}<label>Correo electrónico<input required type="email" value={form.correo} onChange={(e) => setForm({ ...form, correo: e.target.value })} /></label><label>Contraseña<input required type="password" value={form.contrasena} onChange={(e) => setForm({ ...form, contrasena: e.target.value })} /></label>{register && <><label>Pregunta de seguridad<input required minLength={5} value={form.pregunta_seguridad} onChange={(e) => setForm({ ...form, pregunta_seguridad: e.target.value })} /></label><label>Respuesta de seguridad<input required value={form.respuesta_seguridad} onChange={(e) => setForm({ ...form, respuesta_seguridad: e.target.value })} /></label></>}<button className="primary-action" type="submit">{register ? 'Crear cuenta →' : 'Iniciar sesión →'}</button></form><a className="auth-link" href={register ? '/login' : '/registro'}>{register ? 'Ya tengo una cuenta' : 'Crear una cuenta nueva'}</a></div></div>
 }
 
 function DashboardPage() { const [data, setData] = useState({ trans: [], metas: [], perfil: {} }); useEffect(() => { const h = { Authorization: `Bearer ${localStorage.getItem('token') || ''}` }; Promise.all([fetch('/api/transacciones/', { headers: h }).then((r) => r.ok ? r.json() : []), fetch('/api/metas/', { headers: h }).then((r) => r.ok ? r.json() : []), fetch('/api/perfil/', { headers: h }).then((r) => r.ok ? r.json() : {})]).then(([trans, metas, perfil]) => setData({ trans, metas, perfil })).catch(() => {}) }, []); const ingresos = data.trans.filter((t) => t.tipo === 'ingreso').reduce((s, t) => s + Number(t.monto), 0); const gastos = data.trans.filter((t) => t.tipo === 'gasto').reduce((s, t) => s + Number(t.monto), 0); return <ReactShell title={`Hola, ${data.perfil?.nombre || 'bienvenido'} 👋`} subtitle="Este es el pulso de tus finanzas este mes." active="/"><div className="stat-grid"><StatCard label="Ingresos" value={money(ingresos)} tone="cyan" icon="↗" /><StatCard label="Gastos" value={money(gastos)} tone="pink" icon="↘" /><StatCard label="Balance" value={money(ingresos - gastos)} tone="green" icon="◒" /><StatCard label="Metas activas" value={data.metas.length} tone="yellow" icon="◎" /></div><div className="dashboard-grid"><section className="surface"><SectionTitle text="Accesos rápidos" /><div className="quick-grid"><a href="/finanzas">💸<span>Registrar movimiento</span></a><a href="/chat">🤖<span>Preguntar a FinanBot</span></a><a href="/simulador">📈<span>Simular inversión</span></a><a href="/aprende">📚<span>Aprender</span></a></div></section><section className="surface"><SectionTitle text="Últimos movimientos" /><div className="movement-list">{data.trans.slice(0, 5).map((item) => <div className="movement" key={item.id}><span>{item.tipo === 'gasto' ? '💸' : '💰'}</span><div><b>{item.categoria}</b><small>{item.descripcion || 'Sin descripción'}</small></div><strong className={item.tipo}>{money(item.monto)}</strong></div>)}{!data.trans.length && <Empty text="Aún no tienes movimientos registrados." />}</div></section></div></ReactShell> }

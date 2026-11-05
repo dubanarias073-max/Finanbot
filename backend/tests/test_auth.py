@@ -18,7 +18,14 @@ from application.services.auth_service import AuthService
 from database import get_db
 from google.auth.transport import requests as google_requests
 from google.oauth2 import id_token
-from models import Base, LoginAlertToken, PasswordResetCode, PasswordResetLink, Usuario
+from models import (
+    Base,
+    DispositivoConocido,
+    LoginAlertToken,
+    PasswordResetCode,
+    PasswordResetLink,
+    Usuario,
+)
 from presentation.api import create_app
 
 
@@ -63,6 +70,75 @@ def test_registro_normaliza_correo_y_login_tolera_mayusculas():
             correo='USUARIO@gmail.com',
             contrasena='Secreta123',
         ) == usuario
+    finally:
+        db.close()
+        engine.dispose()
+
+
+def test_registro_y_login_solo_notifican_eventos_criticos(monkeypatch):
+    engine = create_engine(
+        'sqlite://',
+        connect_args={'check_same_thread': False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(bind=engine)
+    db = sessionmaker(bind=engine)()
+    app = FastAPI()
+    app.include_router(auth_routes.router, prefix='/api/auth')
+    app.dependency_overrides[get_db] = lambda: db
+    avisos = []
+    monkeypatch.setattr(auth_routes.settings, 'SMTP_USERNAME', 'finanbot@gmail.com')
+    monkeypatch.setattr(auth_routes.settings, 'SMTP_APP_PASSWORD', 'app-password')
+    monkeypatch.setattr(auth_routes.settings, 'PUBLIC_BASE_URL', 'https://finanbot.example')
+    monkeypatch.setattr(auth_routes, '_enviar_correo', lambda mensaje: avisos.append(mensaje))
+    try:
+        with TestClient(app) as cliente:
+            registro = cliente.post(
+                '/api/auth/registro',
+                json={
+                    'nombre': 'Usuario de prueba',
+                    'correo': 'usuario@gmail.com',
+                    'contrasena': 'Secreta123',
+                    'pregunta_seguridad': '¿Cuál es tu color favorito?',
+                    'respuesta_seguridad': 'azul',
+                },
+            )
+            assert registro.status_code == 201
+            assert 'finanbot_device_id=' in registro.headers['set-cookie']
+            assert 'httponly' in registro.headers['set-cookie'].lower()
+            assert avisos[-1]['Subject'] == 'Nuevo registro en FinanBot'
+
+            primer_login = cliente.post(
+                '/api/auth/login',
+                json={'correo': 'usuario@gmail.com', 'contrasena': 'Secreta123'},
+            )
+            assert primer_login.status_code == 200
+            assert len(avisos) == 1
+            assert db.query(LoginAlertToken).count() == 0
+
+            cliente.post(
+                '/api/auth/login',
+                json={'correo': 'usuario@gmail.com', 'contrasena': 'Secreta123'},
+            )
+            assert len(avisos) == 1
+
+            with TestClient(app) as nuevo_dispositivo:
+                acceso_nuevo = nuevo_dispositivo.post(
+                    '/api/auth/login',
+                    json={'correo': 'usuario@gmail.com', 'contrasena': 'Secreta123'},
+                )
+                assert acceso_nuevo.status_code == 200
+                assert len(avisos) == 2
+                assert avisos[-1]['Subject'] == 'Nuevo inicio de sesión en FinanBot'
+                assert db.query(LoginAlertToken).count() == 1
+
+                nuevo_dispositivo.post(
+                    '/api/auth/login',
+                    json={'correo': 'usuario@gmail.com', 'contrasena': 'Secreta123'},
+                )
+                assert len(avisos) == 2
+
+            assert db.query(DispositivoConocido).count() == 2
     finally:
         db.close()
         engine.dispose()
@@ -627,7 +703,11 @@ def test_enlace_recuperacion_cambia_contrasena_una_vez(monkeypatch):
 
 def test_inicio_google_verifica_correo_y_crea_usuario(monkeypatch):
     engine, db = _crear_db()
+    avisos = []
     monkeypatch.setattr(auth_routes.settings, 'GOOGLE_CLIENT_ID', 'client-id.apps.googleusercontent.com')
+    monkeypatch.setattr(auth_routes.settings, 'SMTP_USERNAME', 'finanbot@gmail.com')
+    monkeypatch.setattr(auth_routes.settings, 'SMTP_APP_PASSWORD', 'app-password')
+    monkeypatch.setattr(auth_routes, '_enviar_correo', lambda mensaje: avisos.append(mensaje))
     monkeypatch.setattr(
         id_token,
         'verify_oauth2_token',
@@ -649,6 +729,8 @@ def test_inicio_google_verifica_correo_y_crea_usuario(monkeypatch):
         assert response['usuario']['nombre'] == 'Google User'
         assert response['token']
         assert usuario.onboarding_completado is False
+        assert avisos[0]['Subject'] == 'Nuevo registro en FinanBot'
+        assert db.query(LoginAlertToken).count() == 0
     finally:
         db.close()
         engine.dispose()

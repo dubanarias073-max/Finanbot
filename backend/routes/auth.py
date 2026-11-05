@@ -10,7 +10,7 @@ from email.message import EmailMessage
 from urllib.parse import urlsplit
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, Response
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
@@ -21,6 +21,7 @@ from config import settings
 from database import get_db
 from extensions import hash_password, obtener_usuario_actual
 from models import (
+    DispositivoConocido,
     LoginAlertToken,
     PasswordResetCode,
     PasswordResetLink,
@@ -86,6 +87,32 @@ def _correo_configurado() -> bool:
     return bool(settings.SMTP_USERNAME and settings.SMTP_APP_PASSWORD)
 
 
+def _aviso_registro(usuario: Usuario) -> str | None:
+    if not _correo_configurado():
+        logger.warning('No se pudo enviar el aviso de registro a %s: SMTP no configurado', usuario.correo)
+        return 'Tu cuenta se creó, pero no se pudo enviar el aviso de seguridad al correo.'
+
+    fecha = datetime.now(timezone.utc).astimezone(BOGOTA_TIMEZONE).strftime(
+        '%Y-%m-%d %H:%M %Z',
+    )
+    mensaje = EmailMessage()
+    mensaje['Subject'] = 'Nuevo registro en FinanBot'
+    mensaje['From'] = settings.SMTP_FROM or settings.SMTP_USERNAME
+    mensaje['To'] = usuario.correo
+    mensaje.set_content(
+        'Se creó una cuenta de FinanBot con tu dirección de correo.\n'
+        f'Fecha y hora: {fecha}\n\n'
+        'Si no realizaste este registro, te recomendamos cambiar la contraseña '
+        'de tu correo y contactar al equipo de FinanBot.'
+    )
+    try:
+        _enviar_correo(mensaje)
+    except (smtplib.SMTPException, OSError):
+        logger.exception('No se pudo enviar el aviso de registro a %s', usuario.correo)
+        return 'Tu cuenta se creó, pero no se pudo enviar el aviso de seguridad al correo.'
+    return None
+
+
 def _enviar_correo(mensaje: EmailMessage) -> None:
     with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=15) as servidor:
         servidor.ehlo()
@@ -142,16 +169,81 @@ def _base_url_publica(request: Request) -> str:
     )
 
 
-def _respuesta_login(usuario: Usuario, db: Session, request: Request) -> dict:
+def _registrar_dispositivo(
+    usuario: Usuario,
+    db: Session,
+    request: Request,
+    response: Response | None,
+) -> bool:
+    identificador = request.cookies.get('finanbot_device_id', '')
+    if (
+        not 40 <= len(identificador) <= 64
+        or not all(caracter.isalnum() or caracter in '-_' for caracter in identificador)
+    ):
+        identificador = secrets.token_urlsafe(32)
+
+    if response is not None:
+        response.set_cookie(
+            'finanbot_device_id',
+            identificador,
+            max_age=60 * 60 * 24 * 365,
+            httponly=True,
+            secure=request.url.scheme == 'https',
+            samesite='lax',
+            path='/api/auth',
+        )
+
+    fingerprint = _hash_codigo(identificador)
+    dispositivo = db.query(DispositivoConocido).filter_by(
+        usuario_id=usuario.id,
+        fingerprint_hash=fingerprint,
+    ).first()
+    if dispositivo:
+        return False
+
+    db.add(DispositivoConocido(
+        usuario_id=usuario.id,
+        fingerprint_hash=fingerprint,
+    ))
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        dispositivo = db.query(DispositivoConocido).filter_by(
+            usuario_id=usuario.id,
+            fingerprint_hash=fingerprint,
+        ).first()
+        if dispositivo:
+            return False
+        raise
+    return True
+
+
+def _respuesta_login(
+    usuario: Usuario,
+    db: Session,
+    request: Request,
+    response: Response | None = None,
+    *,
+    notificar_dispositivo: bool = True,
+) -> dict:
     respuesta = {
         'mensaje': '✅ Inicio de sesión exitoso!',
         'token': AuthService.token(usuario),
         'usuario': _usuario_publico(usuario),
     }
+    if not notificar_dispositivo or not _registrar_dispositivo(
+        usuario,
+        db,
+        request,
+        response,
+    ):
+        return respuesta
+
     if not _correo_configurado():
         respuesta['aviso_seguridad'] = (
-            'No se pudo enviar el aviso de inicio de sesión porque el correo no está '
-            'configurado en el servidor.'
+            'Ingresaste desde un dispositivo nuevo, pero no se pudo enviar el aviso '
+            'de seguridad porque el correo no está configurado.'
         )
         return respuesta
 
@@ -460,9 +552,14 @@ def _crear_registros_recuperacion(
 
 
 @router.post('/registro', status_code=201)
-def registro(body: RegistroSchema, db: Session = Depends(get_db)):
+def registro(
+    body: RegistroSchema,
+    request: Request,
+    db: Session = Depends(get_db),
+    response: Response = None,
+):
     try:
-        AuthService.registrar(
+        usuario = AuthService.registrar(
             db,
             nombre=body.nombre,
             correo=body.correo,
@@ -473,21 +570,33 @@ def registro(body: RegistroSchema, db: Session = Depends(get_db)):
     except ValueError as error:
         raise HTTPException(status_code=409, detail=str(error)) from error
 
-    return {'mensaje': '✅ Usuario registrado exitosamente!'}
+    _registrar_dispositivo(usuario, db, request, response)
+    resultado = {'mensaje': '✅ Usuario registrado exitosamente!'}
+    aviso = _aviso_registro(usuario)
+    if aviso:
+        resultado['aviso_seguridad'] = aviso
+    return resultado
 
 
 @router.post('/login')
-def login(body: LoginSchema, request: Request, db: Session = Depends(get_db)):
+def login(
+    body: LoginSchema,
+    request: Request,
+    db: Session = Depends(get_db),
+    response: Response = None,
+):
     usuario = AuthService.autenticar(db, correo=body.correo, contrasena=body.contrasena)
     if not usuario:
         raise HTTPException(status_code=401, detail='Correo o contraseña incorrectos')
-    return _respuesta_login(usuario, db, request)
+    return _respuesta_login(usuario, db, request, response)
 
 
 @router.post('/token', tags=['auth'])
 def obtener_token(
     form: OAuth2PasswordRequestForm = Depends(),
+    request: Request = None,
     db: Session = Depends(get_db),
+    response: Response = None,
 ):
     usuario = AuthService.autenticar(
         db,
@@ -500,7 +609,14 @@ def obtener_token(
             detail='Correo o contraseña incorrectos',
             headers={'WWW-Authenticate': 'Bearer'},
         )
-    return {'access_token': AuthService.token(usuario), 'token_type': 'bearer'}
+    login_resultado = _respuesta_login(usuario, db, request, response)
+    resultado = {
+        'access_token': login_resultado['token'],
+        'token_type': 'bearer',
+    }
+    if 'aviso_seguridad' in login_resultado:
+        resultado['aviso_seguridad'] = login_resultado['aviso_seguridad']
+    return resultado
 
 
 @router.get('/google-config')
@@ -513,6 +629,7 @@ def login_google(
     body: GoogleCredentialSchema,
     request: Request,
     db: Session = Depends(get_db),
+    response: Response = None,
 ):
     if not settings.GOOGLE_CLIENT_ID:
         raise HTTPException(status_code=503, detail='El inicio con Google aún no está configurado.')
@@ -547,6 +664,9 @@ def login_google(
     if claims.get('email_verified') is not True or not correo:
         raise HTTPException(status_code=401, detail='Google no confirmó que el correo te pertenece.')
 
+    usuario_existente = db.query(Usuario).filter_by(
+        correo=correo.strip().lower(),
+    ).first()
     try:
         usuario = AuthService.autenticar_google(db, correo=correo, nombre=nombre)
     except IntegrityError:
@@ -554,12 +674,26 @@ def login_google(
         usuario = db.query(Usuario).filter_by(correo=correo.strip().lower()).first()
         if not usuario:
             raise
+        usuario_existente = usuario
     if usuario.requiere_cambio_contrasena:
         raise HTTPException(
             status_code=403,
             detail='Por seguridad, restablece la contraseña de tu cuenta antes de volver a ingresar.',
         )
-    return _respuesta_login(usuario, db, request)
+    if usuario_existente is None:
+        _registrar_dispositivo(usuario, db, request, response)
+        resultado = _respuesta_login(
+            usuario,
+            db,
+            request,
+            response,
+            notificar_dispositivo=False,
+        )
+        aviso = _aviso_registro(usuario)
+        if aviso:
+            resultado['aviso_seguridad'] = aviso
+        return resultado
+    return _respuesta_login(usuario, db, request, response)
 
 
 @router.post('/solicitar-recuperacion')

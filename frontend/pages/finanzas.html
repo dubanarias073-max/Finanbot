@@ -1525,7 +1525,7 @@
             const sorted = Object.entries(catMap).sort((a,b)=>b[1].monto-a[1].monto);
             const div = document.getElementById('resCategorias');
             if (!sorted.length) { div.innerHTML='<div class="vacio" style="padding:20px;"><i class="fas fa-chart-pie"></i><p>Sin gastos aún</p></div>'; return; }
-            div.innerHTML = sorted.slice(0,6).map(([cat,data]) => {
+            div.innerHTML = sorted.map(([cat,data]) => {
                 const pct   = total>0?Math.round(data.monto/total*100):0;
                 const emoji = getIcono(cat,'gasto');
                 return `<div class="cat-row">
