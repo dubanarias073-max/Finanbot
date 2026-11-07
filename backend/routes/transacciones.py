@@ -7,6 +7,7 @@ from typing import Optional
 from datetime import datetime
 from sqlalchemy import extract, func
 import json
+import math
 import time
 import threading
 import urllib.parse
@@ -381,7 +382,7 @@ OVERPASS_URLS = [
 ]
 _LUGARES_CACHE: dict = {}
 _LUGARES_LOCK = threading.Lock()
-_LUGARES_TTL = 30 * 60          # 30 minutos
+_LUGARES_TTL = 5 * 60           # 5 minutos
 _LUGARES_MAX_CACHE = 300
 _LUGARES_MAX_SPAN = 0.08        # grados (~9 km): más grande = demasiados lugares
 _LUGARES_MAX_RESULTADOS = 400
@@ -482,9 +483,16 @@ out center {_LUGARES_MAX_RESULTADOS * 2};
 def _formatear_lugar(el: dict):
     tags = el.get('tags') or {}
     nombre = (tags.get('name') or '').strip()
-    lat = el.get('lat') or (el.get('center') or {}).get('lat')
-    lng = el.get('lon') or (el.get('center') or {}).get('lon')
+    center = el.get('center') or {}
+    lat = el.get('lat') if el.get('lat') is not None else center.get('lat')
+    lng = el.get('lon') if el.get('lon') is not None else center.get('lon')
     if not nombre or lat is None or lng is None:
+        return None
+    try:
+        lat, lng = float(lat), float(lng)
+    except (TypeError, ValueError):
+        return None
+    if not math.isfinite(lat) or not math.isfinite(lng) or not (-90 <= lat <= 90 and -180 <= lng <= 180):
         return None
 
     if tags.get('amenity') in _TIPOS_AMENITY:
@@ -503,8 +511,8 @@ def _formatear_lugar(el: dict):
     return {
         'id': f"{el.get('type', 'n')[0]}{el.get('id')}",
         'nombre': nombre[:120],
-        'latitud': round(float(lat), 7),
-        'longitud': round(float(lng), 7),
+        'latitud': round(lat, 7),
+        'longitud': round(lng, 7),
         'tipo': etiqueta,
         'emoji': emoji,
         'grupo': grupo,                     # comida | compras | salud | dinero | transporte | ocio | educacion | servicios

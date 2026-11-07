@@ -550,6 +550,7 @@
                 const data = await res.json();
 
                 if (res.ok) {
+                    localStorage.removeItem('finanbot_guest_mode');
                     localStorage.setItem('token',   data.token);
                     localStorage.setItem('usuario', JSON.stringify(data.usuario));
                     mostrarExito(data.aviso_seguridad || ('¡Bienvenido ' + data.usuario.nombre + '! Redirigiendo...'));
@@ -821,6 +822,7 @@
                 });
                 const data = await res.json();
                 if (!res.ok) { mostrarError(data.detail || 'No se pudo iniciar sesión con Google.'); return; }
+                localStorage.removeItem('finanbot_guest_mode');
                 localStorage.setItem('token', data.token);
                 localStorage.setItem('usuario', JSON.stringify(data.usuario));
                 if (data.aviso_seguridad) {

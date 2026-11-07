@@ -13,6 +13,7 @@ from routes.chat_route import (
     _actualizar_contexto,
     _conversacion_ia_id,
     _categoria_activa_mencionada,
+    _regla_presupuesto,
     _es_comando_categoria,
     _resolver_contexto,
     _texto_respuesta_local,
@@ -225,6 +226,15 @@ def test_chat_pasa_el_id_de_conversacion_a_la_ia(monkeypatch):
     finally:
         db.close()
         engine.dispose()
+
+
+def test_regla_presupuesto_personalizada_requiere_suma_cien():
+    assert _regla_presupuesto({
+        'regla_presupuesto': {'nec': 60, 'des': 20, 'aho': 20, 'nombre': 'Ahorradora'},
+    }) == {'nec': 60, 'des': 20, 'aho': 20, 'nombre': 'Ahorradora'}
+    assert _regla_presupuesto({
+        'regla_presupuesto': {'nec': 60, 'des': 30, 'aho': 20},
+    }) is None
 
 
 def test_documento_generado_se_conserva_en_el_historial_del_chat():

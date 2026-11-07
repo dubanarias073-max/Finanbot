@@ -46,6 +46,31 @@ def test_lugares_cercanos_acepta_coordenadas_globales(monkeypatch):
     assert consultas[0][1] < 0 and consultas[0][3] < 0
 
 
+def test_formatear_lugar_conserva_coordenadas_cero():
+    lugar = transacciones._formatear_lugar({
+        'type': 'node',
+        'id': 42,
+        'lat': 0,
+        'lon': 0,
+        'tags': {'name': 'Banco del Ecuador', 'amenity': 'bank'},
+    })
+
+    assert lugar['latitud'] == 0
+    assert lugar['longitud'] == 0
+
+
+def test_formatear_lugar_descarta_coordenadas_invalidas():
+    lugar = transacciones._formatear_lugar({
+        'type': 'node',
+        'id': 42,
+        'lat': 91,
+        'lon': 0,
+        'tags': {'name': 'Banco', 'amenity': 'bank'},
+    })
+
+    assert lugar is None
+
+
 @pytest.mark.parametrize(
     ('s', 'w', 'n', 'e'),
     [

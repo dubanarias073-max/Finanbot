@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="timezone.js"></script>
+    <script src="local-guest.js"></script>
     <title>FinanBot - Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -158,8 +159,9 @@
             width: 32px; height: 32px; border-radius: 50%;
             background: linear-gradient(135deg, #6D5BD0, #5EEAD4);
             display: flex; align-items: center; justify-content: center;
-            font-weight: 700; font-size: 13px;
+            font-weight: 700; font-size: 13px; overflow: hidden; flex-shrink: 0;
         }
+        .user-avatar img { width: 100%; height: 100%; object-fit: cover; }
         .user-name { font-size: 13px; color: var(--fb-lav); }
  
         /* STATS */
@@ -591,7 +593,7 @@
         <a href="aprende.html"   class="nav-item"><i class="fas fa-graduation-cap"></i> Aprende</a>
         <a href="perfil.html"    class="nav-item"><i class="fas fa-user-circle"></i> Mi Perfil</a>
         <div class="sidebar-bottom">
-            <a href="index-legacy.html" class="btn-cerrar" onclick="cerrarSesion()">
+            <a href="index-legacy.html" class="btn-cerrar" onclick="cerrarSesion(event)">
                 <i class="fas fa-sign-out-alt"></i> Cerrar sesión
             </a>
         </div>
@@ -789,7 +791,7 @@
     </div>
  
     <script>
-        const token   = localStorage.getItem('token');
+        const token   = window.FinanbotLocal.active ? window.FinanbotLocal.token : localStorage.getItem('token');
         const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
         let chartGastos = null;
         let chartZonaGastos = null, chartZonaIngresos = null;
@@ -840,11 +842,41 @@
             `${DIAS[hoy.getDay()]}, ${hoy.getDate()} de ${MESES[hoy.getMonth()]} de ${hoy.getFullYear()}`;
  
         // ── USUARIO ───────────────────────────────────────
-        if (usuario.nombre) {
+        if (window.FinanbotLocal.active) {
+            fetch('/api/perfil/').then(res => res.ok ? res.json() : null).then(perfil => {
+                if (!perfil) return;
+                const nombre = perfil.nombre || 'Invitado';
+                document.getElementById('nombreUsuario').textContent = nombre;
+                document.getElementById('correoUsuario').textContent = perfil.correo || 'Modo invitado';
+                document.getElementById('avatarLetra').textContent = nombre.charAt(0).toUpperCase();
+            }).catch(error => console.error('No se pudo cargar el perfil local:', error));
+        } else if (usuario.nombre) {
             document.getElementById('nombreUsuario').textContent = usuario.nombre;
             document.getElementById('correoUsuario').textContent = usuario.correo || '';
             document.getElementById('avatarLetra').textContent   = usuario.nombre.charAt(0).toUpperCase();
         }
+        async function cargarFotoAvatar() {
+            if (!token) return;
+            try {
+                const respuesta = await fetch('/api/perfil/foto', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!respuesta.ok) {
+                    if (respuesta.status !== 404) console.error('No se pudo cargar la foto del perfil.');
+                    return;
+                }
+                const imagen = document.createElement('img');
+                imagen.alt = 'Foto de perfil';
+                imagen.src = URL.createObjectURL(await respuesta.blob());
+                imagen.onload = () => URL.revokeObjectURL(imagen.src);
+                const avatar = document.getElementById('avatarLetra');
+                avatar.textContent = '';
+                avatar.appendChild(imagen);
+            } catch (error) {
+                console.error('No se pudo cargar la foto del perfil:', error);
+            }
+        }
+        cargarFotoAvatar();
  
         // ── ICONOS POR CATEGORÍA ──────────────────────────
         const ICONOS = {
@@ -911,11 +943,6 @@
             return trans.filter(t => (t.fecha || '').slice(0, 7) === mesActual && (t.fecha || '') <= hoy);
         }
 
-        function cerrarSesion() {
-            localStorage.removeItem('token');
-            localStorage.removeItem('usuario');
-        }
- 
         // ════════════════════════════════════════════════
         //  CARGAR DASHBOARD
         // ════════════════════════════════════════════════
@@ -1689,5 +1716,6 @@
  
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="tema.js"></script>
+    <script src="auth-session.js"></script>
 </body>
 </html>

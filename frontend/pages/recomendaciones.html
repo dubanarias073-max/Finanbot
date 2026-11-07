@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="timezone.js"></script>
+    <script src="local-guest.js"></script>
     <title>FinanBot - Recomendaciones</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -360,7 +361,7 @@
     <a href="aprende.html"         class="nav-item"><i class="fas fa-graduation-cap"></i> Aprende</a>
     <a href="perfil.html"          class="nav-item"><i class="fas fa-user-circle"></i>    Mi Perfil</a>
     <div class="sidebar-bottom">
-        <a href="index-legacy.html" class="btn-cerrar" onclick="cerrarSesion()">
+        <a href="index-legacy.html" class="btn-cerrar" onclick="cerrarSesion(event)">
             <i class="fas fa-sign-out-alt"></i> Cerrar sesión
         </a>
     </div>
@@ -622,7 +623,7 @@
     navOverlay2.addEventListener('click', cerrarSidebarMovil);
     document.querySelectorAll('.nav-item').forEach(a => a.addEventListener('click', cerrarSidebarMovil));
 
-    const token = localStorage.getItem('token');
+    const token = window.FinanbotLocal.active ? window.FinanbotLocal.token : localStorage.getItem('token');
     let todasRec = [];
     let filtroActual = 'todos';
     let datosFinancieros = null;
@@ -878,8 +879,6 @@
         toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
     }
 
-    function cerrarSesion() { localStorage.removeItem('token'); localStorage.removeItem('usuario'); }
-
     // ════════════════════════════════════════════════════
     //  CARGAR DATOS (mes actual)
     // ════════════════════════════════════════════════════
@@ -1100,9 +1099,19 @@
     // ── GENERADOR LOCAL (basado en el mes actual) ─────────
     function generarRecomendaciones(d) {
         const recs = [];
-        const { totIng, totGas, balance, trans, metas, catMap, catMayor, ingMensual, gastos, ingresos, futurasPendientes } = d;
-        const pct = totIng > 0 ? Math.round(totGas / totIng * 100) : 0;
+        const { totIng, totGas, balance, trans, metas, catMap, catMayor, ingMensual, metaMensual, gastos, ingresos, futurasPendientes } = d;
         const r   = getRegla();
+        const categoriasNecesidad = new Set([
+            'Alimentación', 'Transporte', 'Arriendo', 'Salud',
+            'Educación', 'Servicios', 'Mascotas',
+        ]);
+        const gastosNecesidades = Object.entries(catMap)
+            .filter(([categoria]) => categoriasNecesidad.has(categoria))
+            .reduce((total, [, monto]) => total + monto, 0);
+        const gastosDeseos = Math.max(0, totGas - gastosNecesidades);
+        const pctNecesidades = totIng > 0 ? gastosNecesidades / totIng * 100 : 0;
+        const pctDeseos = totIng > 0 ? gastosDeseos / totIng * 100 : 0;
+        const pct = totIng > 0 ? Math.round(totGas / totIng * 100) : 0;
 
         // ── Metas completadas: recuérdale que puede retirar el dinero ──
         const completadas = metas.filter(m => m.completada);
@@ -1143,14 +1152,33 @@
                 dato_clave:`💡 Reduce gastos en $${Math.abs(Math.round(balance/3)).toLocaleString('es-CO')} durante 3 meses para equilibrar.`,
                 ahorro_potencial: Math.abs(balance), accion:'Revisar gastos', link:'finanzas.html' });
         }
-        if (pct >= r.nec && pct < 100 && totIng > 0) {
+        if (pctNecesidades > r.nec && totIng > 0) {
             recs.push({ tipo:'advertencia', prioridad:'Alta', icono:'⚠️',
-                titulo:`Gastas el ${pct}% de tus ingresos — zona de riesgo`,
-                descripcion:`Tu regla "${r.nombre}" recomienda no superar el ${r.nec}% en necesidades. Estás en el límite.`,
-                beneficios:[`Reducir al ${r.nec-10}% libera $${Math.round(totIng*0.1).toLocaleString('es-CO')}/mes`,'Crear colchón para emergencias','Capacidad de invertir'],
-                ahorro_potencial: Math.round(totIng*(pct/100-(r.nec/100-0.1))),
-                progreso: Math.round((1-pct/100)*100/0.3),
+                titulo:`Necesidades: ${Math.round(pctNecesidades)}% de tus ingresos`,
+                descripcion:`Tu regla "${r.nombre}" reserva ${r.nec}% (${Math.round(totIng*r.nec/100).toLocaleString('es-CO')}) para necesidades; llevas $${Math.round(gastosNecesidades).toLocaleString('es-CO')}.`,
+                beneficios:['Revisa primero gastos esenciales y pagos fijos','Compara precios de servicios sin recortar salud ni alimentación'],
+                ahorro_potencial: Math.max(0, Math.round(gastosNecesidades - totIng*r.nec/100)),
+                progreso: Math.min(100, Math.round(pctNecesidades/r.nec*100)),
                 accion:'Ver mis gastos', link:'finanzas.html' });
+        }
+        if (pctDeseos > r.des && totIng > 0) {
+            recs.push({ tipo:'advertencia', prioridad:'Media', icono:'🛍️',
+                titulo:`Deseos: ${Math.round(pctDeseos)}% de tus ingresos`,
+                descripcion:`Tu regla "${r.nombre}" destina ${r.des}% (${Math.round(totIng*r.des/100).toLocaleString('es-CO')}) a deseos; llevas $${Math.round(gastosDeseos).toLocaleString('es-CO')}.`,
+                beneficios:['Pon un límite semanal a compras no esenciales','Espera 24 horas antes de una compra no planeada'],
+                ahorro_potencial: Math.max(0, Math.round(gastosDeseos - totIng*r.des/100)),
+                progreso: Math.min(100, Math.round(pctDeseos/r.des*100)),
+                accion:'Ver mis gastos', link:'finanzas.html' });
+        }
+        const ingresoBase = totIng || ingMensual;
+        const ahorroObjetivo = metaMensual || ingresoBase * r.aho / 100;
+        if (balance >= 0 && ingresoBase > 0 && balance < ahorroObjetivo) {
+            recs.push({ tipo:'info', prioridad:'Media', icono:'🎯',
+                titulo:`Ahorro disponible: $${Math.round(balance).toLocaleString('es-CO')} frente a tu objetivo de $${Math.round(ahorroObjetivo).toLocaleString('es-CO')}`,
+                descripcion:`${metaMensual ? 'Tu perfil define una meta mensual de ahorro' : `Según "${r.nombre}", el objetivo de ahorro es ${r.aho}%`}; tu balance libre actual es $${Math.round(balance).toLocaleString('es-CO')}. No comprometas dinero que necesitas para gastos próximos.`,
+                beneficios:['Revisa primero pagos pendientes','Si el margen es pequeño, define un aporte menor y sostenible','Ajusta el porcentaje si tus gastos esenciales lo requieren'],
+                ahorro_potencial: Math.max(0, Math.round(ahorroObjetivo - balance)),
+                accion:'Revisar mi presupuesto', link:'#reglaSection' });
         }
         if (catMayor) {
             const [cat, monto] = catMayor; const pctCat = Math.round(monto/totGas*100);
@@ -1166,25 +1194,24 @@
         if (metas.length === 0 && totIng > 0) {
             recs.push({ tipo:'advertencia', prioridad:'Media', icono:'🎯',
                 titulo:'No tienes metas de ahorro definidas',
-                descripcion:'Las personas con metas ahorran 3x más. Una meta da propósito a tu dinero.',
+                descripcion:'Una meta concreta puede ayudarte a separar dinero con un propósito claro.',
                 beneficios:['Motivación concreta','Progreso visible','Objetivos reales'],
                 dato_clave:`💡 Con tu balance de este mes, podrías acumular $${Math.round(balance*6).toLocaleString('es-CO')} en 6 meses.`,
                 accion:'Crear meta', link:'perfil.html' });
         }
-        if (totIng > 0 && balance < totIng * 3) {
+        if (totGas > 0 && balance < totGas * 3) {
             recs.push({ tipo:'info', prioridad:'Media', icono:'🛡️',
                 titulo:'Construye tu fondo de emergencia',
-                descripcion:`Meta ideal: $${(totIng*3).toLocaleString('es-CO')} (3 meses de ingresos). La base de todo plan financiero sólido.`,
+                descripcion:`Como referencia inicial, un fondo de 3 meses de gastos sería de $${Math.round(totGas*3).toLocaleString('es-CO')}. Ajústalo a tus gastos esenciales y a la estabilidad de tus ingresos.`,
                 beneficios:['Protección ante imprevistos','Evitar deudas en emergencias','Paz mental'],
                 accion:'Crear meta de emergencia', link:'perfil.html' });
         }
         if (balance >= totIng * 0.3 && totIng > 0) {
-            const cap = Math.round(balance*0.5);
-            recs.push({ tipo:'exito', prioridad:'Baja', icono:'📈',
-                titulo:'¡Tu balance te permite empezar a invertir!',
-                descripcion:`CDT al 12% con $${cap.toLocaleString('es-CO')} → $${Math.round(cap*1.12).toLocaleString('es-CO')} en 1 año sin hacer nada.`,
-                beneficios:[`Rendimiento estimado: $${Math.round(cap*0.12).toLocaleString('es-CO')}`,`Supera la inflación`,'Ingreso pasivo'],
-                ahorro_potencial: Math.round(cap*0.12), accion:'Simular inversión', link:'simulador.html' });
+            recs.push({ tipo:'info', prioridad:'Baja', icono:'📈',
+                titulo:'Evalúa opciones para tu excedente',
+                descripcion:`Tu balance positivo es de $${Math.round(balance).toLocaleString('es-CO')}. Antes de invertir, confirma que tienes liquidez para gastos próximos y un fondo de emergencia.`,
+                beneficios:['Compara tasa efectiva anual, plazo y penalizaciones','Revisa riesgos y cobertura antes de elegir un producto','Usa el simulador para comparar escenarios, no como promesa de rentabilidad'],
+                accion:'Comparar escenarios', link:'simulador.html' });
         }
         if (ingMensual > 0) {
             recs.push({ tipo:'info', prioridad:'Baja', icono:'⚖️',
@@ -1225,5 +1252,6 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="tema.js"></script>
+<script src="auth-session.js"></script>
 </body>
 </html>

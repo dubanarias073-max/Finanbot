@@ -54,6 +54,24 @@ def _crear_request(origin=None, host='finanbot.example'):
     })
 
 
+def test_logout_elimina_cookie_de_identificador_del_dispositivo():
+    app = FastAPI()
+    app.include_router(auth_routes.router, prefix='/api/auth')
+
+    with TestClient(app) as cliente:
+        cliente.cookies.set(
+            'finanbot_device_id',
+            'a' * 43,
+            path='/api/auth',
+        )
+        respuesta = cliente.post('/api/auth/logout')
+
+    assert respuesta.status_code == 200
+    assert 'finanbot_device_id=""' in respuesta.headers['set-cookie']
+    assert 'max-age=0' in respuesta.headers['set-cookie'].lower()
+    assert 'path=/api/auth' in respuesta.headers['set-cookie'].lower()
+
+
 def test_registro_normaliza_correo_y_login_tolera_mayusculas():
     engine, db = _crear_db()
     try:
@@ -731,6 +749,46 @@ def test_inicio_google_verifica_correo_y_crea_usuario(monkeypatch):
         assert usuario.onboarding_completado is False
         assert avisos[0]['Subject'] == 'Nuevo registro en FinanBot'
         assert db.query(LoginAlertToken).count() == 0
+    finally:
+        db.close()
+        engine.dispose()
+
+
+def test_login_google_en_navegador_nuevo_envia_aviso_de_acceso(monkeypatch):
+    engine, db = _crear_db()
+    avisos = []
+    usuario = AuthService.registrar(
+        db,
+        nombre='Google User',
+        correo='google.user@gmail.com',
+        contrasena='Secreta123',
+    )
+    monkeypatch.setattr(auth_routes.settings, 'GOOGLE_CLIENT_ID', 'client-id.apps.googleusercontent.com')
+    monkeypatch.setattr(auth_routes.settings, 'SMTP_USERNAME', 'finanbot@gmail.com')
+    monkeypatch.setattr(auth_routes.settings, 'SMTP_APP_PASSWORD', 'app-password')
+    monkeypatch.setattr(auth_routes.settings, 'PUBLIC_BASE_URL', 'https://finanbot.example')
+    monkeypatch.setattr(auth_routes, '_enviar_correo', lambda mensaje: avisos.append(mensaje))
+    monkeypatch.setattr(
+        id_token,
+        'verify_oauth2_token',
+        lambda token, request, audience, clock_skew_in_seconds: {
+            'email': usuario.correo,
+            'name': usuario.nombre,
+            'email_verified': True,
+        },
+    )
+    try:
+        response = auth_routes.login_google(
+            auth_routes.GoogleCredentialSchema(credential='verified-google-credential'),
+            _crear_request(),
+            db,
+            auth_routes.Response(),
+        )
+
+        assert response['token']
+        assert avisos[-1]['Subject'] == 'Nuevo inicio de sesión en FinanBot'
+        assert db.query(LoginAlertToken).count() == 1
+        assert db.query(DispositivoConocido).count() == 1
     finally:
         db.close()
         engine.dispose()

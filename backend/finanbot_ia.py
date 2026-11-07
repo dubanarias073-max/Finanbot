@@ -1547,7 +1547,25 @@ class FinanBotIA:
         'gasto_eliminado', 'ingreso_eliminado',
         'meta_creada', 'meta_actualizada', 'meta_abonada', 'meta_eliminada',
     }
-
+    
+    def _redactar_con_ia2(self, mensaje, ctx, respuesta_ia1):
+        """Gemini redacta la confirmación; si falla o cambia cifras, queda IA 1."""
+        if not finanbot_ia_2.disponible():
+            return None
+        cg = list(ctx.get('categorias_gasto', CATEGORIAS_GASTO)) if ctx else list(CATEGORIAS_GASTO)
+        ci = list(ctx.get('categorias_ingreso', CATEGORIAS_INGRESO)) if ctx else list(CATEGORIAS_INGRESO)
+        r = finanbot_ia_2.responder(
+            mensaje, ctx, getattr(self, '_clave_conv', None),
+            categorias_gasto=cg, categorias_ingreso=ci,
+            ejemplos=EJEMPLOS, rutas=RUTAS, resultado_sistema=respuesta_ia1,
+        )
+        if not r:
+            return None
+        cifras = lambda t: {re.sub(r'\D', '', m) for m in re.findall(r'\$\s?-?[\d.,]+', t)} - {''}
+        if not cifras(respuesta_ia1) <= cifras(r['respuesta']):
+            return None   # Gemini omitió o cambió una cifra: mejor el texto exacto de IA 1
+        return r['respuesta']
+    
     def __init__(self):
         self.historial: deque = deque(maxlen=self.MAX_HISTORIAL)
         self.memoria = {
@@ -1578,6 +1596,10 @@ class FinanBotIA:
         # ¿Qué quiere la persona? reporte | documento | analisis | chat
         self._intencion = finanbot_ia_2.clasificar_intencion(
             mensaje, self._imagenes_actuales, self._clave_conv)
+        bienvenida_fallback = None
+        if accion and accion.get('tipo') == 'bienvenida' and self._intencion == 'chat':
+            bienvenida_fallback = accion
+            accion = None
         # Con adjuntos, o si pide analizar, el parser no debe convertir el texto
         # del archivo en cálculos o movimientos (ej. un "IVA" dentro del PDF).
         # Los reportes estándar y los comandos sin adjuntos no se tocan.
@@ -1599,6 +1621,14 @@ class FinanBotIA:
                 return respuesta, acciones_ui
 
         respuesta, acciones_ui = self._generar(mensaje, ctx, accion)
+        if bienvenida_fallback and not self._respuesta_de_ia2:
+            respuesta = self._bienvenida(bienvenida_fallback, ctx)
+            acciones_ui = _btns_bienvenida()
+        if accion is not None and not self._respuesta_de_ia2 and self._intencion == 'chat':
+            mejorada = self._redactar_con_ia2(mensaje, ctx, respuesta)
+            if mejorada:
+                respuesta = mejorada
+                self._respuesta_de_ia2 = True
         if self._respuesta_de_ia2:
             respuesta = self._normalizar_respuesta(respuesta)
         else:
@@ -2374,8 +2404,13 @@ class FinanBotIA:
 
         if ingresos > 0:
             ahorro_pct = round(balance / ingresos * 100) if ingresos else 0
-            if ahorro_pct < 20 and tema in {'ahorro', 'finanzas'}:
-                return 'Con tus ingresos actuales, un siguiente paso útil sería ahorrar al menos el 20% mensual y dejarlo automático.'
+            regla = ctx.get('regla_presupuesto') or {}
+            ahorro_objetivo = regla.get('aho', 20)
+            if ahorro_pct < ahorro_objetivo and tema in {'ahorro', 'finanzas'}:
+                return (
+                    f"Tu regla de presupuesto propone ahorrar {ahorro_objetivo}% mensual. "
+                    "Podemos revisar un monto sostenible según tu balance actual."
+                )
 
         if metas:
             meta_activa = next((m for m in metas if not m.get('completada')), None)
@@ -2541,6 +2576,29 @@ class FinanBotIA:
         if not incluir_consejos:
             return None
 
+        regla = (ctx or {}).get('regla_presupuesto') or {}
+        if (
+            all(type(regla.get(campo)) is int for campo in ('nec', 'des', 'aho'))
+            and sum(regla[campo] for campo in ('nec', 'des', 'aho')) == 100
+            and any(p in msg for p in ('presupuesto', 'regla', 'organizar mi dinero', 'distribuir'))
+        ):
+            porcentajes = (regla['nec'], regla['des'], regla['aho'])
+            ingreso = float((ctx or {}).get('ingreso_mensual') or (ctx or {}).get('total_ingresos') or 0)
+            respuesta = (
+                f"📋 Tu regla personalizada **{regla.get('nombre') or 'Personalizada'}** distribuye "
+                f"el ingreso así: {porcentajes[0]}% para necesidades, {porcentajes[1]}% para deseos "
+                f"y {porcentajes[2]}% para ahorro."
+            )
+            if ingreso > 0:
+                montos = [ingreso * porcentaje / 100 for porcentaje in porcentajes]
+                pesos = lambda monto: f"${monto:,.0f}".replace(',', '.')
+                respuesta += (
+                    f"\n\nCon un ingreso mensual de **{pesos(ingreso)}**: necesidades "
+                    f"**{pesos(montos[0])}**, deseos **{pesos(montos[1])}** y ahorro "
+                    f"**{pesos(montos[2])}**."
+                )
+            return respuesta
+
         if any(p in msg for p in ['mejorar mis finanzas', 'mejorar finanzas', 'quiero mejorar', 'como mejorar', 'cómo mejorar', 'plan financiero', 'mejorar mi dinero']):
             balance = ctx.get('balance', 0) if ctx else 0
             lineas = [
@@ -2704,9 +2762,35 @@ class FinanBotIA:
             mensaje, imagenes, getattr(self, '_clave_conv', None))
         con_ia2 = finanbot_ia_2.disponible()
         trabaja_ia = intencion in ('analisis', 'documento')
+        ia2_intentada = False
+
+        def responder_con_ia2():
+            categorias_gasto = ctx.get('categorias_gasto', CATEGORIAS_GASTO) if ctx else CATEGORIAS_GASTO
+            categorias_ingreso = ctx.get('categorias_ingreso', CATEGORIAS_INGRESO) if ctx else CATEGORIAS_INGRESO
+            resultado = finanbot_ia_2.responder(
+                mensaje, ctx, getattr(self, '_clave_conv', None),
+                categorias_gasto=list(categorias_gasto), categorias_ingreso=list(categorias_ingreso),
+                ejemplos=EJEMPLOS, rutas=RUTAS,
+                referencia=None if trabaja_ia else self._referencia_base(msg),
+                imagenes=imagenes,
+            )
+            if not resultado:
+                return None
+            self._documento_generado = resultado.get('documento')
+            self._respuesta_de_ia2 = True
+            acciones = [_sug(s) for s in resultado['sugerencias']]
+            acciones += [_btn(_ETIQUETAS_RUTA.get(k, k.capitalize()), RUTAS[k]) for k in resultado['enlaces']]
+            return resultado['respuesta'], acciones
 
         # Lo exacto (reportes, lugares reales, guías de editar/borrar, % de X)
         # siempre lo resuelven las reglas; los consejos, la IA si está activa.
+        if con_ia2 and intencion == 'chat':
+            ia2_intentada = True
+            respuesta_ia2 = responder_con_ia2()
+            if respuesta_ia2:
+                return respuesta_ia2
+            con_ia2 = False
+
         respuesta_contextual = None
         if not trabaja_ia:
             respuesta_contextual = self._respuesta_inteligente_contextual(
@@ -2730,23 +2814,12 @@ class FinanBotIA:
             return self._aviso_documento_no_disponible(), _btns_finanzas()
 
         # ── FinanBot IA 2 (conversación inteligente) ────────────────
-        if con_ia2:
-            categorias_gasto = ctx.get('categorias_gasto', CATEGORIAS_GASTO) if ctx else CATEGORIAS_GASTO
-            categorias_ingreso = ctx.get('categorias_ingreso', CATEGORIAS_INGRESO) if ctx else CATEGORIAS_INGRESO
-            resultado = finanbot_ia_2.responder(
-                mensaje, ctx, getattr(self, '_clave_conv', None),
-                categorias_gasto=list(categorias_gasto), categorias_ingreso=list(categorias_ingreso),
-                ejemplos=EJEMPLOS, rutas=RUTAS,
-                referencia=None if trabaja_ia else self._referencia_base(msg),
-                imagenes=imagenes,
-            )
-            if resultado:
-                self._documento_generado = resultado.get('documento')
-                self._respuesta_de_ia2 = True
-                acciones = [_sug(s) for s in resultado['sugerencias']]
-                acciones += [_btn(_ETIQUETAS_RUTA.get(k, k.capitalize()), RUTAS[k]) for k in resultado['enlaces']]
-                return resultado['respuesta'], acciones
-            elif trabaja_ia:
+        if con_ia2 and not ia2_intentada:
+            respuesta_ia2 = responder_con_ia2()
+            if respuesta_ia2:
+                return respuesta_ia2
+            con_ia2 = False
+            if trabaja_ia:
                 return self._aviso_documento_no_disponible(), _btns_finanzas()
         # si no hay IA o falló, siguen las respuestas de siempre
 

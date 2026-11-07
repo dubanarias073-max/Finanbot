@@ -1,12 +1,19 @@
 # finanbot_ia_2.py
 # ══════════════════════════════════════════════════════════════════
-#  FinanBot IA 2 — cerebro conversacional de FinanBot
+#  FinanBot IA 2 — cerebro conversacional de FinanBot (Gemini)
 #
-#  FinanBot sigue haciendo con sus reglas lo que debe ser exacto
-#  (registrar, editar, borrar, calcular IVA/descuentos, metas…).
-#  Este módulo se encarga de CONVERSAR: entiende preguntas libres,
-#  razona con los datos reales del usuario y propone el siguiente
-#  paso con botones que ejecutan los comandos de FinanBot.
+#  Orden de respuesta de FinanBot:
+#    1) IA 2 (este módulo) responde SIEMPRE primero.
+#    2) finanbot_ia.py (IA 1, reglas) solo responde de respaldo cuando
+#       IA 2 no está disponible o falló.
+#
+#  IA 2 puede trabajar de tres formas:
+#    · responder()                → conversación (con o sin documentos)
+#    · responder(resultado_sistema=…) → redacta la confirmación de una
+#       acción que ya ejecutaron las reglas, sin cambiar las cifras
+#    · responder_con_herramientas() → Gemini EJECUTA acciones llamando a
+#       las herramientas de finanbot_tools.py (registrar, editar,
+#       eliminar movimientos; crear y abonar metas)
 #
 #  También entiende qué quiere el usuario con sus DOCUMENTOS:
 #    · reporte    → lo entregan las reglas de FinanBot (descarga)
@@ -22,6 +29,7 @@
 #                        → cualquier API compatible con OpenAI, p. ej.
 #                          Ollama local y gratis: http://localhost:11434/v1
 #  Opcional: FINANBOT_IA2_MODEL para cambiar el modelo.
+#  Las herramientas (responder_con_herramientas) solo funcionan con Gemini.
 #
 #  Si no hay ninguno configurado, o el proveedor falla, devuelve None
 #  y FinanBot responde con sus reglas de siempre (15 s, o 60 s si se
@@ -45,6 +53,8 @@ from timezone import bogota_today
 TIMEOUT_S = 25
 TIMEOUT_POR_MODELO_S = 12      # cuánto se espera a cada modelo Gemini
 TIEMPO_MAX_TOTAL_S = 28        # máximo que el usuario espera entre todos los intentos
+TIEMPO_MAX_HERRAMIENTAS_S = 40 # tope para una conversación con herramientas (varias vueltas)
+MAX_VUELTAS_HERRAMIENTAS = 4   # veces que Gemini puede llamar herramientas en un mensaje
 PAUSA_TRAS_FALLO_S = 15     # segundos usando las reglas después de un fallo
 MAX_TURNOS_MEMORIA = 8          # pares usuario/bot que se recuerdan por conversación
 MAX_CONVERSACIONES = 500
@@ -346,11 +356,37 @@ def disponible() -> bool:
 #  PROMPT
 # ──────────────────────────────────────────────────────────────────
 
-def _prompt_sistema(categorias_gasto, categorias_ingreso, ejemplos: dict, rutas: dict) -> str:
+def _prompt_sistema(
+    categorias_gasto,
+    categorias_ingreso,
+    ejemplos: dict,
+    rutas: dict,
+    respuesta_plana: bool = False,
+    con_herramientas: bool = False,
+) -> str:
     hoy = bogota_today()
     cmds = '\n'.join(f'- {v}' for v in ejemplos.values())
     paginas = ', '.join(f'{k} → {v}' for k, v in rutas.items())
-    return f"""Eres FinanBot IA 2, el asistente de finanzas personales de FinanBot, una aplicación desarrollada en Colombia.
+
+    if con_herramientas:
+        titulo_app = 'LO QUE PUEDES HACER (SÍ ejecutas acciones, llamando a las herramientas)'
+        importante = """IMPORTANTE (modo herramientas)
+- Para registrar, editar o eliminar movimientos y para crear o abonar metas USA las herramientas; no le pidas a la persona que escriba un comando.
+- Registra directo cuando hay monto y el tipo (gasto o ingreso) es claro. Elige la categoría válida que mejor encaje (ej. "pizza" → Alimentación, "me pagaron la quincena" → Salario). Si no hay monto, o la categoría es realmente ambigua, pregunta en una sola frase.
+- Para editar o eliminar primero llama listar_movimientos y elige el id correcto; si varios coinciden, pregunta cuál. Nunca muestres ids a la persona.
+- Antes de eliminar, pregunta y espera un "sí" explícito; solo entonces llama eliminar_movimiento con confirmado=true.
+- Si la persona habla de un mes que no es el actual, NO uses herramientas: explícale que ese mes solo se consulta en el Calendario.
+- Los DATOS DEL USUARIO son de ANTES de tus acciones. Para balances o totales posteriores usa los valores que devuelven las herramientas.
+- Confirma SOLO lo que la herramienta devolvió con ok=true, con sus cifras exactas. Si devolvió error, díselo con claridad y no afirmes que se hizo.
+- Nunca digas que hiciste algo si no llamaste a la herramienta correspondiente.
+- Confirmaciones breves (1 a 3 frases) y, si aporta, un tip corto de la categoría."""
+    else:
+        titulo_app = 'LO QUE LA APP PUEDE HACER (tú NO ejecutas nada: solo propones)'
+        importante = """IMPORTANTE
+- Nunca digas que registraste, editaste o borraste algo por tu cuenta, salvo que aparezca un RESULTADO DEL SISTEMA que lo confirme.
+- Si el usuario describe un gasto o ingreso (aunque sea informal, ej. "me gasté 20 lucas en un corrientazo"), dile en qué categoría encaja y ponle en "sugerencias" el comando exacto listo para tocar, ej. "Registra un gasto de $20.000 en Alimentación"."""
+
+    prompt = f"""Eres FinanBot IA 2, el asistente de finanzas personales de FinanBot, una aplicación desarrollada en Colombia.
 Hoy es {hoy.day} de {_MESES[hoy.month - 1]} de {hoy.year}. Moneda: pesos colombianos (COP), formato $1.250.000.
 
 TU PERSONALIDAD
@@ -388,19 +424,17 @@ DOCUMENTOS Y REPORTES (adjuntos y generados antes)
 - Si pide "mi reporte" sin adjuntar nada, usa el ÚLTIMO DOCUMENTO GENERADO (si viene en el mensaje) y luego DATOS DEL USUARIO. Si no hay nada, pide que lo adjunte en una frase.
 - Si pide el reporte mensual o completo de FinanBot para descargar, enlázale "exportar_pdf", "exportar_excel" o "calendario" en "enlaces".
 
-LO QUE LA APP PUEDE HACER (tú NO ejecutas nada: solo propones)
+{titulo_app}
 El usuario puede pedirle a FinanBot, escribiendo en este mismo chat:
 {cmds}
 - Ver resumen del mes, gastos por categoría, dónde gasta más (mapa), simular inversiones, generar reportes PDF/Excel.
 - Crear y eliminar categorías desde el chat. Al crear, aclara si es de gasto o ingreso; al eliminar, el sistema conserva sus movimientos en la categoría "Otros" correspondiente.
 Categorías de gasto válidas: {', '.join(categorias_gasto)}.
 Categorías de ingreso válidas: {', '.join(categorias_ingreso)}.
-Usa únicamente estas categorías al proponer un movimiento. La lista refleja las categorías activas de esta persona: incluye las personalizadas y excluye las que ocultó o eliminó. Si una categoría no está disponible, sugiere la más cercana de la lista.
+Usa únicamente estas categorías al proponer o registrar un movimiento. La lista refleja las categorías activas de esta persona: incluye las personalizadas y excluye las que ocultó o eliminó. Si una categoría no está disponible, sugiere la más cercana de la lista.
 Solo se pueden registrar o cambiar movimientos del MES ACTUAL. Meses anteriores se consultan en el Calendario.
 
-IMPORTANTE
-- Nunca digas que registraste, editaste o borraste algo: tú no puedes hacerlo.
-- Si el usuario describe un gasto o ingreso (aunque sea informal, ej. "me gasté 20 lucas en un corrientazo"), dile en qué categoría encaja y ponle en "sugerencias" el comando exacto listo para tocar, ej. "Registra un gasto de $20.000 en Alimentación".
+{importante}
 
 FORMATO DE SALIDA (obligatorio)
 Responde SOLO con un objeto JSON válido, sin texto antes ni después:
@@ -409,6 +443,14 @@ Ejemplo (omite "documento" si no se pidió un archivo):
   "sugerencias": ["hasta 3 mensajes cortos que el usuario podría enviar a continuación, escritos como si fuera él"],
   "enlaces": ["hasta 2 claves de páginas de la app relevantes, de esta lista: {', '.join(rutas)}"],
   "documento": {{"titulo": "...", "formato": "pdf|docx|xlsx", "contenido": "...", "graficos": []}}}}"""
+    if respuesta_plana:
+        prompt = prompt.rsplit('\nFORMATO DE SALIDA (obligatorio)\n', 1)[0] + (
+            '\nFORMATO DE SALIDA (obligatorio)\n'
+            'Responde directamente al usuario en texto natural y Markdown simple. '
+            'No devuelvas JSON, objetos, claves, etiquetas técnicas ni bloques ```json. '
+            'Incluye en tu texto cualquier pregunta de seguimiento, sugerencia o enlace que sea útil.'
+        )
+    return prompt
 
 
 def _num(v) -> float:
@@ -437,6 +479,22 @@ def _contexto_usuario(ctx: dict | None) -> str:
     lineas.append(f'Ingresos del mes: {_pesos(ing)} | Gastos del mes: {_pesos(gas)} | Balance: {_pesos(bal)}')
     if ing > 0:
         lineas.append(f'Gasta el {round(gas / ing * 100)}% de sus ingresos; ahorro libre {round(bal / ing * 100)}%.')
+    regla = ctx.get('regla_presupuesto')
+    if isinstance(regla, dict):
+        nec, des, aho = (_num(regla.get(campo)) for campo in ('nec', 'des', 'aho'))
+        if nec + des + aho == 100:
+            base = _num(ctx.get('ingreso_mensual')) or ing
+            lineas.append(
+                f"Regla de presupuesto elegida por el usuario ({regla.get('nombre') or 'Personalizada'}): "
+                f"{nec:.0f}% necesidades, {des:.0f}% deseos, {aho:.0f}% ahorro."
+            )
+            if base > 0:
+                lineas.append(
+                    f"Montos objetivo sobre {_pesos(base)} mensuales: "
+                    f"necesidades {_pesos(base * nec / 100)}, "
+                    f"deseos {_pesos(base * des / 100)}, "
+                    f"ahorro {_pesos(base * aho / 100)}."
+                )
     for clave, etiqueta in (('ingreso_mensual', 'Salario mensual en su perfil'),
                             ('meta_ahorro', 'Meta de ahorro mensual del perfil')):
         if _num(ctx.get(clave)) > 0:
@@ -493,8 +551,15 @@ def _post(url: str, headers: dict, cuerpo: dict, timeout: float = TIMEOUT_S) -> 
         return json.loads(resp.read().decode('utf-8'))
 
 
-def _config_gemini(modelo: str, pensar_poco: bool, max_output_tokens: int = 4096) -> dict:
-    cfg = {'temperature': 0.6, 'maxOutputTokens': max_output_tokens, 'responseMimeType': 'application/json'}
+def _config_gemini(
+    modelo: str,
+    pensar_poco: bool,
+    max_output_tokens: int = 4096,
+    json_mode: bool = True,
+) -> dict:
+    cfg = {'temperature': 0.6, 'maxOutputTokens': max_output_tokens}
+    if json_mode:
+        cfg['responseMimeType'] = 'application/json'
     if pensar_poco:
         # Los modelos nuevos "piensan" antes de responder y eso los hace lentos.
         # Para un chat basta con pensar poco.
@@ -511,6 +576,7 @@ def _llamar_gemini(
     mensajes: list[tuple[str, str]],
     imagenes: list[dict] | None = None,
     max_output_tokens: int = 4096,
+    json_mode: bool = True,
 ) -> str:
     global _gemini_modelo_ok
     base = {
@@ -542,13 +608,17 @@ def _llamar_gemini(
         pensar_poco = modelo not in _sin_thinking_config
         try:
             try:
-                data = _post(url, {}, {**base, 'generationConfig': _config_gemini(modelo, pensar_poco, max_output_tokens)},
+                data = _post(url, {}, {**base, 'generationConfig': _config_gemini(
+                    modelo, pensar_poco, max_output_tokens, json_mode,
+                )},
                              timeout=min(TIMEOUT_POR_MODELO_S, restante))
             except urllib.error.HTTPError as e:
                 if e.code == 400 and pensar_poco:
                     # el modelo no acepta thinkingConfig → se repite sin él
                     _sin_thinking_config.add(modelo)
-                    data = _post(url, {}, {**base, 'generationConfig': _config_gemini(modelo, False, max_output_tokens)},
+                    data = _post(url, {}, {**base, 'generationConfig': _config_gemini(
+                        modelo, False, max_output_tokens, json_mode,
+                    )},
                                  timeout=min(TIMEOUT_POR_MODELO_S, max(3, limite - time.time())))
                 else:
                     raise
@@ -587,9 +657,10 @@ def _llamar(
     mensajes: list[tuple[str, str]],
     imagenes: list[dict] | None = None,
     max_output_tokens: int = 1200,
+    json_mode: bool = True,
 ) -> str:
     if p['tipo'] == 'gemini':
-        return _llamar_gemini(p, sistema, mensajes, imagenes, max_output_tokens)
+        return _llamar_gemini(p, sistema, mensajes, imagenes, max_output_tokens, json_mode)
 
     if p['tipo'] == 'anthropic':
         mensajes_api = []
@@ -627,13 +698,13 @@ def _llamar(
         mensajes_api.append({'role': 'user' if rol == 'user' else 'assistant', 'content': contenido})
     cuerpo = {'model': p['modelo'], 'temperature': 0.6, 'max_tokens': max_output_tokens,
               'messages': mensajes_api}
-    if 'groq.com' in p['url']:
+    if json_mode and 'groq.com' in p['url']:
         cuerpo['response_format'] = {'type': 'json_object'}
     data = _post(p['url'], {'Authorization': f"Bearer {p['key']}"}, cuerpo)
     return data['choices'][0]['message']['content']
 
 
-def _parsear(texto: str) -> dict | None:
+def _parsear(texto: str, respuesta_plana: bool = False) -> dict | None:
     """Saca el JSON aunque el modelo lo envuelva en ```json … ``` o agregue texto."""
     if not texto:
         return None
@@ -646,8 +717,15 @@ def _parsear(texto: str) -> dict | None:
             data = json.loads(m.group(0)) if m else None
         except json.JSONDecodeError:
             data = None
+    if isinstance(data, dict) and respuesta_plana:
+        respuesta = data.get('respuesta')
+        if not isinstance(respuesta, str) or not respuesta.strip():
+            return None
+        data['respuesta'] = respuesta.strip()
     if not isinstance(data, dict):
         # el modelo respondió texto plano: se usa tal cual
+        if respuesta_plana and limpio.startswith(('{', '[')):
+            return None
         return {'respuesta': limpio, 'sugerencias': [], 'enlaces': []}
     if not str(data.get('respuesta', '')).strip():
         return None
@@ -704,20 +782,28 @@ def ultimo_documento(clave: str | None) -> dict | None:
 
 def responder(mensaje: str, ctx: dict | None, clave_conversacion: str | None, *,
               categorias_gasto, categorias_ingreso, ejemplos: dict, rutas: dict,
-              referencia: str | None = None, imagenes: list[dict] | None = None) -> dict | None:
-    """Devuelve {'respuesta', 'sugerencias', 'enlaces', 'documento'} o None si no hay modelo / falló."""
+              referencia: str | None = None, imagenes: list[dict] | None = None,
+              resultado_sistema: str | None = None) -> dict | None:
+    """Devuelve {'respuesta', 'sugerencias', 'enlaces', 'documento'} o None si no hay modelo / falló.
+
+    resultado_sistema: texto de una acción que las reglas YA ejecutaron en la base
+    de datos; la IA solo la redacta con sus palabras, sin cambiar las cifras."""
     global _pausa_hasta
     p = _proveedor()
     if not p or time.time() < _pausa_hasta:
         return None
 
-    sistema = _prompt_sistema(categorias_gasto, categorias_ingreso, ejemplos, rutas)
     with _memoria_lock:
         previos = list(_memoria.get(clave_conversacion, [])) if clave_conversacion else []
 
     mensaje_usuario = solo_mensaje_usuario(mensaje)
     adjuntos = tiene_adjuntos(mensaje, imagenes)
     intencion = clasificar_intencion(mensaje, imagenes, clave_conversacion)
+    json_mode = intencion != 'chat'
+    sistema = _prompt_sistema(
+        categorias_gasto, categorias_ingreso, ejemplos, rutas,
+        respuesta_plana=not json_mode,
+    )
     print(f'[FinanBot IA 2] intención: {intencion}')
     solicitud_documento = intencion == 'documento'
     analisis = intencion == 'analisis'
@@ -744,6 +830,11 @@ def responder(mensaje: str, ctx: dict | None, clave_conversacion: str | None, *,
     elif intencion == 'chat':
         actual += ('\nNOTA: en este mensaje NO se pidió crear un archivo. '
                    'No digas que preparaste, creaste o generaste un documento o archivo.\n')
+    if resultado_sistema:
+        actual += ('\nRESULTADO DEL SISTEMA (la acción YA se ejecutó en la base de datos). '
+                   'Confírmasela a la persona con tus palabras, con tono cercano, usando EXACTAMENTE '
+                   'estas cifras, sin cambiarlas ni inventar otras. Máximo 100 palabras:\n'
+                   f'{str(resultado_sistema)[:2000]}\n')
     actual += f'\nMENSAJE DEL USUARIO:\n{mensaje}'
 
     # los modelos esperan que la conversación empiece con el usuario
@@ -757,7 +848,10 @@ def responder(mensaje: str, ctx: dict | None, clave_conversacion: str | None, *,
             max_output_tokens = MAX_TOKENS_ANALISIS
         else:
             max_output_tokens = 1200
-        texto = _llamar(p, sistema, previos + [('user', actual)], imagenes, max_output_tokens)
+        texto = _llamar(
+            p, sistema, previos + [('user', actual)], imagenes, max_output_tokens,
+            json_mode=json_mode,
+        )
     except Exception as err:                      # red caída, timeout, cupo agotado en todos…
         espera = 60 if getattr(err, 'code', None) == 429 else PAUSA_TRAS_FALLO_S
         print(f'[FinanBot IA 2] El proveedor {p["tipo"]} falló: {err}. '
@@ -765,7 +859,7 @@ def responder(mensaje: str, ctx: dict | None, clave_conversacion: str | None, *,
         _pausa_hasta = time.time() + espera
         return None
 
-    data = _parsear(texto)
+    data = _parsear(texto, respuesta_plana=not json_mode)
     if not data:
         print('[FinanBot IA 2] El modelo devolvió una respuesta vacía; responden las reglas.')
         return None
@@ -854,3 +948,139 @@ def responder(mensaje: str, ctx: dict | None, clave_conversacion: str | None, *,
         'enlaces': enlaces,
         'documento': documento,
     }
+
+
+# ──────────────────────────────────────────────────────────────────
+#  GEMINI CON HERRAMIENTAS (function calling)
+#  Gemini decide qué herramienta llamar; las ejecuta el servidor
+#  (finanbot_tools.HerramientasFinanBot) con el usuario ya autenticado.
+# ──────────────────────────────────────────────────────────────────
+
+def _generar_con_modelos(p: dict, cuerpo: dict, modelos: list[str], limite: float) -> tuple[dict, str]:
+    """generateContent probando modelos en orden. Devuelve (respuesta, modelo usado)."""
+    global _gemini_modelo_ok
+    ultimo_error: Exception | None = None
+    for modelo in modelos:
+        restante = limite - time.time()
+        if restante < 3:
+            break
+        url = (f"https://generativelanguage.googleapis.com/v1beta/models/{modelo}:generateContent"
+               f"?key={p['key']}")
+        pensar_poco = modelo not in _sin_thinking_config
+        try:
+            try:
+                data = _post(url, {}, {**cuerpo, 'generationConfig': _config_gemini(
+                    modelo, pensar_poco, 1200, json_mode=False)},
+                    timeout=min(TIMEOUT_POR_MODELO_S, restante))
+            except urllib.error.HTTPError as e:
+                if e.code == 400 and pensar_poco:
+                    _sin_thinking_config.add(modelo)
+                    data = _post(url, {}, {**cuerpo, 'generationConfig': _config_gemini(
+                        modelo, False, 1200, json_mode=False)},
+                        timeout=min(TIMEOUT_POR_MODELO_S, max(3, limite - time.time())))
+                else:
+                    raise
+        except urllib.error.HTTPError as e:
+            if e.code in (404, 429, 500, 503):
+                print(f'[FinanBot IA 2] {modelo} no respondió (HTTP {e.code}), probando otro modelo…')
+                ultimo_error = e
+                if modelo == _gemini_modelo_ok:
+                    _gemini_modelo_ok = None
+                continue
+            raise
+        except (TimeoutError, urllib.error.URLError) as e:
+            print(f'[FinanBot IA 2] {modelo} tardó demasiado, probando otro modelo…')
+            ultimo_error = e
+            if modelo == _gemini_modelo_ok:
+                _gemini_modelo_ok = None
+            continue
+        if modelo != _gemini_modelo_ok:
+            _gemini_modelo_ok = modelo
+            print(f'[FinanBot IA 2] Usando modelo Gemini: {modelo}')
+        return data, modelo
+    raise ultimo_error or RuntimeError('Ningún modelo Gemini respondió a tiempo')
+
+
+def responder_con_herramientas(mensaje: str, ctx: dict | None, clave_conversacion: str | None, *,
+                               herramientas, categorias_gasto, categorias_ingreso,
+                               ejemplos: dict, rutas: dict) -> dict | None:
+    """Gemini conversa y EJECUTA acciones llamando a las herramientas.
+
+    Devuelve {'respuesta', 'sugerencias', 'enlaces'} o None si no hay Gemini o falló.
+    Ojo: aunque devuelva None, `herramientas.ejecutadas` puede traer acciones que ya
+    se hicieron en la base de datos; quien llama no debe repetirlas."""
+    global _pausa_hasta
+    p = _proveedor()
+    if not p or p['tipo'] != 'gemini' or time.time() < _pausa_hasta:
+        return None
+
+    from finanbot_tools import DECLARACIONES      # import tardío: evita ciclos al arrancar
+
+    sistema = _prompt_sistema(categorias_gasto, categorias_ingreso, ejemplos, rutas,
+                              respuesta_plana=True, con_herramientas=True)
+    with _memoria_lock:
+        previos = list(_memoria.get(clave_conversacion, [])) if clave_conversacion else []
+    while previos and previos[0][0] != 'user':
+        previos.pop(0)
+
+    mensaje_usuario = solo_mensaje_usuario(mensaje)
+    actual = (f'DATOS DEL USUARIO (de ANTES de tus acciones):\n{_contexto_usuario(ctx)}\n\n'
+              f'MENSAJE DEL USUARIO:\n{mensaje_usuario}')
+    contents = [{'role': 'user' if r == 'user' else 'model', 'parts': [{'text': t}]}
+                for r, t in previos + [('user', actual)]]
+
+    candidatos = [p['modelo']] if os.getenv('FINANBOT_IA2_MODEL') else \
+        [p['modelo']] + [m for m in GEMINI_MODELOS if m != p['modelo']]
+    limite = time.time() + TIEMPO_MAX_HERRAMIENTAS_S
+    modelo_usado: str | None = None
+
+    try:
+        for _ in range(MAX_VUELTAS_HERRAMIENTAS):
+            cuerpo = {
+                'system_instruction': {'parts': [{'text': sistema}]},
+                'contents': contents,
+                'tools': [{'functionDeclarations': DECLARACIONES}],
+            }
+            # Tras la primera vuelta se sigue con el MISMO modelo (las firmas de
+            # pensamiento de una llamada de función no sirven en otro modelo).
+            data, modelo_usado = _generar_con_modelos(
+                p, cuerpo, [modelo_usado] if modelo_usado else candidatos, limite)
+
+            contenido = (data.get('candidates') or [{}])[0].get('content') or {}
+            partes = contenido.get('parts') or []
+            llamadas = [x['functionCall'] for x in partes if 'functionCall' in x]
+
+            if not llamadas:
+                texto = ''.join(x.get('text', '') for x in partes if not x.get('thought')).strip()
+                if not texto:
+                    print('[FinanBot IA 2] Gemini no devolvió texto tras las herramientas.')
+                    return None
+                recordar(clave_conversacion, 'user', mensaje_usuario)
+                recordar(clave_conversacion, 'bot', texto)
+                return {'respuesta': texto, 'sugerencias': [], 'enlaces': []}
+
+            contents.append(contenido)       # se conserva tal cual (firmas de pensamiento)
+            respuestas = []
+            for llamada in llamadas:
+                resultado = herramientas.ejecutar(llamada.get('name', ''), llamada.get('args') or {})
+                print(f"[FinanBot IA 2] herramienta {llamada.get('name')} → "
+                      f"{'ok' if isinstance(resultado, dict) and not resultado.get('error') else resultado}")
+                respuestas.append({'functionResponse': {
+                    'name': llamada.get('name', ''),
+                    'response': {'result': resultado},
+                }})
+            contents.append({'role': 'user', 'parts': respuestas})
+        print('[FinanBot IA 2] Se alcanzó el máximo de vueltas de herramientas sin respuesta final.')
+        return None
+    except Exception as err:
+        detalle = ''
+        if isinstance(err, urllib.error.HTTPError):
+            try:
+                detalle = ' · ' + err.read().decode('utf-8', 'ignore')[:300]
+            except Exception:
+                pass
+        espera = 60 if getattr(err, 'code', None) == 429 else PAUSA_TRAS_FALLO_S
+        print(f'[FinanBot IA 2] Falló Gemini con herramientas: {err}{detalle}. '
+              f'Respondiendo con las reglas durante {espera} s.')
+        _pausa_hasta = time.time() + espera
+        return None

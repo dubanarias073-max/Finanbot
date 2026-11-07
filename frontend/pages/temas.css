@@ -233,11 +233,100 @@ article,
 
 @media (max-width: 760px) {
     html {
+        width: 100%;
+        min-width: 0;
         overflow-x: clip;
     }
 
     body {
+        width: 100%;
+        min-width: 0;
         overflow-x: clip;
+    }
+
+    .sidebar {
+        height: 100vh;
+        height: 100dvh;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .navbar-links {
+        height: 100vh;
+        height: 100dvh;
+        max-height: 100dvh;
+        padding-bottom: calc(28px + env(safe-area-inset-bottom));
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    main,
+    section,
+    article,
+    .main,
+    .main-content,
+    .page-content,
+    .page-container,
+    .content,
+    .container,
+    .container-fluid {
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .topbar {
+        min-width: 0;
+        align-items: flex-start;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .topbar-left,
+    .page-header,
+    .section-header {
+        min-width: 0;
+        flex-wrap: wrap;
+    }
+
+    .topbar-actions {
+        min-width: 0;
+        flex-wrap: wrap;
+        justify-content: flex-start;
+        gap: 8px;
+    }
+
+    .card,
+    .panel,
+    .modal-box,
+    .modal-content {
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .card-title {
+        min-width: 0;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .perfil-tabs {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        width: 100%;
+        gap: 5px;
+        overflow: visible;
+    }
+
+    .perfil-tab {
+        justify-content: center;
+        min-width: 0;
+        min-height: 44px;
+        padding: 8px 5px;
+        font-size: 12px;
+        white-space: normal;
+        text-align: center;
     }
 
     h1,
@@ -257,8 +346,19 @@ article,
     [role="button"],
     input[type="button"],
     input[type="submit"] {
+        max-width: 100%;
         min-height: 44px;
         touch-action: manipulation;
+    }
+
+    .btn-accion,
+    .btn-primary,
+    .btn-secondary,
+    .btn-submit,
+    .btn-guardar {
+        max-width: 100%;
+        white-space: normal;
+        overflow-wrap: anywhere;
     }
 
     table {
@@ -283,10 +383,603 @@ article,
         max-height: calc(100vh - 24px);
         max-height: calc(100dvh - 24px);
         overflow-y: auto;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
     }
 
     .notif-panel {
         box-sizing: border-box;
         max-width: calc(100vw - 20px);
+    }
+
+    .modal-close {
+        min-width: 40px;
+        min-height: 40px;
+    }
+
+}
+
+@media (max-width: 760px) {
+    .sidebar ~ .main {
+        box-sizing: border-box;
+        width: 100%;
+        min-height: 100vh;
+        min-height: 100dvh;
+        margin-left: 0;
+        padding: 16px 12px calc(24px + env(safe-area-inset-bottom));
+    }
+
+    .sidebar ~ .main .topbar {
+        display: grid;
+        gap: 12px;
+        margin-bottom: 18px;
+    }
+
+    .sidebar ~ .main .topbar-left {
+        width: 100%;
+        min-width: 0;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .sidebar ~ .main .topbar h1 {
+        font-size: clamp(18px, 5.6vw, 22px);
+        line-height: 1.25;
+    }
+
+    .sidebar ~ .main .topbar p {
+        font-size: 12px;
+        line-height: 1.4;
+    }
+
+    .sidebar ~ .main .topbar-right {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        width: 100%;
+        min-width: 0;
+        gap: 8px;
+    }
+
+    .sidebar ~ .main .topbar-right > button,
+    .sidebar ~ .main .topbar-right > div > button {
+        width: 100%;
+        min-width: 0;
+        min-height: 44px;
+        padding: 8px 10px;
+        white-space: normal;
+    }
+
+    .sidebar ~ .main .topbar-right .txt-exportar,
+    .sidebar ~ .main .topbar-right .txt-calendario {
+        display: inline;
+        font-size: 10px;
+    }
+
+    .sidebar ~ .main .topbar-right .user-badge {
+        grid-column: 2;
+        justify-self: end;
+        min-width: 44px;
+    }
+
+    .sidebar ~ .main .cards-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+    }
+
+    .sidebar ~ .main .stat-card {
+        min-width: 0;
+        padding: 13px 11px;
+        border-radius: 15px;
+    }
+
+    .sidebar ~ .main .stat-value {
+        font-size: clamp(15px, 4.8vw, 18px);
+        overflow-wrap: anywhere;
+    }
+
+    .sidebar ~ .main .card,
+    .sidebar ~ .main .chart-card,
+    .sidebar ~ .main .acceso-card {
+        min-width: 0;
+        margin-bottom: 14px;
+        padding: 15px;
+        border-radius: 15px;
+    }
+
+    .sidebar ~ .main .card-header,
+    .sidebar ~ .main .section-header {
+        min-width: 0;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .card-login,
+    .card-registro {
+        box-sizing: border-box;
+        width: 100%;
+        max-width: 430px;
+        padding: 26px 18px 22px;
+        border-radius: 18px;
+    }
+
+    .campo-input,
+    .campo-select,
+    .m-input,
+    .finput {
+        min-width: 0;
+        font-size: 16px;
+    }
+
+    .tabs-nav {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        width: 100%;
+        gap: 4px;
+    }
+
+    .tabs-nav .tab-btn {
+        min-width: 0;
+        justify-content: center;
+        gap: 4px;
+        padding: 8px 4px;
+        font-size: 11px;
+        text-align: center;
+        white-space: normal;
+    }
+}
+
+@media (max-width: 380px) {
+    .sidebar ~ .main {
+        padding-right: 10px;
+        padding-left: 10px;
+    }
+
+    .sidebar ~ .main .cards-grid {
+        gap: 8px;
+    }
+
+    .sidebar ~ .main .stat-card {
+        padding: 12px 10px;
+    }
+
+    .card-login,
+    .card-registro {
+        padding-right: 15px;
+        padding-left: 15px;
+    }
+}
+
+@media (max-width: 760px) {
+    .local-guest-banner {
+        right: 8px !important;
+        bottom: calc(8px + env(safe-area-inset-bottom)) !important;
+        max-width: min(230px, calc(100vw - 16px));
+        padding: 7px 10px !important;
+        font-size: 10px !important;
+        line-height: 1.35 !important;
+        pointer-events: none;
+    }
+
+    body:has(.chat-hdr) .local-guest-banner {
+        display: none !important;
+    }
+
+    /* Dashboard */
+    .sidebar ~ .main .accesos-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 9px;
+        margin-bottom: 16px;
+    }
+
+    .sidebar ~ .main .acceso-card {
+        display: flex;
+        min-height: 76px;
+        align-items: center;
+        gap: 10px;
+        padding: 12px;
+        text-align: left;
+    }
+
+    .sidebar ~ .main .acceso-icon {
+        margin: 0;
+        font-size: 23px;
+    }
+
+    .sidebar ~ .main .acceso-texto {
+        font-size: 11px;
+        line-height: 1.3;
+    }
+
+    .sidebar ~ .main .totales-historicos {
+        margin-bottom: 15px;
+        padding: 14px;
+        border-radius: 15px;
+    }
+
+    .sidebar ~ .main .totales-historicos-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    .sidebar ~ .main .totales-item {
+        min-width: 0;
+    }
+
+    .sidebar ~ .main .totales-item-label {
+        font-size: 9px;
+        line-height: 1.25;
+    }
+
+    .sidebar ~ .main .totales-item-val {
+        font-size: clamp(11px, 3.6vw, 14px);
+        overflow-wrap: anywhere;
+    }
+
+    .sidebar ~ .main .bottom-grid {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 12px;
+    }
+
+    .sidebar ~ .main .banner-metas,
+    .sidebar ~ .main .tip-card {
+        margin-bottom: 14px;
+        padding: 14px;
+        border-radius: 15px;
+    }
+
+    /* Calendario */
+    .sidebar ~ .main .resumen-mes-bar {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+        margin-bottom: 14px;
+    }
+
+    .sidebar ~ .main .resumen-mes-item {
+        min-width: 0;
+        padding: 11px 9px;
+        border-radius: 13px;
+    }
+
+    .sidebar ~ .main .resumen-mes-label {
+        font-size: 8px;
+        line-height: 1.25;
+        letter-spacing: .25px;
+    }
+
+    .sidebar ~ .main .resumen-mes-valor {
+        font-size: clamp(12px, 3.8vw, 16px);
+        overflow-wrap: anywhere;
+    }
+
+    .sidebar ~ .main .calendario-nav-grande {
+        gap: 10px;
+        margin-bottom: 14px;
+    }
+
+    .sidebar ~ .main .calendario-nav-grande button {
+        width: 40px;
+        height: 40px;
+        flex: 0 0 40px;
+    }
+
+    .sidebar ~ .main .calendario-nav-grande span {
+        flex: 1;
+        font-size: clamp(15px, 4.8vw, 18px);
+    }
+
+    .sidebar ~ .main .calendario-grande {
+        padding: 11px 9px;
+        border-radius: 16px;
+    }
+
+    .sidebar ~ .main .cal-grid-grande,
+    .sidebar ~ .main .cal-header-fila {
+        gap: 3px;
+    }
+
+    .sidebar ~ .main .cal-header-dia-grande {
+        padding-bottom: 3px;
+        font-size: 9px;
+        letter-spacing: 0;
+    }
+
+    .sidebar ~ .main .cal-dia-grande {
+        min-height: 48px;
+        padding: 6px 4px;
+        border-radius: 9px;
+    }
+
+    .sidebar ~ .main .cal-dia-num {
+        font-size: 12px;
+    }
+
+    .sidebar ~ .main .panel-dia {
+        margin-top: 12px;
+        padding: 16px;
+        border-radius: 16px;
+    }
+
+    /* Recomendaciones */
+    .sidebar ~ .main .topbar-right {
+        align-items: stretch;
+    }
+
+    .sidebar ~ .main .topbar-right > button,
+    .sidebar ~ .main .topbar-right > div {
+        min-width: 0;
+    }
+
+    .sidebar ~ .main .topbar-right > button,
+    .sidebar ~ .main .topbar-right > div > button {
+        min-height: 44px;
+        padding: 8px;
+        font-size: 11px;
+    }
+
+    .sidebar ~ .main .resumen-grid {
+        gap: 9px;
+        margin-bottom: 15px;
+    }
+
+    .sidebar ~ .main .resumen-card {
+        min-width: 0;
+        padding: 13px 10px;
+        border-radius: 14px;
+    }
+
+    .sidebar ~ .main .analisis-section,
+    .sidebar ~ .main .regla-widget,
+    .sidebar ~ .main .rec-card {
+        padding: 15px;
+        border-radius: 15px;
+    }
+
+    .sidebar ~ .main .stats-bar {
+        gap: 0;
+        padding: 10px 6px;
+        border-radius: 14px;
+    }
+
+    .sidebar ~ .main .stat-bar-item {
+        min-width: 0;
+        padding: 5px;
+    }
+
+    .sidebar ~ .main .stat-bar-num {
+        font-size: clamp(16px, 5vw, 21px);
+        overflow-wrap: anywhere;
+    }
+
+    /* Perfil */
+    .sidebar ~ .main .perfil-tabs {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        width: 100%;
+        margin-bottom: 16px;
+        border-radius: 14px;
+    }
+
+    .sidebar ~ .main .perfil-tab {
+        min-height: 42px;
+        padding: 8px 5px;
+        font-size: 11px;
+    }
+
+    .sidebar ~ .main .avatar-card {
+        padding: 18px 14px;
+        border-radius: 17px;
+    }
+
+    .sidebar ~ .main .avatar-ring-wrap {
+        width: 82px;
+        margin-bottom: 12px;
+    }
+
+    .sidebar ~ .main .avatar-circle {
+        width: 76px;
+        height: 76px;
+        font-size: 32px;
+    }
+
+    .sidebar ~ .main .avatar-stats {
+        gap: 7px;
+    }
+
+    .sidebar ~ .main .avatar-stat {
+        padding: 9px 5px;
+        border-radius: 11px;
+    }
+
+    .sidebar ~ .main .avatar-stat-val {
+        font-size: 17px;
+    }
+
+    .sidebar ~ .main .dist-grid,
+    .sidebar ~ .main .resumen-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .sidebar ~ .main .form-row {
+        gap: 10px;
+    }
+
+    .sidebar ~ .main .card {
+        padding: 16px 13px;
+    }
+
+    /* Chat */
+    body:has(.chat-hdr) {
+        min-height: 100vh;
+        min-height: 100dvh;
+    }
+
+    .chat-hdr {
+        min-height: 60px;
+        padding: 9px 10px;
+        border-radius: 0 0 14px 14px;
+    }
+
+    .chat-hdr .hdr-left {
+        gap: 8px;
+    }
+
+    .chat-hdr .ia-badge {
+        padding: 3px 7px;
+        font-size: 9px;
+    }
+
+    .main:has(.chat-hdr) {
+        height: 100vh;
+        height: 100dvh;
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    .main:has(.chat-hdr) #chatActivo {
+        min-height: 0;
+        flex: 1 1 0%;
+        padding-bottom: 8px;
+    }
+
+    .main:has(.chat-hdr) .chat-box {
+        min-height: 0;
+    }
+
+    .main:has(.chat-hdr) .sugs-wrap {
+        min-width: 0;
+        margin-bottom: 7px;
+    }
+
+    .main:has(.chat-hdr) .sugs {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        padding-bottom: 5px;
+        scrollbar-width: none;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .main:has(.chat-hdr) .sugs::-webkit-scrollbar {
+        display: none;
+    }
+
+    .main:has(.chat-hdr) .sug-btn {
+        min-height: 38px;
+        padding: 6px 10px;
+        scroll-snap-align: start;
+    }
+
+    .main:has(.chat-hdr) .inp-hint {
+        margin-top: 5px;
+        font-size: 9px;
+    }
+
+    .main:has(.chat-hdr) .inp-wrap {
+        padding-bottom: max(8px, env(safe-area-inset-bottom));
+    }
+
+    /* Simulador */
+    .sidebar ~ .main .grid-main {
+        gap: 13px;
+        margin-bottom: 15px;
+    }
+
+    .sidebar ~ .main .grid-main > .card,
+    .sidebar ~ .main .resultados-panel > * {
+        min-width: 0;
+    }
+
+    .sidebar ~ .main .grid-main > .card {
+        padding: 16px 13px;
+        border-radius: 16px;
+    }
+
+    .sidebar ~ .main .card-title {
+        margin-bottom: 16px;
+    }
+
+    .sidebar ~ .main .stats-top {
+        gap: 8px;
+    }
+
+    .sidebar ~ .main .stat-card {
+        padding: 13px 11px;
+        border-radius: 14px;
+    }
+
+    .sidebar ~ .main .placeholder-card {
+        min-height: 220px;
+        padding: 30px 18px;
+        border-radius: 16px;
+    }
+
+    .sidebar ~ .main .chart-wrap {
+        height: 190px;
+    }
+
+    /* Aprende */
+    .sidebar ~ .main .hero {
+        margin-bottom: 18px;
+    }
+
+    .sidebar ~ .main .hero h1 {
+        font-size: clamp(24px, 7vw, 30px);
+        line-height: 1.15;
+    }
+
+    .sidebar ~ .main .buscador-wrap {
+        margin-bottom: 18px;
+        padding: 16px 13px;
+        border-radius: 16px;
+    }
+
+    .sidebar ~ .main .buscador-input {
+        min-height: 46px;
+        padding-left: 40px;
+        font-size: 16px;
+    }
+
+    .sidebar ~ .main .btn-buscar {
+        min-height: 44px;
+    }
+
+    .sidebar ~ .main .articulos-grid,
+    .sidebar ~ .main .calcs-grid,
+    .sidebar ~ .main .glosario-grid {
+        gap: 10px;
+        margin-bottom: 18px;
+    }
+
+    .sidebar ~ .main .art-card,
+    .sidebar ~ .main .calc-card {
+        padding: 15px;
+        border-radius: 15px;
+    }
+
+    .sidebar ~ .main .modal-content {
+        padding: 22px 15px;
+        border-radius: 16px;
+    }
+}
+
+@media (max-width: 380px) {
+    .sidebar ~ .main .topbar-right {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .sidebar ~ .main .resumen-mes-item {
+        padding-right: 7px;
+        padding-left: 7px;
+    }
+
+    .sidebar ~ .main .calendario-grande {
+        padding-right: 7px;
+        padding-left: 7px;
+    }
+
+    .sidebar ~ .main .cal-dia-grande {
+        min-height: 44px;
+        padding: 5px 3px;
+    }
+
+    .sidebar ~ .main .topbar-right .notif-settings-btn {
+        font-size: 10px;
     }
 }

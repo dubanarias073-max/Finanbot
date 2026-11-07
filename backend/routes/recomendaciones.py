@@ -518,7 +518,8 @@ def obtener_recomendaciones(
                 f'Objetivo: {_pesos(objetivo_ahorro)} · Llevas {_pesos(ahorrado)} '
                 f'(incluye {_pesos(max(0, act.ahorro_metas))} que enviaste a tus metas).',
                 'Simular inversión', 'simulador.html',
-                [f'Excedente: {_pesos(ahorrado - objetivo_ahorro)}', 'Considera subir tu meta un 10%'],
+                [f'Excedente: {_pesos(ahorrado - objetivo_ahorro)}',
+                 'Confirma que tienes liquidez para tus próximos gastos antes de invertir'],
                 progreso=100,
             ))
         elif pct < 100 and hoy.day >= 10:
@@ -627,12 +628,13 @@ def obtener_recomendaciones(
         if capital >= 100_000:
             recs.append(_nueva(
                 'exito', 'Baja', '📈', f'Tu mes va bien: te sobran {_pesos(act.balance)}',
-                f'Si pones {_pesos(capital)} en un CDT o fondo al 10% anual, en 5 años serían '
-                f'{_pesos(capital * 1.10 ** 5)} sin hacer nada más.',
+                f'Como ejercicio, {_pesos(capital)} crecerían a {_pesos(capital * 1.10 ** 5)} '
+                'en 5 años si obtuvieras 10% efectivo anual y reinvirtieras los rendimientos. '
+                'Es una simulación antes de impuestos y costos, no una rentabilidad garantizada.',
                 'Ir al simulador', 'simulador.html',
-                [f'En 1 año: {_pesos(capital * 1.10)}', 'En Colombia hay CDT desde $100.000',
-                 'Los CDT están asegurados por Fogafín'],
-                ahorro_potencial=capital * (1.10 ** 5 - 1), key='simulador',
+                [f'En el mismo escenario, en 1 año: {_pesos(capital * 1.10)}',
+                 'Compara tasas, plazo, impuestos, costos y cobertura del producto'],
+                key='simulador',
             ))
 
     # ─────────────────────────────────────────────────────

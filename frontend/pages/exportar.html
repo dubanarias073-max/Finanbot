@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="es">
 <head>
+    <script src="local-guest.js"></script>
     <base target="_top">
 
 <script>
@@ -1411,8 +1412,7 @@ body{
 
 <script>
 
-const token =
-localStorage.getItem('token');
+const token = window.FinanbotLocal.active ? window.FinanbotLocal.token : localStorage.getItem('token');
 
 const toast =
 document.getElementById('toast');
@@ -1489,7 +1489,7 @@ async function descargar(tipo){
 
     const extension =
     tipo === 'Excel'
-    ? 'xlsx'
+    ? (window.FinanbotLocal.active ? 'csv' : 'xlsx')
     : 'pdf';
 
     const nombre =

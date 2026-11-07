@@ -5,6 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script src="timezone.js"></script>
+<script src="local-guest.js"></script>
 <title>FinanBot - Chat IA</title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -352,7 +353,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
   <a href="aprende.html"         class="nav-item"><i class="fas fa-graduation-cap"></i> Aprende</a>
   <a href="perfil.html"          class="nav-item"><i class="fas fa-user-circle"></i> Mi Perfil</a>
   <div class="sidebar-bottom">
-    <a href="index-legacy.html" class="btn-cerrar" onclick="cerrarSesion()">
+    <a href="index-legacy.html" class="btn-cerrar" onclick="cerrarSesion(event)">
       <i class="fas fa-sign-out-alt"></i> Cerrar sesión
     </a>
   </div>
@@ -409,7 +410,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
   <!-- BANNER INVITADO -->
   <div class="banner-inv" id="bannerInv" style="display:none">
     <i class="fas fa-info-circle"></i>
-    <span id="bannerInfo">Modo invitado · <strong>20 mensajes gratis</strong></span>
+    <span id="bannerInfo">Modo invitado · <strong>50 mensajes gratis</strong></span>
     <a href="registro.html" style="color:var(--fb-yellow);font-weight:700;text-decoration:none;margin-left:auto">Regístrate gratis →</a>
   </div>
 
@@ -541,21 +542,31 @@ document.querySelectorAll('.nav-item').forEach(a => a.addEventListener('click', 
    VARIABLES
 ═══════════════════════════════════════════════════ */
 const API      = '/api';
-const token    = localStorage.getItem('token');
-const usuario  = JSON.parse(localStorage.getItem('usuario') || '{}');
-const esInv    = new URLSearchParams(location.search).get('invitado') === 'true';
+const esInv    = new URLSearchParams(location.search).get('invitado') === 'true' || window.FinanbotLocal.active;
+const token    = esInv ? null : localStorage.getItem('token');
+const usuario  = esInv ? { nombre: 'Invitado' } : JSON.parse(localStorage.getItem('usuario') || '{}');
 let adjuntosPendientes = [];
 let subiendoAdjuntos = false;
 
-const LIM_INV  = 20;
-const COOL_MS  = 2 * 60 * 60 * 1000;
+const LIM_INV  = 50;
+const COOL_MS  = 5 * 60 * 60 * 1000;
 
 let convId      = null;
 let enviando    = false;
 let modoInv     = false;
-let msgsInv     = Number(localStorage.getItem('fb_inv_msgs') || 0);
-let coolExp     = Number(localStorage.getItem('fb_inv_cool') || 0);
+const mensajesGuardados = Number(localStorage.getItem('fb_inv_msgs') || 0);
+const cooldownGuardado = Number(localStorage.getItem('fb_inv_cool') || 0);
+let msgsInv     = Number.isFinite(mensajesGuardados) ? Math.max(0, mensajesGuardados) : 0;
+let coolExp     = Number.isFinite(cooldownGuardado) ? Math.max(0, cooldownGuardado) : 0;
 let coolTimer   = null;
+const INV_HISTORY_KEY = 'fb_inv_chat';
+let historialInvitado = [];
+try {
+  const guardado = JSON.parse(localStorage.getItem(INV_HISTORY_KEY) || '[]');
+  if (Array.isArray(guardado)) historialInvitado = guardado.slice(-100);
+} catch (error) {
+  console.error('No se pudo leer el historial local del modo invitado:', error);
+}
 
 /* ═══════════════════════════════════════════════════
    PARSER MARKDOWN → HTML  (tablas, listas, headers)
@@ -854,6 +865,9 @@ function saveInv() {
   coolExp > 0 ? localStorage.setItem('fb_inv_cool', String(coolExp))
               : localStorage.removeItem('fb_inv_cool');
 }
+function guardarHistorialInvitado() {
+  localStorage.setItem(INV_HISTORY_KEY, JSON.stringify(historialInvitado.slice(-100)));
+}
 const enCooldown = () => coolExp > Date.now();
 const tiempoR    = () => Math.max(0, coolExp - Date.now());
 function fmtT(ms) {
@@ -863,6 +877,15 @@ function fmtT(ms) {
 function actualizarBanner() {
   const info = document.getElementById('bannerInfo');
   if (!info) return;
+  if (coolExp && coolExp <= Date.now()) {
+    coolExp = 0;
+    msgsInv = 0;
+    saveInv();
+  }
+  if (msgsInv >= LIM_INV && !coolExp) {
+    coolExp = Date.now() + COOL_MS;
+    saveInv();
+  }
   if (enCooldown()) {
     info.innerHTML = `Modo invitado · Espera: <strong id="timer">${fmtT(tiempoR())}</strong>`;
     document.getElementById('chatInp').disabled = true;
@@ -878,7 +901,7 @@ function tickCooldown() {
   if (!enCooldown()) {
     clearInterval(coolTimer); coolTimer=null; coolExp=0; msgsInv=0; saveInv();
     actualizarBanner();
-    addMsg('✅ El tiempo de espera terminó. Tienes **20 mensajes gratuitos** disponibles de nuevo.','bot',[],null,true);
+    addMsg(`✅ El tiempo de espera terminó. Tienes **${LIM_INV} mensajes gratuitos** disponibles de nuevo.`,'bot',[],null,true);
     return;
   }
   const t = document.getElementById('timer');
@@ -960,7 +983,7 @@ async function nuevaConversacion(primerMensaje) {
 
 async function selConv(id, titulo, event) {
   convId = id;
-  abrirChat(`💬 ${titulo}`);
+  abrirChat(`💬 ${titulo}`, false);
   document.querySelectorAll('.conv-item').forEach(e=>e.classList.remove('activa'));
   event?.currentTarget?.classList.add('activa');
   cerrarNavMovil();
@@ -969,6 +992,7 @@ async function selConv(id, titulo, event) {
     if (!r.ok) return;
     const msgs = await r.json();
     document.getElementById('chatBox').innerHTML = '';
+    document.getElementById('sugsWrap').style.display = msgs.length ? 'none' : 'block';
     if (!msgs.length) {
       addSep('Escribe tu primer mensaje');
     } else {
@@ -992,13 +1016,13 @@ async function delConv(id) {
   } catch(e){}
 }
 
-function abrirChat(titulo) {
+function abrirChat(titulo, mostrarSugerencias = true) {
   document.getElementById('sinChat').style.display='none';
   document.getElementById('chatActivo').style.display='flex';
   document.getElementById('chatActivo').style.flexDirection='column';
   document.getElementById('chatBox').innerHTML='';
   document.getElementById('convBadge').textContent=titulo;
-  document.getElementById('sugsWrap').style.display='block';
+  document.getElementById('sugsWrap').style.display=mostrarSugerencias?'block':'none';
   document.getElementById('chatInp').focus();
   cerrarNavMovil();
 }
@@ -1204,6 +1228,15 @@ async function enviarYRenderizar(msg) {
     if (token) headers['Authorization'] = 'Bearer '+token;
     // El backend guarda el mensaje en la conversación indicada (tabla chats)
     const cuerpo = {mensaje: msg, adjuntos: adjuntosEnviados.map(a => a.id)};
+    try {
+      const regla = JSON.parse(localStorage.getItem('finanbot_regla_dist') || 'null');
+      if (regla && Number.isInteger(regla.nec) && Number.isInteger(regla.des) &&
+          Number.isInteger(regla.aho) && regla.nec + regla.des + regla.aho === 100) {
+        cuerpo.regla_presupuesto = regla;
+      }
+    } catch (error) {
+      console.error('No se pudo leer la regla personalizada:', error);
+    }
     if (token && convId) cuerpo.conversacion_id = convId;
 
     // Ubicación real: solo al registrar un gasto/ingreso (o al completar uno pendiente)
@@ -1228,7 +1261,18 @@ async function enviarYRenderizar(msg) {
 
     if (r.ok && !data.error && data.respuesta) {
       limpiarAdjuntosPendientes();
-      if (modoInv) { msgsInv++; saveInv(); actualizarBanner(); }
+      if (modoInv) {
+        msgsInv++;
+        if (msgsInv >= LIM_INV) coolExp = Date.now() + COOL_MS;
+        historialInvitado.push(
+          { tipo: 'usuario', texto: msg.slice(0, 4000) },
+          { tipo: 'bot', texto: data.respuesta.slice(0, 12000) },
+        );
+        historialInvitado = historialInvitado.slice(-100);
+        guardarHistorialInvitado();
+        saveInv();
+        actualizarBanner();
+      }
 
       addMsg(data.respuesta, 'bot', data.acciones || [], null, true, [], data.documento); // true = efecto escritura
 
@@ -1246,7 +1290,7 @@ async function enviarYRenderizar(msg) {
         await cargarConvs();
       }
 
-      // Aviso cuando quedan 2 mensajes de invitado
+      // Aviso cuando quedan dos mensajes de invitado.
       if (modoInv && (LIM_INV - msgsInv) === 2) {
         setTimeout(() => addMsg(
           `💡 Te quedan **2 mensajes gratuitos**. ¡Regístrate para acceso ilimitado!`,
@@ -1461,7 +1505,7 @@ async function descargarAdjunto(id, nombre) {
 function iniciarInvitado() {
   modoInv = true;
   if (enCooldown()) { actualizarBanner(); return; }
-  if (msgsInv >= LIM_INV) { coolExp=Date.now()+COOL_MS; saveInv(); }
+  if (msgsInv >= LIM_INV && !coolExp) { coolExp=Date.now()+COOL_MS; saveInv(); }
   actualizarBanner();
   document.getElementById('sinChat').style.display  = 'none';
   document.getElementById('chatActivo').style.display = 'flex';
@@ -1470,10 +1514,17 @@ function iniciarInvitado() {
   document.getElementById('bannerInv').style.display = 'flex';
   pintarGPS();   // en modo invitado no se registra nada: se oculta el GPS
   addSep('Sesión de invitado');
-  addSep('Escribe tu primer mensaje');
+  if (historialInvitado.length) {
+    addSep('Conversación guardada solo en este navegador');
+    historialInvitado.forEach(item => {
+      if (item && ['usuario', 'bot'].includes(item.tipo) && typeof item.texto === 'string') {
+        addMsg(item.texto, item.tipo, [], null, false);
+      }
+    });
+  } else {
+    addSep('Escribe tu primer mensaje');
+  }
 }
-
-function cerrarSesion() { localStorage.removeItem('token'); localStorage.removeItem('usuario'); }
 
 /* ═══════════════════════════════════════════════════
    INIT
@@ -1484,5 +1535,6 @@ else { cargarConvs(); pintarGPS(); }
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="tema.js"></script>
+<script src="auth-session.js"></script>
 </body>
 </html>

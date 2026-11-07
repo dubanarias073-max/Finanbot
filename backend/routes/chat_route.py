@@ -9,8 +9,11 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 from extensions import obtener_usuario_id_opcional
-from finanbot_ia import FinanBotIA
+from finanbot_ia import (
+    FinanBotIA, EJEMPLOS, RUTAS, _referencia_mes_pasado, _btns_trans, _btns_metas,
+)
 import finanbot_ia_2
+from finanbot_tools import HerramientasFinanBot
 from models import (
     Transaccion, MetaAhorro, Usuario, Chat, ChatAdjunto, Categoria, CategoriaUsuario, nuevo_conversacion_id,
     CATEGORIAS_GASTO, CATEGORIAS_INGRESO,
@@ -115,6 +118,23 @@ def _conversacion_ia_id(db: Session, uid: int | None, conv_id_body) -> str | Non
         Chat.usuario_id != uid,
     ).first()
     return None if pertenece_a_otro else conv_id
+
+
+def _regla_presupuesto(body: dict) -> dict | None:
+    regla = body.get('regla_presupuesto')
+    if not isinstance(regla, dict):
+        return None
+    porcentajes = [regla.get(campo) for campo in ('nec', 'des', 'aho')]
+    if any(type(valor) is not int or not 0 <= valor <= 100 for valor in porcentajes):
+        return None
+    if sum(porcentajes) != 100:
+        return None
+    return {
+        'nec': porcentajes[0],
+        'des': porcentajes[1],
+        'aho': porcentajes[2],
+        'nombre': str(regla.get('nombre') or 'Personalizada')[:80],
+    }
 
 
 router = APIRouter()
@@ -375,6 +395,66 @@ def _texto_respuesta_local(accion: dict) -> str:
 
 
 # ══════════════════════════════════════════════════════════════════
+#  ORDEN DE RESPUESTA DE FINANBOT
+#
+#  1) IA 2 (Gemini) responde SIEMPRE primero. Con herramientas, Gemini
+#     ejecuta por sí mismo registrar/editar/eliminar movimientos y
+#     crear/abonar metas (finanbot_tools.py).
+#  2) Las reglas (finanbot_ia.py = IA 1) responden de respaldo, solo si
+#     Gemini no está disponible o falló. Y siguen encargándose de lo que
+#     necesita ser exacto o tiene botones: descargas de reportes,
+#     cálculos, simulaciones, mapa de lugares, perfil, ayudas, categorías
+#     y saludo inicial.
+#  Regla de oro: si Gemini ya ejecutó algo en la base de datos, NUNCA se
+#  vuelve a ejecutar con las reglas (se duplicaría el movimiento).
+# ══════════════════════════════════════════════════════════════════
+
+_OPERACION_RE = re.compile(r'\d[\d.,]*\s*(?:[\+\-\*\/x×]|por|m[aá]s|menos|dividido(?:\s+entre)?|entre)\s*\d')
+
+
+def _es_saludo(msg: str) -> bool:
+    """Saludo o pedido de ayuda corto ('hola', 'qué puedes hacer'). Se compara por
+    palabra completa: antes 'hola' coincidía dentro de 'cholado' y 'ayuda' dentro de
+    cualquier frase larga."""
+    if len(msg.split()) > 6:
+        return False
+    return any(re.search(rf'(?<!\w){re.escape(p)}(?!\w)', msg) for p in BIENVENIDA_KW)
+
+
+def _lo_resuelven_las_reglas(mensaje: str) -> bool:
+    """Mensajes donde conviene la respuesta exacta de las reglas y no Gemini."""
+    msg = mensaje.lower().strip()
+    pregunta_categorias = bool(re.search(r'\bcategor[ií]as\b', msg) and (
+        re.search(r'\b(tengo|hay|puedo usar|disponibles?|lista|manejas|cu[aá]les|qu[eé])\b', msg)
+        or re.search(r'\bcategor[ií]as\s+(?:de|para|en)\s+(?:gastos?|ingresos?)\b', msg)
+    ))
+    operacion = bool(_OPERACION_RE.search(msg)) and calcular_operacion(mensaje) is not None
+    return bool(
+        _es_comando_categoria(mensaje)
+        or pregunta_categorias
+        or _detectar_ayuda(msg)
+        or _es_saludo(msg)
+        or _t(msg, LUGAR_KW)
+        or _t(msg, REPORTE_KW)
+        or _t(msg, SIMULADOR_KW)
+        or _resolver_financiero(mensaje, msg)
+        or operacion
+        or (_t(msg, ACTUALIZAR) and _t(msg, PERFIL_KW))
+        or _referencia_mes_pasado(mensaje)
+    )
+
+
+def _botones_para(accion: dict | None) -> list[dict]:
+    """Botones de la respuesta cuando la redactó Gemini."""
+    tipo = (accion or {}).get('tipo', '')
+    if tipo.startswith('meta_'):
+        return _btns_metas()
+    if tipo.endswith(('_registrado', '_editado', '_eliminado')):
+        return _btns_trans()
+    return []
+
+
+# ══════════════════════════════════════════════════════════════════
 #  ENDPOINT
 # ══════════════════════════════════════════════════════════════════
 
@@ -433,27 +513,58 @@ def mensaje(
     documento_previo = finanbot_ia_2.ultimo_documento(session_key)
 
     ctx = _cargar_contexto(uid, db) if uid is not None else None
+    regla_presupuesto = _regla_presupuesto(body)
+    if ctx is not None and regla_presupuesto is not None:
+        ctx['regla_presupuesto'] = regla_presupuesto
     accion = None
 
     ubic_rechazada = None
     if ctx is not None:
         ctx['ubicacion_actual'], ubic_rechazada = _leer_ubicacion(body.get('ubicacion'))
 
-    if adjuntos_ids:
-        accion = None
-    elif uid and ctx and _es_comando_categoria(msg_usuario) and not solicitud_documento:
-        accion = ejecutar_accion(msg_usuario, uid, ctx, db)
-    elif uid is None and _es_comando_categoria(msg_usuario) and not solicitud_documento:
-        accion = {
-            'tipo': 'error_categoria',
-            'mensaje': 'Inicia sesión para crear o eliminar tus categorías.',
-        }
+    # ── 1) IA 2 (Gemini) con herramientas: responde y ejecuta ───────
+    respuesta_ia2 = None
+    ejecutadas: list[dict] = []
+    clave_ia = FinanBotIA._clave_conversacion(ctx, conversacion_id) if ctx is not None else None
+    usar_herramientas = (
+        uid is not None and ctx is not None
+        and not adjuntos_ids and not solicitud_documento
+        and not _contextos.get(session_key, {}).get('esperando')   # diálogo pendiente de las reglas
+        and finanbot_ia_2.disponible()
+        and not _lo_resuelven_las_reglas(msg_usuario)
+        and finanbot_ia_2.clasificar_intencion(msg_original, None, clave_ia) == 'chat'
+    )
+    if usar_herramientas:
+        herramientas = HerramientasFinanBot(uid, db, ctx, obtener_categoria)
+        resultado_ia2 = finanbot_ia_2.responder_con_herramientas(
+            msg_original, ctx, clave_ia, herramientas=herramientas,
+            categorias_gasto=ctx.get('categorias_gasto', []),
+            categorias_ingreso=ctx.get('categorias_ingreso', []),
+            ejemplos=EJEMPLOS, rutas=RUTAS,
+        )
+        ejecutadas = herramientas.ejecutadas
+        if resultado_ia2:
+            respuesta_ia2 = resultado_ia2['respuesta']
 
-    if not adjuntos_ids and accion is None and uid and ctx and not solicitud_documento:
-        accion = _resolver_contexto(msg_usuario, uid, ctx, session_key, db)
+    # ── 2) Reglas (IA 1): solo si Gemini no respondió NI ejecutó nada ─
+    if ejecutadas:
+        accion = ejecutadas[-1]
+    elif respuesta_ia2 is None:
+        if adjuntos_ids:
+            accion = None
+        elif uid and ctx and _es_comando_categoria(msg_usuario) and not solicitud_documento:
+            accion = ejecutar_accion(msg_usuario, uid, ctx, db)
+        elif uid is None and _es_comando_categoria(msg_usuario) and not solicitud_documento:
+            accion = {
+                'tipo': 'error_categoria',
+                'mensaje': 'Inicia sesión para crear o eliminar tus categorías.',
+            }
 
-    if not adjuntos_ids and accion is None and uid and ctx and not solicitud_documento:
-        accion = ejecutar_accion(msg_usuario, uid, ctx, db)
+        if not adjuntos_ids and accion is None and uid and ctx and not solicitud_documento:
+            accion = _resolver_contexto(msg_usuario, uid, ctx, session_key, db)
+
+        if not adjuntos_ids and accion is None and uid and ctx and not solicitud_documento:
+            accion = ejecutar_accion(msg_usuario, uid, ctx, db)
 
     if uid:
         _actualizar_contexto(session_key, accion, msg_usuario)
@@ -475,7 +586,12 @@ def mensaje(
             if meta['tipo'] in ('gasto_mensual', 'gasto_anual') and meta['excedida']
         ]
 
-    if accion and accion.get('tipo') in _TIPOS_RESPUESTA_LOCAL:
+    if respuesta_ia2 is not None:
+        # Gemini respondió (con o sin acciones ejecutadas)
+        respuesta = bot._normalizar_respuesta(respuesta_ia2)
+        respuesta = _agregar_disclaimers_si_necesario(respuesta, msg_usuario)
+        acciones_ui = _botones_para(accion)
+    elif accion and accion.get('tipo') in _TIPOS_RESPUESTA_LOCAL:
         # Preguntas de ayuda y "¿cuál de estos?" se responden aquí mismo,
         # con el texto exacto ligado a los datos que ya extrajimos —
         # no dependen de FinanBotIA.
@@ -485,6 +601,8 @@ def mensaje(
         respuesta = _texto_respuesta_local(accion)
         acciones_ui = []
     else:
+        # Respaldo: responden las reglas (IA 1). Si Gemini ya ejecutó algo pero no
+        # pudo redactar, aquí solo se redacta el resultado; no se vuelve a ejecutar.
         # Evita que un documento de una respuesta anterior se vuelva a entregar
         bot._documento_generado = None
         if imagenes_adjuntas:

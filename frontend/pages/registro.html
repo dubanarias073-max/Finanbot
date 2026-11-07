@@ -807,6 +807,7 @@
                 });
                 const data = await res.json();
                 if (!res.ok) { mostrarError(data.detail || 'No se pudo crear la cuenta con Google.'); return; }
+                localStorage.removeItem('finanbot_guest_mode');
                 localStorage.setItem('token', data.token);
                 localStorage.setItem('usuario', JSON.stringify(data.usuario));
                 if (data.aviso_seguridad) {

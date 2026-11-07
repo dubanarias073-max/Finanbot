@@ -717,8 +717,6 @@ body::before {
     <div class="step-title">¿Qué quieres <span class="hl">planear?</span></div>
     <div class="step-desc">Crea una meta de ahorro para celebrar tus avances, o define un máximo mensual/anual para vigilar tus gastos.</div>
 
-    <div class="err" id="e3">⚠️ &nbsp;Selecciona un objetivo para continuar.</div>
-
     <div class="goal-type-grid" role="group" aria-label="Tipo de meta">
       <button type="button" class="goal-type-btn sel" id="tipoAhorroBtn" onclick="setGoalType('ahorro')">🎯 Ahorrar</button>
       <button type="button" class="goal-type-btn" id="tipoMensualBtn" onclick="setGoalType('gasto_mensual')">📅 Tope mensual</button>
@@ -851,6 +849,7 @@ body::before {
       </div>
     </div>
 
+    <div class="err" id="e3" role="alert" aria-live="polite">⚠️ &nbsp;Selecciona un objetivo para continuar.</div>
     <div class="btn-row">
         <button class="btn btn-back" onclick="ir(2)">←</button>
 

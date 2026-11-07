@@ -578,6 +578,18 @@ def registro(
     return resultado
 
 
+@router.post('/logout')
+def logout(request: Request, response: Response):
+    response.delete_cookie(
+        'finanbot_device_id',
+        path='/api/auth',
+        httponly=True,
+        secure=request.url.scheme == 'https',
+        samesite='lax',
+    )
+    return {'mensaje': 'Sesión cerrada.'}
+
+
 @router.post('/login')
 def login(
     body: LoginSchema,

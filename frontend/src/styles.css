@@ -1,9 +1,9 @@
 :root { font-family: 'Segoe UI', system-ui, sans-serif; color: #edf0ff; background: #09091c; font-synthesis: none; }
 * { box-sizing: border-box; }
-body { margin: 0; min-width: 320px; }
+body { margin: 0; width: 100%; min-width: 0; overflow-x: clip; }
 button, textarea { font: inherit; }
-.legacy-screen { display: block; width: 100%; height: 100vh; border: 0; }
-.legacy-layout { display: flex; height: 100vh; flex-direction: column; }
+.legacy-screen { display: block; width: 100%; height: 100vh; height: 100dvh; border: 0; }
+.legacy-layout { display: flex; height: 100vh; height: 100dvh; flex-direction: column; }
 .legacy-layout .legacy-screen { min-height: 0; flex: 1; height: auto; }
 .global-spending-alert { display: flex; min-height: 68px; align-items: center; gap: 12px; padding: 10px clamp(16px, 4vw, 48px); color: #fee2e2; background: #451a1a; border-bottom: 1px solid #b91c1c; font-size: 13px; }
 .global-spending-alert > span { font-size: 22px; }
@@ -51,6 +51,28 @@ button, textarea { font: inherit; }
 @media (max-width: 600px) {
   .react-shell,
   .app-content,
+  .global-spending-alert {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px 14px;
+    font-size: 12px;
+  }
+
+  .global-spending-alert > div {
+    min-width: 0;
+    flex: 1 1 calc(100% - 36px);
+  }
+
+  .global-spending-alert p {
+    overflow-wrap: anywhere;
+    line-height: 1.45;
+  }
+
+  .global-spending-alert a {
+    margin-left: 32px;
+  }
+
   .surface,
   .auth-screen,
   .auth-card {
