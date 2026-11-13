@@ -1,0 +1,24 @@
+{
+  "id": "/legacy/pages/",
+  "name": "FinanBot - Asistente Financiero Inteligente",
+  "short_name": "FinanBot",
+  "description": "Tu asistente de finanzas personales con IA: movimientos, metas, simulador y educación financiera.",
+  "lang": "es",
+  "start_url": "/legacy/pages/login.html?source=pwa",
+  "scope": "/legacy/pages/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0B0B22",
+  "theme_color": "#0B0B22",
+  "categories": ["finance", "productivity", "education"],
+  "icons": [
+    { "src": "/legacy/pages/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/legacy/pages/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/legacy/pages/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Chat con FinanBot", "url": "/legacy/pages/chat.html", "icons": [{ "src": "/legacy/pages/icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Mis finanzas", "url": "/legacy/pages/finanzas.html", "icons": [{ "src": "/legacy/pages/icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Simulador", "url": "/legacy/pages/simulador.html", "icons": [{ "src": "/legacy/pages/icons/icon-192.png", "sizes": "192x192" }] }
+  ]
+}

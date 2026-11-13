@@ -349,6 +349,160 @@ Las vistas interactivas residen en `frontend/pages/` y son servidas por FastAPI 
 La aplicación React actúa como el **enrutador inicial** para determinar la vista de entrada. Tras el renderizado inicial, la navegación ocurre directamente entre las páginas HTML mediante hipervínculos nativos. Al recargar la página (`F5`), el navegador conserva el estado de la vista legada actual en la URL de forma transparente.
 
 ---
+# Cómo quitar la PWA de FinanBot
+
+Esta guía deshace todo lo que se añadió para convertir FinanBot en una PWA (app instalable).
+El orden importa: **primero los usuarios y el navegador, después los archivos.**
+
+---
+
+## 1. Desinstalar la app instalada (en cada dispositivo)
+
+| Dispositivo | Cómo |
+|---|---|
+| Windows / macOS / Linux (Chrome o Edge) | Abre la app → menú ⋮ → **Desinstalar FinanBot…** (o `chrome://apps` → clic derecho → **Quitar de Chrome**) |
+| Android | Mantén pulsado el icono → **Desinstalar** |
+| iPhone / iPad | Mantén pulsado el icono → **Eliminar app** → **Eliminar de la pantalla de inicio** |
+
+## 2. Desregistrar el service worker (importante)
+
+Si borras los archivos sin hacer esto, el navegador puede seguir usando el service worker viejo.
+
+En cada navegador donde la hayas probado (por ejemplo `http://localhost:5173` y la URL del túnel):
+
+1. `F12` → pestaña **Application** (si no se ve, está detrás del `»`).
+2. **Service workers** → pulsa **Unregister** en cada uno (hay dos posibles: `/sw.js` y `/legacy/pages/sw.js`).
+3. **Storage** → **Clear site data**.
+
+> Alternativa: deja los archivos `sw.js` pero convertidos en "auto-eliminación" (ver sección 5) y los usuarios se limpian solos.
+
+---
+
+## 3. Borrar los archivos añadidos
+
+Todas las rutas son desde la carpeta `Finanbot/`.
+
+**Carpeta de la app React**
+```
+frontend/public/manifest.json
+frontend/public/sw.js
+frontend/public/pwa.js
+frontend/public/offline.html
+frontend/public/icons/            (carpeta completa)
+```
+> Si `frontend/public/` no existía antes y queda vacía, puedes borrarla.
+
+**Carpeta de las páginas legacy**
+```
+frontend/pages/manifest.json
+frontend/pages/sw.js
+frontend/pages/pwa.js
+frontend/pages/offline.html
+frontend/pages/icons/             (carpeta completa)
+```
+
+### Comandos (Linux / macOS)
+```bash
+cd ~/Finanbot/frontend
+
+rm -rf public/manifest.json public/sw.js public/pwa.js public/offline.html public/icons
+rmdir public 2>/dev/null   # solo se borra si quedó vacía
+
+rm -rf pages/manifest.json pages/sw.js pages/pwa.js pages/offline.html pages/icons
+```
+
+### Comandos (Windows PowerShell)
+```powershell
+cd Finanbot\frontend
+
+Remove-Item -Recurse -Force public\manifest.json, public\sw.js, public\pwa.js, public\offline.html, public\icons
+Remove-Item -Recurse -Force pages\manifest.json, pages\sw.js, pages\pwa.js, pages\offline.html, pages\icons
+```
+
+---
+
+## 4. Quitar las líneas añadidas en los HTML
+
+Se añadieron estas líneas justo antes de `</head>`:
+
+**En `frontend/index.html` (React)**
+```html
+<link rel="manifest" href="/manifest.json" />
+<meta name="theme-color" content="#0B0B22" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content="FinanBot" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<link rel="icon" href="/icons/icon-192.png" />
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+<script src="/pwa.js" defer></script>
+```
+
+**En las 13 páginas de `frontend/pages/*.html`**
+```html
+<link rel="manifest" href="/legacy/pages/manifest.json">
+<meta name="theme-color" content="#0B0B22">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="FinanBot">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="/legacy/pages/icons/apple-touch-icon.png">
+<script src="/legacy/pages/pwa.js" defer></script>
+```
+
+### Quitarlas automáticamente (Linux / macOS)
+```bash
+cd ~/Finanbot/frontend
+
+sed -i -E '/rel="manifest"/d;/name="theme-color"/d;/mobile-web-app-capable/d;/apple-mobile-web-app/d;/apple-touch-icon/d;/pwa\.js/d;/rel="icon" href="\/icons\//d' index.html pages/*.html
+```
+> En macOS usa `sed -i ''` en lugar de `sed -i`.
+
+### Quitarlas automáticamente (Windows PowerShell)
+```powershell
+cd Finanbot\frontend
+$patron = 'rel="manifest"|name="theme-color"|mobile-web-app-capable|apple-mobile-web-app|apple-touch-icon|pwa\.js|rel="icon" href="/icons/'
+Get-ChildItem index.html, pages\*.html | ForEach-Object {
+  $t = Get-Content $_ -Encoding UTF8 | Where-Object { $_ -notmatch $patron }
+  Set-Content $_ $t -Encoding UTF8
+}
+```
+
+### Comprobar que no quedó nada
+```bash
+grep -rnE 'manifest|pwa\.js|apple-touch-icon|theme-color' index.html pages/*.html
+```
+Si no imprime nada, está limpio.
+
+---
+
+## 5. Opcional: auto-eliminación para quien ya la instaló
+
+Si ya hay usuarios con la app instalada y no puedes pasar por sus dispositivos, **no borres `sw.js`**: sustituye su contenido por esto (en `public/sw.js` y en `pages/sw.js`) y déjalo unos días:
+
+```js
+self.addEventListener('install', () => self.skipWaiting());
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys()
+      .then((keys) => Promise.all(keys.map((k) => caches.delete(k))))
+      .then(() => self.registration.unregister())
+      .then(() => self.clients.matchAll())
+      .then((clients) => clients.forEach((c) => c.navigate(c.url)))
+  );
+});
+```
+Este script borra las cachés, se desregistra solo y recarga la página. Cuando ya nadie lo necesite, borra los archivos como en la sección 3.
+
+Nota: el icono instalado en el dispositivo **no se borra solo**; seguirá abriendo la web como un acceso directo hasta que el usuario lo desinstale (sección 1).
+
+---
+
+## 6. Reiniciar y verificar
+
+1. Reinicia Vite: `npm run dev -- --host`.
+2. Abre el sitio con `Ctrl + F5`.
+3. En `F12` → Application → **Manifest** debe decir "No manifest detected" y en **Service workers** no debe haber ninguno.
 
 ## 🧪 Validaciones y Pruebas Unitarias
 
