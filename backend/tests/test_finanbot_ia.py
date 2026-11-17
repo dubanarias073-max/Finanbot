@@ -60,7 +60,7 @@ def test_ia2_tiene_prioridad_en_conversacion_cuando_esta_disponible(monkeypatch)
 def test_ia2_chat_solicita_y_devuelve_texto_plano(monkeypatch):
     llamada = {}
 
-    def responder_texto(p, sistema, mensajes, imagenes, max_output_tokens, json_mode):
+    def responder_texto(p, sistema, mensajes, imagenes, max_output_tokens, json_mode, **kwargs):
         llamada['sistema'] = sistema
         llamada['json_mode'] = json_mode
         return '¡Hola! ¿En qué puedo ayudarte con tus finanzas?'
@@ -262,3 +262,25 @@ def test_registro_de_gasto_incluye_emoji_de_categoria():
     bot = FinanBotIA()
     respuesta, _ = bot.responder_con_acciones('gaste 50000 en viaje', None, None)
     assert '✈️' in respuesta or '🧾' in respuesta
+
+
+def test_nivel_de_pensamiento_se_adapta_al_mensaje():
+    assert finanbot_ia_2.nivel_pensamiento('hola') == 'bajo'
+    assert finanbot_ia_2.nivel_pensamiento('gracias!') == 'bajo'
+    assert finanbot_ia_2.nivel_pensamiento('¿me conviene pagar la tarjeta o ahorrar?') in ('medio', 'alto')
+    assert finanbot_ia_2.nivel_pensamiento(
+        'Gano 2.500.000 y quiero ahorrar 6 millones para diciembre, ¿cuánto debo guardar al mes?'
+    ) == 'alto'
+    assert finanbot_ia_2.nivel_pensamiento('resume esto', 'analisis') == 'alto'
+    assert finanbot_ia_2.nivel_pensamiento('gasté 20000 en pizza', con_herramientas=True) == 'medio'
+
+
+def test_config_gemini_piensa_mas_en_mensajes_dificiles():
+    bajo = finanbot_ia_2._config_gemini('gemini-2.5-flash-lite', True, 1200, False, 'bajo')
+    alto = finanbot_ia_2._config_gemini('gemini-2.5-flash-lite', True, 1200, False, 'alto')
+    assert bajo['thinkingConfig']['thinkingBudget'] == 0
+    assert alto['thinkingConfig']['thinkingBudget'] > 0
+    assert alto['maxOutputTokens'] > bajo['maxOutputTokens']
+    assert finanbot_ia_2._config_gemini('gemini-3-flash-preview', True, nivel='alto')['thinkingConfig'] == {'thinkingLevel': 'high'}
+    # si el modelo no acepta thinkingConfig no se envía
+    assert 'thinkingConfig' not in finanbot_ia_2._config_gemini('gemini-x', False, nivel='alto')

@@ -16,6 +16,7 @@ from __future__ import annotations
 
 from datetime import date
 
+from application.services import metas_service
 from models import Transaccion, MetaAhorro, eliminar_tiendas_sin_transacciones
 from timezone import bogota_today
 
@@ -97,7 +98,8 @@ DECLARACIONES = [
     },
     {
         'name': 'abonar_meta',
-        'description': 'Suma dinero a una meta (solo suma, nunca resta). Usa el id de listar_metas.',
+        'description': 'Suma dinero a una meta (solo suma, nunca resta) y lo descuenta del balance '
+                       'como gasto. Usa el id de listar_metas.',
         'parameters': {
             'type': 'object',
             'properties': {
@@ -105,6 +107,27 @@ DECLARACIONES = [
                 'monto': {'type': 'number'},
             },
             'required': ['meta_id', 'monto'],
+        },
+    },
+    {
+        'name': 'editar_meta',
+        'description': 'Edita una meta de ahorro existente (id de listar_metas). Envía SOLO los campos '
+                       'que la persona quiere cambiar: nombre, monto_objetivo, fecha_limite (AAAA-MM-DD, '
+                       'o "" para quitarla), prioridad, modo y, si es automático, monto_automatico y '
+                       'dia_automatico. NO cambia lo ya ahorrado: para sumar usa abonar_meta.',
+        'parameters': {
+            'type': 'object',
+            'properties': {
+                'meta_id': {'type': 'integer'},
+                'nombre': {'type': 'string'},
+                'monto_objetivo': {'type': 'number'},
+                'fecha_limite': {'type': 'string', 'description': 'AAAA-MM-DD, o "" para quitarla.'},
+                'prioridad': {'type': 'string', 'enum': ['baja', 'media', 'alta']},
+                'modo': {'type': 'string', 'enum': ['manual', 'automatico']},
+                'monto_automatico': {'type': 'number'},
+                'dia_automatico': {'type': 'integer'},
+            },
+            'required': ['meta_id'],
         },
     },
 ]
@@ -154,7 +177,7 @@ class HerramientasFinanBot:
         return round(m, 2)
 
     def _movimiento_del_mes(self, id_) -> Transaccion:
-        t = self.db.query(Transaccion).get(int(id_))
+        t = self.db.get(Transaccion, int(id_))
         if not t or t.usuario_id != self.uid:
             raise ValueError('No encontré ese movimiento.')
         inicio, fin = _mes_actual()
@@ -163,7 +186,7 @@ class HerramientasFinanBot:
         return t
 
     def _meta(self, id_) -> MetaAhorro:
-        m = self.db.query(MetaAhorro).get(int(id_))
+        m = self.db.get(MetaAhorro, int(id_))
         if not m or m.usuario_id != self.uid:
             raise ValueError('No encontré esa meta.')
         return m
@@ -257,6 +280,10 @@ class HerramientasFinanBot:
             'id': m.id, 'nombre': m.nombre,
             'objetivo': float(m.monto_objetivo), 'actual': float(m.monto_actual or 0),
             'modo': m.modo, 'completada': bool(m.completada),
+            'fecha_limite': str(m.fecha_limite) if m.fecha_limite else None,
+            'prioridad': m.prioridad or 'media',
+            'monto_automatico': float(m.monto_automatico) if m.monto_automatico is not None else None,
+            'dia_automatico': m.dia_automatico,
         } for m in metas if getattr(m, 'tipo', 'ahorro') == 'ahorro']}
 
     def _t_crear_meta(self, nombre, monto_objetivo, modo='manual',
@@ -285,12 +312,83 @@ class HerramientasFinanBot:
     def _t_abonar_meta(self, meta_id, monto):
         m = self._meta(meta_id)
         monto = self._monto(monto)
-        nuevo_total = float(m.monto_actual or 0) + monto
-        m.monto_actual = nuevo_total
-        if nuevo_total >= float(m.monto_objetivo):
-            m.completada = True
-        self.db.commit()
+        # mismo camino que "Añadir ahorro" en la web: suma a la meta y lo descuenta del balance
+        try:
+            r = metas_service.abonar(self.db, self.uid, m, monto)
+        except metas_service.MetaError as e:
+            raise ValueError(str(e))
+        nuevo_total = r['nuevo_total']
         self.ejecutadas.append({'tipo': 'meta_abonada', 'nombre': m.nombre,
                                 'monto_abonado': monto, 'nuevo_total': nuevo_total, 'id': m.id})
         return {'ok': True, 'nombre': m.nombre, 'abonado': monto, 'nuevo_total': nuevo_total,
+                'completada': bool(m.completada)}
+
+    def _t_editar_meta(self, meta_id, nombre=None, monto_objetivo=None, fecha_limite=None,
+                       prioridad=None, modo=None, monto_automatico=None, dia_automatico=None):
+        m = self._meta(meta_id)
+        if (getattr(m, 'tipo', None) or 'ahorro') != 'ahorro':
+            raise ValueError('Los límites de gasto se editan desde Mi Perfil.')
+        cambios = {}
+
+        if nombre is not None:
+            nombre = str(nombre).strip()[:50]
+            if len(nombre) < 2:
+                raise ValueError('La meta necesita un nombre.')
+            # Conserva el icono al inicio del nombre, como lo guarda Mi Perfil
+            if m.icono and not nombre.startswith(m.icono):
+                nombre = f'{m.icono} {nombre}'
+            m.nombre = nombre
+            cambios['nombre'] = nombre
+
+        if monto_objetivo is not None:
+            objetivo = self._monto(monto_objetivo)
+            m.monto_objetivo = objetivo
+            m.completada = float(m.monto_actual or 0) >= objetivo
+            cambios['monto_objetivo'] = objetivo
+
+        if fecha_limite is not None:
+            if str(fecha_limite).strip():
+                try:
+                    fecha = date.fromisoformat(str(fecha_limite).strip())
+                except ValueError:
+                    raise ValueError('La fecha límite debe tener formato AAAA-MM-DD.')
+                if fecha < bogota_today():
+                    raise ValueError('La fecha límite no puede estar en el pasado.')
+                m.fecha_limite = fecha
+                cambios['fecha_limite'] = fecha.isoformat()
+            else:
+                m.fecha_limite = None
+                cambios['fecha_limite'] = None
+
+        if prioridad is not None:
+            if prioridad not in ('baja', 'media', 'alta'):
+                raise ValueError("La prioridad debe ser 'baja', 'media' o 'alta'.")
+            m.prioridad = prioridad
+            cambios['prioridad'] = prioridad
+
+        modo_final = modo if modo is not None else (m.modo or 'manual')
+        if modo is not None and modo not in ('manual', 'automatico'):
+            raise ValueError("El modo debe ser 'manual' o 'automatico'.")
+        if modo_final == 'automatico':
+            aporte = monto_automatico if monto_automatico is not None else m.monto_automatico
+            dia = dia_automatico if dia_automatico is not None else m.dia_automatico
+            aporte = self._monto(aporte)
+            dia = int(dia or 0)
+            if not 1 <= dia <= 31:
+                raise ValueError('El día del mes debe estar entre 1 y 31.')
+            if modo is not None or monto_automatico is not None or dia_automatico is not None:
+                m.modo, m.monto_automatico, m.dia_automatico = 'automatico', aporte, dia
+                cambios.update(modo='automatico', monto_automatico=aporte, dia_automatico=dia)
+        elif modo == 'manual':
+            m.modo, m.monto_automatico, m.dia_automatico = 'manual', None, None
+            cambios['modo'] = 'manual'
+
+        if not cambios:
+            raise ValueError('No indicaste qué cambiar de la meta.')
+
+        self.db.commit()
+        self.ejecutadas.append({'tipo': 'meta_editada', 'id': m.id, 'nombre': m.nombre,
+                                'cambios': cambios})
+        return {'ok': True, 'id': m.id, 'nombre': m.nombre, 'cambios': cambios,
+                'objetivo': float(m.monto_objetivo), 'actual': float(m.monto_actual or 0),
                 'completada': bool(m.completada)}

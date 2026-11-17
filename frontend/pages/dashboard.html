@@ -1241,8 +1241,8 @@
                     <div class="trans-left">
                         <div class="trans-icon ${t.tipo}">${getIcono(t.categoria, t.tipo)}</div>
                         <div>
-                            <div class="trans-nombre">${t.categoria}</div>
-                            <div class="trans-desc">${t.descripcion ? t.descripcion + ' · ' : ''}${t.fecha}</div>
+                            <div class="trans-nombre">${escHTML(t.categoria)}</div>
+                            <div class="trans-desc">${t.descripcion ? escHTML(t.descripcion) + ' · ' : ''}${t.fecha}</div>
                         </div>
                     </div>
                     <div class="trans-monto ${t.tipo}">
@@ -1612,7 +1612,7 @@
             const movsHtml = movs.length ? movs.map(t => `
                 <div class="cal-mov-item">
                     <div>
-                        <div class="cal-mov-titulo">${getIcono(t.categoria,t.tipo)} ${t.tipo === 'gasto' ? 'Gasto' : 'Ingreso'} · ${t.categoria}</div>
+                        <div class="cal-mov-titulo">${getIcono(t.categoria,t.tipo)} ${t.tipo === 'gasto' ? 'Gasto' : 'Ingreso'} · ${escHTML(t.categoria)}</div>
                         <div class="cal-mov-desc">${descripcionMostrar(t)}</div>
                     </div>
                     <span class="monto ${t.tipo}">${t.tipo==='gasto'?'-':'+'}$${t.monto.toLocaleString('es-CO')}</span>
@@ -1663,57 +1663,9 @@
         //  futuros (de versiones anteriores). NUNCA toca meses pasados.
         // ════════════════════════════════════════════════
         async function asegurarSalarioMesActual() {
-            if (!token) return;
-            try {
-                const resPerfil = await fetch('/api/perfil/', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (!resPerfil.ok) return;
-                const perfil = await resPerfil.json();
-                const ingreso = Number(perfil.ingreso_mensual) || 0;
-                if (ingreso <= 0 || !perfil.fecha_salario) return;
-                function diaDeFechaStr(fechaStr) {
-                if (!fechaStr) return null;
-                const partes = fechaStr.split('-');
-                return partes.length >= 3 ? parseInt(partes[2], 10) : null;
-                }
-                const diaPago = diaDeFechaStr(perfil.fecha_salario);
-                if (!diaPago) return;
-
-                const resTrans = await fetch('/api/transacciones/', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (!resTrans.ok) return;
-                const todas = await resTrans.json();
-
-                const hoy = FinanbotTime.today();
-                const mesActualStr = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}`;
-
-                // Limpiar salarios auto programados a futuro (no se generan por adelantado)
-                const futuros = todas.filter(t => t.descripcion === '__auto_salario__' && t.fecha && t.fecha.slice(0,7) > mesActualStr);
-                for (const t of futuros) {
-                    await fetch(`/api/transacciones/${t.id}`, {
-                        method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` }
-                    });
-                }
-
-                // Crear el salario del mes actual solo si todavía no existe
-                // Y solo si el día de pago YA LLEGÓ (o pasó) este mes — nunca
-                // se adelanta el dinero a una fecha futura dentro del mismo mes.
-                const yaExiste = todas.some(t => t.descripcion === '__auto_salario__' && t.fecha && t.fecha.slice(0,7) === mesActualStr);
-                if (!yaExiste) {
-                    const ultimoDia = new Date(hoy.getFullYear(), hoy.getMonth()+1, 0).getDate();
-                    const diaFinal = Math.min(diaPago, ultimoDia);
-                    if (hoy.getDate() < diaFinal) return; // aún no llega el día de pago este mes
-                    const fecha = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-${String(diaFinal).padStart(2,'0')}`;
-                    const salarioActivo = categoriasUsuario.ingreso.some(c => c.nombre === 'Salario' && !c.oculta);
-                    await fetch('/api/transacciones/', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                        body: JSON.stringify({ tipo: 'ingreso', categoria: salarioActivo ? 'Salario' : 'Otros ingresos', icono: salarioActivo ? '💼' : '💵', monto: ingreso, descripcion: '__auto_salario__', fecha })
-                    });
-                }
-            } catch(e) { console.error('Error verificando salario del mes:', e); }
+            // El servidor aplica el salario y los aportes automáticos del mes
+            // al responder GET /transacciones/ y GET /metas/. Nada que hacer aquí.
+            return;
         }
 
         (async function initDashboard() {

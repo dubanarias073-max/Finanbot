@@ -269,3 +269,64 @@ def test_recomendaciones_trata_tope_de_gasto_alcanzado_como_alerta(db_sessions):
     alertas = [item for item in recomendaciones if item['tipo'] == 'alerta']
     assert any('Límite de gasto mensual alcanzado' in item['titulo'] for item in alertas)
     assert not any('Tope del mes' in item['titulo'] and item['tipo'] == 'exito' for item in recomendaciones)
+
+
+def test_editar_meta_completa_cambia_nombre_objetivo_y_fecha(db_sessions):
+    from routes.metas import MetaUpdate, actualizar_meta
+
+    with db_sessions() as db:
+        usuario = _usuario(db)
+        meta = MetaAhorro(
+            usuario_id=usuario.id, nombre='🏖️ Viaje', monto_objetivo=100_000,
+            monto_actual=100_000, completada=True, tipo='ahorro',
+        )
+        db.add(meta)
+        db.commit()
+
+        actualizar_meta(meta.id, MetaUpdate(
+            nombre='💻 Portátil', monto_objetivo=300_000, fecha_limite='2030-01-15',
+            icono='💻', categoria='tecnologia', prioridad='alta',
+        ), str(usuario.id), db)
+        db.refresh(meta)
+        assert meta.nombre == '💻 Portátil'
+        assert float(meta.monto_objetivo) == 300_000
+        assert str(meta.fecha_limite) == '2030-01-15'
+        assert meta.completada is False  # nuevo objetivo mayor que lo ahorrado
+
+        actualizar_meta(meta.id, MetaUpdate(fecha_limite=None), str(usuario.id), db)
+        db.refresh(meta)
+        assert meta.fecha_limite is None
+
+        with pytest.raises(HTTPException):
+            actualizar_meta(meta.id, MetaUpdate(monto_objetivo=0), str(usuario.id), db)
+
+
+def test_ia_edita_meta_completa_con_herramienta(db_sessions):
+    from finanbot_tools import HerramientasFinanBot
+
+    with db_sessions() as db:
+        usuario = _usuario(db)
+        meta = MetaAhorro(usuario_id=usuario.id, nombre='🏖️ Viaje', icono='🏖️',
+                          monto_objetivo=100_000, monto_actual=40_000, tipo='ahorro')
+        db.add(meta)
+        db.commit()
+        h = HerramientasFinanBot(usuario.id, db, {}, lambda c, *_: c)
+
+        r = h.ejecutar('editar_meta', {
+            'meta_id': meta.id, 'nombre': 'Viaje a Cartagena', 'monto_objetivo': 2_000_000,
+            'prioridad': 'alta', 'modo': 'automatico', 'monto_automatico': 150_000,
+            'dia_automatico': 5,
+        })
+        assert r['ok'] is True
+        db.refresh(meta)
+        assert meta.nombre == '🏖️ Viaje a Cartagena'
+        assert float(meta.monto_objetivo) == 2_000_000
+        assert float(meta.monto_actual) == 40_000  # lo ahorrado no cambia
+        assert meta.modo == 'automatico' and meta.dia_automatico == 5
+        assert h.ejecutadas[-1]['tipo'] == 'meta_editada'
+
+        assert 'error' in h.ejecutar('editar_meta', {'meta_id': meta.id})
+        assert 'error' in h.ejecutar('editar_meta', {'meta_id': meta.id, 'dia_automatico': 40})
+        assert h.ejecutar('editar_meta', {'meta_id': meta.id, 'modo': 'manual'})['ok']
+        db.refresh(meta)
+        assert meta.monto_automatico is None

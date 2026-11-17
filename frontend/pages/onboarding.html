@@ -1472,44 +1472,10 @@ async function finish(){
    historial pasado.
 ──────────────────────────────────────────────────────── */
 async function sincronizarSalarioAuto(monto, diaPago){
-  try{
-    // 1. Obtener transacciones existentes
-    const res = await fetch(API+'/transacciones/', {
-      headers:{'Authorization':'Bearer '+token}
-    });
-    if(!res.ok) return;
-    const todas = await res.json();
-
-    // 2. Eliminar salario(s) auto previo(s) — evita duplicados
-    const autoAnteriores = todas.filter(t =>
-      t.descripcion && t.descripcion.includes('__auto_salario__')
-    );
-    for(const t of autoAnteriores){
-      await fetch(`${API}/transacciones/${t.id}`, {
-        method:'DELETE',
-        headers:{'Authorization':'Bearer '+token}
-      });
-    }
-
-    // 3. Crear SOLO el salario del mes actual
-    const hoy = FinanbotTime.today();
-    const fecha = fechaSalarioParaMes(hoy.getFullYear(), hoy.getMonth(), 0, diaPago);
-    await fetch(API+'/transacciones/', {
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
-      body: JSON.stringify({
-        tipo: 'ingreso',
-        categoria: 'Salario',
-        icono: '💼',
-        monto: monto,
-        descripcion: '__auto_salario__',   // tag oculto, no editable por el usuario
-        fecha: fecha
-      })
-    });
-  }catch(e){
-    console.error('Error sincronizando salario automático:', e);
-    // No interrumpe el flujo de finish() — el perfil ya quedó guardado
-  }
+  // El servidor crea el salario automático del mes al guardar el perfil
+  // (PUT /perfil/) y cada vez que se consultan las transacciones.
+  // Aquí ya no se crea nada para evitar duplicados.
+  return;
 }
 
 async function req(path,method,data){

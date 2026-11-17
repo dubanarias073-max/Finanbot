@@ -36,6 +36,31 @@ async function cerrarSesionDispositivo(event) {
     }
 }
 
+async function cerrarSesionTodosDispositivos(event) {
+    event?.preventDefault();
+    const destino = event?.currentTarget?.dataset?.destino || 'index-legacy.html';
+    if (!confirm('¿Cerrar sesión en TODOS tus dispositivos? Tendrás que iniciar sesión de nuevo en cada uno.')) {
+        return;
+    }
+    const token = localStorage.getItem('token');
+    try {
+        const respuesta = await fetch('/api/auth/logout-all', {
+            method: 'POST',
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        // 401 = la sesión ya estaba revocada: el objetivo ya se cumplió
+        if (!respuesta.ok && respuesta.status !== 401) {
+            throw new Error(`HTTP ${respuesta.status}`);
+        }
+    } catch (error) {
+        console.error('Error cerrando sesión en todos los dispositivos:', error);
+        alert('No se pudo cerrar la sesión en todos los dispositivos. Inténtalo de nuevo.');
+        return;
+    }
+    localStorage.clear();
+    window.top.location.href = destino;
+}
+
 async function cerrarSesionCompleto(event) {
     if (confirm('¿Cerrar sesión?')) {
         await cerrarSesionDispositivo(event);

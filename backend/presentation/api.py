@@ -5,6 +5,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
+from config import settings
 from database import Base, engine, SessionLocal
 
 
@@ -24,24 +25,29 @@ def _register_routers(app: FastAPI) -> None:
     from routes.simulaciones import router as simulaciones_router
     from routes.transacciones import router as transacciones_router
 
+    # (router, prefijo, grupo en Swagger)
     routers = (
-        (auth_router, '/api/auth'),
-        (archivos_router, '/api/chat'),
-        (excel_sim_router, '/api/simulaciones'),
-        (chat_router, '/api/chat'),
-        (transacciones_router, '/api/transacciones'),
-        (simulaciones_router, '/api/simulaciones'),
-        (perfil_router, '/api/perfil'),
-        (metas_router, '/api/metas'),
-        (recomendaciones_router, '/api/recomendaciones'),
-        (chat_historial_router, '/api/chat-historial'),
-        (exportar_router, '/api/exportar'),
-        (excel_router, '/api/exportar'),
-        (aprende_router, '/api/aprende'),
-        (calendario_router, '/api/calendario'),
+        (auth_router, '/api/auth', 'Autenticación'),
+        (perfil_router, '/api/perfil', 'Perfil'),
+        (transacciones_router, '/api/transacciones', 'Transacciones'),
+        (metas_router, '/api/metas', 'Metas'),
+        (calendario_router, '/api/calendario', 'Calendario'),
+        (recomendaciones_router, '/api/recomendaciones', 'Recomendaciones'),
+        (chat_router, '/api/chat', 'Chat IA'),
+        (archivos_router, '/api/chat', 'Chat IA · archivos'),
+        (chat_historial_router, '/api/chat-historial', 'Historial del chat'),
+        (simulaciones_router, '/api/simulaciones', 'Simulador'),
+        (excel_sim_router, '/api/simulaciones', 'Simulador'),
+        (exportar_router, '/api/exportar', 'Exportar'),
+        (excel_router, '/api/exportar', 'Exportar'),
+        (aprende_router, '/api/aprende', 'Aprende'),
     )
-    for router, prefix in routers:
-        app.include_router(router, prefix=prefix)
+    for router, prefix, grupo in routers:
+        router.tags = []                      # un solo grupo por ruta en Swagger
+        for ruta in router.routes:
+            if hasattr(ruta, 'tags'):
+                ruta.tags = []
+        app.include_router(router, prefix=prefix, tags=[grupo])
 
 
 def _migrar_esquema() -> None:
@@ -241,7 +247,22 @@ async def lifespan(app: FastAPI):
 
 
 def create_app() -> FastAPI:
-    app = FastAPI(title='FinanBot API', version='1.0.0', lifespan=lifespan)
+    app = FastAPI(
+        title='FinanBot API',
+        version='1.0.0',
+        lifespan=lifespan,
+        description=(
+            'API de FinanBot: finanzas personales, metas de ahorro y chat con IA.\n\n'
+            '**Cómo probar con tu usuario:**\n'
+            '1. Pulsa **Authorize** (candado de arriba a la derecha).\n'
+            '2. En *username* escribe tu **correo** y en *password* tu contraseña. Deja client_id y secret vacíos.\n'
+            '3. Pulsa **Authorize** y luego **Close**. Desde ahí todas las rutas con candado usan tu token '
+            '(por ejemplo `GET /api/metas/` muestra tus metas).\n\n'
+            'Si ya tienes un token del login (`POST /api/auth/login`), también sirve: Swagger lo envía como '
+            '`Authorization: Bearer <token>`.'
+        ),
+        swagger_ui_parameters={'persistAuthorization': True},   # no pide el token al recargar
+    )
     frontend_dir = Path(__file__).resolve().parents[2] / 'frontend'
     images_dir = frontend_dir.parent / 'images'
     if frontend_dir.exists():
@@ -250,7 +271,7 @@ def create_app() -> FastAPI:
         app.mount('/images', StaticFiles(directory=images_dir), name='frontend-images')
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=['*'],
+        allow_origins=settings.CORS_ORIGINS,
         allow_credentials=True,
         allow_methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
         allow_headers=['Content-Type', 'Authorization'],

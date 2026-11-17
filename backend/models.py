@@ -1,18 +1,41 @@
 # models.py
+import re
 import uuid
 from datetime import datetime, timezone
 from sqlalchemy import (
     Column, Integer, String, Numeric, Boolean, DateTime, Date, Text,
     ForeignKey, Enum, JSON, UniqueConstraint, func,
 )
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, validates
 
 from database import Base
 from timezone import bogota_now
 
 
+_ETIQUETAS_HTML = re.compile(r'</?[a-zA-Z!][^<>]*>')
+_CARACTERES_PELIGROSOS = re.compile(r'[<>\x00-\x08\x0b\x0c\x0e-\x1f\x7f]')
+
+
+def texto_seguro(valor):
+    """Quita < > y caracteres de control de los textos que escribe el usuario
+    (o la IA) y que luego se muestran en las páginas. Así ningún nombre o
+    descripción guardado puede convertirse en HTML o JavaScript (XSS)."""
+    if valor is None or not isinstance(valor, str):
+        return valor
+    sin_etiquetas = _ETIQUETAS_HTML.sub('', valor)           # <b>Viaje</b> → Viaje
+    return _CARACTERES_PELIGROSOS.sub('', sin_etiquetas)     # y cualquier < > suelto
+
+
+def _validador_texto(*campos):
+    @validates(*campos)
+    def _limpiar(self, _clave, valor):
+        return texto_seguro(valor)
+    return _limpiar
+
+
 class Usuario(Base):
     __tablename__ = 'usuarios'
+    _limpiar_textos = _validador_texto('nombre')
 
     id = Column(Integer, primary_key=True)
     nombre = Column(String(100), nullable=False)
@@ -150,6 +173,7 @@ ICONOS_CATEGORIA = {
 
 class Categoria(Base):
     __tablename__ = 'categorias'
+    _limpiar_textos = _validador_texto('nombre', 'icono')
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     nombre = Column(String(50), nullable=False, unique=True)
@@ -166,6 +190,7 @@ class CategoriaUsuario(Base):
     - personalizada=False → es una categoría por defecto que el usuario
       decidió ocultar o eliminar de sus listas."""
     __tablename__ = 'categorias_usuario'
+    _limpiar_textos = _validador_texto('nombre', 'icono')
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     usuario_id = Column(Integer, ForeignKey('usuarios.id', ondelete='CASCADE'), nullable=False, index=True)
@@ -227,6 +252,7 @@ def icono_categoria(nombre, tipo: str = 'gasto', icono_db: str | None = None) ->
 
 class Tienda(Base):
     __tablename__ = 'tiendas'
+    _limpiar_textos = _validador_texto('nombre')
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     usuario_id = Column(Integer, ForeignKey('usuarios.id', ondelete='CASCADE'), nullable=False)
@@ -245,6 +271,7 @@ class Tienda(Base):
 
 class Transaccion(Base):
     __tablename__ = 'transacciones'
+    _limpiar_textos = _validador_texto('descripcion', 'ubicacion_nombre')
 
     id = Column(Integer, primary_key=True)
     usuario_id = Column(Integer, ForeignKey('usuarios.id'), nullable=False)
@@ -302,6 +329,7 @@ def eliminar_tiendas_sin_transacciones(db, tienda_ids) -> None:
 
 class MetaAhorro(Base):
     __tablename__ = 'meta'
+    _limpiar_textos = _validador_texto('nombre', 'categoria', 'icono')
 
     id = Column(Integer, primary_key=True)
     usuario_id = Column(Integer, ForeignKey('usuarios.id'), nullable=False)
@@ -338,6 +366,7 @@ class Chat(Base):
     """Chats y conversaciones unidos: cada fila es un mensaje y los
     mensajes de una misma conversación comparten conversacion_id y titulo."""
     __tablename__ = 'chats'
+    _limpiar_textos = _validador_texto('titulo')
 
     id = Column(Integer, primary_key=True)
     usuario_id = Column(Integer, ForeignKey('usuarios.id', ondelete='SET NULL'), nullable=True)

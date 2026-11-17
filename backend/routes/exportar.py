@@ -1,4 +1,5 @@
 # routes/exportar.py
+from archivos_util import cabecera_descarga
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
@@ -151,7 +152,7 @@ def exportar_pdf(
         raise HTTPException(status_code=500, detail='Instala reportlab: pip install reportlab')
 
     uid  = int(usuario_id)
-    user = db.query(Usuario).get(uid)
+    user = db.get(Usuario, uid)
     if not user:
         raise HTTPException(status_code=404, detail='Usuario no encontrado')
 
@@ -611,5 +612,5 @@ def exportar_pdf(
     return StreamingResponse(
         buf,
         media_type='application/pdf',
-        headers={'Content-Disposition': f'attachment; filename="{nombre_archivo}"'}
+        headers=cabecera_descarga(nombre_archivo)
     )

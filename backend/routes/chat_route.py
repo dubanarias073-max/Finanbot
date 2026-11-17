@@ -1,5 +1,6 @@
 # routes/chat_route.py
 import re, ast, operator, uuid, unicodedata
+from application.services import metas_service
 from collections import defaultdict
 from typing import Optional
 from urllib.parse import quote
@@ -8,9 +9,10 @@ from fastapi import APIRouter, Depends, Body, HTTPException
 from sqlalchemy.orm import Session
 
 from database import get_db
-from extensions import obtener_usuario_id_opcional
+from extensions import obtener_usuario_id_opcional, obtener_usuario_id_requerido
 from finanbot_ia import (
     FinanBotIA, EJEMPLOS, RUTAS, _referencia_mes_pasado, _btns_trans, _btns_metas,
+    clave_conversacion,
 )
 import finanbot_ia_2
 from finanbot_tools import HerramientasFinanBot
@@ -103,6 +105,24 @@ def _guardar_chat(
                 mensaje=mensaje, respuesta=respuesta, documento=documento, es_invitado=False))
     db.commit()
     return conv_id
+
+
+def _hidratar_memoria_desde_bd(db: Session, uid: int, conversacion_id: str, clave: str) -> None:
+    """Tras un reinicio (o en otro proceso) la memoria de la IA está vacía:
+    se reconstruye con los últimos mensajes guardados de esta conversación."""
+    try:
+        filas = (db.query(Chat)
+                 .filter(Chat.conversacion_id == conversacion_id, Chat.usuario_id == uid)
+                 .order_by(Chat.fecha.desc(), Chat.id.desc())
+                 .limit(finanbot_ia_2.MAX_TURNOS_MEMORIA).all())
+        filas.reverse()
+        turnos = []
+        for fila in filas:
+            turnos += [('user', fila.mensaje or ''), ('bot', fila.respuesta or '')]
+        documento = next((f.documento for f in reversed(filas) if f.documento), None)
+        finanbot_ia_2.hidratar_memoria(clave, turnos, documento)
+    except Exception as error:
+        print(f'[FinanBot] No se pudo recuperar la memoria de la conversación: {error}')
 
 
 def _conversacion_ia_id(db: Session, uid: int | None, conv_id_body) -> str | None:
@@ -458,6 +478,12 @@ def _botones_para(accion: dict | None) -> list[dict]:
 #  ENDPOINT
 # ══════════════════════════════════════════════════════════════════
 
+@router.get('/ia-metricas')
+def ia_metricas(usuario_id: str = Depends(obtener_usuario_id_requerido)):
+    """Resumen de las últimas respuestas de la IA: modelo, tiempo y fallos."""
+    return finanbot_ia_2.resumen_metricas()
+
+
 @router.post('/mensaje')
 def mensaje(
     body: dict = Body(...),
@@ -525,7 +551,9 @@ def mensaje(
     # ── 1) IA 2 (Gemini) con herramientas: responde y ejecuta ───────
     respuesta_ia2 = None
     ejecutadas: list[dict] = []
-    clave_ia = FinanBotIA._clave_conversacion(ctx, conversacion_id) if ctx is not None else None
+    clave_ia = clave_conversacion(ctx, conversacion_id) if ctx is not None else None
+    if conversacion_id and clave_ia and not finanbot_ia_2.tiene_memoria(clave_ia):
+        _hidratar_memoria_desde_bd(db, uid, conversacion_id, clave_ia)
     usar_herramientas = (
         uid is not None and ctx is not None
         and not adjuntos_ids and not solicitud_documento
@@ -571,7 +599,7 @@ def mensaje(
 
     if uid and ctx and accion and accion.get('tipo') in {
         'gasto_registrado', 'gasto_editado', 'gasto_eliminado',
-        'meta_abonada', 'meta_actualizada',
+        'meta_abonada', 'meta_actualizada', 'meta_editada',
     }:
         metas_actualizadas = obtener_metas_calculadas(uid, db)
         ctx['metas'] = [{
@@ -944,7 +972,7 @@ def _resolver_contexto(msg: str, uid: int, ctx: dict, session_key: str, db: Sess
         if not elegido:
             return None
         try:
-            t = db.query(Transaccion).get(elegido['id'])
+            t = db.get(Transaccion, elegido['id'])
             if not t or t.usuario_id != uid:
                 return None
             if sub == 'eliminar':
@@ -981,22 +1009,18 @@ def _resolver_contexto(msg: str, uid: int, ctx: dict, session_key: str, db: Sess
         if not elegida:
             return None
         try:
-            m = db.query(MetaAhorro).get(elegida['id'])
+            m = db.get(MetaAhorro, elegida['id'])
             if not m or m.usuario_id != uid:
                 return None
             if accion_pendiente == 'meta_eliminar':
-                nombre_m = m.nombre
-                db.delete(m); db.commit()
+                nombre_m = metas_service.eliminar(db, uid, m)['nombre']
                 _contextos[session_key] = {'esperando': None, 'ultimo_tipo': 'meta_eliminada', 'datos': {}}
                 return {'tipo': 'meta_eliminada', 'nombre': nombre_m}
             else:
                 nuevo_monto = extraer_monto(msg) or datos_previos.get('monto')
                 if not (nuevo_monto and nuevo_monto > 0):
                     return None
-                m.monto_actual = nuevo_monto
-                if nuevo_monto >= float(m.monto_objetivo):
-                    m.completada = True
-                db.commit()
+                metas_service.ajustar_total(db, uid, m, nuevo_monto)
                 _contextos[session_key] = {'esperando': None, 'ultimo_tipo': 'meta', 'datos': {}}
                 return {'tipo': 'meta_actualizada', 'nombre': elegida['nombre'], 'nuevo_monto': nuevo_monto}
         except Exception as e:
@@ -1011,7 +1035,7 @@ def _resolver_contexto(msg: str, uid: int, ctx: dict, session_key: str, db: Sess
         id_obj = datos_previos.get('id_objetivo')
         if nuevo_monto and nuevo_monto > 0 and id_obj:
             try:
-                t = db.query(Transaccion).get(id_obj)
+                t = db.get(Transaccion, id_obj)
                 if t and t.usuario_id == uid:
                     anterior = float(t.monto)
                     t.monto = nuevo_monto
@@ -1161,10 +1185,11 @@ def _resolver_contexto(msg: str, uid: int, ctx: dict, session_key: str, db: Sess
 
 def _cargar_contexto(uid: int, db: Session):
     try:
+        metas_service.procesar_automaticos(db, uid)
         transacciones = db.query(Transaccion).filter_by(usuario_id=uid).all()
         metas         = db.query(MetaAhorro).filter_by(usuario_id=uid).all()
         metas_calculadas = obtener_metas_calculadas(uid, db)
-        usuario       = db.query(Usuario).get(uid)
+        usuario       = db.get(Usuario, uid)
         categorias_activas = _categorias_activas(uid, db)
         categorias_gasto = [categoria['nombre'] for categoria in categorias_activas['gasto']]
         categorias_ingreso = [categoria['nombre'] for categoria in categorias_activas['ingreso']]
@@ -1510,15 +1535,11 @@ def ejecutar_accion(mensaje: str, uid: int, ctx: dict, db: Session):
             if monto and monto > 0:
                 meta = _buscar_meta(msg, metas) or metas[0]
                 try:
-                    m = db.query(MetaAhorro).get(meta['id'])
+                    m = db.get(MetaAhorro, meta['id'])
                     if m and m.usuario_id == uid:
-                        nuevo_total = float(m.monto_actual) + monto
-                        m.monto_actual = nuevo_total
-                        if nuevo_total >= float(m.monto_objetivo):
-                            m.completada = True
-                        db.commit()
+                        r = metas_service.abonar(db, uid, m, monto)
                         return {'tipo': 'meta_abonada', 'nombre': meta['nombre'],
-                                'monto_abonado': monto, 'nuevo_total': nuevo_total, 'id': m.id}
+                                'monto_abonado': monto, 'nuevo_total': r['nuevo_total'], 'id': m.id}
                 except Exception as e:
                     print(f'[FinanBot] Meta abonar: {e}')
             return {'tipo': 'pide_monto', 'contexto': 'meta'}
@@ -1560,10 +1581,9 @@ def ejecutar_accion(mensaje: str, uid: int, ctx: dict, db: Session):
             if not encontrada:
                 return {'tipo': 'confirmar_eliminar_meta', 'mensaje': 'No encontré esa meta. ¿Cuál quieres eliminar?', 'metas': metas}
             try:
-                m = db.query(MetaAhorro).get(encontrada['id'])
+                m = db.get(MetaAhorro, encontrada['id'])
                 if m and m.usuario_id == uid:
-                    nombre_m = m.nombre
-                    db.delete(m); db.commit()
+                    nombre_m = metas_service.eliminar(db, uid, m)['nombre']
                     return {'tipo': 'meta_eliminada', 'nombre': nombre_m}
             except Exception as e:
                 print(f'[FinanBot] Meta eliminar: {e}')
@@ -1580,12 +1600,9 @@ def ejecutar_accion(mensaje: str, uid: int, ctx: dict, db: Session):
                     else:
                         return {'tipo': 'confirmar_editar_meta', 'metas': metas, 'monto': monto}
                 try:
-                    m = db.query(MetaAhorro).get(meta['id'])
+                    m = db.get(MetaAhorro, meta['id'])
                     if m and m.usuario_id == uid:
-                        m.monto_actual = monto
-                        if monto >= meta['objetivo']:
-                            m.completada = True
-                        db.commit()
+                        metas_service.ajustar_total(db, uid, m, monto)
                         return {'tipo': 'meta_actualizada', 'nombre': meta['nombre'], 'nuevo_monto': monto}
                 except Exception as e:
                     print(f'[FinanBot] Meta update: {e}')
@@ -1609,7 +1626,7 @@ def ejecutar_accion(mensaje: str, uid: int, ctx: dict, db: Session):
                     return {'tipo': 'confirmar_editar_gasto', 'gastos': gastos[:5], 'monto': nuevo_monto}
             if nuevo_monto and nuevo_monto > 0:
                 try:
-                    t = db.query(Transaccion).get(g['id'])
+                    t = db.get(Transaccion, g['id'])
                     if t and t.usuario_id == uid:
                         anterior = float(t.monto)
                         t.monto = nuevo_monto
@@ -1653,7 +1670,7 @@ def ejecutar_accion(mensaje: str, uid: int, ctx: dict, db: Session):
             if not g:
                 return {'tipo': 'confirmar_eliminar_gasto', 'mensaje': 'No encontré ese gasto. ¿Elimino el más reciente?', 'gastos': gastos[:5]}
             try:
-                t = db.query(Transaccion).get(g['id'])
+                t = db.get(Transaccion, g['id'])
                 if t and t.usuario_id == uid:
                     tienda_id = t.tienda_id
                     db.delete(t)
@@ -1685,7 +1702,7 @@ def ejecutar_accion(mensaje: str, uid: int, ctx: dict, db: Session):
                     return {'tipo': 'confirmar_editar_ingreso', 'ingresos': ingresos[:5], 'monto': nuevo_monto}
             if nuevo_monto and nuevo_monto > 0:
                 try:
-                    t = db.query(Transaccion).get(i['id'])
+                    t = db.get(Transaccion, i['id'])
                     if t and t.usuario_id == uid:
                         anterior = float(t.monto)
                         t.monto = nuevo_monto
@@ -1729,7 +1746,7 @@ def ejecutar_accion(mensaje: str, uid: int, ctx: dict, db: Session):
             if not i:
                 return {'tipo': 'confirmar_eliminar_ingreso', 'mensaje': 'No encontré ese ingreso. ¿Elimino el más reciente?', 'ingresos': ingresos[:5]}
             try:
-                t = db.query(Transaccion).get(i['id'])
+                t = db.get(Transaccion, i['id'])
                 if t and t.usuario_id == uid:
                     tienda_id = t.tienda_id
                     db.delete(t)

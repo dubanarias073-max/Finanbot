@@ -263,3 +263,12 @@ sudo docker exec -i mi-mysql mysql -u root -p123456 -e "USE finanbot_db; SHOW TA
 ```
 
 > Nota: El aviso `Using a password on the command line interface can be insecure` es normal y puede ignorarse.
+
+⚠️ **Advertencia de Maquina Virtual:**
+
+si  cuando abres en mstsc(acceso a escritorio remoto) y le das a conectar y se te cierra es porque  la sesion esta corrupta . si es posible abre vs code y  abre la maquina virtual desde ahi 
+([](#2-configuración-de-conexión-ssh-en-vs-code)) y de ahi pon en la terminal este comando para reiniciar todo el entorno:
+
+```bash
+pkill -9 -u $USER -f "xfce|Xorg|xorg|dbus-daemon"
+```

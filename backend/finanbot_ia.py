@@ -47,9 +47,25 @@ EJEMPLOS = {
     'crear_meta_manual':'💬 Ejemplo: *"Crea una meta de $1.000.000 para viajes"* (la abonas cuando quieras desde Mi Perfil)',
     'crear_meta_auto':  '💬 Ejemplo: *"Crea una meta automática de $2.000.000 para vivienda, aportando $200.000 el día 5 de cada mes"*',
     'abonar_meta':      '💬 Ejemplo: *"Añade $50.000 a mi meta de viajes"* (esto solo suma, nunca resta)',
+    'editar_meta':      '💬 Ejemplo: *"Cambia mi meta de viajes a $3.000.000 y ponle fecha límite el 31 de diciembre"*',
     'editar_meta_monto':'💬 Ejemplo: *"Pon mi meta de viajes en $300.000"* (esto reemplaza el total, puede subir o bajar)',
     'borrar_meta':      '💬 Ejemplo: *"Elimina mi meta de viajes"*',
 }
+
+
+def clave_conversacion(ctx: dict | None, conversacion_id: str | None) -> str | None:
+    """Identifica la conversación para la memoria de la IA. Sin un id
+    no se guarda memoria (evita mezclar conversaciones de usuarios)."""
+    if conversacion_id:
+        return f'conv:{conversacion_id}'
+    if ctx:
+        for k in ('conversacion_id', 'conversation_id'):
+            if ctx.get(k):
+                return f'conv:{ctx[k]}'
+        for k in ('usuario_id', 'user_id', 'id_usuario'):
+            if ctx.get(k):
+                return f'user:{ctx[k]}'
+    return None
 
 
 def _con_ejemplo(texto: str, clave: str) -> str:
@@ -1545,7 +1561,7 @@ class FinanBotIA:
         'gasto_registrado', 'ingreso_registrado',
         'gasto_editado', 'ingreso_editado',
         'gasto_eliminado', 'ingreso_eliminado',
-        'meta_creada', 'meta_actualizada', 'meta_abonada', 'meta_eliminada',
+        'meta_creada', 'meta_actualizada', 'meta_abonada', 'meta_eliminada', 'meta_editada',
     }
     
     def _redactar_con_ia2(self, mensaje, ctx, respuesta_ia1):
@@ -1642,18 +1658,7 @@ class FinanBotIA:
 
     @staticmethod
     def _clave_conversacion(ctx: dict | None, conversacion_id: str | None) -> str | None:
-        """Identifica la conversación para la memoria de la IA. Sin un id
-        no se guarda memoria (evita mezclar conversaciones de usuarios)."""
-        if conversacion_id:
-            return f'conv:{conversacion_id}'
-        if ctx:
-            for k in ('conversacion_id', 'conversation_id'):
-                if ctx.get(k):
-                    return f'conv:{ctx[k]}'
-            for k in ('usuario_id', 'user_id', 'id_usuario'):
-                if ctx.get(k):
-                    return f'user:{ctx[k]}'
-        return None
+        return clave_conversacion(ctx, conversacion_id)
 
     # ── Router principal ──────────────────────────────────────────
 
@@ -1706,6 +1711,8 @@ class FinanBotIA:
             return self._meta_actualizada(accion), _btns_metas()
         if tipo == 'meta_abonada':
             return self._meta_abonada(accion), _btns_metas()
+        if tipo == 'meta_editada':
+            return self._meta_editada(accion), _btns_metas()
         if tipo == 'meta_eliminada':
             return _con_ejemplo(f"🗑️ Meta **{accion['nombre']}** eliminada correctamente.", 'crear_meta_manual'), _btns_metas()
         if tipo == 'consulta_metas':
@@ -2102,6 +2109,20 @@ class FinanBotIA:
         nombre, nuevo = a['nombre'], a['nuevo_monto']
         texto = f"✅ Meta actualizada.\n\n**{nombre}** → nuevo total: **${nuevo:,.0f}**"
         return _con_ejemplo(texto, 'editar_meta_monto')
+
+    def _meta_editada(self, a):
+        c = a.get('cambios', {})
+        etiquetas = []
+        if 'nombre' in c: etiquetas.append(f"nombre → **{c['nombre']}**")
+        if 'monto_objetivo' in c: etiquetas.append(f"objetivo → **${c['monto_objetivo']:,.0f}**")
+        if 'fecha_limite' in c: etiquetas.append(f"fecha límite → **{c['fecha_limite'] or 'sin fecha'}**")
+        if 'prioridad' in c: etiquetas.append(f"prioridad → **{c['prioridad']}**")
+        if c.get('modo') == 'automatico':
+            etiquetas.append(f"modo → **automático** (${c['monto_automatico']:,.0f} el día {c['dia_automatico']})")
+        elif c.get('modo') == 'manual':
+            etiquetas.append("modo → **manual**")
+        detalle = "\n".join(f"• {e}" for e in etiquetas)
+        return _con_ejemplo(f"✏️ Meta **{a['nombre']}** actualizada:\n\n{detalle}", 'editar_meta')
 
     def _meta_abonada(self, a):
         """Abono manual ('Añadir ahorro') — solo suma, nunca resta."""

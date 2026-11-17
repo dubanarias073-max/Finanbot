@@ -10,6 +10,8 @@ from database import get_db
 from extensions import obtener_usuario_id_requerido
 from models import MetaAhorro, Transaccion
 from timezone import bogota_today
+from application.services import metas_service
+from application.services.metas_service import MetaError
 
 router = APIRouter()
 
@@ -83,6 +85,7 @@ def obtener_metas_calculadas(usuario_id: int, db: Session, hoy: Optional[date] =
 # =========================================================
 
 class MetaCreate(BaseModel):
+    model_config = {'json_schema_extra': {'examples': [{"nombre": "🏖️ Viaje a Cartagena", "monto_objetivo": 2000000, "tipo": "ahorro", "monto_actual": 0, "fecha_limite": "2027-06-30", "modo": "automatico", "monto_automatico": 200000, "dia_automatico": 5, "icono": "🏖️", "categoria": "viaje", "prioridad": "alta"}]}}
     nombre: str
     monto_objetivo: float
     tipo: Optional[str] = 'ahorro'
@@ -96,9 +99,12 @@ class MetaCreate(BaseModel):
     prioridad: Optional[str] = 'media'
 
 class MetaUpdate(BaseModel):
+    model_config = {'json_schema_extra': {'examples': [{"nombre": "🏖️ Viaje a San Andrés", "monto_objetivo": 3000000, "fecha_limite": "2027-12-15", "prioridad": "media"}]}}
     nombre: Optional[str] = None
     tipo: Optional[str] = None
+    monto_objetivo: Optional[float] = None
     monto_actual: Optional[float] = None
+    fecha_limite: Optional[str] = None             # enviar null o '' para quitarla
     modo: Optional[str] = None
     monto_automatico: Optional[float] = None
     dia_automatico: Optional[int] = None
@@ -116,7 +122,78 @@ def obtener_metas(
     usuario_id: str = Depends(obtener_usuario_id_requerido),
     db: Session = Depends(get_db),
 ):
-    return obtener_metas_calculadas(int(usuario_id), db)
+    uid = int(usuario_id)
+    # aplica en el servidor el salario y los aportes automáticos pendientes del mes
+    metas_service.procesar_automaticos(db, uid)
+    return obtener_metas_calculadas(uid, db)
+
+
+# =========================================================
+# MOVIMIENTOS DE DINERO (atómicos, calculados en el servidor)
+# =========================================================
+
+class MontoBody(BaseModel):
+    model_config = {'json_schema_extra': {'examples': [{"monto": 50000}]}}
+    monto: float
+
+
+class TotalBody(BaseModel):
+    model_config = {'json_schema_extra': {'examples': [{"nuevo_total": 300000}]}}
+    nuevo_total: float
+
+
+def _meta_o_error(db, uid, id):
+    try:
+        return metas_service.obtener_meta(db, uid, id)
+    except MetaError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.post('/{id}/abonar')
+def abonar_meta(
+    id: int,
+    body: MontoBody,
+    usuario_id: str = Depends(obtener_usuario_id_requerido),
+    db: Session = Depends(get_db),
+):
+    """Suma dinero a la meta y lo descuenta del balance (gasto 'Aporte manual a meta')."""
+    uid = int(usuario_id)
+    meta = _meta_o_error(db, uid, id)
+    try:
+        return {'mensaje': '✅ Abono registrado', **metas_service.abonar(db, uid, meta, body.monto)}
+    except MetaError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post('/{id}/ajustar')
+def ajustar_meta(
+    id: int,
+    body: TotalBody,
+    usuario_id: str = Depends(obtener_usuario_id_requerido),
+    db: Session = Depends(get_db),
+):
+    """Reemplaza el total ahorrado. Si baja, el dinero vuelve al balance."""
+    uid = int(usuario_id)
+    meta = _meta_o_error(db, uid, id)
+    try:
+        return {'mensaje': '✅ Monto actualizado', **metas_service.ajustar_total(db, uid, meta, body.nuevo_total)}
+    except MetaError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post('/{id}/retirar')
+def retirar_meta(
+    id: int,
+    usuario_id: str = Depends(obtener_usuario_id_requerido),
+    db: Session = Depends(get_db),
+):
+    """Meta completada: devuelve todo lo ahorrado al balance y la elimina."""
+    uid = int(usuario_id)
+    meta = _meta_o_error(db, uid, id)
+    if (meta.tipo or 'ahorro') != 'ahorro' or not (
+            meta.completada or float(meta.monto_actual or 0) >= float(meta.monto_objetivo)):
+        raise HTTPException(status_code=400, detail='Solo puedes retirar el dinero de una meta completada.')
+    return {'mensaje': '✅ Dinero retirado y meta eliminada', **metas_service.eliminar(db, uid, meta)}
 
 
 # =========================================================
@@ -141,6 +218,8 @@ def crear_meta(
         raise HTTPException(status_code=400, detail='El nombre de la meta es obligatorio.')
     if body.monto_objetivo <= 0:
         raise HTTPException(status_code=400, detail='El monto objetivo debe ser mayor que cero.')
+    if (body.monto_actual or 0) < 0:
+        raise HTTPException(status_code=400, detail='Lo ya ahorrado no puede ser negativo.')
     if body.prioridad not in (None, 'baja', 'media', 'alta'):
         raise HTTPException(status_code=400, detail="prioridad debe ser 'baja', 'media' o 'alta'")
     if body.icono and len(body.icono) > 10:
@@ -208,21 +287,42 @@ def actualizar_meta(
             )
         meta.tipo = body.tipo
         if body.tipo != 'ahorro':
+            meta.fecha_limite = None
             meta.monto_actual = 0
             meta.completada = False
             meta.modo = 'manual'
             meta.monto_automatico = None
             meta.dia_automatico = None
 
+    if body.monto_objetivo is not None:
+        if body.monto_objetivo <= 0:
+            raise HTTPException(status_code=400, detail='El monto objetivo debe ser mayor que cero.')
+        meta.monto_objetivo = body.monto_objetivo
+        if meta.tipo == 'ahorro':
+            # Si se sube el objetivo por encima de lo ahorrado, la meta vuelve a estar activa
+            meta.completada = float(meta.monto_actual or 0) >= body.monto_objetivo
+
+    if 'fecha_limite' in body.model_fields_set:
+        if body.fecha_limite:
+            try:
+                meta.fecha_limite = datetime.strptime(body.fecha_limite, '%Y-%m-%d').date()
+            except ValueError:
+                raise HTTPException(status_code=400, detail='fecha_limite debe tener formato AAAA-MM-DD')
+        else:
+            meta.fecha_limite = None
+
+    nuevo_total = None
     if body.monto_actual is not None:
         if meta.tipo != 'ahorro':
             raise HTTPException(status_code=400, detail='Los límites de gasto se calculan desde tus movimientos.')
-        meta.monto_actual = body.monto_actual
-        if meta.monto_actual >= float(meta.monto_objetivo):
-            meta.completada = True
+        if body.monto_actual < 0:
+            raise HTTPException(status_code=400, detail='El monto ahorrado no puede ser negativo.')
+        nuevo_total = body.monto_actual        # se aplica al final, con sus movimientos
 
-    if body.nombre:
-        meta.nombre = body.nombre
+    if body.nombre is not None:
+        if not body.nombre.strip():
+            raise HTTPException(status_code=400, detail='El nombre de la meta es obligatorio.')
+        meta.nombre = body.nombre.strip()
 
     if body.icono is not None:
         meta.icono = body.icono
@@ -249,6 +349,8 @@ def actualizar_meta(
             meta.dia_automatico = None
 
     if body.monto_automatico is not None:
+        if body.monto_automatico <= 0:
+            raise HTTPException(status_code=400, detail='El aporte mensual debe ser mayor que cero.')
         meta.monto_automatico = body.monto_automatico
 
     if body.dia_automatico is not None:
@@ -256,7 +358,19 @@ def actualizar_meta(
             raise HTTPException(status_code=400, detail='dia_automatico debe estar entre 1 y 31')
         meta.dia_automatico = body.dia_automatico
 
-    db.commit()
+    if meta.modo == 'automatico' and (not meta.monto_automatico or meta.monto_automatico <= 0
+                                      or not meta.dia_automatico):
+        db.rollback()
+        raise HTTPException(status_code=400, detail='El modo automático necesita un aporte mensual y un día válidos.')
+
+    if nuevo_total is not None:
+        try:
+            metas_service.ajustar_total(db, uid, meta, nuevo_total)   # hace commit
+        except MetaError as e:
+            db.rollback()
+            raise HTTPException(status_code=400, detail=str(e))
+    else:
+        db.commit()
     return {'mensaje': '✅ Meta actualizada!'}
 
 
@@ -276,6 +390,6 @@ def eliminar_meta(
     if not meta:
         raise HTTPException(status_code=404, detail='Meta no encontrada')
 
-    db.delete(meta)
-    db.commit()
-    return {'mensaje': '✅ Meta eliminada!'}
+    # borra también sus aportes/ajustes: ese dinero vuelve al balance
+    resultado = metas_service.eliminar(db, uid, meta)
+    return {'mensaje': '✅ Meta eliminada!', **resultado}

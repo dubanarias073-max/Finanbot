@@ -12,6 +12,7 @@ router = APIRouter()
 # =========================================================
 
 class SimulacionInput(BaseModel):
+    model_config = {'json_schema_extra': {'examples': [{"capital_inicial": 1000000, "tasa_retorno": 10, "plazo_meses": 24, "aporte_mensual": 100000, "nombre_tipo": "CDT"}]}}
     capital_inicial: float
     tasa_retorno: float
     plazo_meses: int

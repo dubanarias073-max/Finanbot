@@ -1959,7 +1959,7 @@
                     const total = items.reduce((sum, item) => sum + Number(item.monto || 0), 0);
                     const lineas = items.map(item => {
                         const categoria = item.categoria || (item.tipo === 'gasto' ? 'Gasto' : 'Ingreso');
-                        const detalle = item.descripcion ? ` · ${item.descripcion}` : '';
+                        const detalle = item.descripcion ? ` · ${escHTML(item.descripcion)}` : '';
                         return `
                             <div class="resumen-dia-mov">
                                 <div class="resumen-dia-detalle">
@@ -2087,8 +2087,8 @@
                 <div class="trans-item">
                     <div class="trans-icon ${t.tipo}">${getIcono(t.categoria,t.tipo)}</div>
                     <div class="trans-info">
-                        <div class="trans-nombre">${t.categoria}</div>
-                        <div class="trans-detalle">${t.descripcion||'Sin descripción'}${fechaTag}</div>
+                        <div class="trans-nombre">${escHTML(t.categoria)}</div>
+                        <div class="trans-detalle">${t.descripcion ? escHTML(t.descripcion) : 'Sin descripción'}${fechaTag}</div>
                         ${tieneUbic(t) ? `<div class="trans-lugar" onclick="verEnMapa(${t.id})" title="Ver en el mapa"><i class="fas fa-location-dot"></i><span>${escaparHTML(t.ubicacion_nombre || fmtCoords(t.latitud, t.longitud))}</span></div>` : ''}
                     </div>
                     <div class="trans-right">
@@ -2236,7 +2236,7 @@
             const movsHtml = movs.length ? movs.map(t => `
                 <div class="cal-mov-item">
                     <div>
-                        <div class="cal-mov-titulo">${getIcono(t.categoria,t.tipo)} ${t.tipo === 'gasto' ? 'Gasto' : 'Ingreso'} · ${t.categoria}</div>
+                        <div class="cal-mov-titulo">${getIcono(t.categoria,t.tipo)} ${t.tipo === 'gasto' ? 'Gasto' : 'Ingreso'} · ${escHTML(t.categoria)}</div>
                         <div class="cal-mov-desc">${descripcionMostrar(t)}</div>
                     </div>
                     <span class="monto ${t.tipo}">${t.tipo==='gasto'?'-':'+'}$${t.monto.toLocaleString('es-CO')}</span>
@@ -2262,56 +2262,25 @@
         //  futuros (de versiones anteriores). NUNCA toca meses pasados.
         // ════════════════════════════════════════════════
         async function asegurarSalarioMesActual() {
+            // El servidor crea el salario del mes al responder GET /transacciones/.
+            // Aquí solo se le pone la ubicación guardada en este dispositivo, si la hay.
             if (!token) return;
+            const datos = datosUbicSalario();
+            if (!datos.ubicacion_nombre) return;
             try {
-                const resPerfil = await fetch('/api/perfil/', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (!resPerfil.ok) return;
-                const perfil = await resPerfil.json();
-                const ingreso = Number(perfil.ingreso_mensual) || 0;
-                if (ingreso <= 0 || !perfil.fecha_salario) return;
-                function diaDeFechaStr(fechaStr) {
-                    if (!fechaStr) return null;
-                    const partes = fechaStr.split('-');
-                    return partes.length >= 3 ? parseInt(partes[2], 10) : null;
-                }
-                const diaPago = diaDeFechaStr(perfil.fecha_salario);
-                if (!diaPago) return;
-
-                const resTrans = await fetch('/api/transacciones/', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (!resTrans.ok) return;
-                const todas = await resTrans.json();
-
-                const hoy = FinanbotTime.today();
-                const mesActualStr = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}`;
-
-                // Limpiar salarios auto programados a futuro (no se generan por adelantado)
-                const futuros = todas.filter(t => esAutoSalario(t) && t.fecha && t.fecha.slice(0,7) > mesActualStr);
-                for (const t of futuros) {
+                const res = await fetch('/api/transacciones/', { headers: { 'Authorization': `Bearer ${token}` } });
+                if (!res.ok) return;
+                const mesActual = FinanbotTime.todayIso().slice(0, 7);
+                const sinUbic = (await res.json()).filter(t =>
+                    esAutoSalario(t) && (t.fecha || '').slice(0, 7) === mesActual && !t.ubicacion_nombre && !t.latitud);
+                for (const t of sinUbic) {
                     await fetch(`/api/transacciones/${t.id}`, {
-                        method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` }
-                    });
-                }
-
-                // Crear el salario del mes actual solo si todavía no existe
-                // Y solo si el día de pago YA LLEGÓ (o pasó) este mes — nunca
-                // se adelanta el dinero a una fecha futura dentro del mismo mes.
-                const yaExiste = todas.some(t => esAutoSalario(t) && t.fecha && t.fecha.slice(0,7) === mesActualStr);
-                if (!yaExiste) {
-                    const ultimoDia = new Date(hoy.getFullYear(), hoy.getMonth()+1, 0).getDate();
-                    const diaFinal = Math.min(diaPago, ultimoDia);
-                    if (hoy.getDate() < diaFinal) return; // aún no llega el día de pago este mes
-                    const fecha = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-${String(diaFinal).padStart(2,'0')}`;
-                    await fetch('/api/transacciones/', {
-                        method: 'POST',
+                        method: 'PUT',
                         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                        body: JSON.stringify({ tipo: 'ingreso', categoria: 'Salario', icono: '💼', monto: ingreso, descripcion: '__auto_salario__', fecha, ...datosUbicSalario() })
+                        body: JSON.stringify(datos)
                     });
                 }
-            } catch(e) { console.error('Error verificando salario del mes:', e); }
+            } catch (e) { console.error('Error aplicando la ubicación del salario:', e); }
         }
 
         // ════════════════════════════════════════════════

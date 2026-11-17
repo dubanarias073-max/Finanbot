@@ -332,7 +332,7 @@ def test_codigo_de_correo_solo_permite_un_cambio_de_contrasena(monkeypatch):
     monkeypatch.setattr(
         auth_routes,
         '_enviar_codigo_recuperacion',
-        lambda correo, codigo, enlace=None: enviado.update(
+        lambda correo, codigo, enlace=None, **_: enviado.update(
             correo=correo,
             codigo=codigo,
             enlace=enlace,
@@ -395,7 +395,7 @@ def test_login_envia_aviso_y_reportar_acceso_revoca_sesiones(monkeypatch):
     monkeypatch.setattr(
         auth_routes,
         '_enviar_codigo_recuperacion',
-        lambda correo, codigo, enlace=None: codigos_enviados.update(
+        lambda correo, codigo, enlace=None, **_: codigos_enviados.update(
             correo=correo,
             codigo=codigo,
             enlace=enlace,
@@ -494,7 +494,7 @@ def test_reportar_acceso_cambia_contrasena_en_la_misma_pagina(monkeypatch):
     monkeypatch.setattr(
         auth_routes,
         '_enviar_codigo_recuperacion',
-        lambda correo, codigo, enlace=None: enviado.update(
+        lambda correo, codigo, enlace=None, **_: enviado.update(
             correo=correo,
             codigo=codigo,
             enlace=enlace,
@@ -618,7 +618,7 @@ def test_reenvio_codigo_recuperacion_emite_codigo_nuevo(monkeypatch):
     monkeypatch.setattr(
         auth_routes,
         '_enviar_codigo_recuperacion',
-        lambda correo, codigo, enlace=None: enviados.append((correo, codigo, enlace)),
+        lambda correo, codigo, enlace=None, **_: enviados.append((correo, codigo, enlace)),
     )
     try:
         usuario = AuthService.registrar(
@@ -662,7 +662,7 @@ def test_enlace_recuperacion_cambia_contrasena_una_vez(monkeypatch):
     monkeypatch.setattr(
         auth_routes,
         '_enviar_codigo_recuperacion',
-        lambda correo, codigo, enlace=None: enviado.update(
+        lambda correo, codigo, enlace=None, **_: enviado.update(
             correo=correo,
             codigo=codigo,
             enlace=enlace,

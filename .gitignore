@@ -8,3 +8,6 @@ frontend/dist/
 .env
 backend/uploads/
 backend/routes/__pycache__/
+
+# Claves generadas automáticamente en desarrollo
+backend/.claves_locales.json

@@ -183,15 +183,89 @@
         return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`;
     }
 
+    // ── Metas y automáticos (misma lógica que backend/application/services/metas_service.py)
+    const TAG_SALARIO = '__auto_salario__';
+    const tagsMeta = id => [`__auto_meta_${id}__`, `__manual_meta_${id}__`, `__ajuste_meta_${id}__`];
+    const mesDe = f => (f || '').slice(0, 7);
+    function diaEnMes(anio, mes0, dia) {
+        return Math.min(Math.max(1, Number(dia) || 1), new Date(anio, mes0 + 1, 0).getDate());
+    }
+    function fechaConDia(dia) {
+        const hoy = new Date();
+        const d = diaEnMes(hoy.getFullYear(), hoy.getMonth(), dia);
+        return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    }
+    function nuevoMovimiento(tipo, categoria, monto, descripcion, fecha) {
+        data.transacciones.push({ id: data.nextId++, tipo, categoria, icono: '🎯', monto: Math.round(monto * 100) / 100,
+                                  descripcion, fecha: fecha || fechaActualLocal() });
+    }
+    function procesarAutomaticosLocal() {
+        const hoy = new Date();
+        const mesActual = fechaActualLocal().slice(0, 7);
+        let cambios = false;
+        // salario: nunca a futuro, uno por mes, solo cuando llega el día de pago
+        const antes = data.transacciones.length;
+        data.transacciones = data.transacciones.filter(t => !(t.descripcion === TAG_SALARIO && mesDe(t.fecha) > mesActual));
+        cambios = cambios || data.transacciones.length !== antes;
+        const ingreso = Number(data.perfil.ingreso_mensual) || 0;
+        const diaPago = data.perfil.fecha_salario ? Number(String(data.perfil.fecha_salario).split('-')[2]) : 0;
+        const yaSalario = data.transacciones.some(t => t.descripcion === TAG_SALARIO && mesDe(t.fecha) === mesActual);
+        if (ingreso > 0 && diaPago && !yaSalario && hoy.getDate() >= diaEnMes(hoy.getFullYear(), hoy.getMonth(), diaPago)) {
+            const oculta = (data.categoriasOcultas.ingreso || []).includes('Salario');
+            data.transacciones.push({ id: data.nextId++, tipo: 'ingreso', categoria: oculta ? 'Otros ingresos' : 'Salario',
+                                      icono: oculta ? '💵' : '💼', monto: ingreso, descripcion: TAG_SALARIO, fecha: fechaConDia(diaPago) });
+            cambios = true;
+        }
+        // aportes automáticos de metas
+        for (const m of data.metas) {
+            if ((m.tipo || 'ahorro') !== 'ahorro' || m.modo !== 'automatico' || m.completada) continue;
+            const aporteMes = Number(m.monto_automatico) || 0;
+            if (aporteMes <= 0 || !m.dia_automatico) continue;
+            const dia = diaEnMes(hoy.getFullYear(), hoy.getMonth(), m.dia_automatico);
+            if (hoy.getDate() < dia) continue;
+            if (m.fecha_creacion && mesDe(m.fecha_creacion) === mesActual && Number(m.fecha_creacion.slice(8, 10)) > dia) continue;
+            if (data.transacciones.some(t => t.descripcion === `__auto_meta_${m.id}__` && mesDe(t.fecha) === mesActual)) continue;
+            const aporte = Math.min(aporteMes, Number(m.monto_objetivo) - Number(m.monto_actual || 0));
+            if (aporte <= 0) continue;
+            nuevoMovimiento('gasto', 'Ahorro automático', aporte, `__auto_meta_${m.id}__`, fechaConDia(m.dia_automatico));
+            m.monto_actual = Number(m.monto_actual || 0) + aporte;
+            m.completada = m.monto_actual >= Number(m.monto_objetivo);
+            cambios = true;
+        }
+        if (cambios) guardar();
+    }
+    function retiroLocal(metaId, montoRetiro) {
+        const mesActual = fechaActualLocal().slice(0, 7);
+        const tags = tagsMeta(metaId);
+        let aportado = 0, retirado = 0;
+        data.transacciones.filter(t => tags.includes(t.descripcion) && mesDe(t.fecha) === mesActual).forEach(t => {
+            if (t.tipo === 'ingreso') retirado += Number(t.monto);
+            else if (Number(t.monto) >= 0) aportado += Number(t.monto);
+            else retirado += -Number(t.monto);
+        });
+        const esteMes = Math.min(montoRetiro, Math.max(0, aportado - retirado));
+        return [esteMes, montoRetiro - esteMes];
+    }
+    function eliminarMetaLocal(id) {
+        const index = data.metas.findIndex(m => Number(m.id) === id);
+        const [meta] = data.metas.splice(index, 1);
+        const tags = tagsMeta(id);
+        data.transacciones = data.transacciones.filter(t => !tags.includes(t.descripcion));
+        guardar();
+        return { nombre: meta.nombre, devuelto: (meta.tipo || 'ahorro') === 'ahorro' ? Number(meta.monto_actual) || 0 : 0 };
+    }
+
     async function atenderLocal(path, init, search) {
         const metodo = (init?.method || 'GET').toUpperCase();
         const body = parseBody(init);
+        if (metodo === 'GET' && /^\/api\/(transacciones|metas|calendario)\/?/.test(path)) procesarAutomaticosLocal();
         const transacciones = data.transacciones;
         const metas = data.metas;
 
         if (path === '/api/transacciones/' || path === '/api/transacciones') {
             if (metodo === 'GET') return respuestaJson([...transacciones].sort((a, b) => (b.fecha || '').localeCompare(a.fecha || '')));
             if (metodo === 'POST') {
+                if (!(Number(body.monto) > 0)) return respuestaJson({ detail: 'El monto debe ser mayor a cero' }, 400);
                 const nueva = { ...body, id: data.nextId++, monto: Number(body.monto), fecha: body.fecha || fechaActualLocal() };
                 transacciones.push(nueva); guardar();
                 return respuestaJson(nueva, 201);
@@ -334,9 +408,40 @@
                     ...body, id: data.nextId++, monto_objetivo: Number(body.monto_objetivo) || 0,
                     monto_actual: Number(body.monto_actual) || 0,
                     completada: Number(body.monto_actual) >= Number(body.monto_objetivo),
+                    fecha_creacion: fechaActualLocal(),
                 };
                 metas.push(nueva); guardar(); return respuestaJson(nueva, 201);
             }
+        }
+        const opMeta = path.match(/^\/api\/metas\/(\d+)\/(abonar|ajustar|retirar)$/);
+        if (opMeta && metodo === 'POST') {
+            const id = Number(opMeta[1]);
+            const m = metas.find(x => Number(x.id) === id);
+            if (!m) return respuestaJson({ detail: 'Meta no encontrada.' }, 404);
+            if ((m.tipo || 'ahorro') !== 'ahorro') return respuestaJson({ detail: 'Los límites de gasto se calculan desde tus movimientos.' }, 400);
+            const objetivo = Number(m.monto_objetivo), actual = Number(m.monto_actual) || 0;
+            if (opMeta[2] === 'abonar') {
+                const monto = Number(body.monto);
+                if (!(monto > 0)) return respuestaJson({ detail: 'El monto debe ser mayor que cero.' }, 400);
+                m.monto_actual = actual + monto; m.completada = m.monto_actual >= objetivo;
+                nuevoMovimiento('gasto', 'Aporte manual a meta', monto, `__manual_meta_${id}__`);
+                guardar(); return respuestaJson({ nombre: m.nombre, abonado: monto, nuevo_total: m.monto_actual, completada: m.completada, id });
+            }
+            if (opMeta[2] === 'ajustar') {
+                const nuevo = Number(body.nuevo_total);
+                if (!(nuevo >= 0)) return respuestaJson({ detail: 'El monto ahorrado no puede ser negativo.' }, 400);
+                const diferencia = Math.round((nuevo - actual) * 100) / 100;
+                if (diferencia > 0) nuevoMovimiento('gasto', 'Ajuste de meta', diferencia, `__ajuste_meta_${id}__`);
+                if (diferencia < 0) {
+                    const [esteMes, anteriores] = retiroLocal(id, -diferencia);
+                    if (esteMes > 0) nuevoMovimiento('gasto', 'Ajuste de meta', -esteMes, `__ajuste_meta_${id}__`);
+                    if (anteriores > 0) nuevoMovimiento('ingreso', 'Retiro de ahorro', anteriores, `__ajuste_meta_${id}__`);
+                }
+                m.monto_actual = nuevo; m.completada = nuevo >= objetivo;
+                guardar(); return respuestaJson({ nombre: m.nombre, nuevo_monto: nuevo, diferencia, completada: m.completada, id });
+            }
+            if (!(m.completada || actual >= objetivo)) return respuestaJson({ detail: 'Solo puedes retirar el dinero de una meta completada.' }, 400);
+            return respuestaJson(eliminarMetaLocal(id));
         }
         const meta = path.match(/^\/api\/metas\/(\d+)$/);
         if (meta) {
@@ -350,14 +455,19 @@
                 guardar(); return respuestaJson(data.metas[index]);
             }
             if (metodo === 'DELETE') {
-                const [eliminada] = data.metas.splice(index, 1);
-                guardar(); return respuestaJson(eliminada);
+                return respuestaJson(eliminarMetaLocal(id));
             }
         }
         if (path === '/api/perfil/' || path === '/api/perfil') {
             if (metodo === 'GET') return respuestaJson({ ...data.perfil, tiene_foto_perfil: Boolean(data.foto), onboarding_completado: true });
             if (metodo === 'PUT' || metodo === 'PATCH') {
+                const salarioAntes = `${Number(data.perfil.ingreso_mensual) || 0}|${data.perfil.fecha_salario || ''}`;
                 data.perfil = { ...data.perfil, ...body };
+                if (`${Number(data.perfil.ingreso_mensual) || 0}|${data.perfil.fecha_salario || ''}` !== salarioAntes) {
+                    const mesActual = fechaActualLocal().slice(0, 7);
+                    data.transacciones = data.transacciones.filter(t => !(t.descripcion === TAG_SALARIO && mesDe(t.fecha) >= mesActual));
+                    procesarAutomaticosLocal();
+                }
                 guardar(); return respuestaJson({ ...data.perfil, tiene_foto_perfil: Boolean(data.foto) });
             }
         }

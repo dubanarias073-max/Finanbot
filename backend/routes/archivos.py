@@ -44,6 +44,7 @@ from database import get_db
 from extensions import obtener_usuario_id_opcional, obtener_usuario_id_requerido
 from application.services.graficos_documento import normalizar_graficos, renderizar_grafico
 from models import ChatAdjunto
+from archivos_util import borrar_archivo
 from timezone import bogota_now
 
 router = APIRouter()
@@ -163,8 +164,7 @@ def _eliminar_adjuntos_antiguos(db: Session, usuario_id: int) -> None:
         db.delete(adjunto)
     db.commit()
     for ruta in rutas:
-        if ruta.is_file():
-            ruta.unlink()
+        borrar_archivo(ruta)
 
 
 @router.post('/adjuntos')
@@ -211,7 +211,7 @@ async def subir_adjunto(
         db.commit()
     except Exception:
         db.rollback()
-        destino.unlink(missing_ok=True)
+        borrar_archivo(destino)
         raise
     return {'id': identificador, 'nombre': nombre, 'mime_type': mime_type}
 
@@ -276,8 +276,7 @@ def eliminar_adjunto(
     ruta = _ruta_adjunto(adjunto)
     db.delete(adjunto)
     db.commit()
-    if ruta.is_file():
-        ruta.unlink()
+    borrar_archivo(ruta)
     return {'mensaje': 'Archivo eliminado.'}
 
 

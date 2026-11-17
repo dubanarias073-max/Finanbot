@@ -187,7 +187,8 @@ def test_foto_perfil_se_guarda_se_lee_y_se_elimina(tmp_path, monkeypatch):
         ))
         respuesta = obtener_foto_perfil(str(usuario.id), session)
         assert Path(respuesta.path).suffix == '.jpg'
-        assert Image.open(respuesta.path).format == 'JPEG'
+        with Image.open(respuesta.path) as foto:
+            assert foto.format == 'JPEG'
         eliminar_foto_perfil(str(usuario.id), session)
         assert session.get(Usuario, usuario.id).foto_perfil is None
         assert not Path(respuesta.path).exists()
@@ -232,7 +233,7 @@ def test_solo_prepara_documento_si_la_ia_lo_devuelve_por_solicitud(monkeypatch):
     monkeypatch.setattr(finanbot_ia_2, '_pausa_hasta', 0)
     monkeypatch.setattr(finanbot_ia_2, '_memoria', {})
 
-    def fake_llamar(proveedor, sistema, mensajes, imagenes, max_output_tokens):
+    def fake_llamar(proveedor, sistema, mensajes, imagenes, max_output_tokens, **kwargs):
         solicitudes.append((mensajes[-1][1], max_output_tokens))
         if 'Crea un documento de presupuesto mensual' in mensajes[-1][1]:
             return '{"respuesta":"Preparé el presupuesto solicitado.","documento":{"titulo":"Presupuesto mensual","formato":"xlsx","contenido":"Ingresos | Gastos | Ahorro"}}'
@@ -284,7 +285,7 @@ def test_ia_conserva_graficos_estructurados_del_documento(monkeypatch):
     monkeypatch.setattr(
         finanbot_ia_2,
         '_llamar',
-        lambda *args: (
+        lambda *args, **kwargs: (
             '{"respuesta":"Documento listo.","documento":{"titulo":"Ventas",'
             '"formato":"pdf","contenido":"Ventas por periodo.",'
             '"graficos":[' + json.dumps(grafico) + ']}}'

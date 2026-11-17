@@ -17,6 +17,9 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
 from application.services.auth_service import AuthService
+from application.services.plantillas_correo import (
+    ROJO, VERDE, Boton, correo_html, describir_dispositivo,
+)
 from config import settings
 from database import get_db
 from extensions import hash_password, obtener_usuario_actual
@@ -39,6 +42,7 @@ def _utcnow() -> datetime:
 
 
 class RegistroSchema(BaseModel):
+    model_config = {'json_schema_extra': {'examples': [{"nombre": "Ana Pérez", "correo": "ana@gmail.com", "contrasena": "Secreta123", "pregunta_seguridad": "¿Nombre de tu primera mascota?", "respuesta_seguridad": "firulais"}]}}
     nombre: str
     correo: str
     contrasena: str
@@ -47,6 +51,7 @@ class RegistroSchema(BaseModel):
 
 
 class LoginSchema(BaseModel):
+    model_config = {'json_schema_extra': {'examples': [{"correo": "ana@gmail.com", "contrasena": "Secreta123"}]}}
     correo: str
     contrasena: str
 
@@ -56,6 +61,7 @@ class GoogleCredentialSchema(BaseModel):
 
 
 class SolicitarRecuperacionSchema(BaseModel):
+    model_config = {'json_schema_extra': {'examples': [{"correo": "ana@gmail.com"}]}}
     correo: str
 
 
@@ -105,6 +111,18 @@ def _aviso_registro(usuario: Usuario) -> str | None:
         'Si no realizaste este registro, te recomendamos cambiar la contraseña '
         'de tu correo y contactar al equipo de FinanBot.'
     )
+    mensaje.add_alternative(correo_html(
+        titulo='Bienvenido a tu cuenta',
+        nombre=usuario.nombre,
+        preencabezado='Tu cuenta de FinanBot quedó creada.',
+        parrafos=[
+            'Tu cuenta de FinanBot se creó correctamente con esta dirección de correo. '
+            'Ya puedes registrar tus gastos, crear metas de ahorro y conversar con FinanBot IA.',
+        ],
+        detalles=[('Fecha y hora', fecha), ('Correo', usuario.correo)],
+        botones=[Boton('Ir a FinanBot', settings.PUBLIC_BASE_URL)] if _url_base_valida(settings.PUBLIC_BASE_URL) else None,
+        nota='Si **no** creaste esta cuenta, cambia la contraseña de tu correo y escríbenos para revisarlo.',
+    ), subtype='html')
     try:
         _enviar_correo(mensaje)
     except (smtplib.SMTPException, OSError):
@@ -291,21 +309,22 @@ def _respuesta_login(
         f'{enlace}?decision=no\n\n'
         'Estos enlaces vencen en 24 horas y solo se pueden usar una vez.'
     )
-    nombre = html.escape(usuario.nombre)
-    mensaje.add_alternative(
-        f"""<!doctype html>
-<html lang="es"><body style="font-family:Arial,sans-serif;color:#202033">
-<h2>Nuevo inicio de sesión en FinanBot</h2>
-<p>Hola {nombre}, se inició sesión en tu cuenta el <strong>{html.escape(fecha)}</strong>.</p>
-<p>Si reconoces este acceso:</p>
-<p><a href="{enlace}?decision=si">Sí, fui yo</a></p>
-<p>Si no lo reconoces, repórtalo. Revocaremos tus sesiones y te enviaremos un código
-para cambiar la contraseña:</p>
-<p><a href="{enlace}?decision=no">No fui yo</a></p>
-<p>Los enlaces vencen en 24 horas y solo se pueden usar una vez.</p>
-</body></html>""",
-        subtype='html',
-    )
+    detalles = [('Fecha y hora', fecha),
+                ('Dispositivo', describir_dispositivo(request.headers.get('user-agent') if request else None))]
+    if request is not None and request.client and request.client.host:
+        detalles.append(('Dirección IP', request.client.host))
+    mensaje.add_alternative(correo_html(
+        titulo='Nuevo inicio de sesión',
+        nombre=usuario.nombre,
+        preencabezado='Se inició sesión en tu cuenta desde un dispositivo nuevo.',
+        parrafos=['Se inició sesión en tu cuenta de FinanBot desde un dispositivo que no reconocemos. '
+                  '¿Fuiste tú?'],
+        detalles=detalles,
+        botones=[Boton('Sí, fui yo', f'{enlace}?decision=si', VERDE),
+                 Boton('No fui yo', f'{enlace}?decision=no', ROJO, contorno=True)],
+        nota='Si **no fuiste tú**, toca "No fui yo": cerraremos todas tus sesiones y te enviaremos '
+             'un código para cambiar la contraseña. Los enlaces vencen en **24 horas** y solo se usan una vez.',
+    ), subtype='html')
     try:
         _enviar_correo(mensaje)
     except (smtplib.SMTPException, OSError):
@@ -345,6 +364,7 @@ def _enviar_codigo_recuperacion(
     correo: str,
     codigo: str,
     enlace: str | None = None,
+    nombre: str | None = None,
 ) -> None:
     mensaje = EmailMessage()
     mensaje['Subject'] = 'Código para recuperar tu contraseña de FinanBot'
@@ -360,18 +380,21 @@ def _enviar_codigo_recuperacion(
         )
         + 'El código vence en 10 minutos. Si no solicitaste este cambio, ignora este correo.'
     )
-    if enlace:
-        mensaje.add_alternative(
-            f"""<!doctype html>
-<html lang="es"><body style="font-family:Arial,sans-serif;color:#202033">
-<h2>Recupera tu contraseña de FinanBot</h2>
-<p>Tu código de verificación es: <strong>{html.escape(codigo)}</strong></p>
-<p>También puedes cambiarla directamente:</p>
-<p><a href="{html.escape(enlace, quote=True)}">Crear una contraseña nueva</a></p>
-<p>El código y el enlace vencen en 10 minutos. Si no solicitaste este cambio, ignora este correo.</p>
-</body></html>""",
-            subtype='html',
-        )
+    mensaje.add_alternative(correo_html(
+        titulo='Recuperación de contraseña',
+        nombre=nombre,
+        preencabezado=f'Tu código de verificación es {codigo}.',
+        parrafos=[
+            'Recibimos una solicitud para restablecer tu contraseña. '
+            + ('Haz clic en el botón de abajo para crear una nueva, o usa este código en la app.'
+               if enlace else 'Usa este código en la app para crear una nueva.'),
+        ],
+        codigo=codigo,
+        botones=[Boton('Restablecer mi contraseña', enlace)] if enlace else None,
+        nota='El código y el enlace son válidos por **10 minutos**. Si no solicitaste este cambio, '
+             'ignora este correo y tu contraseña seguirá igual.',
+        enlace_respaldo=enlace,
+    ), subtype='html')
 
     _enviar_correo(mensaje)
 
@@ -507,7 +530,7 @@ def _crear_y_enviar_codigo_recuperacion(
 
     try:
         enlace = f'{base_url.rstrip("/")}/api/auth/restablecer-por-enlace/{token}'
-        _enviar_codigo_recuperacion(usuario.correo, codigo, enlace)
+        _enviar_codigo_recuperacion(usuario.correo, codigo, enlace, nombre=usuario.nombre)
     except (smtplib.SMTPException, OSError):
         logger.exception('No se pudo enviar el código de recuperación a %s', usuario.correo)
         db.delete(registro_codigo)
@@ -590,6 +613,89 @@ def logout(request: Request, response: Response):
     return {'mensaje': 'Sesión cerrada.'}
 
 
+@router.post('/logout-all')
+def logout_todos_los_dispositivos(
+    request: Request,
+    response: Response,
+    usuario: Usuario = Depends(obtener_usuario_actual),
+    db: Session = Depends(get_db),
+):
+    """Cierra la sesión en TODOS los dispositivos.
+
+    Subir token_version invalida cualquier JWT emitido antes (incluido el de este
+    dispositivo): _resolver_usuario_desde_token compara la versión del token con la
+    de la base de datos y responde 401 si no coinciden."""
+    usuario.token_version += 1
+    # Se olvidan todos los dispositivos conocidos: el próximo inicio de sesión desde
+    # cualquiera de ellos se tratará como dispositivo nuevo y enviará el correo de aviso.
+    db.query(DispositivoConocido).filter_by(usuario_id=usuario.id).delete(
+        synchronize_session=False,
+    )
+    db.commit()
+    response.delete_cookie(
+        'finanbot_device_id',
+        path='/api/auth',
+        httponly=True,
+        secure=request.url.scheme == 'https',
+        samesite='lax',
+    )
+    return {'mensaje': 'Sesión cerrada en todos los dispositivos.'}
+
+
+# ── Límite de intentos de login (fuerza bruta) ─────────────────
+# Se cuenta por correo y por IP: tras LOGIN_MAX_INTENTOS fallos seguidos se
+# bloquea LOGIN_BLOQUEO_MIN minutos. Un login correcto reinicia el contador.
+_intentos_login: dict[str, dict] = {}
+
+
+def _claves_intento(correo: str, request: Request | None) -> list[str]:
+    ip = request.client.host if request is not None and request.client else 'sin-ip'
+    return [f'correo:{(correo or "").strip().lower()}', f'ip:{ip}']
+
+
+def _verificar_bloqueo_login(claves: list[str]) -> None:
+    ahora = datetime.now(timezone.utc)
+    for clave in claves:
+        dato = _intentos_login.get(clave)
+        if dato and dato.get('bloqueado_hasta') and dato['bloqueado_hasta'] > ahora:
+            minutos = max(1, int((dato['bloqueado_hasta'] - ahora).total_seconds() // 60) + 1)
+            raise HTTPException(
+                status_code=429,
+                detail=f'Demasiados intentos fallidos. Inténtalo de nuevo en {minutos} minuto(s).',
+            )
+
+
+def _registrar_fallo_login(claves: list[str]) -> None:
+    ahora = datetime.now(timezone.utc)
+    # las IP tienen un margen mayor (varias personas pueden compartir red)
+    for clave in claves:
+        limite = settings.LOGIN_MAX_INTENTOS * (4 if clave.startswith('ip:') else 1)
+        dato = _intentos_login.setdefault(clave, {'fallos': 0, 'bloqueado_hasta': None})
+        if dato['bloqueado_hasta'] and dato['bloqueado_hasta'] <= ahora:
+            dato.update(fallos=0, bloqueado_hasta=None)
+        dato['fallos'] += 1
+        if dato['fallos'] >= limite:
+            dato['bloqueado_hasta'] = ahora + timedelta(minutes=settings.LOGIN_BLOQUEO_MIN)
+    if len(_intentos_login) > 10_000:          # evita crecer sin límite
+        for clave in [c for c, d in _intentos_login.items() if not d.get('bloqueado_hasta')][:5_000]:
+            _intentos_login.pop(clave, None)
+
+
+def _login_exitoso(claves: list[str]) -> None:
+    _intentos_login.pop(claves[0], None)       # el correo; la IP conserva su historial
+
+
+def _autenticar_con_limite(db: Session, correo: str, contrasena: str, request: Request | None):
+    claves = _claves_intento(correo, request)
+    _verificar_bloqueo_login(claves)
+    usuario = AuthService.autenticar(db, correo=correo, contrasena=contrasena)
+    if not usuario:
+        _registrar_fallo_login(claves)
+        return None
+    _login_exitoso(claves)
+    return usuario
+
+
 @router.post('/login')
 def login(
     body: LoginSchema,
@@ -597,7 +703,7 @@ def login(
     db: Session = Depends(get_db),
     response: Response = None,
 ):
-    usuario = AuthService.autenticar(db, correo=body.correo, contrasena=body.contrasena)
+    usuario = _autenticar_con_limite(db, body.correo, body.contrasena, request)
     if not usuario:
         raise HTTPException(status_code=401, detail='Correo o contraseña incorrectos')
     return _respuesta_login(usuario, db, request, response)
@@ -610,11 +716,7 @@ def obtener_token(
     db: Session = Depends(get_db),
     response: Response = None,
 ):
-    usuario = AuthService.autenticar(
-        db,
-        correo=form.username,
-        contrasena=form.password,
-    )
+    usuario = _autenticar_con_limite(db, form.username, form.password, request)
     if not usuario:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -912,7 +1014,7 @@ def procesar_decision_acceso(
                     f'{settings.PUBLIC_BASE_URL.rstrip("/")}'
                     f'/api/auth/restablecer-por-enlace/{token_reset}'
                 )
-            _enviar_codigo_recuperacion(usuario.correo, codigo, enlace)
+            _enviar_codigo_recuperacion(usuario.correo, codigo, enlace, nombre=usuario.nombre)
         except (smtplib.SMTPException, OSError):
             logger.exception('No se pudo enviar el código de recuperación a %s', usuario.correo)
             db.delete(registro_codigo)

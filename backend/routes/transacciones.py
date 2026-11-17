@@ -1,4 +1,5 @@
 # routes/transacciones.py
+from application.services import metas_service
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
@@ -30,6 +31,7 @@ router = APIRouter()
 # =========================================================
 
 class TransaccionCreate(BaseModel):
+    model_config = {'json_schema_extra': {'examples': [{"tipo": "gasto", "categoria": "Alimentación", "monto": 25000, "fecha": "2026-11-17", "descripcion": "Almuerzo"}]}}
     tipo: str
     categoria: str          # nombre de una fila de la tabla categorias
     monto: float
@@ -42,6 +44,7 @@ class TransaccionCreate(BaseModel):
     longitud: Optional[float] = None
 
 class TransaccionUpdate(BaseModel):
+    model_config = {'json_schema_extra': {'examples': [{"monto": 30000, "descripcion": "Almuerzo y jugo"}]}}
     tipo: Optional[str] = None
     categoria: Optional[str] = None
     monto: Optional[float] = None
@@ -118,12 +121,14 @@ def _transaccion_dict(t: Transaccion) -> dict:
 # =========================================================
 
 class CategoriaCrear(BaseModel):
+    model_config = {'json_schema_extra': {'examples': [{"nombre": "Café", "tipo": "gasto", "icono": "☕"}]}}
     nombre: str
     tipo: str                      # 'gasto' | 'ingreso'
     icono: Optional[str] = None
 
 
 class CategoriaCambiar(BaseModel):
+    model_config = {'json_schema_extra': {'examples': [{"oculta": True}]}}
     oculta: Optional[bool] = None  # ocultar / mostrar
     icono: Optional[str] = None    # solo para las personalizadas
 
@@ -591,12 +596,18 @@ def lugares_cercanos(
 # automáticamente al cambiar de mes.
 # =========================================================
 
+def _es_movimiento_de_meta(t) -> bool:
+    d = t.descripcion or ''
+    return '__' in d and '_meta_' in d
+
+
 @router.get('/')
 def obtener_transacciones(
     usuario_id: str = Depends(obtener_usuario_id_requerido),
     db: Session = Depends(get_db),
 ):
     uid = int(usuario_id)
+    metas_service.procesar_automaticos(db, uid)    # salario y aportes del mes, en el servidor
     transacciones = (db.query(Transaccion).filter_by(usuario_id=uid)
                       .order_by(Transaccion.fecha.desc()).all())
 
@@ -617,8 +628,13 @@ def crear_transaccion(
 
     _validar_tipo(body.tipo)
     categoria = _validar_categoria(body.categoria, db, uid)
-    if body.monto == 0:
-        raise HTTPException(status_code=400, detail='El monto no puede ser cero')
+    if body.monto <= 0:
+        raise HTTPException(status_code=400, detail='El monto debe ser mayor a cero')
+    if metas_service.es_tag_reservado(body.descripcion):
+        raise HTTPException(
+            status_code=400,
+            detail='Ese movimiento lo registra FinanBot automáticamente (usa las opciones de metas o de salario).',
+        )
     try:
         fecha = datetime.strptime(body.fecha, '%Y-%m-%d').date()
     except ValueError:
@@ -662,6 +678,13 @@ def editar_transaccion(
     if not transaccion:
         raise HTTPException(status_code=404, detail='Transacción no encontrada')
 
+    if _es_movimiento_de_meta(transaccion) and any(
+            v is not None for v in (body.tipo, body.categoria, body.monto, body.fecha)):
+        raise HTTPException(
+            status_code=400,
+            detail='Este movimiento pertenece a una meta. Cambia el monto desde la meta en Mi Perfil.',
+        )
+
     if body.tipo is not None:
         _validar_tipo(body.tipo)
         transaccion.tipo = body.tipo
@@ -675,6 +698,10 @@ def editar_transaccion(
         transaccion.monto = body.monto
 
     if body.descripcion is not None:
+        if body.descripcion != (transaccion.descripcion or '') and (
+                metas_service.es_tag_reservado(body.descripcion)
+                or metas_service.es_tag_reservado(transaccion.descripcion)):
+            raise HTTPException(status_code=400, detail='La descripción de un movimiento automático no se puede cambiar.')
         transaccion.descripcion = body.descripcion
 
     if body.fecha is not None:
@@ -833,6 +860,11 @@ def eliminar_transaccion(
 
     if not transaccion:
         raise HTTPException(status_code=404, detail='Transacción no encontrada')
+    if _es_movimiento_de_meta(transaccion):
+        raise HTTPException(
+            status_code=400,
+            detail='Este movimiento pertenece a una meta. Ajusta o elimina la meta desde Mi Perfil.',
+        )
 
     tienda_id = transaccion.tienda_id
     db.delete(transaccion)

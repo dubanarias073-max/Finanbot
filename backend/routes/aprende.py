@@ -772,6 +772,7 @@ def buscar(q: str = Query(...)):
 
 
 class PreguntaAprendizaje(BaseModel):
+    model_config = {'json_schema_extra': {'examples': [{"pregunta": "¿Qué es un CDT y cuándo me conviene?"}]}}
     pregunta: str
 
 
@@ -891,6 +892,7 @@ def listar_categorias():
 # ── POST /calcular ────────────────────────────────────────────
 
 class CalculoRequest(BaseModel):
+    model_config = {'json_schema_extra': {'examples': [{"tipo": "interes_compuesto", "datos": {"capital": 1000000, "aporte_mensual": 100000, "tasa_anual": 10, "anos": 3}}]}}
     tipo: str
     datos: dict[str, Any] = {}
 

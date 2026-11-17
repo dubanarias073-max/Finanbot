@@ -1,5 +1,6 @@
 # routes/excel_simulaciones.py
 # Exporta una simulación de inversión a Excel con tema oscuro morado/cyan
+from archivos_util import cabecera_descarga
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -597,5 +598,5 @@ def exportar_simulacion_excel(body: SimulacionExportInput):
     return StreamingResponse(
         output,
         media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        headers={'Content-Disposition': f'attachment; filename="{nombre_archivo}"'}
+        headers=cabecera_descarga(nombre_archivo)
     )

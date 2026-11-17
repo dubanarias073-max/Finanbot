@@ -532,7 +532,7 @@
             return `
             <div class="panel-mov-item">
                 <div style="min-width:0;">
-                    <div class="panel-mov-titulo">${getIcono(m.categoria, m.tipo)} ${etiquetaTipo} · ${m.categoria}</div>
+                    <div class="panel-mov-titulo">${getIcono(m.categoria, m.tipo)} ${etiquetaTipo} · ${escaparHTML(m.categoria)}</div>
                     <div class="panel-mov-desc">${escaparHTML(descripcionAmigable(m))}</div>
                     ${tieneUbic(m) ? `<a class="panel-mov-lugar" href="${linkGoogleMaps(m)}" target="_blank" rel="noopener" title="Abrir en Google Maps"><i class="fas fa-location-dot"></i><span>${escaparHTML(nombreLugar(m))}</span></a>` : ''}
                 </div>

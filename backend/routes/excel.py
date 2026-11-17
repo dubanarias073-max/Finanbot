@@ -1,4 +1,5 @@
 # routes/excel.py
+from archivos_util import cabecera_descarga
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
@@ -121,7 +122,7 @@ def exportar_excel(
         raise HTTPException(status_code=500, detail='Instala openpyxl: pip install openpyxl')
 
     uid  = int(usuario_id)
-    user = db.query(Usuario).get(uid)
+    user = db.get(Usuario, uid)
     if not user:
         raise HTTPException(status_code=404, detail='Usuario no encontrado')
 
@@ -685,5 +686,5 @@ def exportar_excel(
     return StreamingResponse(
         output,
         media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        headers={'Content-Disposition': f'attachment; filename="{nombre}"'}
+        headers=cabecera_descarga(nombre)
     )

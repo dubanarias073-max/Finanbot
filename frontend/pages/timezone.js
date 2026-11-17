@@ -1,3 +1,9 @@
+// Escapa texto antes de meterlo en innerHTML (evita XSS con nombres o descripciones)
+function escHTML(valor) {
+    return String(valor ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+window.escHTML = escHTML;
+
 (() => {
   const timeZone = 'America/Bogota';
   const dateFormatter = new Intl.DateTimeFormat('en-CA', {

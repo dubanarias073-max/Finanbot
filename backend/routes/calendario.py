@@ -1,4 +1,5 @@
 # calendario.py
+from archivos_util import cabecera_descarga
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
@@ -61,7 +62,7 @@ def _transacciones_del_mes(db: Session, usuario_id: int, anio: int, mes: int):
 #  Datos de un mes para pintar el calendario grande: cada día marcado
 #  y el listado de movimientos, para el panel lateral al hacer clic.
 # ══════════════════════════════════════════════════════════════════
-@router.get("/{anio}/{mes}")
+@router.get("/{anio:int}/{mes:int}")   # solo números: así "disponibles/2026" no cae aquí
 def obtener_mes(
     anio: int,
     mes: int,
@@ -174,5 +175,5 @@ def descargar_reporte_mensual(
     return StreamingResponse(
         buffer,
         media_type=media_type,
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        headers=cabecera_descarga(filename),
     )

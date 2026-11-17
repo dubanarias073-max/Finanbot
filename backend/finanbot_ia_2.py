@@ -54,7 +54,51 @@ TIMEOUT_S = 25
 TIMEOUT_POR_MODELO_S = 12      # cuánto se espera a cada modelo Gemini
 TIEMPO_MAX_TOTAL_S = 28        # máximo que el usuario espera entre todos los intentos
 TIEMPO_MAX_HERRAMIENTAS_S = 40 # tope para una conversación con herramientas (varias vueltas)
-MAX_VUELTAS_HERRAMIENTAS = 4   # veces que Gemini puede llamar herramientas en un mensaje
+MAX_VUELTAS_HERRAMIENTAS = 6   # veces que Gemini puede llamar herramientas en un mensaje
+                               # (ej. listar_metas → editar_meta → abonar_meta → respuesta)
+
+# Cuánto "piensa" el modelo antes de responder, según lo difícil del mensaje.
+# Pensar más da respuestas mejores pero tarda más, así que solo se usa cuando vale la pena.
+#   presupuesto_25: thinkingBudget para modelos 2.5 (tokens)
+#   nivel_3:        thinkingLevel para modelos 3.x
+#   extra_tokens:   margen de salida (en Gemini el pensamiento cuenta dentro de maxOutputTokens)
+#   timeout / total: segundos por modelo y en total
+NIVELES_PENSAMIENTO = {
+    'bajo':  {'presupuesto_25': 0,    'nivel_3': 'low',    'extra_tokens': 1024,
+              'temperatura': 0.6, 'timeout': TIMEOUT_POR_MODELO_S, 'total': TIEMPO_MAX_TOTAL_S},
+    'medio': {'presupuesto_25': 1024, 'nivel_3': 'medium', 'extra_tokens': 1536,
+              'temperatura': 0.45, 'timeout': 20, 'total': 40},
+    'alto':  {'presupuesto_25': 3072, 'nivel_3': 'high',   'extra_tokens': 4096,
+              'temperatura': 0.35, 'timeout': 30, 'total': 55},
+}
+
+# Mensajes que piden razonar: planes, cálculos, comparaciones, decisiones, diagnósticos.
+_PIDE_RAZONAR_RE = re.compile(
+    r'\b(?:plan|planea|planifica|presupuesto|estrategia|organiza|distribu|'
+    r'cuanto|cuantos|cuantas|calcula|proyecta|proyeccion|simula|'
+    r'cuando (?:llego|alcanzo|termino|pago)|en cuanto tiempo|'
+    r'deberia|me conviene|conviene|vale la pena|es mejor|que hago|que me recomiendas|recomienda|'
+    r'compara|diferencia|ventajas|desventajas|'
+    r'por que|analiza|evalua|revisa|como voy|como estoy|en que (?:gasto|me gasto)|'
+    r'deuda|credito|prestamo|tarjeta|interes|invert|cdt|ahorrar para|'
+    r'si (?:gano|ahorro|gasto|pago|invierto)|y si)\b'
+)
+
+
+def nivel_pensamiento(mensaje: str, intencion: str = 'chat', con_herramientas: bool = False) -> str:
+    """'bajo' | 'medio' | 'alto' según cuánto razonamiento necesita el mensaje."""
+    if intencion in ('analisis', 'documento'):
+        return 'alto'
+    texto = _sin_tildes(solo_mensaje_usuario(mensaje) or '').lower()
+    pide_razonar = bool(_PIDE_RAZONAR_RE.search(texto))
+    cifras = len(re.findall(r'\d[\d.,]*', texto))
+    largo = len(texto.split())
+    if pide_razonar and (cifras >= 1 or largo >= 12):
+        return 'alto'
+    if pide_razonar or cifras >= 2 or largo >= 25:
+        return 'medio'
+    # con herramientas hay que elegir bien el id y los argumentos: nunca "sin pensar"
+    return 'medio' if con_herramientas and cifras else 'bajo'
 PAUSA_TRAS_FALLO_S = 15     # segundos usando las reglas después de un fallo
 MAX_TURNOS_MEMORIA = 8          # pares usuario/bot que se recuerdan por conversación
 MAX_CONVERSACIONES = 500
@@ -348,6 +392,42 @@ def _proveedor() -> dict | None:
     return None
 
 
+# ── Métricas de la IA ────────────────────────────────────────────
+# Cada respuesta deja una línea JSON en el log y queda en un resumen en memoria
+# (GET /api/chat/ia-metricas) para ver qué modelo responde, cuánto tarda y cuánto falla.
+_metricas: deque = deque(maxlen=200)
+
+
+def registrar_metrica(modo: str, proveedor: dict | None, nivel: str, intencion: str,
+                      segundos: float, *, ok: bool, **extra) -> None:
+    proveedor = proveedor or {}
+    modelo = proveedor.get('modelo') or '?'
+    if proveedor.get('tipo') == 'gemini' and modo == 'responder':
+        modelo = _gemini_modelo_ok or modelo     # el modelo que realmente respondió
+    dato = {'fecha': time.strftime('%Y-%m-%d %H:%M:%S'), 'modo': modo, 'modelo': modelo,
+            'nivel': nivel, 'intencion': intencion, 'segundos': round(segundos, 2), 'ok': ok, **extra}
+    _metricas.append(dato)
+    print('[FinanBot IA 2][metrica] ' + json.dumps(dato, ensure_ascii=False))
+
+
+def resumen_metricas() -> dict:
+    datos = list(_metricas)
+    ok = [d for d in datos if d['ok']]
+    por_modelo: dict[str, int] = {}
+    for d in ok:
+        por_modelo[d['modelo']] = por_modelo.get(d['modelo'], 0) + 1
+    tiempos = sorted(d['segundos'] for d in ok)
+    return {
+        'total': len(datos),
+        'exitosas': len(ok),
+        'fallidas': len(datos) - len(ok),
+        'por_modelo': por_modelo,
+        'segundos_promedio': round(sum(tiempos) / len(tiempos), 2) if tiempos else None,
+        'segundos_p90': tiempos[int(len(tiempos) * 0.9) - 1] if len(tiempos) >= 10 else None,
+        'ultimas': datos[-10:],
+    }
+
+
 def disponible() -> bool:
     return _proveedor() is not None and time.time() >= _pausa_hasta
 
@@ -371,9 +451,11 @@ def _prompt_sistema(
     if con_herramientas:
         titulo_app = 'LO QUE PUEDES HACER (SÍ ejecutas acciones, llamando a las herramientas)'
         importante = """IMPORTANTE (modo herramientas)
-- Para registrar, editar o eliminar movimientos y para crear o abonar metas USA las herramientas; no le pidas a la persona que escriba un comando.
+- Para registrar, editar o eliminar movimientos y para crear, abonar o editar metas (nombre, monto objetivo, fecha límite, prioridad, modo) USA las herramientas; no le pidas a la persona que escriba un comando.
 - Registra directo cuando hay monto y el tipo (gasto o ingreso) es claro. Elige la categoría válida que mejor encaje (ej. "pizza" → Alimentación, "me pagaron la quincena" → Salario). Si no hay monto, o la categoría es realmente ambigua, pregunta en una sola frase.
-- Para editar o eliminar primero llama listar_movimientos y elige el id correcto; si varios coinciden, pregunta cuál. Nunca muestres ids a la persona.
+- Para editar o eliminar primero llama listar_movimientos (o listar_metas para metas) y elige el id correcto; si varios coinciden, pregunta cuál. Nunca muestres ids a la persona.
+- Si el pedido tiene varias partes (ej. "registra el mercado y súmale 50 mil a la meta"), ejecútalas todas, en orden, antes de responder.
+- Antes de llamar una herramienta revisa que los argumentos tengan sentido (monto en pesos sin puntos, categoría válida, la meta correcta). "20 lucas" = 20000, "1 palo" o "un millón" = 1000000.
 - Antes de eliminar, pregunta y espera un "sí" explícito; solo entonces llama eliminar_movimiento con confirmado=true.
 - Si la persona habla de un mes que no es el actual, NO uses herramientas: explícale que ese mes solo se consulta en el Calendario.
 - Los DATOS DEL USUARIO son de ANTES de tus acciones. Para balances o totales posteriores usa los valores que devuelven las herramientas.
@@ -412,6 +494,14 @@ CÓMO RESPONDER
 - Temas principales: finanzas personales, ahorro, presupuesto, deudas, crédito, inversión, impuestos, consumo inteligente, emprendimiento y negociación de salario. Para preguntas ajenas, redirige amablemente a las finanzas; si piden redactar o crear un documento de cualquier tema, genera el contenido solicitado.
 - Inversiones, impuestos, pensiones y créditos: explica con claridad y recuerda en una línea que es información educativa. Si das cifras oficiales que cambian (SMMLV, UVT, tasas, topes), di que son aproximadas y que las verifique en la fuente oficial (DIAN, Banco de la República, Superfinanciera).
 - Deudas graves o préstamos "gota a gota": prioriza seguridad, sugiere renegociar con el banco y la Defensoría del Consumidor Financiero.
+
+CÓMO PIENSAS ANTES DE RESPONDER (en silencio; no muestres estos pasos)
+1. Entiende la pregunta real: qué decisión o problema hay detrás (ej. "¿me alcanza para un celular?" es una pregunta de flujo de caja y metas, no solo de precio).
+2. Revisa TODOS los DATOS DEL USUARIO que importen: ingreso, gastos del mes y por categoría, balance, metas (lo ahorrado, lo que falta, fechas) y límites de gasto. Conecta esos datos entre sí.
+3. Haz las cuentas paso a paso y verifícalas antes de escribirlas: sumas, porcentajes, meses para llegar a una meta, cuánto libera un recorte. Redondea a pesos y usa el formato $1.250.000. Si dos cifras no cuadran, dilo.
+4. Considera alternativas y riesgos: si hay varias opciones, compáralas con números y recomienda UNA explicando por qué. Señala lo que la persona podría no estar viendo (un límite casi agotado, una meta que no llega a su fecha, un gasto que creció).
+5. Si un dato esencial falta, pregunta solo eso; si no, decide con un supuesto razonable y menciónalo en una frase.
+6. Responde primero con la conclusión, luego el porqué con cifras, y termina con 1 a 3 pasos concretos.
 
 DOCUMENTOS Y REPORTES (adjuntos y generados antes)
 - Entiende primero qué quiere la persona con el documento: analizarlo, resumirlo, convertirlo, reescribirlo, extraer datos, compararlo o crear algo a partir de él. Haz exactamente eso.
@@ -553,21 +643,40 @@ def _post(url: str, headers: dict, cuerpo: dict, timeout: float = TIMEOUT_S) -> 
 
 def _config_gemini(
     modelo: str,
-    pensar_poco: bool,
+    con_thinking: bool,
     max_output_tokens: int = 4096,
     json_mode: bool = True,
+    nivel: str = 'bajo',
 ) -> dict:
-    cfg = {'temperature': 0.6, 'maxOutputTokens': max_output_tokens}
+    """con_thinking=False → el modelo no acepta thinkingConfig (se usa su valor por defecto)."""
+    n = NIVELES_PENSAMIENTO.get(nivel, NIVELES_PENSAMIENTO['bajo'])
+    cfg = {'temperature': n['temperatura'],
+           'maxOutputTokens': max_output_tokens + (n['extra_tokens'] if con_thinking else 0)}
     if json_mode:
         cfg['responseMimeType'] = 'application/json'
-    if pensar_poco:
-        # Los modelos nuevos "piensan" antes de responder y eso los hace lentos.
-        # Para un chat basta con pensar poco.
+    if con_thinking:
         if '2.5' in modelo:
-            cfg['thinkingConfig'] = {'thinkingBudget': 0 if 'lite' in modelo else 512}
+            presupuesto = n['presupuesto_25']
+            if not presupuesto and 'lite' not in modelo:
+                presupuesto = 512          # el flash no-lite no acepta 0
+            cfg['thinkingConfig'] = {'thinkingBudget': presupuesto}
         else:
-            cfg['thinkingConfig'] = {'thinkingLevel': 'low'}
+            cfg['thinkingConfig'] = {'thinkingLevel': n['nivel_3']}
     return cfg
+
+
+def _truncada(data: dict) -> bool:
+    """True si Gemini cortó la respuesta por llegar al límite de tokens (finishReason=MAX_TOKENS)."""
+    return ((data.get('candidates') or [{}])[0].get('finishReason') or '') == 'MAX_TOKENS'
+
+
+def _cerrar_oracion(texto: str) -> str:
+    """Último recurso: si la respuesta sigue cortada, la recorta hasta la última oración completa."""
+    texto = texto.rstrip()
+    if not texto or texto[-1] in '.!?…»)"*':
+        return texto
+    corte = max(texto.rfind(c) for c in ('.', '!', '?', '\n'))
+    return texto[:corte + 1].rstrip() if corte > len(texto) * 0.4 else texto + '…'
 
 
 def _llamar_gemini(
@@ -577,8 +686,10 @@ def _llamar_gemini(
     imagenes: list[dict] | None = None,
     max_output_tokens: int = 4096,
     json_mode: bool = True,
+    nivel: str = 'bajo',
 ) -> str:
     global _gemini_modelo_ok
+    tiempos = NIVELES_PENSAMIENTO.get(nivel, NIVELES_PENSAMIENTO['bajo'])
     base = {
         'system_instruction': {'parts': [{'text': sistema}]},
         'contents': [],
@@ -596,7 +707,7 @@ def _llamar_gemini(
     # Si se fijó FINANBOT_IA2_MODEL solo se usa ese; si no, se prueban los de la lista
     candidatos = [p['modelo']] if os.getenv('FINANBOT_IA2_MODEL') else \
         [p['modelo']] + [m for m in GEMINI_MODELOS if m != p['modelo']]
-    limite = time.time() + TIEMPO_MAX_TOTAL_S
+    limite = time.time() + tiempos['total']
     ultimo_error: Exception | None = None
 
     for modelo in candidatos:
@@ -605,21 +716,21 @@ def _llamar_gemini(
             break
         url = (f"https://generativelanguage.googleapis.com/v1beta/models/{modelo}:generateContent"
                f"?key={p['key']}")
-        pensar_poco = modelo not in _sin_thinking_config
+        con_thinking = modelo not in _sin_thinking_config
         try:
             try:
                 data = _post(url, {}, {**base, 'generationConfig': _config_gemini(
-                    modelo, pensar_poco, max_output_tokens, json_mode,
+                    modelo, con_thinking, max_output_tokens, json_mode, nivel,
                 )},
-                             timeout=min(TIMEOUT_POR_MODELO_S, restante))
+                             timeout=min(tiempos['timeout'], restante))
             except urllib.error.HTTPError as e:
-                if e.code == 400 and pensar_poco:
+                if e.code == 400 and con_thinking:
                     # el modelo no acepta thinkingConfig → se repite sin él
                     _sin_thinking_config.add(modelo)
                     data = _post(url, {}, {**base, 'generationConfig': _config_gemini(
-                        modelo, False, max_output_tokens, json_mode,
+                        modelo, False, max_output_tokens, json_mode, nivel,
                     )},
-                                 timeout=min(TIMEOUT_POR_MODELO_S, max(3, limite - time.time())))
+                                 timeout=min(tiempos['timeout'], max(3, limite - time.time())))
                 else:
                     raise
         except urllib.error.HTTPError as e:
@@ -641,6 +752,24 @@ def _llamar_gemini(
 
         partes = (data.get('candidates') or [{}])[0].get('content', {}).get('parts', [])
         texto = ''.join(part.get('text', '') for part in partes if not part.get('thought'))
+        if _truncada(data):
+            # se quedó sin tokens a mitad de frase (el pensamiento también gasta tokens):
+            # se repite UNA vez con el doble de margen en el mismo modelo
+            print(f'[FinanBot IA 2] {modelo} cortó la respuesta (MAX_TOKENS), reintentando con más margen…')
+            try:
+                data2 = _post(url, {}, {**base, 'generationConfig': _config_gemini(
+                    modelo, con_thinking, max_output_tokens * 2, json_mode, nivel,
+                )}, timeout=min(tiempos['timeout'], max(3, limite - time.time())))
+                partes2 = (data2.get('candidates') or [{}])[0].get('content', {}).get('parts', [])
+                texto2 = ''.join(x.get('text', '') for x in partes2 if not x.get('thought'))
+                if texto2.strip():
+                    texto = texto2
+                    if _truncada(data2) and not json_mode:
+                        texto = _cerrar_oracion(texto)
+            except Exception as e:
+                print(f'[FinanBot IA 2] El reintento falló ({e}); se recorta a la última oración completa.')
+                if not json_mode:
+                    texto = _cerrar_oracion(texto)
         if not texto.strip():
             print(f'[FinanBot IA 2] {modelo} devolvió una respuesta vacía, probando otro modelo…')
             continue
@@ -658,9 +787,10 @@ def _llamar(
     imagenes: list[dict] | None = None,
     max_output_tokens: int = 1200,
     json_mode: bool = True,
+    nivel: str = 'bajo',
 ) -> str:
     if p['tipo'] == 'gemini':
-        return _llamar_gemini(p, sistema, mensajes, imagenes, max_output_tokens, json_mode)
+        return _llamar_gemini(p, sistema, mensajes, imagenes, max_output_tokens, json_mode, nivel)
 
     if p['tipo'] == 'anthropic':
         mensajes_api = []
@@ -746,6 +876,27 @@ def recordar(clave: str | None, rol: str, texto: str) -> None:
         _memoria.setdefault(clave, deque(maxlen=MAX_TURNOS_MEMORIA * 2)).append((rol, texto[:1500]))
 
 
+def tiene_memoria(clave: str | None) -> bool:
+    with _memoria_lock:
+        return bool(clave) and clave in _memoria
+
+
+def hidratar_memoria(clave: str | None, turnos: list[tuple[str, str]],
+                     documento: dict | None = None) -> None:
+    """Recupera la memoria de una conversación desde la base de datos.
+
+    La memoria vive en RAM: se pierde al reiniciar el servidor y no se comparte
+    entre procesos. Si falta, la ruta del chat la reconstruye con los últimos
+    mensajes guardados en la tabla `chats`, así la IA no "olvida" la conversación."""
+    if not clave or tiene_memoria(clave):
+        return
+    for rol, texto in turnos[-MAX_TURNOS_MEMORIA * 2:]:
+        recordar(clave, rol, texto)
+    if documento and isinstance(documento, dict) and documento.get('contenido') and not ultimo_documento(clave):
+        recordar_documento(clave, documento.get('titulo') or 'Documento', documento.get('formato') or 'pdf',
+                           documento['contenido'], documento.get('graficos'))
+
+
 def recordar_documento(
     clave: str | None,
     titulo: str,
@@ -807,6 +958,8 @@ def responder(mensaje: str, ctx: dict | None, clave_conversacion: str | None, *,
     print(f'[FinanBot IA 2] intención: {intencion}')
     solicitud_documento = intencion == 'documento'
     analisis = intencion == 'analisis'
+    nivel = 'bajo' if resultado_sistema else nivel_pensamiento(mensaje, intencion)
+    print(f'[FinanBot IA 2] nivel de pensamiento: {nivel}')
 
     # el contexto de datos va en el mensaje actual para que siempre esté fresco
     actual = f'DATOS DEL USUARIO (actualizados ahora):\n{_contexto_usuario(ctx)}\n'
@@ -847,12 +1000,15 @@ def responder(mensaje: str, ctx: dict | None, clave_conversacion: str | None, *,
         elif analisis:
             max_output_tokens = MAX_TOKENS_ANALISIS
         else:
-            max_output_tokens = 1200
+            max_output_tokens = 2048
+        inicio_llamada = time.time()
         texto = _llamar(
             p, sistema, previos + [('user', actual)], imagenes, max_output_tokens,
-            json_mode=json_mode,
+            json_mode=json_mode, nivel=nivel,
         )
+        registrar_metrica('responder', p, nivel, intencion, time.time() - inicio_llamada, ok=True)
     except Exception as err:                      # red caída, timeout, cupo agotado en todos…
+        registrar_metrica('responder', p, nivel, intencion, 0, ok=False, error=str(err)[:120])
         espera = 60 if getattr(err, 'code', None) == 429 else PAUSA_TRAS_FALLO_S
         print(f'[FinanBot IA 2] El proveedor {p["tipo"]} falló: {err}. '
               f'Respondiendo con las reglas durante {espera} s.')
@@ -956,9 +1112,11 @@ def responder(mensaje: str, ctx: dict | None, clave_conversacion: str | None, *,
 #  (finanbot_tools.HerramientasFinanBot) con el usuario ya autenticado.
 # ──────────────────────────────────────────────────────────────────
 
-def _generar_con_modelos(p: dict, cuerpo: dict, modelos: list[str], limite: float) -> tuple[dict, str]:
+def _generar_con_modelos(p: dict, cuerpo: dict, modelos: list[str], limite: float,
+                         nivel: str = 'medio') -> tuple[dict, str]:
     """generateContent probando modelos en orden. Devuelve (respuesta, modelo usado)."""
     global _gemini_modelo_ok
+    tiempos = NIVELES_PENSAMIENTO.get(nivel, NIVELES_PENSAMIENTO['medio'])
     ultimo_error: Exception | None = None
     for modelo in modelos:
         restante = limite - time.time()
@@ -966,18 +1124,18 @@ def _generar_con_modelos(p: dict, cuerpo: dict, modelos: list[str], limite: floa
             break
         url = (f"https://generativelanguage.googleapis.com/v1beta/models/{modelo}:generateContent"
                f"?key={p['key']}")
-        pensar_poco = modelo not in _sin_thinking_config
+        con_thinking = modelo not in _sin_thinking_config
         try:
             try:
                 data = _post(url, {}, {**cuerpo, 'generationConfig': _config_gemini(
-                    modelo, pensar_poco, 1200, json_mode=False)},
-                    timeout=min(TIMEOUT_POR_MODELO_S, restante))
+                    modelo, con_thinking, 2048, json_mode=False, nivel=nivel)},
+                    timeout=min(tiempos['timeout'], restante))
             except urllib.error.HTTPError as e:
-                if e.code == 400 and pensar_poco:
+                if e.code == 400 and con_thinking:
                     _sin_thinking_config.add(modelo)
                     data = _post(url, {}, {**cuerpo, 'generationConfig': _config_gemini(
-                        modelo, False, 1200, json_mode=False)},
-                        timeout=min(TIMEOUT_POR_MODELO_S, max(3, limite - time.time())))
+                        modelo, False, 2048, json_mode=False, nivel=nivel)},
+                        timeout=min(tiempos['timeout'], max(3, limite - time.time())))
                 else:
                     raise
         except urllib.error.HTTPError as e:
@@ -994,6 +1152,10 @@ def _generar_con_modelos(p: dict, cuerpo: dict, modelos: list[str], limite: floa
             if modelo == _gemini_modelo_ok:
                 _gemini_modelo_ok = None
             continue
+        if _truncada(data):
+            # no se puede reintentar aquí sin perder las firmas de pensamiento de la
+            # vuelta de herramientas; se avisa y quien llama cierra la última oración
+            print(f'[FinanBot IA 2] {modelo} cortó la respuesta (MAX_TOKENS) en la vuelta de herramientas.')
         if modelo != _gemini_modelo_ok:
             _gemini_modelo_ok = modelo
             print(f'[FinanBot IA 2] Usando modelo Gemini: {modelo}')
@@ -1031,7 +1193,10 @@ def responder_con_herramientas(mensaje: str, ctx: dict | None, clave_conversacio
 
     candidatos = [p['modelo']] if os.getenv('FINANBOT_IA2_MODEL') else \
         [p['modelo']] + [m for m in GEMINI_MODELOS if m != p['modelo']]
-    limite = time.time() + TIEMPO_MAX_HERRAMIENTAS_S
+    nivel = nivel_pensamiento(mensaje, 'chat', con_herramientas=True)
+    print(f'[FinanBot IA 2] nivel de pensamiento (herramientas): {nivel}')
+    inicio_herramientas = time.time()
+    limite = time.time() + max(TIEMPO_MAX_HERRAMIENTAS_S, NIVELES_PENSAMIENTO[nivel]['total'])
     modelo_usado: str | None = None
 
     try:
@@ -1044,7 +1209,7 @@ def responder_con_herramientas(mensaje: str, ctx: dict | None, clave_conversacio
             # Tras la primera vuelta se sigue con el MISMO modelo (las firmas de
             # pensamiento de una llamada de función no sirven en otro modelo).
             data, modelo_usado = _generar_con_modelos(
-                p, cuerpo, [modelo_usado] if modelo_usado else candidatos, limite)
+                p, cuerpo, [modelo_usado] if modelo_usado else candidatos, limite, nivel)
 
             contenido = (data.get('candidates') or [{}])[0].get('content') or {}
             partes = contenido.get('parts') or []
@@ -1055,8 +1220,13 @@ def responder_con_herramientas(mensaje: str, ctx: dict | None, clave_conversacio
                 if not texto:
                     print('[FinanBot IA 2] Gemini no devolvió texto tras las herramientas.')
                     return None
+                if _truncada(data):
+                    texto = _cerrar_oracion(texto)
                 recordar(clave_conversacion, 'user', mensaje_usuario)
                 recordar(clave_conversacion, 'bot', texto)
+                registrar_metrica('herramientas', {**p, 'modelo': modelo_usado}, nivel, 'chat',
+                                  time.time() - inicio_herramientas, ok=True,
+                                  herramientas=[a.get('tipo') for a in herramientas.ejecutadas])
                 return {'respuesta': texto, 'sugerencias': [], 'enlaces': []}
 
             contents.append(contenido)       # se conserva tal cual (firmas de pensamiento)

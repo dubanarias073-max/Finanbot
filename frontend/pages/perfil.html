@@ -493,8 +493,8 @@
     <div class="modal-box">
         <button class="modal-close" onclick="cerrarModal()">✕</button>
         <div class="modal-header">
-            <div class="modal-title">🎯 Nueva meta</div>
-            <div class="modal-subtitle">Define tu objetivo y te ayudo a planificarlo</div>
+            <div class="modal-title" id="modalMetaTitulo">🎯 Nueva meta</div>
+            <div class="modal-subtitle" id="modalMetaSubtitulo">Define tu objetivo y te ayudo a planificarlo</div>
         </div>
         <div class="modal-body-scroll">
             <div class="form-group">
@@ -585,7 +585,7 @@
                 </div>
             </div>
             <div id="ahorroExtras">
-                <div style="display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:12px;">
+                <div id="metaActualWrap" style="display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:12px;">
                     <div>
                         <label class="form-label">Ya tengo ahorrado</label>
                         <div style="display:flex;">
@@ -615,7 +615,8 @@
                 <div class="calc-row"><span>📈 Ahorro mensual necesario:</span><span id="cMensual">—</span></div>
                 <div class="calc-row" id="cInteresRow" style="display:none;"><span>🚀 Con interés 8% anual:</span><span id="cInteres">—</span></div>
             </div>
-            <button class="btn-crear-modal" onclick="crearMeta()">
+            <div class="tipo-meta-ayuda" id="metaEditarAviso"></div>
+            <button class="btn-crear-modal" id="btnGuardarMeta" onclick="guardarMeta()">
                 <i class="fas fa-plus me-2"></i> Crear meta
             </button>
         </div>
@@ -1022,6 +1023,10 @@
                 <button class="btn-danger-full" onclick="cerrarSesionCompleto(event)">
                     <i class="fas fa-sign-out-alt me-2"></i> Cerrar sesión en este dispositivo
                 </button>
+                <div class="danger-desc" style="margin-top:14px;">Si perdiste un dispositivo o sospechas de un acceso, cierra la sesión en todos los lugares donde la tengas abierta.</div>
+                <button class="btn-danger-full" data-destino="index-legacy.html" onclick="cerrarSesionTodosDispositivos(event)">
+                    <i class="fas fa-power-off me-2"></i> Cerrar sesión en todos los dispositivos
+                </button>
             </div>
         </div>
     </div>
@@ -1032,6 +1037,8 @@ const API = '/api';
 const token = window.FinanbotLocal.active ? window.FinanbotLocal.token : localStorage.getItem('token');
 let fotoPerfilUrl = null;
     let metaSeleccionada = null;
+    let metaEditandoId = null;
+    let metasCache = [];
     let montoOriginalAbono = 0;
     let metaObjetivoAbono = 0;
     let metaRetirarId = null;
@@ -1099,43 +1106,6 @@ let fotoPerfilUrl = null;
     function obtenerMesActualStr() {
         const hoy = FinanbotTime.today();
         return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}`;
-    }
-
-    // Al retirar plata de una meta ("Editar monto" hacia abajo), calcula
-    // cuánto de ese retiro sale de aportes hechos ESTE MISMO MES (se puede
-    // deshacer restando de Gastos, sin tocar Ingresos) y cuánto viene de
-    // meses ANTERIORES ya cerrados (esa parte sí debe registrarse como
-    // Ingreso de este mes, porque si no esa plata no se refleja en ningún
-    // lado). Revisa las transacciones ya registradas de esta meta
-    // (aportes automáticos, manuales y ajustes) fechadas este mes.
-    async function calcularRetiroSplit(metaId, montoRetiro) {
-        const hoy = FinanbotTime.today();
-        const mesActualStr = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}`;
-        try {
-            const res = await fetch(`${API}/transacciones/`, { headers:{'Authorization':`Bearer ${token}`} });
-            if (!res.ok) return { parteEsteMes: 0, parteMesesAnteriores: montoRetiro };
-            const todas = await res.json();
-            const deEsteMes = todas.filter(t => esTransaccionDeMeta(t, metaId) && t.fecha && t.fecha.slice(0,7) === mesActualStr);
-
-            let aportadoEsteMes = 0, retiradoEsteMes = 0;
-            deEsteMes.forEach(t => {
-                if (t.tipo === 'ingreso') {
-                    retiradoEsteMes += t.monto; // retiro de meses anteriores ya registrado este mes
-                } else if (t.monto >= 0) {
-                    aportadoEsteMes += t.monto; // aporte/aumento hecho este mes
-                } else {
-                    retiradoEsteMes += -t.monto; // retiro (mismo mes) ya hecho antes
-                }
-            });
-
-            const poolDisponible = Math.max(0, aportadoEsteMes - retiradoEsteMes);
-            const parteEsteMes = Math.min(montoRetiro, poolDisponible);
-            const parteMesesAnteriores = montoRetiro - parteEsteMes;
-            return { parteEsteMes, parteMesesAnteriores };
-        } catch(e) {
-            console.error('Error calculando origen del retiro:', e);
-            return { parteEsteMes: 0, parteMesesAnteriores: montoRetiro };
-        }
     }
 
     // Calcula la fecha (YYYY-MM-DD) del día de pago para un mes dado,
@@ -1373,9 +1343,8 @@ let fotoPerfilUrl = null;
 
     // ── MODAL META ───────────────────────────────────────
     function abrirModal() {
+        resetFormMeta();
         document.getElementById('modalMeta').classList.add('visible');
-        document.getElementById('metaTipo').value = 'ahorro';
-        selTipoMeta('ahorro');
         document.getElementById('metaFecha').min = FinanbotTime.todayIso();
         const ing = parseFloat(document.getElementById('ingresoMensual').value) || 0;
         const r = getRegla();
@@ -1384,7 +1353,140 @@ let fotoPerfilUrl = null;
         selModo('manual');
         calcProy();
     }
-    function cerrarModal()       { document.getElementById('modalMeta').classList.remove('visible'); document.getElementById('metaCalc').style.display='none'; }
+    function cerrarModal()       { document.getElementById('modalMeta').classList.remove('visible'); document.getElementById('metaCalc').style.display='none'; resetFormMeta(); }
+
+    // Deja el modal listo para CREAR (limpia campos y sale del modo edición)
+    function resetFormMeta() {
+        metaEditandoId = null;
+        ['metaNombre','metaObjetivo','metaFecha','metaMensual','metaMontoAuto','metaDiaAuto'].forEach(id=>document.getElementById(id).value='');
+        document.getElementById('metaActual').value = '0';
+        document.getElementById('metaActualWrap').style.display = 'grid';
+        const tipoSel = document.getElementById('metaTipo');
+        tipoSel.disabled = false;
+        tipoSel.value = 'ahorro';
+        document.getElementById('modalMetaTitulo').textContent = '🎯 Nueva meta';
+        document.getElementById('modalMetaSubtitulo').textContent = 'Define tu objetivo y te ayudo a planificarlo';
+        document.getElementById('btnGuardarMeta').innerHTML = '<i class="fas fa-plus me-2"></i> Crear meta';
+        const aviso = document.getElementById('metaEditarAviso');
+        aviso.textContent = ''; aviso.classList.remove('visible');
+        marcarEmoji('🏖️'); marcarCat('viaje'); marcarPrio('media');
+        selTipoMeta('ahorro');
+        selModo('manual');
+    }
+
+    function marcarEmoji(e) {
+        emoji = e;
+        document.querySelectorAll('.emoji-btn').forEach(b => b.classList.toggle('sel', b.textContent.trim() === e));
+    }
+    function marcarCat(c) {
+        catSel = c;
+        document.querySelectorAll('.cat-btn').forEach(b => b.classList.toggle('sel', (b.getAttribute('onclick') || '').includes(`'${c}'`)));
+    }
+    function marcarPrio(p) {
+        prioSel = p;
+        document.querySelectorAll('.prio-btn').forEach(b => b.classList.toggle('sel', b.classList.contains('prio-' + p)));
+    }
+
+    // ── EDITAR META COMPLETA ─────────────────────────────
+    function abrirEditarMeta(id) {
+        const m = metasCache.find(x => x.id === id);
+        if (!m) { toast('⚠️','No se encontró la meta.'); return; }
+        resetFormMeta();
+        metaEditandoId = id;
+        const tipo = m.tipo || 'ahorro';
+        const esAhorro = tipo === 'ahorro';
+
+        const tipoSel = document.getElementById('metaTipo');
+        tipoSel.value = tipo;
+        selTipoMeta(tipo);
+
+        // El nombre se guarda como "<icono> <nombre>": se quita el icono para editarlo
+        let nombre = m.nombre || '';
+        if (m.icono && nombre.startsWith(m.icono)) nombre = nombre.slice(m.icono.length).trim();
+        document.getElementById('metaNombre').value   = nombre;
+        document.getElementById('metaObjetivo').value = Math.round(m.monto_objetivo);
+
+        if (esAhorro) {
+            if (m.icono) marcarEmoji(m.icono);
+            if (m.categoria) marcarCat(m.categoria);
+            marcarPrio(m.prioridad || 'media');
+            document.getElementById('metaActual').value = m.monto_actual || 0; // solo para la proyección
+            document.getElementById('metaFecha').value  = m.fecha_limite || '';
+            if (m.modo === 'automatico') {
+                selModo('automatico');
+                document.getElementById('metaMontoAuto').value = m.monto_automatico || '';
+                document.getElementById('metaDiaAuto').value   = m.dia_automatico || '';
+            } else selModo('manual');
+        }
+
+        // Lo ahorrado se cambia con "Editar monto" (que registra el movimiento en tu balance)
+        document.getElementById('metaActualWrap').style.display = 'none';
+        const aviso = document.getElementById('metaEditarAviso');
+        if (esAhorro && m.monto_actual > 0) {
+            tipoSel.disabled = true; // no se puede convertir en límite de gasto con dinero ahorrado
+            aviso.textContent = `Llevas $${Math.round(m.monto_actual).toLocaleString('es-CO')} ahorrados. Para cambiar ese valor usa "Editar monto". El tipo de meta no se puede cambiar mientras tenga dinero ahorrado.`;
+            aviso.classList.add('visible');
+        }
+
+        document.getElementById('modalMetaTitulo').textContent = '✏️ Editar meta';
+        document.getElementById('modalMetaSubtitulo').textContent = 'Cambia lo que quieras de tu meta';
+        document.getElementById('btnGuardarMeta').innerHTML = '<i class="fas fa-save me-2"></i> Guardar cambios';
+        document.getElementById('metaFecha').min = '';
+        document.getElementById('modalMeta').classList.add('visible');
+        calcProy();
+    }
+
+    function guardarMeta() {
+        return metaEditandoId ? actualizarMetaCompleta() : crearMeta();
+    }
+
+    async function actualizarMetaCompleta() {
+        const id     = metaEditandoId;
+        const nombre = document.getElementById('metaNombre').value.trim();
+        const obj    = parseFloat(document.getElementById('metaObjetivo').value);
+        const fecha  = document.getElementById('metaFecha').value;
+        if (!nombre || !(obj > 0)) { toast('⚠️','El nombre y el monto objetivo son obligatorios.'); return; }
+
+        const esAhorro = tipoMetaSel === 'ahorro';
+        const body = {
+            nombre: esAhorro ? `${emoji} ${nombre}` : nombre,
+            tipo: tipoMetaSel,
+            monto_objetivo: obj,
+            fecha_limite: esAhorro ? (fecha || null) : null,
+        };
+        if (esAhorro) {
+            body.icono = emoji;
+            body.categoria = catSel;
+            body.prioridad = prioSel;
+            body.modo = modoSel;
+            if (modoSel === 'automatico') {
+                const montoAuto = parseFloat(document.getElementById('metaMontoAuto').value) || 0;
+                const diaAuto   = parseInt(document.getElementById('metaDiaAuto').value, 10) || 0;
+                if (montoAuto <= 0 || diaAuto < 1 || diaAuto > 31) {
+                    toast('⚠️','Para el modo automático indica un aporte mensual y un día del mes (1-31) válidos.');
+                    return;
+                }
+                body.monto_automatico = montoAuto;
+                body.dia_automatico = diaAuto;
+            }
+        }
+
+        try {
+            const res = await fetch(`${API}/metas/${id}`, {
+                method:'PUT',
+                headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},
+                body: JSON.stringify(body)
+            });
+            if (res.ok) {
+                cerrarModal();
+                await cargarMetas(false);
+                toast('✏️','Meta actualizada');
+            } else {
+                const err = await res.json().catch(() => ({}));
+                toast('❌', err.detail || 'Error al actualizar la meta.');
+            }
+        } catch(e) { toast('❌','No se pudo conectar.'); }
+    }
     function cerrarModalAbonar() { document.getElementById('modalAbonar').classList.remove('visible'); }
     function cerrarModalAnadir() { document.getElementById('modalAnadir').classList.remove('visible'); }
     function selEmoji(btn, e) { document.querySelectorAll('.emoji-btn').forEach(b => b.classList.remove('sel')); btn.classList.add('sel'); emoji = e; }
@@ -1599,65 +1701,15 @@ let fotoPerfilUrl = null;
     // balance) y suma el mismo monto a monto_actual de la meta. Nunca
     // toca meses pasados ni resta de la meta.
     async function procesarAportesAutomaticos(metas) {
-        if (!token || !metas || !metas.length) return metas;
-        const automaticas = metas.filter(m => m.modo === 'automatico' && !m.completada && m.monto_automatico > 0 && m.dia_automatico);
-        if (!automaticas.length) return metas;
-
-        const hoy = FinanbotTime.today();
-        const mesActualStr = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}`;
-
-        for (const m of automaticas) {
-            if (hoy.getDate() < m.dia_automatico) continue; // aún no llega su día este mes
-
-            // Si la meta se creó ESTE MISMO mes y su día automático ya
-            // había pasado al momento de crearla, no se cobra un aporte
-            // "retroactivo" en el mes de creación — el primer aporte real
-            // será el día configurado del mes siguiente.
-            if (m.fecha_creacion) {
-                const creada = FinanbotTime.fromIsoDate(m.fecha_creacion.slice(0, 10));
-                const creadaEsteMes = creada.getFullYear() === hoy.getFullYear() && creada.getMonth() === hoy.getMonth();
-                if (creadaEsteMes && creada.getDate() > m.dia_automatico) continue;
-            }
-
-            const yaAportadoEsteMes = transaccionesCache.some(t =>
-                esAutoMeta(t, m.id) && t.fecha && t.fecha.slice(0,7) === mesActualStr
-            );
-            if (yaAportadoEsteMes) continue;
-
-            const faltante = Math.max(0, m.monto_objetivo - m.monto_actual);
-            const aporte = Math.min(m.monto_automatico, faltante);
-            if (aporte <= 0) continue;
-
-            const fechaAporte = fechaSalarioParaMes(hoy.getFullYear(), hoy.getMonth(), 0, m.dia_automatico);
-            try {
-                await fetch(API + '/transacciones/', {
-                    method: 'POST',
-                    headers: {'Content-Type':'application/json','Authorization': `Bearer ${token}`},
-                    body: JSON.stringify({
-                        tipo: 'gasto',
-                        categoria: 'Ahorro automático',
-                        icono: '🎯',
-                        monto: aporte,
-                        descripcion: tagAutoMeta(m.id),
-                        fecha: fechaAporte
-                    })
-                });
-                const nuevoActual = m.monto_actual + aporte;
-                await fetch(`${API}/metas/${m.id}`, {
-                    method: 'PUT',
-                    headers: {'Content-Type':'application/json','Authorization': `Bearer ${token}`},
-                    body: JSON.stringify({ monto_actual: nuevoActual })
-                });
-                m.monto_actual = nuevoActual;
-                toast('🎯', `Aporte automático de $${Math.round(aporte).toLocaleString('es-CO')} añadido a "${m.nombre}"`);
-            } catch(e) { console.error('Error en aporte automático de meta:', e); }
-        }
-        // refresca la caché de transacciones y el balance tras los nuevos gastos
+        // El servidor ya aplicó el salario y los aportes automáticos del mes
+        // al responder GET /metas/ (ver metas_service.procesar_automaticos).
+        // Solo se refrescan los totales del balance.
         await cargarStats();
         return metas;
     }
 
     function renderMetas(metas) {
+        metasCache = metas;
         const lista = document.getElementById('listaMetas');
         if (!metas.length) {
             lista.innerHTML = `<div class="meta-empty"><div class="meta-empty-icon">🎯</div><p>Aún no tienes metas de ahorro.<br>Crea tu primera meta y empieza a construir tu futuro financiero.</p><button class="btn-primary" onclick="abrirModal()"><i class="fas fa-plus"></i> Crear mi primera meta</button></div>`;
@@ -1683,8 +1735,8 @@ let fotoPerfilUrl = null;
                 <div class="meta-top">
                     <div>
                         ${esPresupuesto ? `<span class="presupuesto-tipo"><i class="fas ${m.tipo === 'gasto_mensual' ? 'fa-calendar-day' : 'fa-calendar'}"></i> ${periodoLabel}</span>` : ''}
-                        <div class="meta-nombre">${m.icono && !m.nombre.startsWith(m.icono) ? `${m.icono} ` : ''}${m.nombre} ${m.completada?'🎉':''}</div>
-                        ${!esPresupuesto && (m.categoria || m.prioridad) ? `<div class="meta-fecha">${m.categoria ? `📂 ${m.categoria}` : ''}${m.categoria && m.prioridad ? ' · ' : ''}${m.prioridad ? `Prioridad ${m.prioridad}` : ''}</div>` : ''}
+                        <div class="meta-nombre">${m.icono && !m.nombre.startsWith(m.icono) ? `${escHTML(m.icono)} ` : ''}${escHTML(m.nombre)} ${m.completada?'🎉':''}</div>
+                        ${!esPresupuesto && (m.categoria || m.prioridad) ? `<div class="meta-fecha">${m.categoria ? `📂 ${escHTML(m.categoria)}` : ''}${m.categoria && m.prioridad ? ' · ' : ''}${m.prioridad ? `Prioridad ${escHTML(m.prioridad)}` : ''}</div>` : ''}
                         ${!esPresupuesto && m.fecha_limite ? `<div class="meta-fecha"><i class="fas fa-calendar-alt" style="color:#8B5CF6;font-size:10px;"></i> Límite: ${m.fecha_limite}</div>` : ''}
                         ${!esPresupuesto ? `<div>${modoTag}</div>` : ''}
                     </div>
@@ -1707,7 +1759,8 @@ let fotoPerfilUrl = null;
                 <div class="meta-acciones">
                     ${!esPresupuesto && !m.completada ? `<button class="btn-success" onclick="abrirAnadir(${m.id},${m.monto_actual})"><i class="fas fa-plus"></i> Añadir ahorro</button>` : ''}
                     ${!esPresupuesto && m.completada ? `<button class="btn-retirar" onclick="abrirRetirar(${m.id},${m.monto_actual},${m.monto_objetivo})"><i class="fas fa-hand-holding-dollar"></i> Retirar dinero</button>` : ''}
-                    ${!esPresupuesto ? `<button class="btn-outline-sm" onclick="abrirAbonar(${m.id},${m.monto_actual},${m.monto_objetivo})"><i class="fas fa-pen"></i> Editar monto</button>` : ''}
+                    ${!esPresupuesto ? `<button class="btn-outline-sm" onclick="abrirAbonar(${m.id},${m.monto_actual},${m.monto_objetivo})"><i class="fas fa-coins"></i> Editar monto</button>` : ''}
+                    <button class="btn-outline-sm" onclick="abrirEditarMeta(${m.id})"><i class="fas fa-pen"></i> Editar meta</button>
                     <button class="btn-danger-sm" onclick="eliminarMeta(${m.id})"><i class="fas fa-trash"></i> Eliminar</button>
                 </div>
             </div>`;
@@ -1752,47 +1805,22 @@ let fotoPerfilUrl = null;
             });
             if (res.ok) {
                 cerrarModal();
-                ['metaNombre','metaObjetivo','metaFecha','metaMensual','metaMontoAuto','metaDiaAuto'].forEach(id=>document.getElementById(id).value='');
-                document.getElementById('metaActual').value='0';
-                document.getElementById('metaTipo').value='ahorro';
-                selTipoMeta('ahorro');
-                selModo('manual');
                 await cargarMetas(false); toast('🎯','Meta creada con éxito');
             } else toast('❌','Error al crear la meta.');
         } catch(e) { toast('❌','No se pudo conectar.'); }
     }
 
     async function eliminarMeta(id) {
-        if (!confirm('¿Eliminar esta meta?')) return;
+        if (!confirm('¿Eliminar esta meta? Lo que tenga ahorrado vuelve a tu balance.')) return;
         try {
-            // Antes de borrar la meta, limpia sus abonos ya registrados
-            // como gasto (automáticos __auto_meta_<id>__ y manuales
-            // __manual_meta_<id>__), para que no queden transacciones
-            // "huérfanas" sin meta a la que apuntar (se verían en el
-            // Calendario con un texto genérico en vez del nombre de la meta).
-            await limpiarTransaccionesDeMeta(id);
-
             const res = await fetch(`${API}/metas/${id}`, { method:'DELETE', headers:{'Authorization':`Bearer ${token}`} });
             if (res.ok) { await cargarStats(); await cargarMetas(false); toast('🗑️','Meta eliminada'); }
+            else toast('❌', await mensajeError(res, 'No se pudo eliminar la meta.'));
         } catch(e) { toast('❌','No se pudo conectar.'); }
     }
 
-    // Elimina las transacciones de aporte automático (tag __auto_meta_<id>__)
-    // asociadas a una meta. Se usa al borrar la meta para no dejar gastos
-    // huérfanos que ya no se puedan identificar en el Calendario.
-    async function limpiarTransaccionesDeMeta(metaId) {
-        try {
-            const res = await fetch(`${API}/transacciones/`, { headers:{'Authorization':`Bearer ${token}`} });
-            if (!res.ok) return;
-            const todas = await res.json();
-            const asociadas = todas.filter(t => esTransaccionDeMeta(t, metaId));
-            for (const t of asociadas) {
-                await fetch(`${API}/transacciones/${t.id}`, {
-                    method:'DELETE',
-                    headers:{'Authorization':`Bearer ${token}`}
-                });
-            }
-        } catch(e) { console.error('Error limpiando abonos de la meta:', e); }
+    async function mensajeError(res, porDefecto) {
+        try { const d = await res.json(); return d.detail || porDefecto; } catch(_) { return porDefecto; }
     }
 
     // ── AÑADIR AHORRO (solo suma, nunca resta) ────────────
@@ -1806,39 +1834,18 @@ let fotoPerfilUrl = null;
         const monto = parseFloat(document.getElementById('anadirMonto').value);
         if (!monto || monto <= 0) { toast('⚠️','Ingresa un monto válido mayor a 0.'); return; }
         try {
-            const metaActualRes = await fetch(`${API}/metas/`, { headers:{'Authorization':`Bearer ${token}`} });
-            const metas = metaActualRes.ok ? await metaActualRes.json() : [];
-            const meta = metas.find(m => m.id === metaSeleccionada);
-            const nuevoTotal = (meta ? meta.monto_actual : 0) + monto;
-            const res = await fetch(`${API}/metas/${metaSeleccionada}`, {
-                method:'PUT',
+            // El servidor suma a la meta y registra el gasto en una sola operación
+            const res = await fetch(`${API}/metas/${metaSeleccionada}/abonar`, {
+                method:'POST',
                 headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},
-                body: JSON.stringify({ monto_actual: nuevoTotal })
+                body: JSON.stringify({ monto })
             });
             if (res.ok) {
-                // Registra el abono como un gasto real: descuenta del sueldo/
-                // balance y queda en el Calendario, igual que un aporte
-                // automático, pero con su propia etiqueta ("abono manual").
-                try {
-                    await fetch(API + '/transacciones/', {
-                        method: 'POST',
-                        headers: {'Content-Type':'application/json','Authorization': `Bearer ${token}`},
-                        body: JSON.stringify({
-                            tipo: 'gasto',
-                            categoria: 'Aporte manual a meta',
-                            icono: '🎯',
-                            monto: monto,
-                            descripcion: tagManualMeta(metaSeleccionada),
-                            fecha: fechaHoyStr()
-                        })
-                    });
-                } catch(e) { console.error('Error registrando el gasto del abono manual:', e); }
-
                 cerrarModalAnadir();
                 await cargarStats();
                 await cargarMetas(false);
                 toast('➕',`$${Math.round(monto).toLocaleString('es-CO')} añadidos a tu meta`);
-            }
+            } else toast('❌', await mensajeError(res, 'No se pudo añadir el ahorro.'));
         } catch(e) { toast('❌','No se pudo conectar.'); }
     }
 
@@ -1866,24 +1873,24 @@ let fotoPerfilUrl = null;
 
     // Retirar = devolver TODO el dinero ahorrado a tu sueldo/balance Y
     // eliminar la meta (ya cumplió su propósito, no queda nada más que
-    // hacer con ella). Reutiliza limpiarTransaccionesDeMeta, que borra los
+    // hacer con ella). El servidor borra la meta y sus aportes, así que los
     // gastos que se habían descontado para esta meta — al desaparecer esos
     // gastos, esa plata vuelve a contar en tu balance de cada mes en que
     // se había descontado, exactamente como un retiro completo.
     async function confirmarRetiro() {
         try {
-            await limpiarTransaccionesDeMeta(metaRetirarId);
-            const res = await fetch(`${API}/metas/${metaRetirarId}`, {
-                method:'DELETE',
+            const res = await fetch(`${API}/metas/${metaRetirarId}/retirar`, {
+                method:'POST',
                 headers:{'Authorization':`Bearer ${token}`}
             });
             if (res.ok) {
+                const datos = await res.json();
                 cerrarModalRetirar();
                 await cargarStats();
                 await cargarMetas(false);
-                toast('💸', `$${Math.round(metaRetirarActual).toLocaleString('es-CO')} devueltos a tu sueldo — meta eliminada`);
+                toast('💸', `$${Math.round(datos.devuelto ?? metaRetirarActual).toLocaleString('es-CO')} devueltos a tu sueldo — meta eliminada`);
             } else {
-                toast('❌','No se pudo retirar el dinero.');
+                toast('❌', await mensajeError(res, 'No se pudo retirar el dinero.'));
             }
         } catch(e) { toast('❌','No se pudo conectar.'); }
     }
@@ -1901,7 +1908,7 @@ let fotoPerfilUrl = null;
 
     async function confirmarAbono() {
         const monto = parseFloat(document.getElementById('abonarMonto').value);
-        if (!monto || monto < 0) { toast('⚠️','Monto inválido.'); return; }
+        if (isNaN(monto) || monto < 0) { toast('⚠️','Monto inválido.'); return; }
 
         if (monto < montoOriginalAbono) {
             document.getElementById('msgConfirmarReduccion').textContent =
@@ -1925,158 +1932,26 @@ let fotoPerfilUrl = null;
 
     async function guardarAbono(monto) {
         try {
-            const diff = monto - montoOriginalAbono; // >0 subió, <0 bajó
-            // Si el nuevo monto queda por debajo del objetivo, la meta deja
-            // de estar completada (pasa cuando retiras plata de una meta
-            // que ya habías alcanzado). Si vuelve a alcanzar o superar el
-            // objetivo, se marca de nuevo como completada.
-            const nuevaCompletada = monto >= metaObjetivoAbono;
-            const res = await fetch(`${API}/metas/${metaSeleccionada}`, {
-                method:'PUT',
+            // El servidor reemplaza el total y registra la diferencia (si baja,
+            // separa lo aportado este mes de lo de meses anteriores)
+            const res = await fetch(`${API}/metas/${metaSeleccionada}/ajustar`, {
+                method:'POST',
                 headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},
-                body: JSON.stringify({ monto_actual: monto, completada: nuevaCompletada })
+                body: JSON.stringify({ nuevo_total: monto })
             });
-            if (res.ok) {
-                if (diff > 0.0001) {
-                    // Aumento: sale plata de tu sueldo hacia la meta (igual
-                    // que "Añadir ahorro") — siempre gasto positivo.
-                    try {
-                        await fetch(API + '/transacciones/', {
-                            method: 'POST',
-                            headers: {'Content-Type':'application/json','Authorization': `Bearer ${token}`},
-                            body: JSON.stringify({
-                                tipo: 'gasto',
-                                categoria: 'Ajuste de meta',
-                                icono: '🎯',
-                                monto: diff,
-                                descripcion: tagAjusteMeta(metaSeleccionada),
-                                fecha: fechaHoyStr()
-                            })
-                        });
-                    } catch(e) { console.error('Error registrando el ajuste de la meta:', e); }
-
-                } else if (diff < -0.0001) {
-                    // Retiro: la parte que aportaste ESTE MES se deshace
-                    // restando de Gastos (no toca Ingresos); la parte que
-                    // viene de meses anteriores se registra como Ingreso de
-                    // este mes, para que esa plata no desaparezca del
-                    // historial.
-                    const montoRetiro = -diff;
-                    const { parteEsteMes, parteMesesAnteriores } = await calcularRetiroSplit(metaSeleccionada, montoRetiro);
-
-                    try {
-                        if (parteEsteMes > 0.0001) {
-                            await fetch(API + '/transacciones/', {
-                                method: 'POST',
-                                headers: {'Content-Type':'application/json','Authorization': `Bearer ${token}`},
-                                body: JSON.stringify({
-                                    tipo: 'gasto',
-                                    categoria: 'Ajuste de meta',
-                                    icono: '🎯',
-                                    monto: -parteEsteMes,
-                                    descripcion: tagAjusteMeta(metaSeleccionada),
-                                    fecha: fechaHoyStr()
-                                })
-                            });
-                        }
-                        if (parteMesesAnteriores > 0.0001) {
-                            await fetch(API + '/transacciones/', {
-                                method: 'POST',
-                                headers: {'Content-Type':'application/json','Authorization': `Bearer ${token}`},
-                                body: JSON.stringify({
-                                    tipo: 'ingreso',
-                                    categoria: 'Retiro de ahorro',
-                                    icono: '🎯',
-                                    monto: parteMesesAnteriores,
-                                    descripcion: tagAjusteMeta(metaSeleccionada),
-                                    fecha: fechaHoyStr()
-                                })
-                            });
-                        }
-                    } catch(e) { console.error('Error registrando el retiro de la meta:', e); }
-                }
-
-                cerrarModalAbonar();
-                await cargarStats();
-                await cargarMetas(false);
-                toast(
-                    diff < 0 ? '↩️' : '💰',
-                    diff < 0
-                        ? `$${Math.round(Math.abs(diff)).toLocaleString('es-CO')} devueltos a tu sueldo`
-                        : 'Monto actualizado'
-                );
-            }
-        } catch(e) { console.error(e); }
-    }
-
-    // ── GUARDAR PERFIL + SALARIO AUTO ────────────────────
-    async function guardarPerfil() {
-        const nombre  = document.getElementById('nombre').value.trim();
-        const ingreso = document.getElementById('ingresoMensual').value;
-        const diaPagoStr = document.getElementById('diaPago').value;
-        if (!nombre) { toast('⚠️','El nombre no puede estar vacío.'); return; }
-        if (!ingreso || !Number.isFinite(Number(ingreso)) || Number(ingreso) < 10000) {
-            toast('⚠️','Ingresa un monto mensual válido de al menos $10.000.');
-            document.getElementById('ingresoMensual').focus();
-            return;
-        }
-
-        let fechaSalario = null;
-        let diaPagoNum = null;
-        if (diaPagoStr) {
-            diaPagoNum = Number(diaPagoStr);
-            if (!Number.isInteger(diaPagoNum) || diaPagoNum < 1 || diaPagoNum > 31) {
-                toast('⚠️','El día de pago debe estar entre 1 y 31.');
-                return;
-            }
-            const hoy = FinanbotTime.today();
-            fechaSalario = fechaSalarioParaMes(hoy.getFullYear(), hoy.getMonth(), 0, diaPagoNum);
-        }
-
-        const btn = document.getElementById('btnGuardarPerfil');
-        btn.disabled = true;
-        btn.innerHTML = '<span class="btn-spinner"></span> Guardando...';
-
-        try {
-           const res = await fetch(API + '/perfil/', {
-    method:'PUT',
-    headers:{
-        'Content-Type':'application/json',
-        'Authorization':`Bearer ${token}`
-    },
-    body: JSON.stringify({
-        nombre,
-        ingreso_mensual: Number(ingreso),
-        fecha_salario: fechaSalario
-    })
-});
-
-const data = await res.json();
-
-console.log("Status:", res.status);
-console.log("Respuesta:", data);
-
-if (res.ok) {
-                document.getElementById('avatarLetra').textContent  = nombre.charAt(0).toUpperCase();
-                document.getElementById('avatarNombre').textContent = nombre;
-                const u = JSON.parse(localStorage.getItem('usuario')||'{}');
-                u.nombre = nombre; localStorage.setItem('usuario', JSON.stringify(u));
-
-                // ── SINCRONIZAR SALARIO AUTOMÁTICO ────────
-                await sincronizarSalarioAuto(parseFloat(ingreso), diaPagoNum);
-                // ─────────────────────────────────────────
-
-                await cargarStats(); // Refrescar balance con nuevo salario
-                toast('✅','¡Perfil actualizado exitosamente!');
-                mostrarAlerta('alertaExito','¡Perfil actualizado!');
-            } else {
-    toast('❌', data.detail || data.mensaje || 'Error al actualizar perfil.');
-    console.error(data);
-}
+            if (!res.ok) { toast('❌', await mensajeError(res, 'No se pudo guardar el monto.')); return; }
+            const datos = await res.json();
+            const diff = datos.diferencia ?? (monto - montoOriginalAbono);
+            cerrarModalAbonar();
+            await cargarStats();
+            await cargarMetas(false);
+            toast(
+                diff < 0 ? '↩️' : '💰',
+                diff < 0
+                    ? `$${Math.round(Math.abs(diff)).toLocaleString('es-CO')} devueltos a tu sueldo`
+                    : 'Monto actualizado'
+            );
         } catch(e) { toast('❌','No se pudo conectar.'); }
-
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-save"></i> Guardar cambios';
     }
 
     // ── SALARIO AUTOMÁTICO ────────────────────────────────
@@ -2088,65 +1963,8 @@ if (res.ok) {
     // Los salarios de meses YA PASADOS nunca se tocan, así que si el
     // usuario cambia el día de pago, el historial anterior no cambia.
     async function sincronizarSalarioAuto(monto, diaPago) {
-        try {
-            // 1. Obtener todas las transacciones
-            const res = await fetch(API + '/transacciones/', {
-                headers: {'Authorization': `Bearer ${token}`}
-            });
-            if (!res.ok) return;
-            const todas = await res.json();
-
-            // 2. Calcular el mes actual (frontera pasado/futuro)
-            const hoy = FinanbotTime.today();
-            const mesActualStr = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}`;
-            const hoyStr = `${mesActualStr}-${String(hoy.getDate()).padStart(2,'0')}`;
-
-            // 3. Borrar auto-salarios del mes actual en adelante
-            //    (incluye limpiar meses futuros que hubiera de antes)
-            const aReemplazar = todas.filter(t => esAutoSalario(t) && t.fecha && (
-                diaPago ? t.fecha.slice(0,7) >= mesActualStr : t.fecha >= hoyStr
-            ));
-            for (const t of aReemplazar) {
-                await fetch(`${API}/transacciones/${t.id}`, {
-                    method: 'DELETE',
-                    headers: {'Authorization': `Bearer ${token}`}
-                });
-            }
-
-            if (!diaPago) {
-                toast('ℹ️', 'Día de pago sin definir: no se programarán ingresos automáticos.');
-                return;
-            }
-
-            // 4. Crear el salario del mes actual con el nuevo día — SOLO si
-            //    ese día ya llegó (o pasó). Si todavía no llega, no se
-            //    adelanta el dinero: dashboard.html/finanzas.html lo crearán
-            //    automáticamente el día que corresponda.
-            const ultimoDiaMes = new Date(hoy.getFullYear(), hoy.getMonth()+1, 0).getDate();
-            const diaFinal = Math.min(diaPago, ultimoDiaMes);
-            if (hoy.getDate() < diaFinal) {
-                toast('💼', `Tu salario quedó programado para el día ${diaPago}. Empezará a contar ese día.`);
-                return;
-            }
-
-            const fechaMesActual = fechaSalarioParaMes(hoy.getFullYear(), hoy.getMonth(), 0, diaPago);
-            await fetch(API + '/transacciones/', {
-                method: 'POST',
-                headers: {'Content-Type':'application/json','Authorization': `Bearer ${token}`},
-                body: JSON.stringify({
-                    tipo: 'ingreso',
-                    categoria: 'Salario',
-                    icono: '💼',
-                    monto: monto,
-                    descripcion: TAG_SALARIO_AUTO,   // tag oculto, no editable por el usuario
-                    fecha: fechaMesActual
-                })
-            });
-
-            toast('💼', `Salario de $${Math.round(monto).toLocaleString('es-CO')} programado el día ${diaPago} de este mes`);
-        } catch(e) {
-            console.error('Error sincronizando salario auto:', e);
-        }
+        // El servidor rehace el salario del mes al guardar el perfil (PUT /perfil/).
+        return;
     }
 
     // ── CONTRASEÑA ────────────────────────────────────────

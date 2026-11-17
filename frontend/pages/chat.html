@@ -583,7 +583,7 @@ function md(texto) {
   let t = texto;
 
   // Escapar HTML primero (seguridad)
-  t = t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  t = t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 
   // Bloques de código (```...```)
   t = t.replace(/```[\w]*\n?([\s\S]*?)```/g,

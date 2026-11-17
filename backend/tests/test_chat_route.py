@@ -66,6 +66,7 @@ def test_siembra_categorias_y_es_idempotente():
         assert db.query(Categoria).count() == total
     finally:
         db.close()
+        engine.dispose()
 
 
 def test_chat_crea_categoria_personalizada():

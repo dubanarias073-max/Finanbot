@@ -1,4 +1,8 @@
 # routes/perfil.py
+from application.services import metas_service
+from models import Transaccion
+from timezone import bogota_today
+from archivos_util import borrar_archivo
 from datetime import datetime
 from io import BytesIO
 import math
@@ -27,6 +31,7 @@ router = APIRouter()
 # =========================================================
 
 class PerfilUpdate(BaseModel):
+    model_config = {'json_schema_extra': {'examples': [{"nombre": "Ana Pérez", "ingreso_mensual": 2500000, "fecha_salario": "2026-11-30", "meta_ahorro": 500000}]}}
     nombre: Optional[str] = None
     rol: Optional[str] = None
     ingreso_mensual: Optional[float] = None
@@ -104,12 +109,10 @@ async def actualizar_foto_perfil(
         db.commit()
     except Exception:
         db.rollback()
-        destino.unlink(missing_ok=True)
+        borrar_archivo(destino)
         raise
     if foto_anterior:
-        anterior = carpeta / Path(foto_anterior).name
-        if anterior.is_file():
-            anterior.unlink()
+        borrar_archivo(carpeta / Path(foto_anterior).name)
     return {'mensaje': 'Foto de perfil actualizada.'}
 
 
@@ -142,9 +145,7 @@ def eliminar_foto_perfil(
     usuario.foto_perfil = None
     db.commit()
     if nombre_archivo:
-        ruta = settings.UPLOADS_DIR / 'perfiles' / str(usuario.id) / Path(nombre_archivo).name
-        if ruta.is_file():
-            ruta.unlink()
+        borrar_archivo(settings.UPLOADS_DIR / 'perfiles' / str(usuario.id) / Path(nombre_archivo).name)
     return {'mensaje': 'Foto de perfil eliminada.'}
 
 
@@ -183,6 +184,8 @@ def actualizar_perfil(
             raise HTTPException(status_code=400, detail=f"❌ Rol inválido. Opciones: {', '.join(settings.ROLES)}")
         usuario.rol = body.rol
 
+    salario_antes = (float(usuario.ingreso_mensual or 0), usuario.fecha_salario)
+
     if body.ingreso_mensual is not None:
         usuario.ingreso_mensual = body.ingreso_mensual
 
@@ -220,4 +223,18 @@ def actualizar_perfil(
         usuario.onboarding_completado = body.onboarding_completado
 
     db.commit()
+
+    # Si cambió el salario o el día de pago, se rehace el salario automático
+    # de ESTE mes (los meses pasados nunca se tocan) y el servidor lo vuelve
+    # a crear con el valor nuevo si el día de pago ya llegó.
+    if (float(usuario.ingreso_mensual or 0), usuario.fecha_salario) != salario_antes:
+        inicio_mes = bogota_today().replace(day=1)
+        db.query(Transaccion).filter(
+            Transaccion.usuario_id == usuario.id,
+            Transaccion.descripcion == metas_service.TAG_SALARIO,
+            Transaccion.fecha >= inicio_mes,
+        ).delete(synchronize_session=False)
+        db.commit()
+        metas_service.procesar_automaticos(db, usuario.id)
+
     return {'mensaje': '✅ Perfil actualizado!'}
