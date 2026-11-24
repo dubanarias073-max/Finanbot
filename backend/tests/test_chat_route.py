@@ -66,7 +66,6 @@ def test_siembra_categorias_y_es_idempotente():
         assert db.query(Categoria).count() == total
     finally:
         db.close()
-        engine.dispose()
 
 
 def test_chat_crea_categoria_personalizada():
@@ -198,6 +197,8 @@ def test_chat_pasa_el_id_de_conversacion_a_la_ia(monkeypatch):
     acciones_locales = []
 
     class FinanBotFalso:
+        _clave_conversacion = staticmethod(lambda ctx, conversacion_id=None: None)
+
         def responder_con_acciones(self, mensaje, ctx, accion, conversacion_id=None):
             recibido['conversacion_id'] = conversacion_id
             return 'Respuesta de prueba', []
@@ -294,6 +295,8 @@ def test_solicitud_de_documento_devuelve_archivo_y_lo_guarda(monkeypatch):
     }
 
     class FinanBotFalso:
+        _clave_conversacion = staticmethod(lambda ctx, conversacion_id=None: None)
+
         def responder_con_acciones(self, mensaje, ctx, accion, conversacion_id=None):
             self._documento_generado = documento
             return 'Documento preparado.', []
@@ -343,6 +346,8 @@ def test_documento_en_chat_conserva_referencia_a_foto_adjunta(monkeypatch):
     }
 
     class FinanBotFalso:
+        _clave_conversacion = staticmethod(lambda ctx, conversacion_id=None: None)
+
         def responder_con_acciones(
             self, mensaje, ctx, accion, conversacion_id=None, imagenes=None,
         ):

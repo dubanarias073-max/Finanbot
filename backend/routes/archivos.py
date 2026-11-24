@@ -3,6 +3,9 @@ from __future__ import annotations
 from datetime import timedelta
 from io import BytesIO
 from pathlib import Path
+from urllib.parse import urljoin, urlparse
+import ipaddress
+import socket
 import uuid
 import zipfile
 import re
@@ -22,6 +25,7 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Inches, Pt, RGBColor
+import requests
 from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
 from reportlab.lib.units import inch
@@ -44,7 +48,6 @@ from database import get_db
 from extensions import obtener_usuario_id_opcional, obtener_usuario_id_requerido
 from application.services.graficos_documento import normalizar_graficos, renderizar_grafico
 from models import ChatAdjunto
-from archivos_util import borrar_archivo
 from timezone import bogota_now
 
 router = APIRouter()
@@ -164,26 +167,16 @@ def _eliminar_adjuntos_antiguos(db: Session, usuario_id: int) -> None:
         db.delete(adjunto)
     db.commit()
     for ruta in rutas:
-        borrar_archivo(ruta)
+        if ruta.is_file():
+            ruta.unlink()
 
 
-@router.post('/adjuntos')
-async def subir_adjunto(
-    archivo: UploadFile = File(...),
-    usuario_id: str = Depends(obtener_usuario_id_requerido),
-    db: Session = Depends(get_db),
-):
-    contenido = await archivo.read(MAX_ARCHIVO_BYTES + 1)
-    if not contenido:
-        raise HTTPException(status_code=400, detail='El archivo está vacío.')
-    if len(contenido) > MAX_ARCHIVO_BYTES:
-        raise HTTPException(status_code=413, detail='Cada archivo puede pesar hasta 8 MB.')
-
-    nombre = (archivo.filename or 'archivo').replace('\\', '/').rsplit('/', 1)[-1]
+def _guardar_adjunto(db: Session, usuario: int, nombre: str, contenido: bytes) -> dict:
+    """Valida, normaliza y guarda un archivo del chat (subido, pegado o importado)."""
+    nombre = nombre.replace('\\', '/').rsplit('/', 1)[-1]
     nombre = ''.join(caracter for caracter in nombre if caracter.isprintable()).strip()[:255] or 'archivo'
     texto, mime_type, extension_segura, contenido_guardado = _leer_texto(nombre, contenido)
 
-    usuario = int(usuario_id)
     _eliminar_adjuntos_antiguos(db, usuario)
     archivos_usuario = db.query(ChatAdjunto.ruta).filter_by(usuario_id=usuario).all()
     bytes_guardados = sum(
@@ -211,9 +204,125 @@ async def subir_adjunto(
         db.commit()
     except Exception:
         db.rollback()
-        borrar_archivo(destino)
+        destino.unlink(missing_ok=True)
         raise
     return {'id': identificador, 'nombre': nombre, 'mime_type': mime_type}
+
+
+@router.post('/adjuntos')
+async def subir_adjunto(
+    archivo: UploadFile = File(...),
+    usuario_id: str = Depends(obtener_usuario_id_requerido),
+    db: Session = Depends(get_db),
+):
+    contenido = await archivo.read(MAX_ARCHIVO_BYTES + 1)
+    if not contenido:
+        raise HTTPException(status_code=400, detail='El archivo está vacío.')
+    if len(contenido) > MAX_ARCHIVO_BYTES:
+        raise HTTPException(status_code=413, detail='Cada archivo puede pesar hasta 8 MB.')
+    return _guardar_adjunto(db, int(usuario_id), archivo.filename or 'archivo', contenido)
+
+
+# ── Importar una imagen de internet (cuando el navegador no puede descargarla) ──
+MAX_REDIRECCIONES_IMAGEN = 3
+EXTENSION_POR_MIME = {
+    'image/jpeg': '.jpg',
+    'image/jpg': '.jpg',
+    'image/png': '.png',
+    'image/webp': '.webp',
+    'image/gif': '.gif',
+    'image/bmp': '.bmp',
+    'image/tiff': '.tif',
+    'image/x-icon': '.ico',
+    'image/vnd.microsoft.icon': '.ico',
+}
+
+
+class ImagenUrl(BaseModel):
+    url: str = Field(min_length=8, max_length=2048)
+
+
+def _ip_es_publica(texto_ip: str) -> bool:
+    ip = ipaddress.ip_address(texto_ip.split('%', 1)[0])
+    if isinstance(ip, ipaddress.IPv6Address) and ip.ipv4_mapped:
+        ip = ip.ipv4_mapped
+    return ip.is_global
+
+
+def _validar_url_publica(url: str) -> None:
+    """Evita SSRF: solo http/https hacia direcciones públicas de internet."""
+    try:
+        partes = urlparse(url)
+        puerto = partes.port
+    except ValueError:
+        raise HTTPException(status_code=400, detail='La dirección de la imagen no es válida.')
+    if partes.scheme not in ('http', 'https') or not partes.hostname:
+        raise HTTPException(status_code=400, detail='Solo se aceptan enlaces http o https.')
+    if partes.username or partes.password:
+        raise HTTPException(status_code=400, detail='El enlace no puede incluir usuario ni contraseña.')
+    try:
+        destinos = socket.getaddrinfo(
+            partes.hostname, puerto or (443 if partes.scheme == 'https' else 80),
+            type=socket.SOCK_STREAM,
+        )
+    except socket.gaierror:
+        raise HTTPException(status_code=400, detail='No se pudo encontrar el sitio de la imagen.')
+    if not destinos or not all(_ip_es_publica(destino[4][0]) for destino in destinos):
+        raise HTTPException(status_code=400, detail='Ese enlace apunta a una red no permitida.')
+
+
+def _descargar_imagen(url: str) -> tuple[str, bytes]:
+    actual = url
+    with requests.Session() as sesion:
+        for _ in range(MAX_REDIRECCIONES_IMAGEN + 1):
+            _validar_url_publica(actual)
+            try:
+                respuesta = sesion.get(
+                    actual,
+                    stream=True,
+                    timeout=(4, 10),
+                    allow_redirects=False,
+                    headers={'User-Agent': 'FinanBot/1.0', 'Accept': 'image/*'},
+                )
+            except requests.RequestException:
+                raise HTTPException(status_code=502, detail='No se pudo descargar la imagen del enlace.')
+            with respuesta:
+                if respuesta.status_code in (301, 302, 303, 307, 308):
+                    actual = urljoin(actual, respuesta.headers.get('Location', ''))
+                    continue
+                if respuesta.status_code != 200:
+                    raise HTTPException(
+                        status_code=502,
+                        detail=f'El sitio respondió con el código {respuesta.status_code}.',
+                    )
+                tipo = respuesta.headers.get('Content-Type', '').split(';')[0].strip().lower()
+                extension = EXTENSION_POR_MIME.get(tipo)
+                if not extension:
+                    raise HTTPException(
+                        status_code=415,
+                        detail='El enlace no es una imagen compatible (JPG, PNG, WEBP, GIF o BMP).',
+                    )
+                declarado = respuesta.headers.get('Content-Length', '')
+                if declarado.isdigit() and int(declarado) > MAX_ARCHIVO_BYTES:
+                    raise HTTPException(status_code=413, detail='La imagen supera el límite de 8 MB.')
+                datos = bytearray()
+                for trozo in respuesta.iter_content(65536):
+                    datos += trozo
+                    if len(datos) > MAX_ARCHIVO_BYTES:
+                        raise HTTPException(status_code=413, detail='La imagen supera el límite de 8 MB.')
+                base = Path(urlparse(actual).path).stem[:80] or 'imagen-web'
+                return f'{base}{extension}', bytes(datos)
+    raise HTTPException(status_code=400, detail='El enlace tiene demasiadas redirecciones.')
+
+
+@router.post('/adjuntos/url')
+def importar_adjunto_desde_url(
+    datos: ImagenUrl,
+    usuario_id: str = Depends(obtener_usuario_id_requerido),
+    db: Session = Depends(get_db),
+):
+    nombre, contenido = _descargar_imagen(datos.url.strip())
+    return _guardar_adjunto(db, int(usuario_id), nombre, contenido)
 
 
 def preparar_adjuntos_chat(db: Session, usuario_id: int, ids: list[str]) -> tuple[str, list[dict]]:
@@ -276,7 +385,8 @@ def eliminar_adjunto(
     ruta = _ruta_adjunto(adjunto)
     db.delete(adjunto)
     db.commit()
-    borrar_archivo(ruta)
+    if ruta.is_file():
+        ruta.unlink()
     return {'mensaje': 'Archivo eliminado.'}
 
 

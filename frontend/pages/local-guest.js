@@ -547,6 +547,7 @@
                 [body.capital_inicial, body.tasa_retorno, body.plazo_meses, body.aporte_mensual, body.nombre_tipo]];
             return new Response(csvBlob(filas), { headers: { 'Content-Type': 'text/csv;charset=utf-8' } });
         }
+        // @ts-ignore
         if (path === '/api/aprende' || path.startsWith('/api/aprende/')) return originalFetch(input, init);
         return respuestaJson({ detail: 'Esta función todavía no está disponible sin conexión a una cuenta.' }, 501);
     }

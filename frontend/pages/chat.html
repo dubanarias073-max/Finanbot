@@ -201,6 +201,7 @@ body.tema-azul{
 .btn-adjunto{background:var(--item-bg);border:1px solid var(--item-brd);color:var(--sec);width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .25s;font-size:15px;flex-shrink:0}
 .btn-adjunto:hover{border-color:#8B5CF6;color:var(--fb-text)}
 .btn-adjunto:disabled{opacity:.45;cursor:not-allowed}
+.inp-wrap.arrastrando{outline:2px dashed #8B5CF6;outline-offset:-4px;border-radius:16px}
 .adjuntos-pendientes{display:flex;gap:8px;flex-wrap:wrap;margin:0 4px 8px}
 .adjunto-chip{display:flex;align-items:center;gap:7px;max-width:230px;padding:6px 9px;border-radius:10px;background:var(--item-bg);border:1px solid var(--item-brd);font-size:11px;color:var(--sec)}
 .adjunto-chip img{width:28px;height:28px;object-fit:cover;border-radius:6px}
@@ -471,7 +472,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
         <input id="chatArchivos" type="file" hidden multiple
           accept=".pdf,.docx,.xlsx,.csv,.txt,.jpg,.jpeg,.png,.webp,.gif,.bmp,.tif,.tiff,.ico">
         <button class="btn-adjunto" id="btnAdjunto" type="button" onclick="abrirSelectorAdjuntos()"
-          title="Adjuntar documentos o imágenes" aria-label="Adjuntar archivos">
+          title="Adjuntar documentos o imágenes (también puedes pegarlas con Ctrl+V o arrastrarlas)" aria-label="Adjuntar archivos">
           <i class="fas fa-paperclip"></i>
         </button>
         <textarea class="chat-inp" id="chatInp"
@@ -486,7 +487,7 @@ html, body { overflow-x: hidden; max-width: 100vw; }
         </button>
       </div>
       <div class="inp-hint">
-        <kbd>Enter</kbd> para enviar &nbsp;·&nbsp; <kbd>Shift+Enter</kbd> nueva línea &nbsp;·&nbsp; <i class="fas fa-location-dot"></i> GPS al registrar
+        <kbd>Enter</kbd> para enviar &nbsp;·&nbsp; <kbd>Shift+Enter</kbd> nueva línea &nbsp;·&nbsp; <kbd>Ctrl+V</kbd> pega imágenes &nbsp;·&nbsp; <i class="fas fa-location-dot"></i> GPS al registrar
       </div>
     </div>
   </div>
@@ -583,7 +584,7 @@ function md(texto) {
   let t = texto;
 
   // Escapar HTML primero (seguridad)
-  t = t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  t = t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
   // Bloques de código (```...```)
   t = t.replace(/```[\w]*\n?([\s\S]*?)```/g,
@@ -1333,41 +1334,50 @@ function abrirSelectorAdjuntos() {
   document.getElementById('chatArchivos').click();
 }
 
-document.getElementById('chatArchivos').addEventListener('change', async event => {
+document.getElementById('chatArchivos').addEventListener('change', event => {
   const archivos = Array.from(event.target.files || []);
   event.target.value = '';
+  procesarEntradas(archivos.map(archivo => ({archivo})));
+});
+
+/* Cola de adjuntos: archivos locales, imágenes pegadas del portapapeles o
+   imágenes de internet (por URL). Todos pasan por el mismo flujo y límites. */
+async function procesarEntradas(entradas) {
+  if (!entradas.length) return;
+  if (!token) {
+    addMsg('Inicia sesión para adjuntar documentos o imágenes al chat.', 'bot', [], null, false);
+    return;
+  }
   subiendoAdjuntos = true;
   document.getElementById('btnEnv').disabled = true;
   document.getElementById('btnAdjunto').disabled = true;
   try {
-    for (const archivo of archivos) {
+    for (const entrada of entradas) {
       if (adjuntosPendientes.length >= 3) {
         addMsg('Puedes adjuntar hasta 3 archivos por mensaje.', 'bot', [], null, false);
         break;
       }
-      if (archivo.size > 8 * 1024 * 1024) {
-        addMsg(`El archivo «${archivo.name}» supera el límite de 8 MB.`, 'bot', [], null, false);
-        continue;
-      }
+      const etiqueta = entrada.archivo ? entrada.archivo.name : 'la imagen de internet';
       try {
-        const formulario = new FormData();
-        formulario.append('archivo', archivo);
-        const respuesta = await fetch(`${API}/chat/adjuntos`, {
-          method:'POST',
-          headers:{'Authorization':'Bearer '+token},
-          body:formulario
-        });
+        if (entrada.archivo && entrada.archivo.size > 8 * 1024 * 1024) {
+          throw new Error('supera el límite de 8 MB.');
+        }
+        const respuesta = entrada.archivo
+          ? await subirArchivo(entrada.archivo)
+          : await importarImagenPorUrl(entrada.url);
         const datos = await respuesta.json();
         if (!respuesta.ok) throw new Error(datos.detail || datos.error || 'No se pudo adjuntar el archivo.');
         let previewUrl = '';
         if (datos.mime_type.startsWith('image/')) {
-          try { previewUrl = await generarVistaPrevia(archivo); }
-          catch(error) { console.warn('No se pudo generar la vista previa de la imagen adjunta.', error); }
+          try {
+            const origen = entrada.archivo || await descargarBlobAdjunto(datos.id);
+            previewUrl = await generarVistaPrevia(origen);
+          } catch(error) { console.warn('No se pudo generar la vista previa de la imagen adjunta.', error); }
         }
         adjuntosPendientes.push({...datos, previewUrl});
         renderAdjuntosPendientes();
       } catch (error) {
-        addMsg(`No pude adjuntar «${archivo.name}»: ${error.message}`, 'bot', [], null, false);
+        addMsg(`No pude adjuntar «${etiqueta}»: ${error.message}`, 'bot', [], null, false);
       }
     }
   } finally {
@@ -1375,6 +1385,107 @@ document.getElementById('chatArchivos').addEventListener('change', async event =
     document.getElementById('btnAdjunto').disabled = false;
     document.getElementById('btnEnv').disabled = enviando || enCooldown();
   }
+}
+
+function subirArchivo(archivo) {
+  const formulario = new FormData();
+  formulario.append('archivo', archivo);
+  return fetch(`${API}/chat/adjuntos`, {
+    method:'POST',
+    headers:{'Authorization':'Bearer '+token},
+    body:formulario
+  });
+}
+
+function importarImagenPorUrl(url) {
+  return fetch(`${API}/chat/adjuntos/url`, {
+    method:'POST',
+    headers:{'Authorization':'Bearer '+token, 'Content-Type':'application/json'},
+    body:JSON.stringify({url})
+  });
+}
+
+async function descargarBlobAdjunto(id) {
+  const respuesta = await fetch(`${API}/chat/adjuntos/${encodeURIComponent(id)}`, {
+    headers:{'Authorization':'Bearer '+token}
+  });
+  if (!respuesta.ok) throw new Error('No se pudo leer la imagen adjunta.');
+  return respuesta.blob();
+}
+
+/* ═══ Pegar (Ctrl+V) y arrastrar imágenes ═══ */
+const REGEX_URL_IMAGEN = /^https?:\/\/\S+\.(?:png|jpe?g|webp|gif|bmp|tiff?|ico)(?:[?#]\S*)?$/i;
+const EXTENSION_POR_TIPO = {'image/png':'png','image/jpeg':'jpg','image/webp':'webp','image/gif':'gif','image/bmp':'bmp'};
+
+function nombrePegado(archivo, indice) {
+  if (archivo.name && !/^image\.(png|jpe?g|gif|webp)$/i.test(archivo.name)) return archivo;
+  const extension = EXTENSION_POR_TIPO[archivo.type] || 'png';
+  const marca = new Date().toTimeString().slice(0, 8).replace(/:/g, '');
+  return new File([archivo], `imagen-pegada-${marca}-${indice + 1}.${extension}`, {type: archivo.type});
+}
+
+/* Lectura SÍNCRONA del portapapeles/arrastre (el navegador solo permite leerlo
+   y cancelar el pegado normal antes del primer await). */
+function entradasDesdeTransferencia(transferencia) {
+  const archivos = Array.from(transferencia.files || []);
+  if (archivos.length) return archivos.map((archivo, i) => ({archivo: nombrePegado(archivo, i)}));
+
+  const texto = (transferencia.getData('text/plain') || '').trim();
+  const html = transferencia.getData('text/html') || '';
+  const lista = (transferencia.getData('text/uri-list') || '').split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('#'));
+  let origen = '';
+  if (html) {
+    const imagen = new DOMParser().parseFromString(html, 'text/html').querySelector('img[src]');
+    if (imagen) origen = imagen.getAttribute('src') || '';
+  }
+  // Solo se interpreta como "imagen" si el portapapeles no trae texto propio.
+  const esSoloImagen = !texto || texto === origen || /^https?:\/\/\S+$/i.test(texto);
+  if (!origen && REGEX_URL_IMAGEN.test(texto)) origen = texto;
+  if (!origen && lista.length && REGEX_URL_IMAGEN.test(lista[0])) origen = lista[0];
+  if (!origen || !esSoloImagen) return [];
+  if (/^data:image\//i.test(origen)) return [{dataUri: origen}];
+  if (/^https?:\/\//i.test(origen)) return [{url: origen}];
+  return [];
+}
+
+async function resolverEntradas(entradas) {
+  const resueltas = [];
+  for (const entrada of entradas) {
+    if (!entrada.dataUri) { resueltas.push(entrada); continue; }
+    try {
+      const blob = await (await fetch(entrada.dataUri)).blob();
+      resueltas.push({archivo: nombrePegado(new File([blob], 'image.png', {type: blob.type}), 0)});
+    } catch (error) {
+      addMsg('No pude leer la imagen pegada.', 'bot', [], null, false);
+    }
+  }
+  return resueltas;
+}
+
+document.addEventListener('paste', event => {
+  if (!event.clipboardData) return;
+  const entradas = entradasDesdeTransferencia(event.clipboardData);
+  if (!entradas.length) return;          // texto normal: el navegador lo pega
+  event.preventDefault();
+  resolverEntradas(entradas).then(procesarEntradas);
+});
+
+const zonaChat = document.querySelector('.inp-wrap');
+['dragenter', 'dragover'].forEach(tipo => document.addEventListener(tipo, event => {
+  if (!Array.from(event.dataTransfer?.types || []).some(t => ['Files', 'text/uri-list'].includes(t))) return;
+  event.preventDefault();
+  zonaChat.classList.add('arrastrando');
+}));
+['dragleave', 'drop'].forEach(tipo => document.addEventListener(tipo, event => {
+  if (tipo === 'dragleave' && event.relatedTarget) return;
+  zonaChat.classList.remove('arrastrando');
+}));
+document.addEventListener('drop', event => {
+  if (!event.dataTransfer) return;
+  const entradas = entradasDesdeTransferencia(event.dataTransfer);
+  if (!entradas.length) return;
+  event.preventDefault();
+  resolverEntradas(entradas).then(procesarEntradas);
 });
 
 function renderAdjuntosPendientes() {

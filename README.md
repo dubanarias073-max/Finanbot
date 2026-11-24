@@ -516,6 +516,56 @@ pytest -q tests/test_finanbot_ia.py
 pytest -q tests
 ```
 
+## 🔍 Auditoría de Calidad y Rendimiento 
+
+Todos los comandos se ejecutan desde la carpeta `backend/` con el entorno virtual activado. Primero instala las dependencias (incluye las herramientas de auditoría):
+
+### Pruebas y cobertura (pytest-cov)
+
+```powershell
+# Usa SQLite en memoria para no tocar la base MySQL real
+$env:DATABASE_URL="sqlite:///:memory:"
+
+# Ejecutar la suite completa con reporte de cobertura (HTML en htmlcov/index.html)
+pytest --cov=. --cov-report=term --cov-report=html
+
+# Pruebas de seguridad (bcrypt, 401 sin token)
+pytest -q tests/test_rnf_seguridad.py
+
+# Pruebas de pegar imágenes de internet en el chat (protección SSRF)
+pytest -q tests/test_imagenes_pegadas.py
+```
+
+### Estilo y mantenibilidad (flake8 y radon)
+
+```powershell
+# Estilo PEP 8 (líneas de hasta 120 caracteres)
+flake8 --max-line-length=120 --count --statistics .
+
+# Índice de mantenibilidad por módulo (meta: todos en A o B)
+radon mi -s .
+
+# Complejidad ciclomática promedio (meta: A o B)
+radon cc -a -s . -e "tests/*"
+```
+
+### Seguridad estática (Bandit)
+
+```powershell
+bandit -r . -x ./tests
+```
+
+### Prueba de carga (Locust)
+
+```powershell
+# Terminal 1 (desde backend/): iniciar el servidor
+uvicorn app:app --port 8000
+
+# Terminal 2 (desde la raíz del proyecto, donde está locustfile.py)
+locust -f locustfile.py --host http://127.0.0.1:8000
+```
+
+
 ⚠️ **Advertencia de desarrollo:** Si todo no responde  correctamente o devuelve respuestas genéricas vacías, se debe a una pérdida de sincronía con la base de datos tras un reinicio del servidor de FastAPI. Detén el proceso (`Ctrl + C`) y levanta el backend nuevamente con `fastapi dev app.py`.
 
 Ademas cuando el usuario se loguea , la base de datos ya no creara el diagrama  en workbench , intentar cambiar el nombre de la base de datos para crear otra y ver el diagrama y las tablas que componen la base de datos 
